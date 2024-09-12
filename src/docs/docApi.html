@@ -1,0 +1,540 @@
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API IFA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>API IFA | DOCUMENTACION&nbsp;</h1>
+    <div><br></div>
+
+    <h2>El proceso de ventas tiene 3 etapas en orden consecutivo,&nbsp;</h2>
+    <h2>1 Orden de Venta (pedido)</h2>
+    <h2>2 Entrega (salida de mercancias)</h2>
+    <h2>3 Facturacion&nbsp;</h2>
+    <div>Cada una de estas operaciones debe ir referenciada a la anterior.</div>
+    <h2>/docs</h2>
+
+    <p><strong>Método:</strong> GET</p>
+    <p><strong>Resumen:</strong> Obtener documentación de la API</p>
+    <h2>/orden</h2>
+    <p><strong>Método:</strong> POST</p>
+    <p><strong>Descripción:</strong> Permite crear una nueva orden en el sistema.</p>
+    <p><strong>Request headers:</strong></p>
+    <pre><code>{
+   "authorization": "Token otorgado por IFA"
+</code>  }</pre>
+    <p><strong>Request Body:</strong></p>
+    <p><strong>Campos:</strong></p>
+    <ul>
+        <li><strong>DocDate</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">string</span></font> - Fecha del documento en formato
+            "YYYY-MM-DD" (ejemplo: "2024-08-22")</li>
+        <li><strong>DocDueDate</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">string</span></font> - Fecha de vencimiento en formato
+            "YYYY-MM-DD" (ejemplo: "2024-08-22")</li>
+        <li><strong>CardCode</strong>: <code>string</code> - Código del cliente (ejemplo: "C000004")</li>
+        <li><strong>Reference1</strong>: <code>string</code> - Referencia 1 (opcional)</li>
+        <li><strong>Reference2</strong>: <code>string</code> - Referencia 2 (opcional)</li>
+        <li><strong>Comments</strong>: <code>string</code> - Comentarios del documento (opcional)</li>
+        <li><strong>JournalMemo</strong>: <code>string</code> - Memo del diario (ejemplo: "Deliveries - C000004")</li>
+        <li><strong>PaymentGroupCode</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Código de grupo de pago
+            (ejemplo: "-1" para contado)</li>
+        <li><strong>SalesPersonCode</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Código del vendedor (ejemplo:
+            35)</li>
+        <li><strong>TransportationCode</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Código de transporte (ejemplo:
+            -1)</li>
+        <li><strong>ContactPersonCode</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Código de la persona de
+            contacto (ejemplo: 91479)</li>
+        <li><strong>Series</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Serie del documento (ejemplo:
+            221)</li>
+        <li><strong>TaxDate</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">string</span></font> - Fecha de impuestos en formato
+            "YYYY-MM-DD" (ejemplo: "2024-08-22")</li>
+        <li><strong>ShipToCode</strong>: <code>string</code> - Código de envío (ejemplo: "Z/ CHANCADORA-ENTRE RIOS")
+        </li>
+        <li><strong>FederalTaxID</strong>: <code>string</code> - ID de impuesto federal (ejemplo: "3535107")</li>
+        <li><strong>DiscountPercent</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Porcentaje de descuento
+            (ejemplo: 0.0)</li>
+        <li><strong>PickStatus</strong>: <code>string</code> - Estado de selección (ejemplo: "tNO")</li>
+        <li><strong>Pick</strong>: <code>string</code> - Selección (ejemplo: "tNO")</li>
+        <li><strong>TrackingNumber</strong>: <code>string</code> - Número de rastreo (opcional)</li>
+        <li><strong>PickRemark</strong>: <code>string</code> - Observaciones de selección (opcional)</li>
+        <li><strong>U_NIT</strong>: <code>string</code> - NIT del cliente (ejemplo: "0")</li>
+        <li><strong>U_RAZSOC</strong>: <code>string</code> - Razón social (ejemplo: "n/a")</li>
+        <li><strong>U_ICE</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Importe ICE (ejemplo: 0.0)</li>
+        <li><strong>U_EXENTO</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Importe exento (ejemplo: 0.0)
+        </li>
+        <li><strong>U_OSLP_ID</strong>: <code>number</code> - ID del representante de ventas (opcional)</li>
+        <li><strong>U_Sucursal_Interna</strong>: <code>string</code> - Sucursal interna (opcional)</li>
+        <li><strong>U_DESCUENTO</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Descuento adicional (ejemplo:
+            0.0)</li>
+
+
+        <li><strong>DocumentLines</strong>: <code>array</code> - Lista de líneas del documento
+            <ul>
+                <li><strong>LineNum</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Número de la línea
+                    (ejemplo: 0)</li>
+                <li><strong>ItemCode</strong>: <code>string</code> - Código del artículo (ejemplo: "101-001-001")</li>
+                <li><strong>Quantity</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Cantidad del artículo
+                    (ejemplo: 1.0)</li>
+                <li><strong>Price</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Precio antes de
+                    impuestos (ejemplo: 0.0)</li>
+                <li><strong>PriceAfterVAT</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Precio después de
+                    impuestos (ejemplo: 0.0)</li>
+                <li><strong>DiscountPercent</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Porcentaje de
+                    descuento aplicado (ejemplo: 0.0)</li>
+                <li><strong>VendorNum</strong>: <code>string</code> - Número del proveedor (opcional)</li>
+                <li><strong>SerialNum</strong>: <code>string</code> - Número de serie (opcional)</li>
+                <li><strong>WarehouseCode</strong>: <code>string</code> - Código del almacén (ejemplo: "100-12")</li>
+                <li><strong>SalesPersonCode</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Código del vendedor
+                    (ejemplo: 35)</li>
+                <li><strong>CommisionPercent</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Porcentaje de comisión
+                    (ejemplo: 0.0)</li>
+                <li><strong>BaseType</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Tipo base del documento
+                    relacionado (ejemplo: -1)</li>
+                <li><strong>BaseEntry</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Entrada base del
+                    documento relacionado (ejemplo: 0)</li>
+                <li><strong>BaseLine</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Línea base del
+                    documento relacionado (ejemplo: 0)</li>
+                <li><strong>MeasureUnit</strong>: <code>string</code> - Unidad de medida (ejemplo: "CAJA X 1")</li>
+                <li><strong>UnitsOfMeasurment</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Unidades de medida
+                    (ejemplo: 1.0)</li>
+                <li><strong>UnitPrice</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Precio unitario
+                    (ejemplo: 0.0)</li>
+                <li><strong>UoMEntry</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Entrada de unidad de
+                    medida (ejemplo: 2)</li>
+                <li><strong>UoMCode</strong>: <code>string</code> - Código de unidad de medida (ejemplo: "CAJA X 1")
+                </li>
+                <li><strong>InventoryQuantity</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Cantidad de inventario
+                    (ejemplo: 1.0)</li>
+                <li><strong>RemainingOpenInventoryQuantity</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Cantidad de inventario
+                    restante abierta (ejemplo: 1.0)</li>
+                <li><strong>ParentLineNum</strong>: <code>number</code> - Número de la línea padre (opcional)</li>
+                <li><strong>TransportMode</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Modo de transporte
+                    (ejemplo: 0)</li>
+                <li><strong>U_COSTO_COM</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Costo del artículo
+                    (ejemplo: 0.0)</li>
+            </ul>
+        </li>
+    </ul>
+    <pre><code>
+    {
+        "DocDate": "2024-08-22",
+        "CardCode": "C000004",
+        "Reference1": "",
+        "Reference2": "",
+        "Comments": "",
+        "JournalMemo": "Deliveries - C000004",
+        "PaymentGroupCode": -1,
+        "SalesPersonCode": 35,
+        "TransportationCode": -1,
+        "ContactPersonCode": 91479,
+        "Series": 221,
+        "TaxDate": "2024-08-22",
+        "ShipToCode": "Z/ CHANCADORA-ENTRE RIOS",
+        "FederalTaxID": "3535107",
+        "DiscountPercent": 0.0,
+        "PickStatus": "tNO",
+        "Pick": "tNO",
+        "TrackingNumber": null,
+        "PickRemark": null,
+        "U_NIT": "0",
+        "U_RAZSOC": "n/a",
+        "U_ICE": 0.0,
+        "U_EXENTO": 0.0,
+        "U_OSLP_ID": null,
+        "U_Sucursal_Interna": null,
+        "U_DESCUENTO": 0.0,
+        "DocumentLines": [
+            {
+                "LineNum": 0,
+                "ItemCode": "101-001-001",
+                "Quantity": 1.0,
+                "Price": 0.0,
+                "PriceAfterVAT": 0.0,
+                "DiscountPercent": 0.0,
+                "VendorNum": null,
+                "SerialNum": null,
+                "WarehouseCode": "100-12",
+                "SalesPersonCode": 35,
+                "CommisionPercent": 0.0,
+                "BaseType": -1,
+                "BaseEntry": 0,
+                "BaseLine": 0,
+                "MeasureUnit": "CAJA X 1",
+                "UnitsOfMeasurment": 1.0,
+                "UnitPrice": 0.0,
+                "UoMEntry": 2,
+                "UoMCode": "CAJA X 1",
+                "InventoryQuantity": 1.0,
+                "RemainingOpenInventoryQuantity": 1.0,
+                "ParentLineNum": null,
+                "TransportMode": 0,
+                "U_COSTO_COM": 0.0
+      },
+      {
+                "LineNum": 1,
+                "ItemCode": "101-001-002",
+                "Quantity": 2.0,
+                "Price": 0.0,
+                "PriceAfterVAT": 0.0,
+                "DiscountPercent": 0.0,
+                "VendorNum": null,
+                "SerialNum": null,
+                "WarehouseCode": "100-12",
+                "SalesPersonCode": 35,
+                "CommisionPercent": 0.0,
+                "BaseType": -1,
+                "BaseEntry": 0,
+                "BaseLine": 1,
+                "MeasureUnit": "CAJA X 1",
+                "UnitsOfMeasurment": 1.0,
+                "UnitPrice": 0.0,
+                "UoMEntry": 3,
+                "UoMCode": "CAJA X 2",
+                "InventoryQuantity": 1.0,
+                "RemainingOpenInventoryQuantity": 1.0,
+                "ParentLineNum": null,
+                "TransportMode": 0,
+                "U_COSTO_COM": 0.0
+            },
+            {
+                "LineNum": 2,
+                "ItemCode": "101-001-001",
+                "Quantity": 4.0,
+                "Price": 0.0,
+                "PriceAfterVAT": 0.0,
+                "DiscountPercent": 0.0,
+                "VendorNum": null,
+                "SerialNum": null,
+                "WarehouseCode": "100-12",
+                "SalesPersonCode": 35,
+                "CommisionPercent": 0.0,
+                "BaseType": -1,
+                "BaseEntry": 0,
+                "BaseLine": 2,
+                "MeasureUnit": "CAJA X 1",
+                "UnitsOfMeasurment": 1.0,
+                "UnitPrice": 0.0,
+                "UoMEntry": 2,
+                "UoMCode": "CAJA X 1",
+                "InventoryQuantity": 1.0,
+                "RemainingOpenInventoryQuantity": 1.0,
+                "ParentLineNum": null,
+                "TransportMode": 0,
+                "U_COSTO_COM": 0.0
+              }
+      ]}
+</code></pre>
+    <p><strong>Respuesta Ejemplo:</strong></p>
+    <pre><code>{
+    "message": "Orden grabada con éxito",
+    "orderNumber": "421829",
+    "status": 204,
+    "statusText": "No Content"
+}</code></pre>
+
+    <h2><br></h2>
+    <h2>/entrega</h2>
+    <p><strong>Método:</strong> POST</p>
+    <p><strong>Descripción:</strong> Permite crear una nueva entrega de venta en el sistema.</p>
+    <p><strong>Notas:</strong> Cada entrega debe referenciar con el valor de "<span
+            style="background-color: rgb(244, 244, 244);">orderNumber"</span>&nbsp;de las ordenes creadas.&nbsp;</p>
+    <p><strong>Request Body:</strong></p>
+    <p><strong>Campos:</strong></p>
+    <ul>
+        <li><strong>DocDate</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">string</span></font> - Fecha del documento en formato
+            "YYYY-MM-DD" (ejemplo: "2024-08-22")</li>
+        <li><strong>DocDueDate</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">string</span></font> - Fecha de vencimiento en formato
+            "YYYY-MM-DD" (ejemplo: "2024-08-22")</li>
+        <li><strong>CardCode</strong>: <code>string</code> - Código del cliente (ejemplo: "C000004")</li>
+        <li><strong>Reference1</strong>: <code>string</code> - Referencia 1 (opcional)</li>
+        <li><strong>Reference2</strong>: <code>string</code> - Referencia 2 (opcional)</li>
+        <li><strong>Comments</strong>: <code>string</code> - Comentarios del documento (opcional)</li>
+        <li><strong>JournalMemo</strong>: <code>string</code> - Memo del diario (ejemplo: "Deliveries - C000004")</li>
+        <li><strong>PaymentGroupCode</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Código de grupo de pago
+            (ejemplo: "-1" para contado)</li>
+        <li><strong>SalesPersonCode</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Código del vendedor (ejemplo:
+            35)</li>
+        <li><strong>TransportationCode</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Código de transporte (ejemplo:
+            -1)</li>
+        <li><strong>ContactPersonCode</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Código de la persona de
+            contacto (ejemplo: 91479)</li>
+        <li><strong>Series</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Serie del documento (ejemplo:
+            221)</li>
+        <li><strong>TaxDate</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">string</span></font> - Fecha de impuestos en formato
+            "YYYY-MM-DD" (ejemplo: "2024-08-22")</li>
+        <li><strong>ShipToCode</strong>: <code>string</code> - Código de envío (ejemplo: "Z/ CHANCADORA-ENTRE RIOS")
+        </li>
+        <li><strong>FederalTaxID</strong>: <code>string</code> - ID de impuesto federal (ejemplo: "3535107")</li>
+        <li><strong>DiscountPercent</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Porcentaje de descuento
+            (ejemplo: 0.0)</li>
+        <li><strong>PickStatus</strong>: <code>string</code> - Estado de selección (ejemplo: "tNO")</li>
+        <li><strong>Pick</strong>: <code>string</code> - Selección (ejemplo: "tNO")</li>
+        <li><strong>TrackingNumber</strong>: <code>string</code> - Número de rastreo (opcional)</li>
+        <li><strong>PickRemark</strong>: <code>string</code> - Observaciones de selección (opcional)</li>
+        <li><strong>U_NIT</strong>: <code>string</code> - NIT del cliente (ejemplo: "0")</li>
+        <li><strong>U_RAZSOC</strong>: <code>string</code> - Razón social (ejemplo: "n/a")</li>
+        <li><strong>U_ICE</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Importe ICE (ejemplo: 0.0)</li>
+        <li><strong>U_EXENTO</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Importe exento (ejemplo: 0.0)
+        </li>
+        <li><strong>U_OSLP_ID</strong>: <code>number</code> - ID del representante de ventas (opcional)</li>
+        <li><strong>U_Sucursal_Interna</strong>: <code>string</code> - Sucursal interna (opcional)</li>
+        <li><strong>U_DESCUENTO</strong>: <font face="monospace"><span
+                    style="background-color: rgb(244, 244, 244);">number</span></font> - Descuento adicional (ejemplo:
+            0.0)</li>
+
+
+        <li><strong>DocumentLines</strong>: <code>array</code> - Lista de líneas del documento
+            <ul>
+                <li><strong>LineNum</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Número de la línea
+                    (ejemplo: 0)</li>
+                <li><strong>ItemCode</strong>: <code>string</code> - Código del artículo (ejemplo: "101-001-001")</li>
+                <li><strong>Quantity</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Cantidad del artículo
+                    (ejemplo: 1.0)</li>
+                <li><strong>Price</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Precio antes de
+                    impuestos (ejemplo: 0.0)</li>
+                <li><strong>PriceAfterVAT</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Precio después de
+                    impuestos (ejemplo: 0.0)</li>
+                <li><strong>DiscountPercent</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Porcentaje de
+                    descuento aplicado (ejemplo: 0.0)</li>
+                <li><strong>VendorNum</strong>: <code>string</code> - Número del proveedor (opcional)</li>
+                <li><strong>SerialNum</strong>: <code>string</code> - Número de serie (opcional)</li>
+                <li><strong>WarehouseCode</strong>: <code>string</code> - Código del almacén (ejemplo: "100-12")</li>
+                <li><strong>SalesPersonCode</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Código del vendedor
+                    (ejemplo: 35)</li>
+                <li><strong>CommisionPercent</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Porcentaje de comisión
+                    (ejemplo: 0.0)</li>
+                <li><strong>BaseType</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Tipo base del documento
+                    relacionado (ejemplo: 17)</li>
+                <li><strong>BaseEntry</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Entrada base del
+                    documento relacionado (ejemplo: 456456)</li>
+                <li><strong>BaseLine</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Línea base del
+                    documento relacionado igual que LineNum (ejemplo: 0)</li>
+                <li><strong>MeasureUnit</strong>: <code>string</code> - Unidad de medida (ejemplo: "CAJA X 1")</li>
+                <li><strong>UnitsOfMeasurment</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Unidades de medida
+                    (ejemplo: 1.0)</li>
+                <li><strong>UnitPrice</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Precio unitario
+                    (ejemplo: 0.0)</li>
+                <li><strong>UoMEntry</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Entrada de unidad de
+                    medida (ejemplo: 2)</li>
+                <li><strong>UoMCode</strong>: <code>string</code> - Código de unidad de medida (ejemplo: "CAJA X 1")
+                </li>
+                <li><strong>InventoryQuantity</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Cantidad de inventario
+                    (ejemplo: 1.0)</li>
+                <li><strong>RemainingOpenInventoryQuantity</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Cantidad de inventario
+                    restante abierta (ejemplo: 1.0)</li>
+                <li><strong>ParentLineNum</strong>: <code>number</code> - Número de la línea padre (opcional)</li>
+                <li><strong>TransportMode</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">number</span></font> - Modo de transporte
+                    (ejemplo: 0)</li>
+                <li><strong>U_COSTO_COM</strong>: <font face="monospace"><span
+                            style="background-color: rgb(244, 244, 244);">decimal</span></font> - Costo del artículo
+                    (ejemplo: 0.0)</li>
+            </ul>
+        </li>
+    </ul>
+    <pre><code>
+    {
+        "DocDate": "2024-08-22",
+        "DocDueDate": "2024-08-22",
+        "CardCode": "C000004",
+        "Reference1": "",
+        "Reference2": "",
+        "Comments": "",
+        "JournalMemo": "Deliveries - C000004",
+        "PaymentGroupCode": -1,
+        "SalesPersonCode": 35,
+        "TransportationCode": -1,
+        "ContactPersonCode": 91479,
+        "Series": 221,
+        "TaxDate": "2024-08-22",
+        "ShipToCode": "Z/ CHANCADORA-ENTRE RIOS",
+        "FederalTaxID": "3535107",
+        "DiscountPercent": 0.0,
+        "PickStatus": "tNO",
+        "Pick": "tNO",
+        "TrackingNumber": null,
+        "PickRemark": null,
+        "U_NIT": "0",
+        "U_RAZSOC": "n/a",
+        "U_ICE": 0.0,
+        "U_EXENTO": 0.0,
+        "U_OSLP_ID": null,
+        "U_Sucursal_Interna": null,
+        "U_DESCUENTO": 0.0,
+        "DocumentLines": [
+            {
+                "LineNum": 0,
+                "ItemCode": "101-001-001",
+                "Quantity": 1.0,
+                "Price": 0.0,
+                "PriceAfterVAT": 0.0,
+                "DiscountPercent": 0.0,
+                "VendorNum": null,
+                "SerialNum": null,
+                "WarehouseCode": "100-12",
+                "SalesPersonCode": 35,
+                "CommisionPercent": 0.0,
+                "BaseType": 17,
+                "BaseEntry": 492774,
+                "BaseLine": 0,
+                "MeasureUnit": "CAJA X 1",
+                "UnitsOfMeasurment": 1.0,
+                "UnitPrice": 0.0,
+                "UoMEntry": 2,
+                "UoMCode": "CAJA X 1",
+                "InventoryQuantity": 1.0,
+                "RemainingOpenInventoryQuantity": 1.0,
+                "ParentLineNum": null,
+                "TransportMode": 0,
+                "U_COSTO_COM": 0.0
+      },
+      {
+                "LineNum": 1,
+                "ItemCode": "101-001-002",
+                "Quantity": 2.0,
+                "Price": 0.0,
+                "PriceAfterVAT": 0.0,
+                "DiscountPercent": 0.0,
+                "VendorNum": null,
+                "SerialNum": null,
+                "WarehouseCode": "100-12",
+                "SalesPersonCode": 35,
+                "CommisionPercent": 0.0,
+                "BaseType": 17,
+                "BaseEntry": 492774,
+                "BaseLine": 1,
+                "MeasureUnit": "CAJA X 1",
+                "UnitsOfMeasurment": 1.0,
+                "UnitPrice": 0.0,
+                "UoMEntry": 3,
+                "UoMCode": "CAJA X 2",
+                "InventoryQuantity": 1.0,
+                "RemainingOpenInventoryQuantity": 1.0,
+                "ParentLineNum": null,
+                "TransportMode": 0,
+                "U_COSTO_COM": 0.0
+            },
+            {
+                "LineNum": 2,
+                "ItemCode": "101-001-001",
+                "Quantity": 4.0,
+                "Price": 0.0,
+                "PriceAfterVAT": 0.0,
+                "DiscountPercent": 0.0,
+                "VendorNum": null,
+                "SerialNum": null,
+                "WarehouseCode": "100-12",
+                "SalesPersonCode": 35,
+                "CommisionPercent": 0.0,
+                "BaseType": 17,
+                "BaseEntry": 492774,
+                "BaseLine": 2,
+                "MeasureUnit": "CAJA X 1",
+                "UnitsOfMeasurment": 1.0,
+                "UnitPrice": 0.0,
+                "UoMEntry": 2,
+                "UoMCode": "CAJA X 1",
+                "InventoryQuantity": 1.0,
+                "RemainingOpenInventoryQuantity": 1.0,
+                "ParentLineNum": null,
+                "TransportMode": 0,
+                "U_COSTO_COM": 0.0
+              }
+      ]}
+</code></pre>
+    <p><strong>Respuesta Ejemplo:</strong></p>
+    <pre><code>{
+    "message": "Entrega grabada con éxito",
+    "deliveryNumber": "17998",
+    "status": 204,
+    "statusText": "No Content"
+}</code></pre>
+
+
+
+</body>
+
+</html>

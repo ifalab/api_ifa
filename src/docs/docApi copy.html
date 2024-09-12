@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API IFA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #f4f4f4;
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+        }
+    </style>
+</head>
+<body>
+
+<h1>DOCUMENTACION API IFA</h1>
+
+<h2>/docs</h2>
+
+<p><strong>Método:</strong> GET</p>
+<p><strong>Resumen:</strong> Obtener documentación de la API</p>
+
+
+<h2>/orden</h2>
+<p><strong>Método:</strong> POST</p>
+<p><strong>Descripción:</strong> Permite crear una nueva orden en el sistema.</p>
+<p><strong>Request headers:</strong></p>
+<pre><code>{
+        "authorization": "token otorgado por IFA"
+      }</code></pre>
+<p><strong>Request Body:</strong></p>
+<pre><code>
+    {
+        "CardCode": "C000004",
+        "DocDate": "2024-08-22",
+        "DocDueDate": "2024-08-22",
+        "DocumentLines": [
+          {
+            "ItemCode": "101-001-001",
+            "Quantity": 1,
+            "TaxCode": "IVA",
+            "UnitPrice": 30,
+            "WarehouseCode": "100-12"
+          }
+        ]
+      }
+</code></pre>
+<p><strong>Respuesta Ejemplo:</strong></p>
+<pre><code>{
+    "message": "Orden grabada con éxito",
+    "orderNumber": "421829",
+    "status": 204,
+    "statusText": "No Content"
+}</code></pre>
+
+<h2>/entrega</h2>
+<p><strong>Método:</strong> POST</p>
+<p><strong>Descripción:</strong> Permite crear una nueva entrega de venta en el sistema.</p>
+<p><strong>Notas:</strong> Cada entrega creada debe tener una orden de venta origen en el campo BaseEntry de las lineas.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code>{
+    "CardCode": "C000004",
+    "DocDate": "2024-08-22",
+    "DocDueDate": "2024-08-22",
+    "DocumentLines": [
+      {
+        "BaseType": 17,
+        "BaseEntry": 421827,
+        "BaseLine": 0,
+        "LineNum" : "0",
+        "ItemCode": "101-001-001",
+        "Quantity": "1",
+        "TaxCode": "IVA",
+        "UnitPrice": "30",
+        "WarehouseCode": "100-12",
+        "BatchNumbers" : [ { 
+            "BaseLineNumber" : "0",
+            "BatchNumber" : "92351", 
+            "Quantity" : "1", 
+            "ItemCode" : "101-001-001" } ]
+      }
+    ]
+  }</code></pre>
+<p><strong>Respuesta Ejemplo:</strong></p>
+<pre><code>{
+    "message": "Entrega grabada con éxito",
+    "orderNumber": "17998",
+    "status": 204,
+    "statusText": "No Content"
+}</code></pre>
+
+</body>
+</html>
