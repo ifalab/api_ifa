@@ -11,7 +11,29 @@ const hanaController = require('../controllers/hanaController.js');
 // Importa el middleware de autenticación
 const checkToken = require('../middleware/authMiddleware.js');
 
-
+/**
+ * @swagger
+ * /v1/users EJEMPLO:
+ *   get:
+ *     summary: Obtener usuarios
+ *     description: Obtiene una lista de todos los usuarios
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   name:
+ *                     type: string
+ *                     example: Juan Pérez
+ */
 router.get('/', (req, res) => {
   res.send('Bienvenido a la API. Visita /v1/docs para ver la documentación.');
 });
@@ -27,12 +49,36 @@ router.get('/docs', (req, res) => {
 
 //hana
 router.get('/usuarios', checkToken, hanaController.getUsuarios);
-router.post('/get-due-date',checkToken,hanaController.getDocDueDate)
+router.post('/get-due-date', checkToken, hanaController.getDocDueDate)
 
 
 //sld
+/**
+ * @swagger
+ * /orden EJEMPLO:
+ *   get:
+ *     summary: Obtener usuarios
+ *     description: Obtiene una lista de todos los usuarios
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                     example: 1
+ *                   name:
+ *                     type: string
+ *                     example: Juan Pérez
+ */
 router.post('/orden', checkToken, sldController.postOrden);
 router.post('/entrega', checkToken, sldController.postEntrega);
+router.get('/abastecimiento', checkToken, sldController.getAbastecimiento)
 
 
 
@@ -65,7 +111,7 @@ router.post('/migracioncca', (req, res) => {
   const miVariable = docDate; // Define tu variable aquí
 
   console.log('En curso migracion de asientos => LAB_IFA_CC...');
-  
+
   // Construir el comando con la variable como argumento
   const comando = `python /Users/Administrador.SRVCORE01/Documents/apifa/src/apps/ccMigration/migration.py ${miVariable}`;
 
@@ -95,7 +141,7 @@ router.post('/migracioncc', (req, res) => {
   }
 
   console.log('En curso migracion de asientos => LAB_IFA_CC...');
-  
+
   // Construir el comando con la variable como argumento
   const comando = `python /Users/Administrador.SRVCORE01/Documents/apifa/src/apps/ccMigration/migration.py ${docDate}`;
 
@@ -111,7 +157,7 @@ router.post('/migracioncc', (req, res) => {
         <a href="${errorLogPath}" target="_blank">Ver Log de Errores</a>
       `);
     }
-    
+
     if (stderr) {
       console.error(`Error en el script de Python: ${stderr}`);
       return res.status(500).send(`
@@ -122,7 +168,7 @@ router.post('/migracioncc', (req, res) => {
 
     console.log('Exito');
     console.log(`Salida del script de Python: ${stdout}`);
-    
+
     res.send(`
       <p>Proceso ejecutado correctamente:</p>
       <p>${stdout}</p>

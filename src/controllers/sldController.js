@@ -52,12 +52,18 @@ exports.postOrden = async (req, res) => {
 
     // Datos a enviar en la solicitud POST
     const orderData = req.body;
-    console.log(orderData)
+    // console.log(orderData)
 
     const { DocDate, PaymentGroupCode } = orderData
+
+
     const docDueDate = await hanaController.getDocDueDate(DocDate, PaymentGroupCode)
     const DocDueDate = docDueDate[0]
-    const newOrderDate = {...DocDueDate,...orderData }
+    const newOrderDate = { ...DocDueDate, ...orderData }
+
+    // //! PRUEBA JSON, ELIMINAR DESPUES:
+    // return res.status(200).json({newOrderDate})
+    // //! ------------------------------
 
     try {
       const url = 'https://srvhana:50000/b1s/v1/Orders';
@@ -212,6 +218,22 @@ exports.postEntrega = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getAbastecimiento = async (req, res) => {
+  try {
+    const consulta = await hanaController.getAbastecimiento()
+    return res
+    .status(200)
+    .json(consulta)
+
+  } catch (error) {
+    return res
+      .status(500)
+      .json({
+        mensaje: 'Internal server error'
+      })
+  }
+}
 
 /*
 // Controlador para manejar la solicitud POST
