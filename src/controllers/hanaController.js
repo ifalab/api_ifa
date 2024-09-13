@@ -26,6 +26,21 @@ const connectHANA = () => {
   });
 };
 
+
+const executeQuery = async (query) => {
+  console.log(query)
+  return new Promise((resolve, reject) => {
+    connection.exec(query, (err, result) => {
+      if (err) {
+        console.log('error en la consulta:', err.message)
+        reject(new Error('error en la consulta'))
+      } else {
+        console.log('Datos obtenidos:', result);
+        resolve(result);
+      }
+    })
+  })
+}
 // Controlador para manejar la solicitud GET para obtener usuarios
 exports.getUsuarios = async (req, res) => {
   try {
@@ -90,25 +105,29 @@ exports.getDocDueDate = async (docDate, paymentGroupCode) => {
       await connectHANA();
     }
     console.log('request: ')
-    console.log(docDate)
-    console.log(paymentGroupCode)
+
     const query = `CALL "LAB_IFA_QAS"."IFA_VM_GET_DUEDATE"('${docDate}',${paymentGroupCode})`
-    console.log(query)
 
-    return new Promise((resolve, reject) => {
-      connection.exec(query, (err, result) => {
-        if(err){
-          console.log('error en la consulta:',err.message)
-          reject(new Error('error en la consulta'))
-        }else{
-          console.log('Datos obtenidos:', result);
-          resolve(result);        }
-
-      })
-    })
+    return await executeQuery(query)
 
   } catch (error) {
     console.log(error)
     throw new Error('Error al obtener Doc Due Date')
   }
 }
+
+exports.getAbastecimiento = async () => {
+  try {
+    if (!connection) {
+      await connectHANA();
+    }
+    const query = `select * from lab_ifa_prd.ifa_com_inv_kardex_valorado`
+    return await executeQuery(query)
+  } catch (error) {
+    console.log(error)
+    throw new Error('Error en la consulta: ', error)
+  }
+}
+
+
+
