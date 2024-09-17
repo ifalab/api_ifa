@@ -11,29 +11,7 @@ const hanaController = require('../controllers/hanaController.js');
 // Importa el middleware de autenticación
 const checkToken = require('../middleware/authMiddleware.js');
 
-/**
- * @swagger
- * /v1/users EJEMPLO:
- *   get:
- *     summary: Obtener usuarios
- *     description: Obtiene una lista de todos los usuarios
- *     responses:
- *       200:
- *         description: Lista de usuarios
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                     example: 1
- *                   name:
- *                     type: string
- *                     example: Juan Pérez
- */
+
 router.get('/', (req, res) => {
   res.send('Bienvenido a la API. Visita /v1/docs para ver la documentación.');
 });
@@ -53,12 +31,24 @@ router.post('/get-due-date', checkToken, hanaController.getDocDueDate)
 
 
 //sld
+
+router.post('/orden', checkToken, sldController.postOrden);
+router.post('/entrega', checkToken, sldController.postEntrega);
+
 /**
  * @swagger
- * /orden EJEMPLO:
+ * /v1/abastecimiento:
  *   get:
- *     summary: Obtener usuarios
- *     description: Obtiene una lista de todos los usuarios
+ *     summary: Abastecimiento
+ *     description: Obtiene una lista de nombres
+ *     parameters:
+ *       - in: header
+ *         name: authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: tokenMovil123
+ *         description: Token de autorización
  *     responses:
  *       200:
  *         description: Lista de usuarios
@@ -69,35 +59,16 @@ router.post('/get-due-date', checkToken, hanaController.getDocDueDate)
  *               items:
  *                 type: object
  *                 properties:
- *                   id:
- *                     type: integer
- *                     example: 1
- *                   name:
+ *                   Name:
  *                     type: string
- *                     example: Juan Pérez
+ *                     example: german
+ *                   Data:
+ *                     type: integer
+ *                     example: 13
+ *       401:
+ *         description: No token provided or invalid token
  */
-router.post('/orden', checkToken, sldController.postOrden);
-router.post('/entrega', checkToken, sldController.postEntrega);
 router.get('/abastecimiento', checkToken, sldController.getAbastecimiento)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //apps
