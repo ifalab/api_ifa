@@ -55,6 +55,64 @@ const ventaPorSucursal = async () => {
     }
 }
 
+const ventasNormales = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXNORMALES"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasNormales:', error.message);
+        res.status(500).json({ message: 'Error al procesar la solicitud: ventasNormales' });
+    }
+}
+
+const ventasCadena = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXCADENAS"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasCadena:', error.message);
+        res.status(500).json({ message: 'Error al procesar la solicitud: ventasCadena' });
+    }
+}
+
+const ventasInstitucion = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXINSTITUCIONES"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasInstitucion:', error.message);
+        res.status(500).json({ message: 'Error al procesar la solicitud: ventasInstitucion' });
+    }
+}
+
+const ventasUsuario = async (userCode, dim1, dim2, dim3, groupBy) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        
+        const query = `call "LAB_IFA_PRD".IFA_LAPP_VEN_DETALLADAS_X_AUTH('${userCode}','${dim1}','${dim2}','${dim3}',${groupBy})`
+        
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasUsuario:', error.message);
+        res.status(500).json({ message: 'Error al procesar la solicitud: ventasUsuario' });
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
+    ventasNormales,
+    ventasCadena,
+    ventasInstitucion,
+    ventasUsuario
 }

@@ -68,7 +68,20 @@ const cobranzaPorSucursal = async () => {
     }
 }
 
+const cobranzaNormales = async () => { 
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXNORMALES"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaNormales:', error.message);
+        res.status(500).json({ message: 'Error al procesar la solicitud: cobranzaNormales' });
+    }
+}
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
+    cobranzaNormales
 }

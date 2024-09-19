@@ -28,7 +28,6 @@ const connectHANA = () => {
 
 
 const executeQuery = async (query) => {
-    console.log(query)
     return new Promise((resolve, reject) => {
         connection.exec(query, (err, result) => {
             if (err) {
@@ -37,6 +36,7 @@ const executeQuery = async (query) => {
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
+                // console.log({result})
             }
         })
     })
@@ -47,8 +47,48 @@ const loginUser = async (username, password) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_PRD.IFA_LAPP_AUTH_USER('${username}','${password}')`
-        return await executeQuery(query)
+
+        const query = `call LAB_IFA_PRD.IFA_LAPP_AUTH_USER('${username}', '${password}')`;
+        console.log({ query });
+        const result = await executeQuery(query);
+
+        if (result.length === 0) {
+            return { mensaje: 'error, no se encontraron datos para el usuario' };
+        }
+
+        let dimensionUno = [];
+        result.forEach((item) => {
+            const { DimRole1 } = item;
+            if (!dimensionUno.includes(DimRole1)) {
+                dimensionUno.push(DimRole1);
+            }
+        });
+
+        let dimensionDos = [];
+        result.forEach((item) => {
+            const { DimRole2 } = item;
+            if (!dimensionDos.includes(DimRole2)) {
+                dimensionDos.push(DimRole2);
+            }
+        });
+
+        let dimensionTres = [];
+        result.forEach((item) => {
+            const { DimRole3 } = item;
+            if (!dimensionTres.includes(DimRole3)) {
+                dimensionTres.push(DimRole3);
+            }
+        });
+
+        const userData = result[0];
+        if (!userData || userData.DimRole1 === undefined || userData.DimRole2 === undefined || userData.DimRole3 === undefined) {
+            return { mensaje: 'error, el usuario no tiene dimensiones' };
+        }
+
+        const { DimRole1, DimRole2, DimRole3, ...restDataUser } = userData;
+        const user = restDataUser;
+
+        return { ...user, dimensionUno, dimensionDos, dimensionTres };
     } catch (error) {
         console.error('Error en getUsuarios:', error.message);
         res.status(500).json({ message: 'Error al procesar la solicitud: login user' });

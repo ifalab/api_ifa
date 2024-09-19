@@ -35,7 +35,7 @@ const executeQuery = async (query) => {
         console.log('error en la consulta:', err.message)
         reject(new Error('error en la consulta'))
       } else {
-        console.log('Datos obtenidos:', result);
+        // console.log('Datos obtenidos:', result);
         resolve(result);
       }
     })
@@ -129,5 +129,56 @@ exports.getAbastecimiento = async () => {
   }
 }
 
+exports.userById = async (userCode) => {
+  try {
+    if (!connection) {
+      await connectHANA();
+    }
+    const query = `CALL lab_ifa_prd.IFA_LAPP_USER_BY_ID('${userCode}')`
+    const result = await executeQuery(query);
+
+    if (result.length === 0) {
+      return undefined;
+    }
+
+    let dimensionUno = [];
+    result.forEach((item) => {
+      const { DimRole1 } = item;
+      if (!dimensionUno.includes(DimRole1)) {
+        dimensionUno.push(DimRole1);
+      }
+    });
+
+    let dimensionDos = [];
+    result.forEach((item) => {
+      const { DimRole2 } = item;
+      if (!dimensionDos.includes(DimRole2)) {
+        dimensionDos.push(DimRole2);
+      }
+    });
+
+    let dimensionTres = [];
+    result.forEach((item) => {
+      const { DimRole3 } = item;
+      if (!dimensionTres.includes(DimRole3)) {
+        dimensionTres.push(DimRole3);
+      }
+    });
+
+    const userData = result[0];
+    if (!userData || userData.DimRole1 === undefined || userData.DimRole2 === undefined || userData.DimRole3 === undefined) {
+      return { mensaje: 'error, el usuario no tiene dimensiones' };
+    }
+
+    const { DimRole1, DimRole2, DimRole3, ...restDataUser } = userData;
+    const user = restDataUser;
+
+    return { ...user, dimensionUno, dimensionDos, dimensionTres };
+
+  } catch (error) {
+    console.log(error)
+    throw new Error('Error en la consulta (userById) : ', error)
+  }
+}
 
 
