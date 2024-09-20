@@ -51,7 +51,7 @@ const ventaPorSucursal = async () => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventaPorSucursal:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: ventaPorSucursal' });
+        throw new Error('Error al procesar la solicitud: ventaPorSucursal');
     }
 }
 
@@ -64,7 +64,7 @@ const ventasNormales = async () => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasNormales:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: ventasNormales' });
+        throw new Error('Error al procesar la solicitud: ventasNormales');
     }
 }
 
@@ -77,7 +77,7 @@ const ventasCadena = async () => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasCadena:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: ventasCadena' });
+        throw new Error('Error al procesar la solicitud: ventasCadena');
     }
 }
 
@@ -90,10 +90,22 @@ const ventasInstitucion = async () => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasInstitucion:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: ventasInstitucion' });
+        throw new Error('Error al procesar la solicitud: ventasInstitucion');
     }
 }
 
+const ventasIfaVet = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXIFAVET"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasIfaVet:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasIfaVet');
+    }
+}
 const ventasUsuario = async (userCode, dim1, dim2, dim3, groupBy) => {
     try {
         if (!connection) {
@@ -105,7 +117,7 @@ const ventasUsuario = async (userCode, dim1, dim2, dim3, groupBy) => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasUsuario:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: ventasUsuario' });
+        throw new Error('Error al procesar la solicitud: ventasUsuario');
     }
 }
 
@@ -114,5 +126,6 @@ module.exports = {
     ventasNormales,
     ventasCadena,
     ventasInstitucion,
-    ventasUsuario
+    ventasUsuario,
+    ventasIfaVet
 }

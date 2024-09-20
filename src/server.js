@@ -11,7 +11,9 @@ const port = 97;
 require('dotenv').config();
 
 //cors
-app.use(cors())
+app.use(cors({
+  origin:'*'
+}))
 // Middleware
 app.use(morgan('dev'));
 app.use(express.json());

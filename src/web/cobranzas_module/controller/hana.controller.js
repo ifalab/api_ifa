@@ -51,7 +51,7 @@ const cobranzaGeneral = async () => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaGeneral:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: cobranzaGeneral' });
+        throw new Error('Error al procesar la solicitud: cobranzaGeneral');
     }
 }
 
@@ -64,7 +64,7 @@ const cobranzaPorSucursal = async () => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaPorSucursal:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: cobranzaPorSucursal' });
+        throw new Error('Error al procesar la solicitud: cobranzaPorSucursal');
     }
 }
 
@@ -77,7 +77,7 @@ const cobranzaNormales = async () => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaNormales:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: cobranzaNormales' });
+        throw new Error('Error al procesar la solicitud: cobranzaNormales');
     }
 }
 module.exports = {
