@@ -106,6 +106,20 @@ const ventasIfaVet = async () => {
         throw new Error('Error al procesar la solicitud: ventasIfaVet');
     }
 }
+
+const ventasMasivo = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXMASIVOS"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasMasivo:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasMasivo');
+    }
+}
+
 const ventasUsuario = async (userCode, dim1, dim2, dim3, groupBy) => {
     try {
         if (!connection) {
@@ -127,5 +141,6 @@ module.exports = {
     ventasCadena,
     ventasInstitucion,
     ventasUsuario,
-    ventasIfaVet
+    ventasIfaVet,
+    ventasMasivo,
 }
