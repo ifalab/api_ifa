@@ -113,7 +113,7 @@ const ventasMasivoController = async (req, res) => {
         console.log('error en ventasInstitucionesController')
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
-    }   
+    }
 }
 
 const ventasUsuarioController = async (req, res) => {
@@ -133,6 +133,9 @@ const ventasUsuarioController = async (req, res) => {
         })
         if (totalVentas > 0 && totalPresupuesto > 0) {
             totalCump = totalVentas / totalPresupuesto
+        }
+        if (totalPresupuesto == 0) {
+            totalCump = 1
         }
         return res.status(200).json({ response, totalPresupuesto, totalVentas, totalCump })
         // return res.status(200).json(response)
