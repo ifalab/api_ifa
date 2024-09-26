@@ -3,7 +3,6 @@ const checkToken = (req, res, next) => {
     const token = req.headers['authorization'];
     let validTokens = [];
 
-    // Intenta analizar el JSON de TOKENMOVIL
     try {
         validTokens = JSON.parse(process.env.TOKENS).tokens;
     } catch (error) {

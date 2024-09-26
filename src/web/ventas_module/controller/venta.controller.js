@@ -119,6 +119,7 @@ const ventasMasivoController = async (req, res) => {
 const ventasUsuarioController = async (req, res) => {
     try {
         const { userCode, dim1, dim2, dim3, groupBy } = req.body
+        let totalPresupuesto = 0, totalVentas = 0, totalCump = 0
         const response = await ventasUsuario(
             userCode,
             dim1,
@@ -126,7 +127,15 @@ const ventasUsuarioController = async (req, res) => {
             dim3,
             groupBy,
         )
-        return res.status(200).json(response)
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalVentas += +item.Ventas
+        })
+        if (totalVentas > 0 && totalPresupuesto > 0) {
+            totalCump = totalVentas / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalVentas, totalCump })
+        // return res.status(200).json(response)
     } catch (error) {
         console.log('error en ventasUsuarioController')
         console.log({ error })

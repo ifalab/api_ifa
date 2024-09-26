@@ -80,8 +80,37 @@ const cobranzaNormales = async () => {
         throw new Error('Error al procesar la solicitud: cobranzaNormales');
     }
 }
+
+const cobranzaCadenas = async () => { 
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXCADENAS"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaCadenas:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaCadenas');
+    }
+}
+
+const cobranzaIfavet = async () => { 
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXIFAVET"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaIfavet:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaIfavet');
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
-    cobranzaNormales
+    cobranzaNormales,
+    cobranzaCadenas,
+    cobranzaIfavet
 }
