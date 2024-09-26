@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController } = require('../controller/cobranzas.controller')
+const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController } = require('../controller/cobranzas.controller')
 const router = Router()
 
 router.get('/generales',cobranzaGeneralController)
@@ -7,6 +7,11 @@ router.get('/sucursales',cobranzaPorSucursalController)
 router.get('/normales',cobranzaNormalesController)
 router.get('/cadenas',cobranzaCadenaController)
 router.get('/ifavet',cobranzaIfavetController)
+
+router.get('/sucursales-mes-anterior',cobranzaPorSucursalMesAnteriorController)
+router.get('/normales-mes-anterior',cobranzaNormalesMesAnteriorController)
+router.get('/cadenas-mes-anterior',cobranzaCadenaMesAnteriorController)
+router.get('/ifavet-mes-anterior',cobranzaIfavetMesAnteriorController)
 
 
 module.exports = router

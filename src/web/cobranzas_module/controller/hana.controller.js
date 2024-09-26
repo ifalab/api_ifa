@@ -55,7 +55,7 @@ const cobranzaGeneral = async () => {
     }
 }
 
-const cobranzaPorSucursal = async () => { 
+const cobranzaPorSucursal = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -68,7 +68,7 @@ const cobranzaPorSucursal = async () => {
     }
 }
 
-const cobranzaNormales = async () => { 
+const cobranzaNormales = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -81,7 +81,7 @@ const cobranzaNormales = async () => {
     }
 }
 
-const cobranzaCadenas = async () => { 
+const cobranzaCadenas = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -94,7 +94,7 @@ const cobranzaCadenas = async () => {
     }
 }
 
-const cobranzaIfavet = async () => { 
+const cobranzaIfavet = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -107,10 +107,66 @@ const cobranzaIfavet = async () => {
     }
 }
 
+const cobranzaPorSucursalMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUC_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaPorSucursal:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaPorSucursal');
+    }
+}
+
+const cobranzaNormalesMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXNORMALES_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaNormales:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaNormales');
+    }
+}
+
+const cobranzaCadenasMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXCADENAS_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaCadenas:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaCadenas');
+    }
+}
+
+const cobranzaIfavetMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXIFAVET_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaIfavet:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaIfavet');
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
     cobranzaNormales,
     cobranzaCadenas,
-    cobranzaIfavet
+    cobranzaIfavet,
+    cobranzaPorSucursalMesAnterior,
+    cobranzaNormalesMesAnterior,
+    cobranzaCadenasMesAnterior,
+    cobranzaIfavetMesAnterior,
 }

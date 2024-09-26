@@ -125,13 +125,92 @@ const ventasUsuario = async (userCode, dim1, dim2, dim3, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const query = `call "LAB_IFA_PRD".IFA_LAPP_VEN_DETALLADAS_X_AUTH('${userCode}','${dim1}','${dim2}','${dim3}',${groupBy})`
-        
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasUsuario:', error.message);
         throw new Error('Error al procesar la solicitud: ventasUsuario');
+    }
+}
+
+
+const ventaPorSucursalMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUC_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventaPorSucursal:', error.message);
+        throw new Error('Error al procesar la solicitud: ventaPorSucursal');
+    }
+}
+
+const ventasNormalesMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXNORMALES_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasNormales:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasNormales');
+    }
+}
+
+const ventasCadenaMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXCADENAS_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasCadena:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasCadena');
+    }
+}
+
+const ventasInstitucionMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXINSTITUCIONES_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasInstitucion:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasInstitucion');
+    }
+}
+
+const ventasIfaVetMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXIFAVET_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasIfaVet:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasIfaVet');
+    }
+}
+
+const ventasMasivoMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXMASIVOS_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasMasivo:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasMasivo');
     }
 }
 
@@ -143,4 +222,10 @@ module.exports = {
     ventasUsuario,
     ventasIfaVet,
     ventasMasivo,
+    ventaPorSucursalMesAnterior,
+    ventasNormalesMesAnterior,
+    ventasCadenaMesAnterior,
+    ventasInstitucionMesAnterior,
+    ventasIfaVetMesAnterior,
+    ventasMasivoMesAnterior,
 }

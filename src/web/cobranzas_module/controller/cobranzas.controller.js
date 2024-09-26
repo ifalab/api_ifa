@@ -1,4 +1,4 @@
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior } = require("./hana.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -102,10 +102,102 @@ const cobranzaIfavetController = async (req, res) => {
     }
 }
 
+const cobranzaPorSucursalMesAnteriorController = async (req, res) => {
+    try {
+        // const response = await cobranzaPorSucursal()
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await cobranzaPorSucursalMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaPorSucursalController',
+            error
+        })
+    }
+}
+
+const cobranzaNormalesMesAnteriorController = async (req, res) => {
+    try {
+        // const response = await cobranzaNormales()
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await cobranzaNormalesMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaNormalesController',
+            error
+        })
+    }
+}
+
+const cobranzaCadenaMesAnteriorController = async (req, res) => {
+    try {
+        // const response = await cobranzaNormales()
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await cobranzaCadenasMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaCadenaController',
+            error
+        })
+    }
+}
+
+const cobranzaIfavetMesAnteriorController = async (req, res) => {
+    try {
+        // const response = await cobranzaNormales()
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await cobranzaIfavetMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaCadenaController',
+            error
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
     cobranzaNormalesController,
     cobranzaCadenaController,
-    cobranzaIfavetController
+    cobranzaIfavetController,
+    cobranzaPorSucursalMesAnteriorController,
+    cobranzaNormalesMesAnteriorController,
+    cobranzaCadenaMesAnteriorController,
+    cobranzaIfavetMesAnteriorController,
 }

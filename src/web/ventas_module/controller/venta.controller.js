@@ -1,4 +1,4 @@
-const { ventaPorSucursal, ventasNormales, ventasCadena, ventasInstitucion, ventasUsuario, ventasIfaVet, ventasMasivo } = require("./hana.controller")
+const { ventaPorSucursal, ventasNormales, ventasCadena, ventasInstitucion, ventasUsuario, ventasIfaVet, ventasMasivo, ventaPorSucursalMesAnterior, ventasNormalesMesAnterior, ventasCadenaMesAnterior, ventasInstitucionMesAnterior, ventasIfaVetMesAnterior, ventasMasivoMesAnterior } = require("./hana.controller")
 
 const ventasPorSucursalController = async (req, res) => {
     try {
@@ -146,6 +146,123 @@ const ventasUsuarioController = async (req, res) => {
     }
 }
 
+const ventasPorSucursalControllerMesAnterior = async (req, res) => {
+    try {
+        const response = await ventaPorSucursalMesAnterior()
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log('error en ventasPorSucursalController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
+const ventasNormalesControllerMesAnterior = async (req, res) => {
+    try {
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await ventasNormalesMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log('error en ventasNormalesController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
+const ventasCadenasControllerMesAnterior = async (req, res) => {
+    try {
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await ventasCadenaMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log('error en ventasCadenasController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
+const ventasInstitucionesControllerMesAnterior = async (req, res) => {
+    try {
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await ventasInstitucionMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
+const ventasIFAVETControllerMesAnterior = async (req, res) => {
+    try {
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await ventasIfaVetMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
+const ventasMasivoControllerMesAnterior = async (req, res) => {
+    try {
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await ventasMasivoMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -153,5 +270,11 @@ module.exports = {
     ventasInstitucionesController,
     ventasUsuarioController,
     ventasIFAVETController,
-    ventasMasivoController
+    ventasMasivoController,
+    ventasPorSucursalControllerMesAnterior,
+    ventasNormalesControllerMesAnterior,
+    ventasCadenasControllerMesAnterior,
+    ventasInstitucionesControllerMesAnterior,
+    ventasIFAVETControllerMesAnterior,
+    ventasMasivoControllerMesAnterior,
 }
