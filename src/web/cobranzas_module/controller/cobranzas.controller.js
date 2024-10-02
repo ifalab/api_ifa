@@ -1,4 +1,4 @@
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior } = require("./hana.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -96,7 +96,7 @@ const cobranzaIfavetController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaCadenaController',
+            mensaje: 'problemas en cobranzaIfavetController',
             error
         })
     }
@@ -118,7 +118,7 @@ const cobranzaPorSucursalMesAnteriorController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaPorSucursalController',
+            mensaje: 'problemas en cobranzaPorSucursalMesAnteriorController',
             error
         })
     }
@@ -140,7 +140,7 @@ const cobranzaNormalesMesAnteriorController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaNormalesController',
+            mensaje: 'problemas en cobranzaNormalesMesAnteriorController',
             error
         })
     }
@@ -162,7 +162,7 @@ const cobranzaCadenaMesAnteriorController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaCadenaController',
+            mensaje: 'problemas en cobranzaCadenaMesAnteriorController',
             error
         })
     }
@@ -170,7 +170,7 @@ const cobranzaCadenaMesAnteriorController = async (req, res) => {
 
 const cobranzaIfavetMesAnteriorController = async (req, res) => {
     try {
-        // const response = await cobranzaNormales()
+
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
         const response = await cobranzaIfavetMesAnterior()
         response.map((item) => {
@@ -184,7 +184,94 @@ const cobranzaIfavetMesAnteriorController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaCadenaController',
+            mensaje: 'problemas en cobranzaIfavetMesAnteriorController',
+            error
+        })
+    }
+}
+
+const cobranzaMasivosController = async (req, res) => {
+    try {
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await cobranzaMasivo()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaMasivosController',
+            error
+        })
+    }
+}
+
+const cobranzaInstitucionesController = async (req, res) => {
+    try {
+
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await cobranzaInstituciones()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaInstitucionesController',
+            error
+        })
+    }
+}
+
+const cobranzaMasivosMesAnteriorController = async (req, res) => {
+    try {
+
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await cobranzaMasivoMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaIfavetMesAnteriorController',
+            error
+        })
+    }
+}
+
+const cobranzaInstitucionesMesAnteriorController = async (req, res) => {
+    try {
+
+        let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
+        const response = await cobranzaMasivoMesAnterior()
+        response.map((item) => {
+            totalPresupuesto += +item.Ppto
+            totalDocTotal += +item.DocTotal
+        })
+        if (totalDocTotal > 0 && totalPresupuesto > 0) {
+            totalCump = totalDocTotal / totalPresupuesto
+        }
+        return res.status(200).json({ response, totalPresupuesto, totalDocTotal, totalCump })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaIfavetMesAnteriorController',
             error
         })
     }
@@ -200,4 +287,8 @@ module.exports = {
     cobranzaNormalesMesAnteriorController,
     cobranzaCadenaMesAnteriorController,
     cobranzaIfavetMesAnteriorController,
+    cobranzaMasivosController,
+    cobranzaInstitucionesController,
+    cobranzaMasivosMesAnteriorController,
+    cobranzaInstitucionesMesAnteriorController,
 }

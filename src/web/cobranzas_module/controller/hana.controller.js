@@ -107,6 +107,32 @@ const cobranzaIfavet = async () => {
     }
 }
 
+const cobranzaMasivo = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXMASIVOS"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaMasivo:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaMasivo');
+    }
+}
+
+const cobranzaInstituciones = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXINSTITUCIONES"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaInstituciones:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaInstituciones');
+    }
+}
+
 const cobranzaPorSucursalMesAnterior = async () => {
     try {
         if (!connection) {
@@ -159,14 +185,43 @@ const cobranzaIfavetMesAnterior = async () => {
     }
 }
 
+const cobranzaMasivoMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXMASIVOS_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaMasivoMesAnterior:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaMasivoMesAnterior');
+    }
+}
+
+const cobranzaInstitucionesMesAnterior = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXINSTITUCIONES_ANT"`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaInstitucionesMesAnterior:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaInstitucionesMesAnterior');
+    }
+}
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
     cobranzaNormales,
     cobranzaCadenas,
     cobranzaIfavet,
+    cobranzaMasivo,
+    cobranzaInstituciones,
     cobranzaPorSucursalMesAnterior,
     cobranzaNormalesMesAnterior,
     cobranzaCadenasMesAnterior,
     cobranzaIfavetMesAnterior,
+    cobranzaMasivoMesAnterior,
+    cobranzaInstitucionesMesAnterior
 }
