@@ -106,7 +106,7 @@ exports.getDocDueDate = async (docDate, paymentGroupCode) => {
     }
     console.log('request: ')
 
-    const query = `CALL "LAB_IFA_QAS"."IFA_VM_GET_DUEDATE"('${docDate}',${paymentGroupCode})`
+    const query = `CALL "${process.env.DBSAP}"."IFA_VM_GET_DUEDATE"('${docDate}',${paymentGroupCode})`
 
     return await executeQuery(query)
 
@@ -121,7 +121,7 @@ exports.getAbastecimiento = async () => {
     if (!connection) {
       await connectHANA();
     }
-    const query = `select * from lab_ifa_prd.ifa_com_inv_kardex_valorado`
+    const query = `select * from ${process.env.DBSAP}.ifa_com_inv_kardex_valorado`
     return await executeQuery(query)
   } catch (error) {
     console.log(error)
