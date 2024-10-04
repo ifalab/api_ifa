@@ -49,9 +49,7 @@ const parteDiario = async () => {
         }
 
         const query = `select * from lab_ifa_prd.ifa_fin_parte_diario`;
-        const result = await executeQuery(query);
-        console.log('----------------------------------- resultados de la query')
-        console.log({result})
+        const result = await executeQuery(query)
         return result
         
     } catch (error) {

@@ -1,4 +1,4 @@
-const { ventaPorSucursal, ventasNormales, ventasCadena, ventasInstitucion, ventasUsuario, ventasIfaVet, ventasMasivo, ventaPorSucursalMesAnterior, ventasNormalesMesAnterior, ventasCadenaMesAnterior, ventasInstitucionMesAnterior, ventasIfaVetMesAnterior, ventasMasivoMesAnterior } = require("./hana.controller")
+const { ventaPorSucursal, ventasNormales, ventasCadena, ventasInstitucion, ventasUsuario, ventasIfaVet, ventasMasivo, ventaPorSucursalMesAnterior, ventasNormalesMesAnterior, ventasCadenaMesAnterior, ventasInstitucionMesAnterior, ventasIfaVetMesAnterior, ventasMasivoMesAnterior, ventasPorSucursal } = require("./hana.controller")
 
 const ventasPorSucursalController = async (req, res) => {
     try {
@@ -262,6 +262,49 @@ const ventasMasivoControllerMesAnterior = async (req, res) => {
     }
 }
 
+const ventasPorSupervisorController = async (req, res) => {
+    try {
+        const { userCode, dim1, dim2, dim3, groupBy } = req.body
+        let totalPresupuesto = 0, totalVentas = 0, totalCump = 0
+        let listResponse = []
+        for (const itemDim of dim1) {
+            const response = await ventasPorSucursal(
+                userCode,
+                itemDim,
+                dim2,
+                dim3,
+                groupBy,
+            )
+
+            listResponse.push(response)
+            // response.map((item) => {
+            //     listResponse.push(item)
+            // })
+        }
+        
+        listResponse.map((item) => {
+            item.map((itemResponse)=>{
+                totalPresupuesto += +itemResponse.Ppto
+                totalVentas += +itemResponse.Ventas
+            })
+            
+        })
+        if (totalVentas > 0 && totalPresupuesto > 0) {
+            totalCump = totalVentas / totalPresupuesto
+        }
+        if (totalPresupuesto == 0) {
+            totalCump = 1
+        }
+
+        // return res.status(200).json({ listResponse })
+        return res.status(200).json({ listResponse, totalPresupuesto, totalVentas, totalCump })
+
+    } catch (error) {
+        console.log('error en ventasPorSupervisorController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud', error })
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -277,4 +320,5 @@ module.exports = {
     ventasInstitucionesControllerMesAnterior,
     ventasIFAVETControllerMesAnterior,
     ventasMasivoControllerMesAnterior,
+    ventasPorSupervisorController
 }

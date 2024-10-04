@@ -214,6 +214,21 @@ const ventasMasivoMesAnterior = async () => {
     }
 }
 
+const ventasPorSucursal = async (userCode, dim1, dim2, dim3, groupBy) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `call "LAB_IFA_PRD".IFA_LAPP_VEN_DETALLADAS_X_ZONA_X_AUTH('${userCode}','${dim1}','${dim2}','${dim3}',${groupBy})`
+
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasUsuario:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasUsuario');
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -228,4 +243,5 @@ module.exports = {
     ventasInstitucionMesAnterior,
     ventasIfaVetMesAnterior,
     ventasMasivoMesAnterior,
+    ventasPorSucursal   
 }
