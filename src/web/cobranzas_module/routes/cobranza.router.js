@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController } = require('../controller/cobranzas.controller')
+const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController } = require('../controller/cobranzas.controller')
 const router = Router()
 
 router.get('/generales',cobranzaGeneralController)
@@ -9,6 +9,7 @@ router.get('/cadenas',cobranzaCadenaController)
 router.get('/ifavet',cobranzaIfavetController)
 router.get('/masivos',cobranzaMasivosController)
 router.get('/instituciones',cobranzaInstitucionesController)
+router.post('/supervisor',cobranzaPorSupervisorController)
 
 router.get('/sucursales-mes-anterior',cobranzaPorSucursalMesAnteriorController)
 router.get('/normales-mes-anterior',cobranzaNormalesMesAnteriorController)

@@ -1,4 +1,4 @@
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor } = require("./hana.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -277,6 +277,31 @@ const cobranzaInstitucionesMesAnteriorController = async (req, res) => {
     }
 }
 
+const cobranzaPorSupervisorController = async (req, res) => {
+    try {
+        const { userCode, dim1 } = req.body
+        const listResponse = []
+        let totalCobranza = 0, totalCump = 0, totalPresupuesto = 0
+        for (const iteratorDim1 of dim1) {
+            const response = await cobranzaPorSupervisor(userCode, iteratorDim1)
+            listResponse.push(response)
+        }
+        listResponse.map((item) => {
+            item.map((itemRes) => {
+                totalCobranza += +itemRes.Cobranzas
+            })
+        })
+
+        res.status(200).json({ listResponse, totalCobranza, totalCump, totalPresupuesto })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'problemas en cobranzaPorSupervisorController',
+            error
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -291,4 +316,5 @@ module.exports = {
     cobranzaInstitucionesController,
     cobranzaMasivosMesAnteriorController,
     cobranzaInstitucionesMesAnteriorController,
+    cobranzaPorSupervisorController
 }

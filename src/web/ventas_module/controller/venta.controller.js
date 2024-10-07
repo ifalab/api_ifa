@@ -1,4 +1,21 @@
-const { ventaPorSucursal, ventasNormales, ventasCadena, ventasInstitucion, ventasUsuario, ventasIfaVet, ventasMasivo, ventaPorSucursalMesAnterior, ventasNormalesMesAnterior, ventasCadenaMesAnterior, ventasInstitucionMesAnterior, ventasIfaVetMesAnterior, ventasMasivoMesAnterior, ventasPorSucursal } = require("./hana.controller")
+const {
+    ventaPorSucursal,
+    ventasNormales,
+    ventasCadena,
+    ventasInstitucion,
+    ventasUsuario,
+    ventasIfaVet,
+    ventasMasivo,
+    ventaPorSucursalMesAnterior,
+    ventasNormalesMesAnterior,
+    ventasCadenaMesAnterior,
+    ventasInstitucionMesAnterior,
+    ventasIfaVetMesAnterior,
+    ventasMasivoMesAnterior,
+    ventasPorSupervisor
+} = require("./hana.controller")
+
+
 
 const ventasPorSucursalController = async (req, res) => {
     try {
@@ -264,11 +281,12 @@ const ventasMasivoControllerMesAnterior = async (req, res) => {
 
 const ventasPorSupervisorController = async (req, res) => {
     try {
+        console.log('post/ ventasPorSupervisorController excute')
         const { userCode, dim1, dim2, dim3, groupBy } = req.body
         let totalPresupuesto = 0, totalVentas = 0, totalCump = 0
         let listResponse = []
         for (const itemDim of dim1) {
-            const response = await ventasPorSucursal(
+            const response = await ventasPorSupervisor(
                 userCode,
                 itemDim,
                 dim2,
@@ -281,13 +299,13 @@ const ventasPorSupervisorController = async (req, res) => {
             //     listResponse.push(item)
             // })
         }
-        
+
         listResponse.map((item) => {
-            item.map((itemResponse)=>{
+            item.map((itemResponse) => {
                 totalPresupuesto += +itemResponse.Ppto
                 totalVentas += +itemResponse.Ventas
             })
-            
+
         })
         if (totalVentas > 0 && totalPresupuesto > 0) {
             totalCump = totalVentas / totalPresupuesto
@@ -321,4 +339,4 @@ module.exports = {
     ventasIFAVETControllerMesAnterior,
     ventasMasivoControllerMesAnterior,
     ventasPorSupervisorController
-}
+};

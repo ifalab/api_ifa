@@ -214,7 +214,7 @@ const ventasMasivoMesAnterior = async () => {
     }
 }
 
-const ventasPorSucursal = async (userCode, dim1, dim2, dim3, groupBy) => {
+const ventasPorSupervisor = async (userCode, dim1, dim2, dim3, groupBy) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -243,5 +243,5 @@ module.exports = {
     ventasInstitucionMesAnterior,
     ventasIfaVetMesAnterior,
     ventasMasivoMesAnterior,
-    ventasPorSucursal   
+    ventasPorSupervisor   
 }

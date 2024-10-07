@@ -210,6 +210,19 @@ const cobranzaInstitucionesMesAnterior = async () => {
         throw new Error('Error al procesar la solicitud: cobranzaInstitucionesMesAnterior');
     }
 }
+
+const cobranzaPorSupervisor = async (userCode,dim1) => {
+    try {
+        if(!connection){
+            await connectHANA()
+        }
+        const query = `call "LAB_IFA_PRD".IFA_COB_DETALLADO_X_ZONA_USER('${userCode}','${dim1}')`
+        return await executeQuery(query)
+    } catch (error) {
+        console 
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -223,5 +236,6 @@ module.exports = {
     cobranzaCadenasMesAnterior,
     cobranzaIfavetMesAnterior,
     cobranzaMasivoMesAnterior,
-    cobranzaInstitucionesMesAnterior
+    cobranzaInstitucionesMesAnterior,
+    cobranzaPorSupervisor
 }
