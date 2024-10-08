@@ -58,7 +58,21 @@ const parteDiario = async () => {
     }
 }
 
+const abastecimiento = async (fecha)=>{
+    try {
+        if(!connection){
+            await connectHANA()
+        }
+        const query = `call "LAB_IFA_PRD".IFA_LAPP_ABAS_COMPRASCOMERCIALES(${fecha})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log
+    }
+}
+
 
 module.exports = {
     parteDiario,
+    abastecimiento,
 }

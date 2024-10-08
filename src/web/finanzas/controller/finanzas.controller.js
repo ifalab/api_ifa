@@ -1,4 +1,4 @@
-const { parteDiario } = require("./hana.controller")
+const { parteDiario, abastecimiento } = require("./hana.controller")
 
 const parteDiaroController = async (req, res) => {
   try {
@@ -73,6 +73,51 @@ const parteDiaroController = async (req, res) => {
   }
 }
 
+const abastecimientoController = async (req, res) => {
+  try {
+    const { fecha } = req.body
+    const result = await abastecimiento(fecha)
+    let data = []
+    let response = []
+    let totalBs = 0, totalDolares = 0, totalPorcentaje = 1
+    result.map((item) => {
+      const newData = {
+        Tipo: item.Tipo,
+        CostoComercial: item["Costo Comercial"],
+        CostoComercialDolares: item["SUM(ROUND(COSTO COMERCIAL TOTAL/6.96,2))"]
+      }
+      data.push(newData)
+    })
+
+    data.map((item) => {
+      totalBs += +item.CostoComercial
+      totalDolares += +item.CostoComercialDolares
+    })
+
+    if (totalBs > 0) {
+      data.map((item) => {
+        let porcentaje = 0
+        if (item.CostoComercial != 0) {
+          porcentaje = item.CostoComercial / totalBs
+        }
+        const newData = {
+          ...item,
+          porcentaje
+        }
+        response.push(newData)
+      })
+    }
+    return res.status(200).json({ response, totalBs, totalDolares, totalPorcentaje })
+  } catch (error) {
+    console.log('error en abastecimiento controller')
+    console.log(error)
+    return res.status(500).json({
+      mensaje: 'error en el controlador',
+      error
+    })
+  }
+}
 module.exports = {
-    parteDiaroController
+  parteDiaroController,
+  abastecimientoController,
 }
