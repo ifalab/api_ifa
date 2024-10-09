@@ -28,6 +28,7 @@ const connectHANA = () => {
 
 
 const executeQuery = async (query) => {
+    console.log(query)
     return new Promise((resolve, reject) => {
         connection.exec(query, (err, result) => {
             if (err) {
@@ -36,59 +37,39 @@ const executeQuery = async (query) => {
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
-                // console.log({result})
             }
         })
     })
 }
 
-const parteDiario = async () => {
+const medicosPorRegion = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
-
-        const query = `select * from lab_ifa_prd.ifa_fin_parte_diario`;
-        const result = await executeQuery(query)
-        return result
-        
+        const query = `select * from "LAB_IFA_PRD"."IFA_DM_MEDICOS"`
+        return await executeQuery(query)
     } catch (error) {
-        console.error('Error en finanzas/ parteDiario:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: finanzas/parteDiario user' });
+        console.error('Error en medicosPorRegion:', error.message);
+        throw new Error('Error al procesar la solicitud: medicosPorRegion');
     }
 }
 
-const abastecimiento = async (fecha)=>{
+const todasLasRegiones = async () => {
     try {
-        if(!connection){
-            await connectHANA()
+        if (!connection) {
+            await connectHANA();
         }
-        const query = `call "LAB_IFA_PRD".IFA_LAPP_ABAS_COMPRASCOMERCIALES(${fecha})`
-        const result = await executeQuery(query)
-        return result
+        const query = `select * from "LAB_IFA_PRD"."IFA_DM_REGIONES"`
+        return await executeQuery(query)
     } catch (error) {
-        console.log('error en abastecimiento')
-        console.log(error)
-    }
-}
-
-const abastecimientoMesActual = async()=>{
-    try {
-        if(!connection){
-            await connectHANA()
-        }
-        const query = `select * from LAB_IFA_PRD.IFA_LAPP_ABAST_COMPRASCOMERCIALES`
-        const result = await executeQuery(query)
-        return result
-    } catch (error) {
-        console.log('error en abastecimientoMesActual')
-        console.log(error)
+        console.error('Error en todasLasRegiones:', error.message);
+        throw new Error('Error al procesar la solicitud: todasLasRegiones');
     }
 }
 
 
 module.exports = {
-    parteDiario,
-    abastecimiento,
-    abastecimientoMesActual,
+    medicosPorRegion,
+    todasLasRegiones,
 }
