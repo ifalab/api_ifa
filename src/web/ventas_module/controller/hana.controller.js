@@ -47,7 +47,7 @@ const ventaPorSucursal = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUC"`
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventaPorSucursal:', error.message);
@@ -60,7 +60,7 @@ const ventasNormales = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXNORMALES"`
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','NORMALES')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasNormales:', error.message);
@@ -73,7 +73,7 @@ const ventasCadena = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXCADENAS"`
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','CADENAS')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasCadena:', error.message);
@@ -86,7 +86,7 @@ const ventasInstitucion = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXINSTITUCIONES"`
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','INSTITUCIONES')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasInstitucion:', error.message);
@@ -99,7 +99,7 @@ const ventasIfaVet = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXIFAVET"`
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','IFAVET')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasIfaVet:', error.message);
@@ -112,7 +112,7 @@ const ventasMasivo = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXMASIVOS"`
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','MASIVOS')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasMasivo:', error.message);
@@ -126,7 +126,8 @@ const ventasUsuario = async (userCode, dim1, dim2, dim3, groupBy) => {
             await connectHANA();
         }
 
-        const query = `call "LAB_IFA_PRD".IFA_LAPP_VEN_DETALLADAS_X_AUTH('${userCode}','${dim1}','${dim2}','${dim3}',${groupBy})`
+        /*const query = `call "LAB_IFA_PRD".IFA_LAPP_VEN_DETALLADAS_X_AUTH('${userCode}','${dim1}','${dim2}','${dim3}',${groupBy})`*/
+        const query = `call LAB_IFA_DATA.VEN_GROUPBY_DIMA_CUBE_B_X_C1('${userCode}','${dim1}','${dim2}','${dim3}',${groupBy})`
 
         return await executeQuery(query)
     } catch (error) {
