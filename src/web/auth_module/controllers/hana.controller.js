@@ -91,11 +91,67 @@ const loginUser = async (username, password) => {
         return { ...user, dimensionUno, dimensionDos, dimensionTres };
     } catch (error) {
         console.error('Error en getUsuarios:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: login user' });
+        throw new Error('Error al procesar la solicitud: login user');
+    }
+}
+
+
+const createUser = async (
+    new_usercode,
+    new_username,
+    new_pass,
+    new_superuser,
+    new_etiqueta,
+) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log({
+            new_usercode,
+            new_username,
+            new_pass,
+            new_superuser,
+            new_etiqueta,
+        })
+        const query = `call LAB_IFA_LAPP.LAPP_CREAR_USUARIO('${new_usercode}', '${new_username}','${new_pass}',${new_superuser},'${new_etiqueta}')`;
+        console.log({ query });
+        const result = await executeQuery(query);
+        console.log('hana')
+        console.log({ result })
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: createUser');
+    }
+}
+
+createLoginUserv2 = async (usercode) => {
+    try {
+        const query = `call LAB_IFA_LAPP.LAPP_USER_BY_USERCODE('${usercode}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en login user V2')
+    }
+}
+
+findUserById = async (id) => {
+    try {
+        const query = `call LAB_IFA_LAPP.LAPP_USER_BY_ID('${id}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findUserById')
     }
 }
 
 
 module.exports = {
     loginUser,
+    createUser,
+    createLoginUserv2,
+    findUserById
 }
