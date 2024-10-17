@@ -25,7 +25,7 @@ const almacenesPorDimensionUnoController = async (req, res) => {
         const { dimension } = req.body
         const list = []
         for (const iterator of dimension) {
-            const result = await clientesPorDimensionUno(iterator)
+            const result = await almacenesPorDimensionUno(iterator)
             result.map((itemResult)=>{
                 list.push(itemResult)
             })
