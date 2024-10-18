@@ -1,8 +1,6 @@
 const axios = require('axios');
 const https = require('https');
 /////////////////////////////////////////////
-const hanaController = require('./hanaController.js');
-///////////////////////////////////////
 
 // Configura el agente para deshabilitar la verificación del certificado
 const agent = new https.Agent({ rejectUnauthorized: false });
@@ -34,53 +32,82 @@ const connectSLD = async () => {
   }
 };
 
-// Controlador para manejar la solicitud POST
-const postSalidaHabilitacion = async(data) => {
 
+// Verifica si la sesión sigue siendo válida
+const validateSession = async () => {
+    if (!session || !session.SessionId) {
+      return await connectSLD();
+    }
+    // Puedes implementar una validación adicional si lo deseas, como hacer una solicitud de prueba aquí.
+    return session;
+  };
+
+
+// Controlador para manejar la solicitud POST de salida de inventario
+const postSalidaHabilitacion = async (data) => {
     try {
-        let sessionSldId = null;
-    // Verifica si ya hay una sesión activa
-    if (session && session.SessionId) {
-        console.log('Session', session);
-        sessionSldId = session.SessionId;
-      } else {
-        // Si no hay sesión activa, llama a connectSLD para crear una nueva sesión
-        const newSession = await connectSLD();
-        console.log('Nueva session', newSession);
-        sessionSldId = newSession.SessionId;
-      }
-
-        try {
-            const url = 'https://srvhana:50000/b1s/v1/InventoryGenExits';
-        
-            // Configura los encabezados para incluir la cookie y el encabezado Prefer
-            const headers = {
-                Cookie: `B1SESSION=${sessionSldId}`,
-                Prefer: 'return-no-content'
-            };
-        
-            // Realiza la solicitud POST a la API externa usando el agente y los encabezados
-            const response = await axios.post(url, data, {
-                httpsAgent: agent,
-                headers: headers
-            });
-
-        
-            // Envía una respuesta exitosa con mensaje personalizado
-            return response
-        
-            } catch (error) {
-            // Manejo de errores para la solicitud POST
-            console.error('Error en la solicitud POST para Orden de Venta:', error.response?.data || error.message);
-            res.status(error.response?.status || 500).json({ message: error.response?.data?.error?.message || 'Error en la solicitud POST para Orden de Venta' });
-            }
-
-        } catch (error) {
-            throw new Error ('Error en post Salida por Habilitacion:',error)
+      // Verifica o genera una sesión
+      const currentSession = await validateSession();
+      const sessionSldId = currentSession.SessionId;
+  
+      const url = 'https://srvhana:50000/b1s/v1/InventoryGenExits';
+  
+      // Configura los encabezados para la solicitud
+      const headers = {
+        Cookie: `B1SESSION=${sessionSldId}`,
+        Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+      };
+  
+      // Realiza la solicitud POST
+      const response = await axios.post(url, data, {
+        httpsAgent: agent,
+        headers: headers
+      });
+  
+      // Retorna la respuesta en caso de éxito
+      return response;
+    } catch (error) {
+      // Centraliza el manejo de errores
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+      console.error('Error en la solicitud POST para Salida de Inventario:', errorMessage);
+      throw new Error(errorMessage);
     }
-    
-    }
+  };
+  
 
-module.exports = {
-    postSalidaHabilitacion
-}
+
+// Controlador para manejar la solicitud POST de salida de inventario
+const postEntradaHabilitacion = async (data) => {
+    try {
+      // Verifica o genera una sesión
+      const currentSession = await validateSession();
+      const sessionSldId = currentSession.SessionId;
+  
+      const url = 'https://srvhana:50000/b1s/v1/InventoryGenEntries';
+  
+      // Configura los encabezados para la solicitud
+      const headers = {
+        Cookie: `B1SESSION=${sessionSldId}`,
+        Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+      };
+  
+      // Realiza la solicitud POST
+      const response = await axios.post(url, data, {
+        httpsAgent: agent,
+        headers: headers
+      });
+  
+      // Retorna la respuesta en caso de éxito
+      return response;
+    } catch (error) {
+      // Centraliza el manejo de errores
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+      console.error('Error en la solicitud POST para Salida de Inventario:', errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+  
+  module.exports = {
+    postSalidaHabilitacion,
+    postEntradaHabilitacion
+  };
