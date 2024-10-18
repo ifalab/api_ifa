@@ -1,7 +1,7 @@
 const axios = require('axios');
 const https = require('https');
 /////////////////////////////////////////////
-const hanaController = require('./hanaController.js');
+// const hanaController = require('./hanaController.js');
 ///////////////////////////////////////
 
 // Configura el agente para deshabilitar la verificación del certificado
@@ -38,7 +38,7 @@ const connectSLD = async () => {
 const postSalidaHabilitacion = async(data) => {
 
     try {
-        let sessionSldId = null;
+     let sessionSldId = null;
     // Verifica si ya hay una sesión activa
     if (session && session.SessionId) {
         console.log('Session', session);
@@ -72,7 +72,8 @@ const postSalidaHabilitacion = async(data) => {
             } catch (error) {
             // Manejo de errores para la solicitud POST
             console.error('Error en la solicitud POST para Orden de Venta:', error.response?.data || error.message);
-            res.status(error.response?.status || 500).json({ message: error.response?.data?.error?.message || 'Error en la solicitud POST para Orden de Venta' });
+            throw new Error ('Error en post Salida (solicitud) por Habilitacion:',error)
+            // res.status(error.response?.status || 500).json({ message: error.response?.data?.error?.message || 'Error en la solicitud POST para Orden de Venta' });
             }
 
         } catch (error) {
