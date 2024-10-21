@@ -121,7 +121,7 @@ exports.getAbastecimiento = async () => {
     if (!connection) {
       await connectHANA();
     }
-    const query = `select * from ${process.env.DBSAP}.ifa_com_inv_kardex_valorado`
+    const query = `select * from ${process.env.DBSAPPRD}.ifa_com_inv_kardex_valorado`
     return await executeQuery(query)
   } catch (error) {
     console.log(error)
