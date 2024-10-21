@@ -28,6 +28,7 @@ const connectHANA = () => {
 
 
 const executeQuery = async (query) => {
+    console.log(query)
     return new Promise((resolve, reject) => {
         connection.exec(query, (err, result) => {
             if (err) {
@@ -128,6 +129,9 @@ const createUser = async (
 
 createLoginUserv2 = async (usercode) => {
     try {
+        if (!connection) {
+            await connectHANA();
+        }
         const query = `call LAB_IFA_LAPP.LAPP_USER_BY_USERCODE('${usercode}')`
         const result = await executeQuery(query)
         return result
@@ -139,6 +143,10 @@ createLoginUserv2 = async (usercode) => {
 
 findUserById = async (id) => {
     try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log(id)
         const query = `call LAB_IFA_LAPP.LAPP_USER_BY_ID('${id}')`
         const result = await executeQuery(query)
         return result
@@ -148,10 +156,26 @@ findUserById = async (id) => {
     }
 }
 
+const findAllUser = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('find all user execute')
+        const query = `call LAB_IFA_LAPP.LAPP_USUARIO_TODOS()`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findAllUser')
+    }
+}
+
 
 module.exports = {
     loginUser,
     createUser,
     createLoginUserv2,
-    findUserById
+    findUserById,
+    findAllUser,
 }

@@ -72,7 +72,23 @@ const almacenesPorDimensionUno = async (dimension) => {
 
 }
 
+const inventarioHabilitacion = async (docentry) => {
+    try {
+        if(!connection){
+            await connectHANA()
+        }
+        const query = `CALL "LAB_IFA_PRD".IFA_LAPP_INV_HABILITACION('${docentry}')`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en almacenesPorDimensionUno ')
+    }
+
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
+    inventarioHabilitacion,
 }

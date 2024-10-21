@@ -15,7 +15,6 @@ const parteDiaroController = async (req, res) => {
       return fechaItem === fechaFiltro;
     });
 
-    // Agrupar por sección y crear la lista de descripciones
     const agrupadoPorSeccion = resultadosFiltrados.reduce((acc, item) => {
       const seccion = item.Seccion;
 

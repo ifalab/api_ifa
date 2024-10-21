@@ -65,12 +65,22 @@ const postSalidaHabilitacion = async (data) => {
       });
   
       // Retorna la respuesta en caso de éxito
-      return response;
+      const status = response.status
+      const location = response.headers.location
+      const locationHeader = response.headers.location;
+      const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+      const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+      // console.log({location})
+      // // console.log({response})
+      // console.log({status})
+      // // if(response.statusCode){}else{}
+      return {status,orderNumber};
     } catch (error) {
       // Centraliza el manejo de errores
       const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
       console.error('Error en la solicitud POST para Salida de Inventario:', errorMessage);
-      throw new Error(errorMessage);
+      return errorMessage
+      // throw new Error(errorMessage);
     }
   };
   
@@ -80,30 +90,49 @@ const postSalidaHabilitacion = async (data) => {
 const postEntradaHabilitacion = async (data) => {
     try {
       // Verifica o genera una sesión
+      console.log('entrada habilitada - 1 ')
+      console.log({...data})
       const currentSession = await validateSession();
       const sessionSldId = currentSession.SessionId;
   
       const url = 'https://srvhana:50000/b1s/v1/InventoryGenEntries';
-  
+      
       // Configura los encabezados para la solicitud
       const headers = {
         Cookie: `B1SESSION=${sessionSldId}`,
         Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
       };
+      console.log('entrada habilitada - 2 ')
+      // console.log({url})
+      // console.log({headers})
+      // console.log({agent})
   
       // Realiza la solicitud POST
-      const response = await axios.post(url, data, {
+      const response = await axios.post(url,{...data}, {
         httpsAgent: agent,
         headers: headers
       });
+      console.log('entrada habilitada - 3')
+      console.log({response})
   
       // Retorna la respuesta en caso de éxito
-      return response;
+      const status = response.status
+      const location = response.headers.location
+      const locationHeader = response.headers.location;
+      const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+      const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+      console.log('entrada habilitada')
+      console.log({location})
+      // // console.log({response})
+      console.log({status})
+      // // if(response.statusCode){}else{}
+      return {status,orderNumber};
     } catch (error) {
       // Centraliza el manejo de errores
       const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
       console.error('Error en la solicitud POST para Salida de Inventario:', errorMessage);
-      throw new Error(errorMessage);
+      // throw new Error(errorMessage);
+      return errorMessage
     }
   };
   

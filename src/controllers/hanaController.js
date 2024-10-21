@@ -50,7 +50,7 @@ exports.getUsuarios = async (req, res) => {
     }
 
     // Construye la consulta SQL para obtener los grupos de clientes
-    const query = `SELECT * FROM ${process.env.DBSAP}.ifa_dm_usuarios`;
+    const query = `SELECT * FROM ${process.env.DBSAPPRD}.ifa_dm_usuarios`;
 
     // Ejecuta la consulta SQL
     connection.exec(query, (err, result) => {
@@ -79,7 +79,7 @@ exports.getLotes = async (itemCode, warehouseCode, quantity) => {
     }
     console.log(itemCode, warehouseCode, quantity)
     // Construye la consulta SQL para obtener los batchs basados en itemCode, warehouseCode y quantity
-    const query = `CALL "${process.env.DBSAP}"."IFA_VM_SELECTION_BATCH_FEFO"('${itemCode}', '${warehouseCode}', ${quantity})`;
+    const query = `CALL "${process.env.DBSAPPRD}"."IFA_VM_SELECTION_BATCH_FEFO"('${itemCode}', '${warehouseCode}', ${quantity})`;
 
     // Ejecuta la consulta SQL
     return new Promise((resolve, reject) => {
@@ -106,7 +106,7 @@ exports.getDocDueDate = async (docDate, paymentGroupCode) => {
     }
     console.log('request: ')
 
-    const query = `CALL "${process.env.DBSAP}"."IFA_VM_GET_DUEDATE"('${docDate}',${paymentGroupCode})`
+    const query = `CALL "${process.env.DBSAPPRD}"."IFA_VM_GET_DUEDATE"('${docDate}',${paymentGroupCode})`
 
     return await executeQuery(query)
 

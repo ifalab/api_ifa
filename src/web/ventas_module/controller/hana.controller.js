@@ -142,7 +142,7 @@ const ventaPorSucursalMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUC_ANT"`
+        const query = `select * from "LAB_IFA_PRDQA"."IFA_LAPP_VEN_PPTOXSUC_ANT"`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventaPorSucursal:', error.message);
@@ -155,7 +155,7 @@ const ventasNormalesMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXNORMALES_ANT"`
+        const query = `select * from "LAB_IFA_PRDQA"."IFA_LAPP_VEN_PPTOXSUCXCLIXNORMALES_ANT"`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasNormales:', error.message);
@@ -168,7 +168,7 @@ const ventasCadenaMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXCADENAS_ANT"`
+        const query = `select * from "LAB_IFA_PRDQA"."IFA_LAPP_VEN_PPTOXSUCXCLIXCADENAS_ANT"`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasCadena:', error.message);
@@ -181,7 +181,7 @@ const ventasInstitucionMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXINSTITUCIONES_ANT"`
+        const query = `select * from "LAB_IFA_PRDQA"."IFA_LAPP_VEN_PPTOXSUCXCLIXINSTITUCIONES_ANT"`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasInstitucion:', error.message);
@@ -194,7 +194,7 @@ const ventasIfaVetMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXIFAVET_ANT"`
+        const query = `select * from "LAB_IFA_PRDQA"."IFA_LAPP_VEN_PPTOXSUCXCLIXIFAVET_ANT"`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasIfaVet:', error.message);
@@ -207,7 +207,7 @@ const ventasMasivoMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_VEN_PPTOXSUCXCLIXMASIVOS_ANT"`
+        const query = `select * from "LAB_IFA_PRDQA"."IFA_LAPP_VEN_PPTOXSUCXCLIXMASIVOS_ANT"`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasMasivo:', error.message);
