@@ -1,7 +1,7 @@
 
 const bcrypt = require('bcryptjs')
 const { generarToken } = require("../../../helpers/generar_token.helper");
-const { loginUser, createUser, findAllUser, findUserById } = require("./hana.controller")
+const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension } = require("./hana.controller")
 
 const authLoginPost = async (req, res) => {
     try {
@@ -62,7 +62,7 @@ const createUserController = async (req, res) => {
         console.log({ response })
         console.log({ value })
         if (value == 409) {
-            return res.status(409).json({ mensaje: 'el usuario ya existe' })
+            return res.status(409).json({ mensaje: `el usuario con el usercode: ${usercode}, ya existe` })
         } else {
             if (value == 200) {
                 return res.status(200).json({ mensaje: 'el usuario se creo con exito' })
@@ -137,9 +137,81 @@ const findUserByIdController = async (req, res) => {
     }
 }
 
+const updateUserController = async (req, res) => {
+    try {
+        const { id_user,
+            new_usercode,
+            new_username,
+            new_pass,
+            confirm_pass,
+            new_superuser,
+            new_isactive,
+            new_etiqueta } = req.body
+
+        if (new_pass !== confirm_pass) {
+            return res.status(400).json({ mensaje: 'las contraseñas son distintas' })
+        }
+        const salt = bcrypt.genSaltSync()
+        const encryptPassword = bcrypt.hashSync(new_pass, salt)
+        const response = await updateUser(id_user,
+            new_usercode,
+            new_username,
+            encryptPassword,
+            new_superuser,
+            new_isactive,
+            new_etiqueta)
+
+        const value = response[0]
+        const status = value["response"]
+
+        if (status == 404) return res.status(404).json({ mensaje: 'No se encontro al usuario' })
+
+        return res.json({ status })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en update',
+            error
+        })
+    }
+}
+
+const desactiveUserController = async (req, res) => {
+    try {
+        const { id_user, } = req.body
+
+        const response = await desactiveUser(id_user)
+        const value = response[0]
+        const status = value["response"]
+        if (status == 404) return res.status(404).json({ mensaje: 'No se encontro al usuario' })
+        return res.json({ status })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en desactiveUserController',
+            error
+        })
+    }
+}
+
+const findDimensionController = async(req,res)=>{
+    try {
+        
+        const dim = req.params.dim
+        const response = await findDimension(dim)
+        return res.json({ response })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en findDimensionController',
+            error
+        })
+    }
+}
+
 module.exports = {
     authLoginPost,
     createUserController,
     findAllUserController,
     findUserByIdController,
+    updateUserController,
+    desactiveUserController,
+    findDimensionController
 }

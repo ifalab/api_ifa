@@ -127,7 +127,7 @@ const createUser = async (
     }
 }
 
-createLoginUserv2 = async (usercode) => {
+const findUserByUsercode = async (usercode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -141,7 +141,7 @@ createLoginUserv2 = async (usercode) => {
     }
 }
 
-findUserById = async (id) => {
+const findUserById = async (id) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -171,11 +171,69 @@ const findAllUser = async () => {
     }
 }
 
+const updateUser = async (id_user,
+    new_usercode,
+    new_username,
+    new_superuser,
+    new_isactive,
+    new_etiqueta
+) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('update User execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ACTUALIZAR_USUARIO(${id_user},'${new_usercode}','${new_username}',${new_superuser},${new_isactive},'${new_etiqueta}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en updateUser')
+    }
+}
+
+const desactiveUser = async (id_user,) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('desactiveUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_DESACTIVAR_USUARIO(${id_user})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en desactiveUser')
+    }
+}
+
+const findDimension = async (dimension) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('findDimension execute')
+        let query = ``
+
+        if (dimension == 1) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONUNO`
+        if (dimension == 2) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONDOS`
+        if (dimension == 3) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONTRES`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findDimension')
+    }
+}
+
 
 module.exports = {
     loginUser,
     createUser,
-    createLoginUserv2,
+    findUserByUsercode,
     findUserById,
     findAllUser,
+    updateUser,
+    desactiveUser,
+    findDimension
 }
