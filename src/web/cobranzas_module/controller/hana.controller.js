@@ -73,7 +73,7 @@ const cobranzaNormales = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXNORMALES"`
+        const query = `call "LAB_IFA_PRD".COB_GROUPBY_DIMA('','NORMALES')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaNormales:', error.message);
@@ -86,7 +86,7 @@ const cobranzaCadenas = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXCADENAS"`
+        const query = `call "LAB_IFA_PRD".COB_GROUPBY_DIMA('','CADENAS')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaCadenas:', error.message);
@@ -99,7 +99,7 @@ const cobranzaIfavet = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXIFAVET"`
+        const query = `call "LAB_IFA_PRD".COB_GROUPBY_DIMA('','IFAVET')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaIfavet:', error.message);
@@ -112,7 +112,7 @@ const cobranzaMasivo = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXMASIVOS"`
+        const query = `call "LAB_IFA_PRD".COB_GROUPBY_DIMA('','MASIVOS')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaMasivo:', error.message);
@@ -125,7 +125,7 @@ const cobranzaInstituciones = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXINSTITUCIONES"`
+        const query = `call "LAB_IFA_PRD".COB_GROUPBY_DIMA('','INSTITUCIONES')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaInstituciones:', error.message);
