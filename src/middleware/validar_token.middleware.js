@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken')
-const { userById } = require('../controllers/hanaController')
+const { findUserByUsercode } = require('../web/auth_module/controllers/hana.controller')
 
 const validarToken = async (req, res, next) => {
     const token = req.header('token')
@@ -11,13 +11,16 @@ const validarToken = async (req, res, next) => {
     }
     try {
         const { UserCode } = jwt.verify(token, process.env.SECRETORPRIVATEKEY)
-        const user = await userById(UserCode)
-        if (user == undefined) {
+        console.log({UserCode})
+        const response = await findUserByUsercode(UserCode)
+        const user = response[0]
+        console.log({user})
+        if (user == undefined || !user) {
             return res.status(404).json({
                 mensaje: 'Usuario no encontrado'
             })
         }
-        if (user.Active !== 'Y') return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
+        if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
         req.usuarioAutorizado = user
         next()
     } catch (error) {

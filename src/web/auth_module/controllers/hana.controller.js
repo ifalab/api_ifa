@@ -226,6 +226,181 @@ const findDimension = async (dimension) => {
     }
 }
 
+const addUsuarioDimensionUno = async (id_user, id_dimension) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('addUsuarioDimensionUno execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ADD_USUARIO_DIMENSION_UNO(${id_user},${id_dimension})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en addUsuarioDimensionUno')
+    }
+}
+
+const addUsuarioDimensionDos = async (id_user, id_dimension) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('addUsuarioDimensionDos execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ADD_USUARIO_DIMENSION_DOS(${id_user},${id_dimension})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en addUsuarioDimensionDos')
+    }
+}
+
+const addUsuarioDimensionTres = async (id_user, id_dimension) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('addUsuarioDimensionTres execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ADD_USUARIO_DIMENSION_TRES(${id_user},${id_dimension})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en addUsuarioDimensionTres')
+    }
+}
+
+const rollBackDimensionUnoByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('rollBackDimensionUnoByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ROLLBACK_DIMENSION_UNO_BY_USER(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en rollBackDimensionUnoByUser')
+    }
+}
+
+const rollBackDimensionDosByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('rollBackDimensionDosByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ROLLBACK_DIMENSION_DOS_BY_USER(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en rollBackDimensionDosByUser')
+    }
+}
+
+const rollBackDimensionTresByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('rollBackDimensionTresByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ROLLBACK_DIMENSION_TRES_BY_USER(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en rollBackDimensionTresByUser')
+    }
+}
+
+const dimensionUnoByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('dimensionUnoByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_DIMENSION_UNO_X_USUARIO(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en dimensionUnoByUser')
+    }
+}
+
+const dimensionDosByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('dimensionDosByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_DIMENSION_DOS_X_USUARIO(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en dimensionDosByUser')
+    }
+}
+
+const dimensionTresByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('dimensionTresByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_DIMENSION_TRES_X_USUARIO(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en dimensionTresByUser')
+    }
+}
+
+const roleByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('roleByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ROL_X_USUARIO(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en roleByUser')
+    }
+}
+
+const updatePasswordByUser = async (id_user,pass) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('updatePasswordByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ACTUALIZAR_PASS(${id_user},'${pass}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en updatePasswordByUser')
+    }
+}
 
 module.exports = {
     loginUser,
@@ -235,5 +410,16 @@ module.exports = {
     findAllUser,
     updateUser,
     desactiveUser,
-    findDimension
+    findDimension,
+    addUsuarioDimensionUno,
+    addUsuarioDimensionDos,
+    addUsuarioDimensionTres,
+    rollBackDimensionUnoByUser,
+    rollBackDimensionDosByUser,
+    rollBackDimensionTresByUser,
+    dimensionUnoByUser,
+    dimensionDosByUser,
+    dimensionTresByUser,
+    roleByUser,
+    updatePasswordByUser
 }

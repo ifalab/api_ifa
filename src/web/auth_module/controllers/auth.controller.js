@@ -1,7 +1,7 @@
 
 const bcrypt = require('bcryptjs')
 const { generarToken } = require("../../../helpers/generar_token.helper");
-const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension } = require("./hana.controller")
+const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser } = require("./hana.controller")
 
 const authLoginPost = async (req, res) => {
     try {
@@ -29,7 +29,21 @@ const authLoginPost = async (req, res) => {
 
 const authLoginV2 = async (req, res) => {
     try {
-
+        const { usercode, password } = req.body
+        const response = await findUserByUsercode(usercode)
+        // return res.json({ response })
+        const user = response[0]
+        const validarPassword = bcrypt.compareSync(password, user.PASSWORD)
+        if (!validarPassword) return res.status(401).json({ mensaje: 'No autorizado, la contraseña es distinta' })
+        if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
+        const token = await generarToken(user.USERCODE)
+        const rol = await roleByUser(user.ID)
+        const valueRol = rol[0]
+        const dimensionUno = await dimensionUnoByUser(user.ID)
+        const dimensionDos = await dimensionDosByUser(user.ID)
+        const dimensionTres = await dimensionTresByUser(user.ID)
+        // return res.json({ UserCode:user.USERCODE })
+        return res.json({ user, rol, dimensionUno, dimensionDos, dimensionTres, token })
     } catch (error) {
         console.log({ error })
     }
@@ -44,7 +58,22 @@ const createUserController = async (req, res) => {
             confirm_pass,
             superuser,
             etiqueta,
+            dimensionUno,
+            dimensionDos,
+            dimensionTres
         } = req.body
+
+        console.log({
+            usercode,
+            username,
+            pass,
+            confirm_pass,
+            superuser,
+            etiqueta,
+            dimensionUno: [...dimensionUno],
+            dimensionDos: [...dimensionDos],
+            dimensionTres: [...dimensionTres]
+        })
 
         if (pass !== confirm_pass) {
             return res.status(400).json({ mensaje: 'las contraseñas son distintas' })
@@ -58,13 +87,51 @@ const createUserController = async (req, res) => {
             superuser,
             etiqueta,)
         const response = result[0]
+
         const value = response["response"]
-        console.log({ response })
-        console.log({ value })
+        const id = response["id"]
+
         if (value == 409) {
             return res.status(409).json({ mensaje: `el usuario con el usercode: ${usercode}, ya existe` })
         } else {
             if (value == 200) {
+
+                dimensionUno.map(async (item) => {
+                    const id_dim = item.ID
+                    const responseDim = await addUsuarioDimensionUno(id, id_dim)
+                    const valueDim = responseDim["response"]
+                    console.log({ valueDim })
+                    if (valueDim == 409) {
+                        console.log({ mensaje: 'conflicto ya existe dim1 y usuario' })
+                    } else {
+                        console.log({ mensaje: 'ok' })
+                    }
+                })
+
+                dimensionDos.map(async (item) => {
+                    const id_dim = item.ID
+                    const responseDim = await addUsuarioDimensionDos(id, id_dim)
+                    const valueDim = responseDim["response"]
+                    console.log({ valueDim })
+                    if (valueDim == 409) {
+                        console.log({ mensaje: 'conflicto ya existe dim1 y usuario' })
+                    } else {
+                        console.log({ mensaje: 'ok' })
+                    }
+                })
+
+                dimensionTres.map(async (item) => {
+                    const id_dim = item.ID
+                    const responseDim = await addUsuarioDimensionTres(id, id_dim)
+                    const valueDim = responseDim["response"]
+                    console.log({ valueDim })
+                    if (valueDim == 409) {
+                        console.log({ mensaje: 'conflicto ya existe dim1 y usuario' })
+                    } else {
+                        console.log({ mensaje: 'ok' })
+                    }
+                })
+
                 return res.status(200).json({ mensaje: 'el usuario se creo con exito' })
             } else {
                 return res.status(500).json({ mensaje: 'error no controlado' })
@@ -153,16 +220,21 @@ const updateUserController = async (req, res) => {
         }
         const salt = bcrypt.genSaltSync()
         const encryptPassword = bcrypt.hashSync(new_pass, salt)
-        const response = await updateUser(id_user,
+        const response = await updateUser(
+            id_user,
             new_usercode,
             new_username,
-            encryptPassword,
             new_superuser,
             new_isactive,
             new_etiqueta)
+        
+        const responsePass = await updatePasswordByUser(id_user, encryptPassword)
 
         const value = response[0]
         const status = value["response"]
+
+        const valuePass = responsePass[0]
+        const statusPass = valuePass["response"]
 
         if (status == 404) return res.status(404).json({ mensaje: 'No se encontro al usuario' })
 
@@ -192,12 +264,51 @@ const desactiveUserController = async (req, res) => {
     }
 }
 
-const findDimensionController = async(req,res)=>{
+const findDimensionController = async (req, res) => {
     try {
-        
+
         const dim = req.params.dim
         const response = await findDimension(dim)
         return res.json({ response })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en findDimensionController',
+            error
+        })
+    }
+}
+
+const findAllDimensionUnoByUserController = async (req,res)=>{
+    try {
+        const id = req.params.id
+        const dimensionUno = await dimensionUnoByUser(id)
+        return res.json({ dimensionUno })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en findDimensionController',
+            error
+        })
+    }
+}
+
+const findAllDimensionDosByUserController = async (req,res)=>{
+    try {
+        const id = req.params.id
+        const dimensionDos = await dimensionDosByUser(id)
+        return res.json({ dimensionDos })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en findDimensionController',
+            error
+        })
+    }
+}
+
+const findAllDimensionTresByUserController = async (req,res)=>{
+    try {
+        const id = req.params.id
+        const dimensionTres = await dimensionTresByUser(id)
+        return res.json({ dimensionTres })
     } catch (error) {
         return res.status(500).json({
             mensaje: 'Error en findDimensionController',
@@ -213,5 +324,9 @@ module.exports = {
     findUserByIdController,
     updateUserController,
     desactiveUserController,
-    findDimensionController
+    findDimensionController,
+    authLoginV2,
+    findAllDimensionUnoByUserController,
+    findAllDimensionDosByUserController,
+    findAllDimensionTresByUserController,
 }
