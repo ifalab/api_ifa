@@ -1,7 +1,7 @@
 
 const bcrypt = require('bcryptjs')
 const { generarToken } = require("../../../helpers/generar_token.helper");
-const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser } = require("./hana.controller")
+const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser } = require("./hana.controller")
 
 const authLoginPost = async (req, res) => {
     try {
@@ -14,7 +14,7 @@ const authLoginPost = async (req, res) => {
         if (responseHana.mensaje) return res.status(404).json({ mensaje: responseHana.mensaje })
         const user = responseHana
         console.log('login ejecutado con exito')
-        if (user.Active !== 'Y') return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
+        if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
         const token = await generarToken(user.UserCode)
         return res.status(200).json({ ...user, token })
 
@@ -32,10 +32,12 @@ const authLoginV2 = async (req, res) => {
         const { usercode, password } = req.body
         const response = await findUserByUsercode(usercode)
         // return res.json({ response })
+        console.log({response})
+        if(response.length == 0)return res.status(401).json({ mensaje: 'Por favor revise sus credenciales' })
         const user = response[0]
         const validarPassword = bcrypt.compareSync(password, user.PASSWORD)
         if (!validarPassword) return res.status(401).json({ mensaje: 'No autorizado, la contraseña es distinta' })
-        if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
+        if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'Usted no esta autorizado para entrar al sistema' })
         const token = await generarToken(user.USERCODE)
         const rol = await roleByUser(user.ID)
         const valueRol = rol[0]
@@ -318,6 +320,23 @@ const desactiveUserController = async (req, res) => {
     }
 }
 
+const activeUserController = async (req, res) => {
+    try {
+        const { id_user, } = req.body
+
+        const response = await activeUser(id_user)
+        const value = response[0]
+        const status = value["response"]
+        if (status == 404) return res.status(404).json({ mensaje: 'No se encontro al usuario' })
+        return res.json({ status })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en activeUserController',
+            error
+        })
+    }
+}
+
 const findDimensionController = async (req, res) => {
     try {
 
@@ -383,4 +402,5 @@ module.exports = {
     findAllDimensionUnoByUserController,
     findAllDimensionDosByUserController,
     findAllDimensionTresByUserController,
+    activeUserController,
 }

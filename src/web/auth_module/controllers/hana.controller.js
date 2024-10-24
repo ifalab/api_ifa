@@ -210,6 +210,21 @@ const desactiveUser = async (id_user,) => {
     }
 }
 
+const activeUser = async (id_user,) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('activeUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ACTIVAR_USUARIO(${id_user})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en activeUser')
+    }
+}
+
 const findDimension = async (dimension) => {
     try {
         if (!connection) {
@@ -424,5 +439,6 @@ module.exports = {
     dimensionDosByUser,
     dimensionTresByUser,
     roleByUser,
-    updatePasswordByUser
+    updatePasswordByUser,
+    activeUser
 }
