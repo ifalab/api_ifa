@@ -171,7 +171,8 @@ const findAllUser = async () => {
     }
 }
 
-const updateUser = async (id_user,
+const updateUser = async (
+    id_user,
     new_usercode,
     new_username,
     new_superuser,
@@ -185,6 +186,8 @@ const updateUser = async (id_user,
         console.log('update User execute')
         const query = `call LAB_IFA_LAPP.LAPP_ACTUALIZAR_USUARIO(${id_user},'${new_usercode}','${new_username}',${new_superuser},${new_isactive},'${new_etiqueta}')`
         const result = await executeQuery(query)
+        console.log({query})
+        // console.log({result})
         return result
     } catch (error) {
         console.log({ error })

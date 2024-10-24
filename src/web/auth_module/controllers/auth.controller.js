@@ -1,7 +1,7 @@
 
 const bcrypt = require('bcryptjs')
 const { generarToken } = require("../../../helpers/generar_token.helper");
-const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser } = require("./hana.controller")
+const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser } = require("./hana.controller")
 
 const authLoginPost = async (req, res) => {
     try {
@@ -206,20 +206,21 @@ const findUserByIdController = async (req, res) => {
 
 const updateUserController = async (req, res) => {
     try {
-        const { id_user,
+        const {
+            id_user,
             new_usercode,
             new_username,
             new_pass,
             confirm_pass,
             new_superuser,
             new_isactive,
-            new_etiqueta } = req.body
+            new_etiqueta,
+            dimensionUno,
+            dimensionDos,
+            dimensionTres
+        } = req.body
 
-        if (new_pass !== confirm_pass) {
-            return res.status(400).json({ mensaje: 'las contraseñas son distintas' })
-        }
-        const salt = bcrypt.genSaltSync()
-        const encryptPassword = bcrypt.hashSync(new_pass, salt)
+
         const response = await updateUser(
             id_user,
             new_usercode,
@@ -227,19 +228,72 @@ const updateUserController = async (req, res) => {
             new_superuser,
             new_isactive,
             new_etiqueta)
-        
-        const responsePass = await updatePasswordByUser(id_user, encryptPassword)
-
+        console.log('controller .............................')
+        console.log({ response })
         const value = response[0]
         const status = value["response"]
 
-        const valuePass = responsePass[0]
-        const statusPass = valuePass["response"]
-
+        // const valuePass = responsePass[0]
+        // const statusPass = valuePass["response"]
         if (status == 404) return res.status(404).json({ mensaje: 'No se encontro al usuario' })
+        if (new_pass) {
+            if (new_pass !== confirm_pass) return res.status(400).json({ mensaje: 'las contraseñas son distintas' })
+            const salt = bcrypt.genSaltSync()
+            const encryptPassword = bcrypt.hashSync(new_pass, salt)
+            const responsePass = await updatePasswordByUser(id_user, encryptPassword)
+            console.log({ responsePass })
+        }
+
+
+
+        const rollBackDim1 = await rollBackDimensionUnoByUser(id_user)
+        const rollBackDim2 = await rollBackDimensionDosByUser(id_user)
+        const rollBackDim3 = await rollBackDimensionTresByUser(id_user)
+
+        console.log({ rollBackDim1 })
+        console.log({ rollBackDim2 })
+        console.log({ rollBackDim3 })
+
+        dimensionUno.map(async (item) => {
+            const id_dim = item.ID
+            const responseDim = await addUsuarioDimensionUno(id_user, id_dim)
+            const valueDim = responseDim["response"]
+            console.log({ valueDim })
+            if (valueDim == 409) {
+                console.log({ mensaje: 'conflicto ya existe dim1 y usuario' })
+            } else {
+                console.log({ mensaje: 'ok' })
+            }
+        })
+
+        dimensionDos.map(async (item) => {
+            const id_dim = item.ID
+            const responseDim = await addUsuarioDimensionDos(id_user, id_dim)
+            const valueDim = responseDim["response"]
+            console.log({ valueDim })
+            if (valueDim == 409) {
+                console.log({ mensaje: 'conflicto ya existe dim1 y usuario' })
+            } else {
+                console.log({ mensaje: 'ok' })
+            }
+        })
+
+        dimensionTres.map(async (item) => {
+            const id_dim = item.ID
+            const responseDim = await addUsuarioDimensionTres(id_user, id_dim)
+            const valueDim = responseDim["response"]
+            console.log({ valueDim })
+            if (valueDim == 409) {
+                console.log({ mensaje: 'conflicto ya existe dim1 y usuario' })
+            } else {
+                console.log({ mensaje: 'ok' })
+            }
+        })
 
         return res.json({ status })
+
     } catch (error) {
+        console.log({ error })
         return res.status(500).json({
             mensaje: 'Error en update',
             error
@@ -278,7 +332,7 @@ const findDimensionController = async (req, res) => {
     }
 }
 
-const findAllDimensionUnoByUserController = async (req,res)=>{
+const findAllDimensionUnoByUserController = async (req, res) => {
     try {
         const id = req.params.id
         const dimensionUno = await dimensionUnoByUser(id)
@@ -291,7 +345,7 @@ const findAllDimensionUnoByUserController = async (req,res)=>{
     }
 }
 
-const findAllDimensionDosByUserController = async (req,res)=>{
+const findAllDimensionDosByUserController = async (req, res) => {
     try {
         const id = req.params.id
         const dimensionDos = await dimensionDosByUser(id)
@@ -304,7 +358,7 @@ const findAllDimensionDosByUserController = async (req,res)=>{
     }
 }
 
-const findAllDimensionTresByUserController = async (req,res)=>{
+const findAllDimensionTresByUserController = async (req, res) => {
     try {
         const id = req.params.id
         const dimensionTres = await dimensionTresByUser(id)

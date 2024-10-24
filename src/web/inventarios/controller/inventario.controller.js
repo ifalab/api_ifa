@@ -45,6 +45,7 @@ const almacenesPorDimensionUnoController = async (req, res) => {
 const postHabilitacionController = async (req, res) => {
     try {
         const { userLocal, formulario } = req.body
+        console.log({id:userLocal.user.ID})
         const code = formulario.cliente.CardCode
         const concepto = formulario.concepto
         const inventario = formulario.inventario
@@ -79,7 +80,7 @@ const postHabilitacionController = async (req, res) => {
             "Reference2": null,
             "Comments": `${concepto}`,
             "JournalMemo": "Salida por Habilitacion",
-            "U_UserCode": `${userLocal.UserCode}`,
+            "U_UserCode": `${userLocal.user.ID}`,
             "DocumentLines": listItem
         }
         const response = await postSalidaHabilitacion(data)
