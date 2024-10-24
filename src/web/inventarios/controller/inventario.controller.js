@@ -100,7 +100,7 @@ const postHabilitacionController = async (req, res) => {
         }
         const DocumentLines = []
        
-        responseHana.map((item) => {
+        responseHana.map((item) => { 
             const BatchNumbers = []
             const batch = {
                 BatchNumber: item.BatchNumber,
