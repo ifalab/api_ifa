@@ -26,6 +26,7 @@ app.use('/v1/web/cobranza', require('./web/cobranzas_module/routes/cobranza.rout
 app.use('/v1/web/finanza', require('./web/finanzas/routes/finanzas.router'));
 app.use('/v1/web/visitas-medicas', require('./web/visitas-medicas/routes/visitasMedicas.routes'));
 app.use('/v1/web/inventario', require('./web/inventarios/routers/inventarios.routes'));
+app.use('/v1/web/contabilidad', require('./web/contabilidad_module/routers/contabilidad.routes'));
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
