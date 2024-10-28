@@ -47,7 +47,8 @@ const validateSession = async () => {
 const asientoContable = async (data) => {
     try {
         // Verifica o genera una sesión
-        console.log({...data})
+        // console.log('sld data -----------------------------------------------')
+        // console.log({...data})
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 

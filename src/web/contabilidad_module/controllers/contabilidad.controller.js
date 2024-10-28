@@ -63,19 +63,12 @@ const asientoContableController = async (req, res) => {
             Reference3,
             JournalEntryLines:journalList, 
         }
-        console.log('final data -----------------------------------------------')
-        console.log({data})
-        return res.json({data})
+        // console.log('final data -----------------------------------------------')
+        // console.log({data})
+        
         const response = await asientoContable({
-            ReferenceDate,
-            DueDate,
-            Memo,
-            Reference,
-            Reference2,
-            Reference3,
-            JournalEntryLines
+            ...data
         })
-
         const status = response.status
         if (!status) return res.status(400).json({ mensaje: 'Hubo un error al guardar el asiento contable' })
         return res.json({ response })
