@@ -48,7 +48,7 @@ const asientoContable = async (data) => {
     try {
         // Verifica o genera una sesión
         // console.log('sld data -----------------------------------------------')
-        // console.log({...data})
+        console.log({ ...data })
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
@@ -61,12 +61,13 @@ const asientoContable = async (data) => {
         };
 
         // Realiza la solicitud POST
-        const response = await axios.post(url, {...data}, {
+        const response = await axios.post(url, { ...data }, {
             httpsAgent: agent,
             headers: headers
         });
 
         // Retorna la respuesta en caso de éxito
+        console.log({ response })
         const status = response.status
         const location = response.headers.location
         const locationHeader = response.headers.location;
@@ -86,6 +87,41 @@ const asientoContable = async (data) => {
     }
 };
 
+const findOneAsientoContable = async (id_asiento) => {
+    try {
+        // Verifica o genera una sesión
+        // console.log('sld id_asiento -----------------------------------------------')
+        console.log({id_asiento:+id_asiento })
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const url = `https://srvhana:50000/b1s/v1/JournalEntries(${+id_asiento})`;
+
+        // Configura los encabezados para la solicitud
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+        };
+
+        // Realiza la solicitud POST
+        const response= await axios.get(url,{
+            httpsAgent: agent,
+            headers: headers
+        });
+        // console.log({response})
+        const value = response.lang
+        const data = response.data
+        if(value) return response.data
+        return data;
+    } catch (error) {
+        // Centraliza el manejo de errores
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        console.error('Error en la solicitud GET para  findOneAsientoContable:', errorMessage);
+        return errorMessage
+        // throw new Error(errorMessage);
+    }
+}
 module.exports = {
-    asientoContable
+    asientoContable,
+    findOneAsientoContable,
 }
