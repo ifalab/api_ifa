@@ -42,7 +42,44 @@ const validateSession = async () => {
     return session;
 };
 
+//TODO --------------------------------------------- CONEXION A OTRA BD DEL SLD
+// Variable para almacenar el estado de la sesión
+let sessionCC = null;
 
+// Función para conectar y obtener la sesión
+const connectSLDCC = async () => {
+    try {
+        const url = 'https://172.16.11.25:50000/b1s/v1/Login';
+        const data = {
+            CompanyDB: process.env.DBSAPCCQA,
+            UserName: process.env.USERSAP,
+            Password: process.env.PASSSAP
+        };
+
+        // Realiza la solicitud POST a la API externa usando el agente
+        const response = await axios.post(url, data, { httpsAgent: agent });
+
+        // Guarda la sesión en la variable global
+        sessionCC = response.data;
+
+        return response.data;
+    } catch (error) {
+        // Manejo de errores
+        console.error('Error de logueo al SLD', error.message);
+        throw new Error('Error de logueo al SLD');
+    }
+};
+
+
+// Verifica si la sesión sigue siendo válida
+const validateSessionCC = async () => {
+    if (!sessionCC || !sessionCC.SessionId) {
+        return await connectSLDCC();
+    }
+    // Puedes implementar una validación adicional si lo deseas, como hacer una solicitud de prueba aquí.
+    return sessionCC;
+};
+//TODO----------------------------------------------
 // Controlador para manejar la solicitud POST de salida de inventario
 const asientoContable = async (data) => {
     try {
@@ -91,7 +128,7 @@ const findOneAsientoContable = async (id_asiento) => {
     try {
         // Verifica o genera una sesión
         // console.log('sld id_asiento -----------------------------------------------')
-        console.log({id_asiento:+id_asiento })
+        console.log({ id_asiento: +id_asiento })
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
@@ -104,14 +141,14 @@ const findOneAsientoContable = async (id_asiento) => {
         };
 
         // Realiza la solicitud POST
-        const response= await axios.get(url,{
+        const response = await axios.get(url, {
             httpsAgent: agent,
             headers: headers
         });
         // console.log({response})
         const value = response.lang
         const data = response.data
-        if(value) return response.data
+        if (value) return response.data
         return data;
     } catch (error) {
         // Centraliza el manejo de errores
@@ -121,7 +158,40 @@ const findOneAsientoContable = async (id_asiento) => {
         // throw new Error(errorMessage);
     }
 }
+
+const asientoContableCentroCosto = async (JournalVoucher) => {
+    try {
+       
+        console.log({JournalVoucher})
+        const currentSession = await validateSessionCC();
+        const sessionSldId = currentSession.SessionId;
+
+        const url = `https://srvhana:50000/b1s/v1/JournalVouchersService_Add`;
+
+        // Configura los encabezados para la solicitud
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+        };
+
+        // Realiza la solicitud POST
+        const response = await axios.post(url, { JournalVoucher }, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        // console.log({response})
+        let mensaje = "creado con exito"
+        let statusCode = 400
+        if(response.status == 204) return mensaje 
+        return response 
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud asientoContableCentroCosto';
+        console.error('Error en la solicitud post para  asientoContableCentroCosto:', errorMessage);
+        return errorMessage
+    }
+}
 module.exports = {
     asientoContable,
     findOneAsientoContable,
+    asientoContableCentroCosto,
 }

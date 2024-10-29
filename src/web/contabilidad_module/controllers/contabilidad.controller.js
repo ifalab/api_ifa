@@ -1,5 +1,5 @@
 const { tipoDeCambion } = require("./hana.controller")
-const { asientoContable, findOneAsientoContable } = require("./sld.controller")
+const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 
 const asientoContableController = async (req, res) => {
     try {
@@ -71,9 +71,14 @@ const asientoContableController = async (req, res) => {
         const response = await asientoContable({
             ...data
         })
+        console.log({ response })
         const status = response.status
         const orderNumber = response.orderNumber
-        if (!status) return res.status(400).json({ mensaje: 'Hubo un error al guardar el asiento contable' })
+        if (!status) {
+            if (response.value == 'Posting period locked; specify an alternative date') return res.status(400).json({ mensaje: 'El período de contabilizacion está bloqueado; especifique una fecha alternativa' })
+            if (response.value == `CServiceData::SetPropertyValueString failed; Value too long in property 'Indicator' of 'JournalEntry'`) return res.status(400).json({ mensaje: 'el valor es demasiado largo en la propiedad Indicador' })
+            return res.status(400).json({ mensaje: 'Error no controlado' })
+        }
         return res.json({ status, orderNumber })
     } catch (error) {
         return res.status(500).json({ mensaje: 'Error en asientoContableController no controlado' })
@@ -96,7 +101,7 @@ const findByIdAsientoController = async (req, res) => {
             JournalEntryLines: journal
         } = result
         // return res.json({ result})
-        if(result.lang) return res.status(404).json({ error:result.value})
+        if (result.lang) return res.status(404).json({ mensaje: result.value })
         const JournalEntryLines = []
         journal.map((item) => {
             const {
@@ -107,7 +112,7 @@ const findByIdAsientoController = async (req, res) => {
                 ContraAccount,
                 LineMemo,
                 Reference1,
-                Reference2, 
+                Reference2,
             } = item
             JournalEntryLines.push({
                 AccountCode,
@@ -117,7 +122,7 @@ const findByIdAsientoController = async (req, res) => {
                 ContraAccount,
                 LineMemo,
                 Reference1,
-                Reference2, 
+                Reference2,
             })
         })
         return res.json({
@@ -136,7 +141,47 @@ const findByIdAsientoController = async (req, res) => {
     }
 }
 
+const asientoContableCC_Controller = async (req, res) => {
+    try {
+        const {
+            ReferenceDate,
+            DueDate,
+            Memo,
+            Reference,
+            Reference2,
+            Reference3,
+            Indicator,
+            JournalEntryLines,
+        } = req.body
+
+        const JournalVoucher = {
+            JournalEntry: {
+                ReferenceDate,
+                DueDate,
+                Memo,
+                Reference,
+                Reference2,
+                Reference3,
+                Indicator,
+                JournalEntryLines,
+            },
+        }
+        console.log({ JournalVoucher })
+        const result = await asientoContableCentroCosto(JournalVoucher)
+        const status = result.status
+        if (!status) {
+            if (result.value == 'Update the exchange rate ') return res.status(400).json({ mensaje: 'El período de contabilizacion está bloqueado; especifique una fecha alternativa' })
+            if (result.value == `CServiceData::SetPropertyValueString failed; Value too long in property 'Indicator' of 'JournalEntry'`) return res.status(400).json({ mensaje: 'el valor es demasiado largo en la propiedad Indicador' })
+            return res.status(400).json({ mensaje: 'Error no controlado.' })
+        }
+        return res.status(200).json({ result })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en asientoContableCC_Controller' })
+    }
+}
 module.exports = {
     asientoContableController,
-    findByIdAsientoController
+    findByIdAsientoController,
+    asientoContableCC_Controller
 }
