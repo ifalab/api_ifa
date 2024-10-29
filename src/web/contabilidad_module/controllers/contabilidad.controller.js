@@ -166,10 +166,11 @@ const asientoContableCC_Controller = async (req, res) => {
                 JournalEntryLines,
             },
         }
-        console.log({ JournalVoucher })
+
         const result = await asientoContableCentroCosto(JournalVoucher)
         const status = result.status
-        if (!status) {
+        console.log({ result })
+        if (result !== 'creado con exito') {
             if (result.value == 'Update the exchange rate ') return res.status(400).json({ mensaje: 'El período de contabilizacion está bloqueado; especifique una fecha alternativa' })
             if (result.value == `CServiceData::SetPropertyValueString failed; Value too long in property 'Indicator' of 'JournalEntry'`) return res.status(400).json({ mensaje: 'el valor es demasiado largo en la propiedad Indicador' })
             return res.status(400).json({ mensaje: 'Error no controlado.' })
