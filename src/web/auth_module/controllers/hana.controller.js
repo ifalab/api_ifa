@@ -420,6 +420,79 @@ const updatePasswordByUser = async (id_user,pass) => {
     }
 }
 
+const addRolUser = async (id_user, id_rol) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('addRolUser execute')
+        const query = `CALL "LAB_IFA_LAPP".LAPP_ADD_USUARIO_ROL(${id_user},${id_rol});`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en addRolUser')
+    }
+}
+
+const deleteRolUser = async(id_user)=>{
+    try {
+        
+        if (!connection) {
+            await connectHANA();
+        }
+
+        console.log('deleteRolUser execute')
+        const query = `CALL "LAB_IFA_LAPP".LAPP_DELETE_USUARIO_ROL(${id_user});`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en deleteRolUser')
+    }
+}
+
+const deleteOneRolUser = async(id_user,id_rol)=>{
+    try {
+        
+        if (!connection) {
+            await connectHANA();
+        }
+
+        console.log('deleteOneRolUser execute')
+        const query = `CALL "LAB_IFA_LAPP".LAPP_DELETE_UN_ROL_USUARIO(${id_user},${id_rol});`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en deleteOneRolUser')
+    }
+}
+
+const findAllRoles = async()=>{
+    try {
+        
+        if (!connection) {
+            await connectHANA();
+        }
+
+        console.log('findAllRoles execute')
+        const query = `SELECT * FROM "LAB_IFA_LAPP".LAPP_ROL;`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findAllRoles')
+    }
+}
+
 module.exports = {
     loginUser,
     createUser,
@@ -438,7 +511,11 @@ module.exports = {
     dimensionUnoByUser,
     dimensionDosByUser,
     dimensionTresByUser,
-    roleByUser,
     updatePasswordByUser,
-    activeUser
+    activeUser,
+    roleByUser,
+    addRolUser,
+    deleteRolUser,
+    deleteOneRolUser,
+    findAllRoles,
 }

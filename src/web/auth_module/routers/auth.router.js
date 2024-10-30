@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { authLoginPost, createUserController, findAllUserController, findUserByIdController, updateUserController, desactiveUserController, findDimensionController, authLoginV2, findAllDimensionUnoByUserController, findAllDimensionDosByUserController, findAllDimensionTresByUserController, activeUserController } = require('../controllers/auth.controller')
+const { authLoginPost, createUserController, findAllUserController, findUserByIdController, updateUserController, desactiveUserController, findDimensionController, authLoginV2, findAllDimensionUnoByUserController, findAllDimensionDosByUserController, findAllDimensionTresByUserController, activeUserController, roleByUserController, addRoleUserController, deleteAllRoleController, deleteOneRoleController, updateRolesByUserController, findAllRolesController } = require('../controllers/auth.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 
@@ -17,5 +17,11 @@ router.get('/dimension/:dim',[validarToken, validarCampos],findDimensionControll
 router.get('/find-dimension-uno-by-user/:id',[validarToken, validarCampos],findAllDimensionUnoByUserController)
 router.get('/find-dimension-dos-by-user/:id',[validarToken, validarCampos],findAllDimensionDosByUserController)
 router.get('/find-dimension-tres-by-user/:id',[validarToken, validarCampos],findAllDimensionTresByUserController)
+router.get('/role-by-user/:id',[validarToken, validarCampos],roleByUserController)
+router.post('/add-role-user',[validarToken, validarCampos],addRoleUserController)
+router.delete('/delete-all-role-user/:id',[validarToken, validarCampos],deleteAllRoleController)
+router.post('/delete-one-role-user',[validarToken, validarCampos],deleteOneRoleController)
+router.patch('/update-role-user',[validarToken, validarCampos],updateRolesByUserController)
+router.get('/find-all-rol',[validarToken, validarCampos],findAllRolesController)
 
 module.exports = router

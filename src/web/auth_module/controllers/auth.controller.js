@@ -1,7 +1,7 @@
 
 const bcrypt = require('bcryptjs')
 const { generarToken } = require("../../../helpers/generar_token.helper");
-const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser } = require("./hana.controller")
+const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles } = require("./hana.controller")
 
 const authLoginPost = async (req, res) => {
     try {
@@ -32,8 +32,8 @@ const authLoginV2 = async (req, res) => {
         const { usercode, password } = req.body
         const response = await findUserByUsercode(usercode)
         // return res.json({ response })
-        console.log({response})
-        if(response.length == 0)return res.status(401).json({ mensaje: 'Por favor revise sus credenciales' })
+        console.log({ response })
+        if (response.length == 0) return res.status(401).json({ mensaje: 'Por favor revise sus credenciales' })
         const user = response[0]
         const validarPassword = bcrypt.compareSync(password, user.PASSWORD)
         if (!validarPassword) return res.status(401).json({ mensaje: 'No autorizado, la contraseña es distinta' })
@@ -62,7 +62,8 @@ const createUserController = async (req, res) => {
             etiqueta,
             dimensionUno,
             dimensionDos,
-            dimensionTres
+            dimensionTres,
+            roles
         } = req.body
 
         console.log({
@@ -74,7 +75,8 @@ const createUserController = async (req, res) => {
             etiqueta,
             dimensionUno: [...dimensionUno],
             dimensionDos: [...dimensionDos],
-            dimensionTres: [...dimensionTres]
+            dimensionTres: [...dimensionTres],
+            roles:[...roles]
         })
 
         if (pass !== confirm_pass) {
@@ -97,6 +99,16 @@ const createUserController = async (req, res) => {
             return res.status(409).json({ mensaje: `el usuario con el usercode: ${usercode}, ya existe` })
         } else {
             if (value == 200) {
+
+                roles.map(async (id_rol) => {
+                    const response = await addRolUser(id, id_rol);
+                    const statusCode = response[0].response;
+                    if (statusCode !== 200) {
+                        console.log({ mensaje: 'conflicto ya existe roles y usuario' })
+                    } else {
+                        console.log({ mensaje: 'ok' })
+                    }
+                })
 
                 dimensionUno.map(async (item) => {
                     const id_dim = item.ID
@@ -390,6 +402,89 @@ const findAllDimensionTresByUserController = async (req, res) => {
     }
 }
 
+const roleByUserController = async (req, res) => {
+    try {
+        const id = req.params.id
+        const roles = await roleByUser(id)
+        return res.status(200).json({ roles })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en roleByUserController ' })
+    }
+}
+
+const addRoleUserController = async (req, res) => {
+    try {
+
+        const { addRole } = req.body
+
+        addRole.map(async (item) => {
+            const response = await addRolUser(item.id_user, item.id_rol);
+            const statusCode = response[0].response;
+            return statusCode;
+        })
+
+        return res.status(200).json({ mensaje: 'asignacion del rol con exito' })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en addRoleUserController' })
+    }
+}
+
+const deleteAllRoleController = async (req, res) => {
+    try {
+        const id = req.params.id
+        const response = await deleteRolUser(id)
+        const statusCode = response[0].response
+        if (statusCode == 404) return res.status(404).json({ mensaje: 'El usuario no tiene rol' })
+        return res.json({ mensaje: 'Se logro eliminar los roles del usuario con exito' })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en deleteAllRole' })
+    }
+}
+
+const deleteOneRoleController = async (req, res) => {
+    try {
+        const { id_user, id_rol } = req.body
+        const response = await deleteOneRolUser(id_user, id_rol)
+        const statusCode = response[0].response
+        if (statusCode == 404) return res.status(404).json({ mensaje: 'El usuario no tiene el rol especificado' })
+        return res.json({ mensaje: 'Se logro eliminar el rol del usuario con exito' })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en deleteOneRoleController' })
+    }
+}
+
+const updateRolesByUserController = async (req, res) => {
+    try {
+        const { id_user, roles } = req.body
+        const response = await deleteRolUser(id_user)
+        const statusCodeDelete = response[0].response;
+        // return statusCodeDelete;
+        roles.map(async (id_rol) => {
+            const response = await addRolUser(id_user, id_rol);
+            const statusCode = response[0].response;
+            return statusCode;
+        })
+        res.json({ mensaje: 'se actualizo con exito' })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en updateRolesByUserController' })
+    }
+}
+
+const findAllRolesController = async (req, res) => {
+    try {
+        const roles = await findAllRoles()
+        return res.json({ roles })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en updateRolesByUserController' })
+    }
+}
+
 module.exports = {
     authLoginPost,
     createUserController,
@@ -403,4 +498,10 @@ module.exports = {
     findAllDimensionDosByUserController,
     findAllDimensionTresByUserController,
     activeUserController,
+    roleByUserController,
+    addRoleUserController,
+    deleteAllRoleController,
+    deleteOneRoleController,
+    updateRolesByUserController,
+    findAllRolesController
 }
