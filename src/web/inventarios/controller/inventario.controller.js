@@ -1,5 +1,5 @@
 const { json } = require("express")
-const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion } = require("./hana.controller")
+const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion } = require("./sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
@@ -45,7 +45,7 @@ const almacenesPorDimensionUnoController = async (req, res) => {
 const postHabilitacionController = async (req, res) => {
     try {
         const { userLocal, formulario } = req.body
-        console.log({id:userLocal.user.ID})
+        console.log({ id: userLocal.user.ID })
         const code = formulario.cliente.CardCode
         const concepto = formulario.concepto
         const inventario = formulario.inventario
@@ -99,8 +99,8 @@ const postHabilitacionController = async (req, res) => {
             JrnlMemo: responseHana[0].JrnlMemo,
         }
         const DocumentLines = []
-       
-        responseHana.map((item) => { 
+
+        responseHana.map((item) => {
             const BatchNumbers = []
             const batch = {
                 BatchNumber: item.BatchNumber,
@@ -139,8 +139,20 @@ const postHabilitacionController = async (req, res) => {
         })
     }
 }
+
+const inventarioValoradoController = async (req, res) => {
+    try {
+        const inventario = await inventarioValorado()
+        return res.json({ inventario })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en inventarioValoradoController' })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
-    postHabilitacionController
+    postHabilitacionController,
+    inventarioValoradoController
 }

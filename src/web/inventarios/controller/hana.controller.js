@@ -87,8 +87,24 @@ const inventarioHabilitacion = async (docentry) => {
 
 }
 
+const inventarioValorado = async () => {
+    try {
+        if(!connection){
+            await connectHANA()
+        }
+        const query = `select 'SANTA CRUZ' "SucName", "WhsCode", "PrcName" "LineItemName", "PrcName2" "SublineItemName", "ItemCode", 10 "Quantity", "ComlPrice", "LineTotalComl" from "LAB_IFA_PRD".ifa_inv_inventario_kardex limit 10`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en inventarioValorado ')
+    }
+
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
     inventarioHabilitacion,
+    inventarioValorado,
 }

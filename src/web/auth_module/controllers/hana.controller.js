@@ -493,6 +493,7 @@ const findAllRoles = async()=>{
     }
 }
 
+
 module.exports = {
     loginUser,
     createUser,
@@ -518,4 +519,5 @@ module.exports = {
     deleteRolUser,
     deleteOneRolUser,
     findAllRoles,
+
 }

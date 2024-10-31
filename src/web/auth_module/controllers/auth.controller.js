@@ -231,7 +231,8 @@ const updateUserController = async (req, res) => {
             new_etiqueta,
             dimensionUno,
             dimensionDos,
-            dimensionTres
+            dimensionTres,
+            roles
         } = req.body
 
 
@@ -267,6 +268,16 @@ const updateUserController = async (req, res) => {
         console.log({ rollBackDim1 })
         console.log({ rollBackDim2 })
         console.log({ rollBackDim3 })
+
+        const responseRole = await deleteRolUser(id_user)
+        console.log({ responseRole})
+
+        roles.map(async (id_rol) => {
+            const response = await addRolUser(id_user, id_rol);
+            console.log({ response})
+            
+        })
+        
 
         dimensionUno.map(async (item) => {
             const id_dim = item.ID
