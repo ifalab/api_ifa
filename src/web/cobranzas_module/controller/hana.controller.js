@@ -138,7 +138,7 @@ const cobranzaPorSucursalMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUC_ANT"`
+        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_ANT('','')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaPorSucursal:', error.message);
@@ -151,7 +151,7 @@ const cobranzaNormalesMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXNORMALES_ANT"`
+        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','NORMALES')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaNormales:', error.message);
@@ -164,7 +164,7 @@ const cobranzaCadenasMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXCADENAS_ANT"`
+        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','CADENAS')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaCadenas:', error.message);
@@ -177,7 +177,7 @@ const cobranzaIfavetMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXIFAVET_ANT"`
+        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','IFAVET')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaIfavet:', error.message);
@@ -190,7 +190,7 @@ const cobranzaMasivoMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXMASIVOS_ANT"`
+        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','MASIVOS')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaMasivoMesAnterior:', error.message);
@@ -203,7 +203,7 @@ const cobranzaInstitucionesMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from "LAB_IFA_PRD"."IFA_LAPP_COB_PPTOXSUCXCLIXINSTITUCIONES_ANT"`
+        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','INSTITUCIONES')`
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaInstitucionesMesAnterior:', error.message);
