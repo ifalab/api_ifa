@@ -274,6 +274,7 @@ const updateUserController = async (req, res) => {
 
         roles.map(async (id_rol) => {
             const response = await addRolUser(id_user, id_rol);
+            console.log({ mensaje: 'add rol: ' })
             console.log({ response})
             
         })

@@ -46,10 +46,16 @@ const postHabilitacionController = async (req, res) => {
     try {
         const { userLocal, formulario } = req.body
         console.log({ id: userLocal.user.ID })
+        console.log({ formulario })
+        formulario.inventario.map((item) => {
+            console.log({ inventario: item })
+        })
         const code = formulario.cliente.CardCode
         const concepto = formulario.concepto
         const inventario = formulario.inventario
+        // const unidad = formulario.unidad
         const warehouseCode = formulario.almacen.WhsCode
+        // return res.json({ ...warehouseCode })
         let listItem = []
         let index = 0
         inventario.map((item) => {
@@ -57,18 +63,23 @@ const postHabilitacionController = async (req, res) => {
             const itemInventario = {
                 "ItemCode": `${item.articulo}`,
                 "WarehouseCode": `${warehouseCode}`,
-                "Quantity": `${item.cantidadSalida}`,
+                "Quantity": `${item.cantidadIngreso}`,
                 "AccountCode": "6110401",
                 "BatchNumbers": [
                     {
                         "BatchNumber": `${item.lote}`,
-                        "Quantity": `${item.cantidadSalida}`,
+                        "Quantity": `${item.cantidadIngreso}`,
                         "BaseLineNumber": index,
+                        // "UoMCode": `${item.unidad}`,
                         "ItemCode": `${item.articulo}`
                     }
                 ]
             }
             index++
+            console.log({itemInventario})
+            itemInventario["BatchNumbers"].map((itemBatch)=>{
+                console.log({itemBatch})
+            })
             listItem.push(itemInventario)
         })
         // console.log({ warehouseCode })
@@ -83,6 +94,9 @@ const postHabilitacionController = async (req, res) => {
             "U_UserCode": `${userLocal.user.ID}`,
             "DocumentLines": listItem
         }
+        console.log('data que se envia a salida: ')
+        console.log({ data })
+        // return res.json({ ...data })
         const response = await postSalidaHabilitacion(data)
         if (response.lang) return res.status(400).json({ response })
         //todo-------------------------------------------------------------
@@ -113,7 +127,7 @@ const postHabilitacionController = async (req, res) => {
                 DocLineNum: item.DocLineNum,
                 ItemCode: item.ItemCode,
                 Dscription: item.Dscription,
-                WhsCode: item.WhsCode,
+                WarehouseCode: item.WhsCode,
                 Quantity: item.Quantity,
                 Price: item.Price,
                 LineTotal: item.LineTotal,
