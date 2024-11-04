@@ -1,17 +1,18 @@
 const { json } = require("express")
-const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado } = require("./hana.controller")
+const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion } = require("./sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
-        const { dimension } = req.body
-        const list = []
-        for (const iterator of dimension) {
-            const result = await clientesPorDimensionUno(iterator)
-            result.map((itemResult) => {
-                list.push(itemResult)
-            })
-        }
+        
+        // const list = []
+        // for (const iterator of dimension) {
+        //     const result = await clientesPorDimensionUno()
+        //     result.map((itemResult) => {
+        //         list.push(itemResult)
+        //     })
+        // }
+        const list = await clientesPorDimensionUno()
         return res.status(200).json({ list })
     } catch (error) {
         console.log({ error })
@@ -45,21 +46,80 @@ const almacenesPorDimensionUnoController = async (req, res) => {
 const postHabilitacionController = async (req, res) => {
     try {
         const { userLocal, formulario } = req.body
-        console.log({ id: userLocal.user.ID })
-        console.log({ formulario })
-        formulario.inventario.map((item) => {
-            console.log({ inventario: item })
-        })
-        const code = formulario.cliente.CardCode
-        const concepto = formulario.concepto
-        const inventario = formulario.inventario
-        // const unidad = formulario.unidad
-        const warehouseCode = formulario.almacen.WhsCode
-        // return res.json({ ...warehouseCode })
+        let code = ' '
+        let concepto = ''
+        let inventario = ''
+        let warehouseCode = ''
+        let id = ''
+        if (formulario.concepto !== null) concepto = formulario.concepto
+        if (formulario.cliente) {
+            if (formulario.cliente != null) code = formulario.cliente.CardCode
+        }
+        if (formulario.inventario !== null) inventario = formulario.inventario
+
+        // console.log({ code })
+        // console.log({ concepto })
+        // console.log({ inventario })
+        // console.log({ warehouseCode })
+        // console.log({ id })
+        // return res.json({ id: userLocal.user.ID })
+        if (formulario.almacen == null) {
+            return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
+        } else {
+            if (formulario.almacen.WhsCode) {
+                warehouseCode = formulario.almacen.WhsCode
+            } else {
+                return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
+            }
+
+        }
+
+        if (userLocal.user) {
+            if (userLocal.user.ID) {
+                id = userLocal.user.ID
+            } else {
+                return res.status(400).json({ mensaje: 'El usuario es obligatorio' })
+            }
+        } else {
+            return res.status(400).json({ mensaje: 'El usuario es obligatorio' })
+        }
         let listItem = []
         let index = 0
-        inventario.map((item) => {
-            // console.log({ item })
+
+        // console.log({ code })
+        // console.log({ concepto })
+        // console.log({ inventario })
+        // console.log({ warehouseCode })
+        // console.log({ id })
+        // return res.json({ id: userLocal.user.ID })
+        for (const item of inventario) {
+            console.log({ item })
+            if (!item.articulo || item.articulo == null || item.articulo == '') {
+
+                return res.status(400).json({ mensaje: 'El codigo del articulo es obligatorio' })
+                break
+            }
+
+            if (!item.lote || item.lote == null || item.lote == '') {
+                return res.status(400).json({ mensaje: 'El lote es obligatorio' })
+                break
+            }
+
+            if (!item.unidad || item.unidad == null || item.unidad == 0) {
+                return res.status(400).json({ mensaje: 'La cantidad por caja debe ser mayor a cero' })
+                break
+            }
+
+            if (!item.cantidadSalida || item.cantidadSalida == null || item.cantidadSalida == 0) {
+                return res.status(400).json({ mensaje: 'La cantidad de cajas debe ser mayor a cero' })
+                break
+            }
+
+            if (!item.cantidadIngreso || item.cantidadIngreso == null || item.cantidadIngreso == 0) {
+                return res.status(400).json({ mensaje: 'La cantidad por ingreso debe ser mayor a cero' })
+                break
+            }
+
             const itemInventario = {
                 "ItemCode": `${item.articulo}`,
                 "WarehouseCode": `${warehouseCode}`,
@@ -76,14 +136,13 @@ const postHabilitacionController = async (req, res) => {
                 ]
             }
             index++
-            console.log({itemInventario})
-            itemInventario["BatchNumbers"].map((itemBatch)=>{
-                console.log({itemBatch})
+            console.log({ itemInventario })
+            itemInventario["BatchNumbers"].map((itemBatch) => {
+                console.log({ itemBatch })
             })
             listItem.push(itemInventario)
-        })
-        // console.log({ warehouseCode })
-        // console.log({userLocal,formulario})
+        }
+
         const data = {
             "U_CardCode": `${code}`,
             "U_Tipo_salidas": "033",
@@ -91,14 +150,31 @@ const postHabilitacionController = async (req, res) => {
             "Reference2": null,
             "Comments": `${concepto}`,
             "JournalMemo": "Salida por Habilitacion",
-            "U_UserCode": `${userLocal.user.ID}`,
+            "U_UserCode": `${id}`,
             "DocumentLines": listItem
         }
-        console.log('data que se envia a salida: ')
-        console.log({ data })
-        // return res.json({ ...data })
+        // console.log('data que se envia a salida: ')
+        // console.log({ data })
+        // return res.json({ data })
+
         const response = await postSalidaHabilitacion(data)
-        if (response.lang) return res.status(400).json({ response })
+        console.log('postSalidaHabilitacion ejecutado')
+        console.log({ response })
+        if (response.lang) {
+            if (response.value === '480000112 - Batch/serial number L01 selected in row 1 does not exist; specify a valid batch/serial number') {
+                return res.status(400).json({ mensaje: 'Hubo un Lote Incorrecto' });
+            } 
+            if (response.value === 'Quantity falls into negative inventory  [DocumentLines.ItemCode][line: 2]') {
+                return res.status(400).json({ mensaje: 'El inventario es negativo' });
+            }
+
+            if (response.value === 'No matching records found (ODBC -2028)') {
+                return res.status(400).json({ mensaje: 'Codigo no encontrado' });
+            }
+            
+            // Si no coincide con ninguno de los mensajes anteriores
+            return res.status(400).json({ response });
+        }
         //todo-------------------------------------------------------------
         const orderNumber = response.orderNumber
         const responseHana = await inventarioHabilitacion(orderNumber)
@@ -145,7 +221,7 @@ const postHabilitacionController = async (req, res) => {
         }
         const responseEntradaHabilitacion = await postEntradaHabilitacion(dataFinal)
         return res.json(responseEntradaHabilitacion)
-        //return res.json({...dataFinal})
+
     } catch (error) {
         return res.status(500), json({
             mensaje: 'Error en postSalidaController ',
@@ -164,9 +240,22 @@ const inventarioValoradoController = async (req, res) => {
     }
 }
 
+const descripcionArticuloController = async (req, res) => {
+    try {
+        const { itemCode } = req.body
+        const response = await descripcionArticulo(itemCode)
+        if (response.length == 0) return res.status(404).json({ mensaje: 'El articulo no fue encontrado' })
+        return res.json({ ItemName: response[0].ItemName })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
     postHabilitacionController,
-    inventarioValoradoController
+    inventarioValoradoController,
+    descripcionArticuloController
 }

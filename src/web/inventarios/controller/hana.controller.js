@@ -44,10 +44,10 @@ const executeQuery = async (query) => {
 
 const clientesPorDimensionUno = async (dimension) => {
     try {
-        if(!connection){
+        if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "LAB_IFA_PRD".IFA_PRD_CLIENTE_X_DIM_UNO('${dimension}')`
+        const query = `select "CardCode","CardName","Dim1PrcName","GroupName" from lab_ifa_prd.ifa_dm_clientes where "CardCode"='C000487';`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -59,7 +59,7 @@ const clientesPorDimensionUno = async (dimension) => {
 
 const almacenesPorDimensionUno = async (dimension) => {
     try {
-        if(!connection){
+        if (!connection) {
             await connectHANA()
         }
         const query = `CALL "LAB_IFA_PRD".IFA_PRD_ALMACEN_X_DIMENSION_UNO('${dimension}')`
@@ -74,7 +74,7 @@ const almacenesPorDimensionUno = async (dimension) => {
 
 const inventarioHabilitacion = async (docentry) => {
     try {
-        if(!connection){
+        if (!connection) {
             await connectHANA()
         }
         const query = `CALL "LAB_IFA_PRD".IFA_LAPP_INV_HABILITACION('${docentry}')`
@@ -89,7 +89,7 @@ const inventarioHabilitacion = async (docentry) => {
 
 const inventarioValorado = async () => {
     try {
-        if(!connection){
+        if (!connection) {
             await connectHANA()
         }
         const query = `select 'SANTA CRUZ' "SucName", "WhsCode", "PrcName" "LineItemName", "PrcName2" "SublineItemName", "ItemCode", 10 "Quantity", "ComlPrice", "LineTotalComl" from "LAB_IFA_PRD".ifa_inv_inventario_kardex limit 10`
@@ -102,9 +102,24 @@ const inventarioValorado = async () => {
 
 }
 
+const descripcionArticulo = async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "ItemName" from lab_ifa_prd.oitm where "ItemCode" = '${itemCode}'`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en descripcionArticulo')
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
     inventarioHabilitacion,
     inventarioValorado,
+    descripcionArticulo
 }
