@@ -105,15 +105,15 @@ const postHabilitacionController = async (req, res) => {
                 break
             }
 
-            if (!item.unidad || item.unidad == null || item.unidad == 0) {
-                return res.status(400).json({ mensaje: 'La cantidad por caja debe ser mayor a cero' })
-                break
-            }
+            // if (!item.unidad || item.unidad == null || item.unidad == 0) {
+            //     return res.status(400).json({ mensaje: 'La cantidad por caja debe ser mayor a cero' })
+            //     break
+            // }
 
-            if (!item.cantidadSalida || item.cantidadSalida == null || item.cantidadSalida == 0) {
-                return res.status(400).json({ mensaje: 'La cantidad de cajas debe ser mayor a cero' })
-                break
-            }
+            // if (!item.cantidadSalida || item.cantidadSalida == null || item.cantidadSalida == 0) {
+            //     return res.status(400).json({ mensaje: 'La cantidad de cajas debe ser mayor a cero' })
+            //     break
+            // }
 
             if (!item.cantidadIngreso || item.cantidadIngreso == null || item.cantidadIngreso == 0) {
                 return res.status(400).json({ mensaje: 'La cantidad por ingreso debe ser mayor a cero' })
