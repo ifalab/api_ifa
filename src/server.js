@@ -19,6 +19,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // Rutas
+//TODO VERSION WEB --------------------------------------------------------------------------------------
 app.use('/v1', require('./routes/v1Routes'));
 app.use('/v1/web/auth', require('./web/auth_module/routers/auth.router'));
 app.use('/v1/web/venta', require('./web/ventas_module/routes/venta.router'));
@@ -28,6 +29,11 @@ app.use('/v1/web/visitas-medicas', require('./web/visitas-medicas/routes/visitas
 app.use('/v1/web/inventario', require('./web/inventarios/routers/inventarios.routes'));
 app.use('/v1/web/contabilidad', require('./web/contabilidad_module/routers/contabilidad.routes'));
 
+//TODO VERSION MOVIL --------------------------------------------------------------------------------------
+app.use('/v1/movil/ventas',require('./movil/ventas_module/routes/ventas.routes'))
+
+//TODO --------------------------------------------------------------------------------------
+//!------------------------------------------------------------------------------------------
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.listen(port, () => {

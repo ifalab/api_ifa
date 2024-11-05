@@ -242,6 +242,7 @@ const postHabilitacionController = async (req, res) => {
             mensaje: 'Error en postSalidaController ',
             error,
         })
+
     }
 }
 
