@@ -77,7 +77,7 @@ const inventarioHabilitacion = async (docentry) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "LAB_IFA_PRDQA2".IFA_LAPP_INV_HABILITACION('${docentry}')`
+        const query = `CALL "LAB_IFA_PRD".IFA_LAPP_INV_HABILITACION('${docentry}')`
         const result = executeQuery(query)
         return result
     } catch (error) {
