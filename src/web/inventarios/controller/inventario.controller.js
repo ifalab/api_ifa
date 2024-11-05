@@ -115,7 +115,7 @@ const postHabilitacionController = async (req, res) => {
             //     break
             // }
 
-            if (!item.cantidadIngreso || item.cantidadIngreso == null || item.cantidadIngreso == 0) {
+            if (!item.cantidadIngreso || item.cantidadIngreso == null || item.cantidadIngreso <= 0) {
                 return res.status(400).json({ mensaje: 'La cantidad por ingreso debe ser mayor a cero' })
                 break
             }
@@ -159,17 +159,19 @@ const postHabilitacionController = async (req, res) => {
 
         const response = await postSalidaHabilitacion(data)
         console.log('postSalidaHabilitacion ejecutado')
-        // console.log({ response })
+        console.log({ response })
         if (response.lang) {
             console.log({response})
-            if (response.value === '480000112 - Batch/serial number L01 selected in row 1 does not exist; specify a valid batch/serial number') {
+            const responseValue = response.value;
+            if (responseValue.includes('Batch/serial number') && responseValue.includes('does not exist; specify a valid batch/serial number')) {
                 return res.status(400).json({ mensaje: 'Hubo un Lote Incorrecto' });
             } 
-            if (response.value === 'Quantity falls into negative inventory  [DocumentLines.ItemCode][line: 2]') {
+            // responseValue.includes('Quantity falls into negative inventory')
+            if (responseValue.includes('Quantity falls into negative inventory')) {
                 return res.status(400).json({ mensaje: 'El inventario es negativo' });
             }
 
-            if (response.value === 'No matching records found (ODBC -2028)') {
+            if (responseValue.includes('No matching records found')) {
                 return res.status(400).json({ mensaje: 'Codigo no encontrado' });
             }
             if (response.value === `Update the exchange rate  , 'USD'`) {
