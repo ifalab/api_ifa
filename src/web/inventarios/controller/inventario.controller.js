@@ -184,7 +184,7 @@ const postHabilitacionController = async (req, res) => {
         //todo-------------------------------------------------------------
         const orderNumber = response.orderNumber
         const responseHana = await inventarioHabilitacion(orderNumber)
-
+        console.log({responseHana})
         const cabecera = {
             // DocEntry: responseHana[0].DocEntry,
             Ref2: responseHana[0].Ref2,
