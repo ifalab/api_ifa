@@ -159,8 +159,9 @@ const postHabilitacionController = async (req, res) => {
 
         const response = await postSalidaHabilitacion(data)
         console.log('postSalidaHabilitacion ejecutado')
-        console.log({ response })
+        // console.log({ response })
         if (response.lang) {
+            console.log({response})
             if (response.value === '480000112 - Batch/serial number L01 selected in row 1 does not exist; specify a valid batch/serial number') {
                 return res.status(400).json({ mensaje: 'Hubo un Lote Incorrecto' });
             } 
@@ -171,7 +172,10 @@ const postHabilitacionController = async (req, res) => {
             if (response.value === 'No matching records found (ODBC -2028)') {
                 return res.status(400).json({ mensaje: 'Codigo no encontrado' });
             }
-            
+            if (response.value === `Update the exchange rate  , 'USD'`) {
+                return res.status(400).json({ mensaje: 'Actualizacion USD, vuelva a intentarlo mas tarde' });
+            }
+            //
             // Si no coincide con ninguno de los mensajes anteriores
             return res.status(400).json({ response });
         }
