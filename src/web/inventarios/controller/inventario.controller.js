@@ -4,7 +4,7 @@ const { postSalidaHabilitacion, postEntradaHabilitacion } = require("./sld.contr
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
-        
+
         // const list = []
         // for (const iterator of dimension) {
         //     const result = await clientesPorDimensionUno()
@@ -161,11 +161,11 @@ const postHabilitacionController = async (req, res) => {
         console.log('postSalidaHabilitacion ejecutado')
         console.log({ response })
         if (response.lang) {
-            console.log({response})
+            console.log({ response })
             const responseValue = response.value;
             if (responseValue.includes('Batch/serial number') && responseValue.includes('does not exist; specify a valid batch/serial number')) {
                 return res.status(400).json({ mensaje: 'Hubo un Lote Incorrecto' });
-            } 
+            }
             // responseValue.includes('Quantity falls into negative inventory')
             if (responseValue.includes('Quantity falls into negative inventory')) {
                 return res.status(400).json({ mensaje: 'El inventario es negativo' });
@@ -184,7 +184,7 @@ const postHabilitacionController = async (req, res) => {
         //todo-------------------------------------------------------------
         const orderNumber = response.orderNumber
         const responseHana = await inventarioHabilitacion(orderNumber)
-        console.log({responseHana})
+        console.log({ responseHana })
         const cabecera = {
             // DocEntry: responseHana[0].DocEntry,
             Ref2: responseHana[0].Ref2,
@@ -226,7 +226,15 @@ const postHabilitacionController = async (req, res) => {
             DocumentLines
         }
         const responseEntradaHabilitacion = await postEntradaHabilitacion(dataFinal)
-        console.log({responseEntradaHabilitacion})
+        console.log('respuesta post entrada habilitacion')
+        console.log({ responseEntradaHabilitacion })
+        console.log({ value: responseEntradaHabilitacion.value })
+        console.log({ lang: responseEntradaHabilitacion.lang })
+        if (responseEntradaHabilitacion.value) {
+
+            return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
+        }
+
         return res.json(responseEntradaHabilitacion)
 
     } catch (error) {
