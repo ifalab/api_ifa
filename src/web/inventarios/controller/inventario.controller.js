@@ -226,6 +226,7 @@ const postHabilitacionController = async (req, res) => {
             DocumentLines
         }
         const responseEntradaHabilitacion = await postEntradaHabilitacion(dataFinal)
+        console.log({responseEntradaHabilitacion})
         return res.json(responseEntradaHabilitacion)
 
     } catch (error) {
