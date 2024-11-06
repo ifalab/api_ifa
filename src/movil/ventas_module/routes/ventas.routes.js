@@ -1,7 +1,7 @@
 const express = require('express');
 const { validarCampos } = require('../../../middleware/validar_campos.middleware');
 const { validarToken } = require('../../../middleware/validar_token.middleware');
-const { getUsuariosController, getDocDueDateController, postOrdenController, postEntregaController, postInvoiceController, findOneInvoiceController } = require('../controller/ventas.controller');
+const { getUsuariosController, getDocDueDateController, postOrdenController, postEntregaController, postInvoiceController, findOneInvoiceController, updateInvoiceController } = require('../controller/ventas.controller');
 const checkToken = require('../../../middleware/authMiddleware');
 const router = express.Router();
 
@@ -11,5 +11,6 @@ router.post('/orden', [checkToken], postOrdenController)
 router.post('/entrega', [checkToken], postEntregaController)
 router.post('/invoice', [checkToken], postInvoiceController)
 router.get('/invoice/:id', [checkToken], findOneInvoiceController)
+router.patch('/execute-update-invoice/', [checkToken],updateInvoiceController )
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const { json } = require("express")
 const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo } = require("./hana.controller")
-const { postSalidaHabilitacion, postEntradaHabilitacion } = require("./sld.controller")
+const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -268,10 +268,27 @@ const descripcionArticuloController = async (req, res) => {
     }
 }
 
+const createQuotationController = async (req,res) => {
+    try {
+        const { CardCode, DocumentLines } = req.body
+        const sapResponse = await createQuotation({ CardCode, DocumentLines })
+        console.log({sapResponse})
+        if(sapResponse.value) return res.status(400).json({messageSap:`${sapResponse.value}`})
+        const response = {
+            status: sapResponse.status || 200,
+            statusText:sapResponse.statusText || ''
+        }
+        return res.json({...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en createQuotationController' })
+    }
+}
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
     postHabilitacionController,
     inventarioValoradoController,
-    descripcionArticuloController
+    descripcionArticuloController,
+    createQuotationController,
 }
