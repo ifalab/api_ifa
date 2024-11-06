@@ -1,3 +1,4 @@
+const { request,response } = require("express")
 const {
     ventaPorSucursal,
     ventasNormales,
@@ -12,7 +13,8 @@ const {
     ventasInstitucionMesAnterior,
     ventasIfaVetMesAnterior,
     ventasMasivoMesAnterior,
-    ventasPorSupervisor
+    ventasPorSupervisor,
+    ventasPorZonasVendedor
 } = require("./hana.controller")
 
 
@@ -279,6 +281,25 @@ const ventasMasivoControllerMesAnterior = async (req, res) => {
     }
 }
 
+const ventasVendedorPorZona= async(req= request, res= response) =>{
+    const {username} = req.query;
+    try {
+        if(!username && typeof username != "string")
+            return res.status(400).json({
+                mensaje: 'Ingrese un username valido'
+            })
+        const response = await ventasPorZonasVendedor(username);
+        return res.status(200).json({
+            response,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
 const ventasPorSupervisorController = async (req, res) => {
     try {
         console.log('post/ ventasPorSupervisorController excute')
@@ -338,5 +359,6 @@ module.exports = {
     ventasInstitucionesControllerMesAnterior,
     ventasIFAVETControllerMesAnterior,
     ventasMasivoControllerMesAnterior,
-    ventasPorSupervisorController
+    ventasPorSupervisorController,
+    ventasVendedorPorZona
 };
