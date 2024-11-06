@@ -289,6 +289,9 @@ const ventasVendedorPorZona= async(req= request, res= response) =>{
                 mensaje: 'Ingrese un username valido'
             })
         const response = await ventasPorZonasVendedor(username);
+        if(response.length == 0) {
+            return res.status(400).json({mensaje: 'Ingrese un usuario valido'})
+        }
         return res.status(200).json({
             response,
             mensaje: "Todas las zonas del usuario"
