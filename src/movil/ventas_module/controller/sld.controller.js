@@ -85,68 +85,6 @@ const postOrden = async (newOrderDate) => {
 // Controlador para manejar la solicitud POST de consulta de batch
 const postEntrega = async (responseJson) => {
 
-    // const { CardCode, DocDate, DocDueDate, DocumentLines } = req.body;
-
-    // if (!DocumentLines || DocumentLines.length === 0) {
-    //     return res.status(400).json({ message: 'DocumentLines no puede estar vacío' });
-    // }
-
-    // const processedLines = [];
-
-    // let baseLineCounter = 0;  // Contador para BaseLine y LineNum
-
-    // for (const line of DocumentLines) {
-    //     const { ItemCode, WarehouseCode, Quantity, UnitPrice, TaxCode } = line;
-
-    //     // Obtener datos de batch desde hanaController
-    //     const batchData = await hanaController.getLotes(ItemCode, WarehouseCode, Quantity);
-
-    //     if (!batchData || batchData.length === 0) {
-    //         return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}` });
-    //     }
-
-    //     // Formato del batch ajustado para cumplir con los requisitos de SAP
-    //     const batchNumbers = batchData.map(batch => ({
-    //         BaseLineNumber: baseLineCounter.toString(),
-    //         BatchNumber: batch.BatchNum,
-    //         //ExpiryDate: `${batch.ExpDate} 00:00:00.000000000`,  // Formato de fecha
-    //         Quantity: Number(batch.Quantity).toFixed(6),        // Formato de cantidad
-    //         ItemCode: batch.ItemCode//,
-    //         //WarehouseCode: line.WarehouseCode
-    //     }));
-
-    //     const processedLine = {
-    //         BaseType: -1,
-    //         //BaseEntry: 0,
-    //         //BaseLine: baseLineCounter, // Incrementamos el valor de BaseLine para cada línea
-    //         LineNum: baseLineCounter,  // También ajustamos LineNum para que sea único
-    //         ItemCode: ItemCode,
-    //         Quantity: Quantity,
-    //         TaxCode: TaxCode,
-    //         UnitPrice: UnitPrice,
-    //         WarehouseCode: WarehouseCode,
-    //         BatchNumbers: batchNumbers
-    //     };
-
-    //     processedLines.push(processedLine);
-    //     baseLineCounter++; // Incrementamos el contador para la siguiente línea
-    // }
-
-    // JSON final a enviar a SAP
-    // const responseJson = {
-    //     CardCode,
-    //     DocDate,
-    //     DocDueDate,
-    //     DocumentLines: processedLines
-    // };
-
-    // console.log('Datos a enviar a SAP:', JSON.stringify(responseJson, null, 2));
-
-    // Manejar la sesión SLD
-
-
-
-    // Intentar hacer la solicitud POST a SAP
     try {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
@@ -165,21 +103,13 @@ const postEntrega = async (responseJson) => {
         const deliveryNumberMatch = locationHeader.match(/\((\d+)\)$/);
         const deliveryNumber = deliveryNumberMatch ? deliveryNumberMatch[1] : 'Desconocido';
         console.log({ sapResponse })
-        // res.status(201).json({
-        //     message: 'Entrega grabada con éxito',
-        //     deliveryN44umber: deliveryNumber,
-        //     status: sapResponse.status,
-        //     statusText: sapResponse.statusText,
-        //     //requestData: req.body,
-        //     responseData: responseJson
-        // });
+
         console.log('Nueva Entrega: #', deliveryNumber);
         return {
             message: 'Entrega grabada con éxito',
             deliveryN44umber: deliveryNumber,
             status: sapResponse.status,
             statusText: sapResponse.statusText,
-            //requestData: req.body,
             responseData: responseJson
         }
 
@@ -190,7 +120,54 @@ const postEntrega = async (responseJson) => {
     }
 };
 
+const postInvoice = async (CardCode, DocumentLines) => {
+    try {
+        const responseJson = { CardCode, DocumentLines }
+        // return responseJson
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = 'https://srvhana:50000/b1s/v1/Invoices';
+        const sapResponse = await axios.post(url, responseJson, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return sapResponse
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        return errorMessage
+    }
+}
+
+const findOneInvoice = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/Invoices(${id})`
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return sapResponse
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud GET';
+        return errorMessage
+    }
+}
 module.exports = {
     postOrden,
     postEntrega,
+    postInvoice,
+    findOneInvoice,
 }

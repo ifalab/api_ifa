@@ -1,5 +1,5 @@
 const { getLotes, getDocDueDate, getUsuarios } = require("./hana.controller");
-const { postOrden, postEntrega } = require("./sld.controller");
+const { postOrden, postEntrega, postInvoice, findOneInvoice } = require("./sld.controller");
 
 const postOrdenController = async (req, res) => {
     try {
@@ -21,7 +21,7 @@ const postOrdenController = async (req, res) => {
         const response = await postOrden(newOrderDate)
         const responseValue = response.value
         if (responseValue.includes('Customer record not found')) return res.status(404).json({ mensaje: 'No se encontró el registro del cliente' })
-        return res.json({ response })
+        return res.json({ ...response })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en post orden' })
@@ -42,7 +42,7 @@ const getLotesController = async (req, res) => {
     try {
         const { itemCode, warehouseCode, quantity } = req.body
         const response = await getLotes(itemCode, warehouseCode, quantity)
-        return res.json({ response })
+        return res.json({ ...response })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ error })
@@ -75,28 +75,22 @@ const postEntregaController = async (req, res) => {
 
         for (const line of DocumentLines) {
             const { ItemCode, WarehouseCode, Quantity, UnitPrice, TaxCode } = line;
-
-            // Obtener datos de batch desde hanaController
             const batchData = await getLotes(ItemCode, WarehouseCode, Quantity);
 
             if (!batchData || batchData.length === 0) {
                 return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}` });
             }
 
-            // Formato del batch ajustado para cumplir con los requisitos de SAP
             const batchNumbers = batchData.map(batch => ({
                 BaseLineNumber: baseLineCounter.toString(),
                 BatchNumber: batch.BatchNum,
-                //ExpiryDate: `${batch.ExpDate} 00:00:00.000000000`,  // Formato de fecha
                 Quantity: Number(batch.Quantity).toFixed(6),        // Formato de cantidad
                 ItemCode: batch.ItemCode//,
-                //WarehouseCode: line.WarehouseCode
+
             }));
 
             const processedLine = {
                 BaseType: -1,
-                //BaseEntry: 0,
-                //BaseLine: baseLineCounter, // Incrementamos el valor de BaseLine para cada línea
                 LineNum: baseLineCounter,  // También ajustamos LineNum para que sea único
                 ItemCode: ItemCode,
                 Quantity: Quantity,
@@ -118,10 +112,48 @@ const postEntregaController = async (req, res) => {
 
         console.log('Datos a enviar a SAP:', JSON.stringify(responseJson, null, 2));
         const response = await postEntrega(responseJson)
-        return res.json({ response })
+        return res.json({ ...response })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en postEntregaController' })
+    }
+}
+
+const postInvoiceController = async (req, res) => {
+    try {
+        const { CardCode, DocumentLines } = req.body
+        const sapResponse = await postInvoice(CardCode, DocumentLines)
+        console.log({sapResponse})
+        if(sapResponse.value){
+            return res.status(400).json({messageSap:`${sapResponse.value}`})
+        }
+        const response = {
+            status: sapResponse.status || {},
+            statusText: sapResponse.statusText || {},
+
+        }
+        return res.json({ ...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en postEntregaController' })
+    }
+}
+
+const findOneInvoiceController = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const sapResponse = await findOneInvoice(id);
+
+        // Extrae solo las propiedades esenciales
+        const response = {
+            // Asume que `data` contiene solo la información necesaria
+            data: sapResponse.data || {},
+        };
+
+        return res.json(response);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en findOneInvoiceController' })
     }
 }
 module.exports = {
@@ -129,5 +161,7 @@ module.exports = {
     getLotesController,
     getDocDueDateController,
     postOrdenController,
-    postEntregaController
+    postInvoiceController,
+    postEntregaController,
+    findOneInvoiceController
 }
