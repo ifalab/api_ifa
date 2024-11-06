@@ -1,5 +1,7 @@
 const { getLotes, getDocDueDate, getUsuarios } = require("./hana.controller");
-const { postOrden, postEntrega, postInvoice, findOneInvoice } = require("./sld.controller");
+const { postOrden, postEntrega, postInvoice, findOneInvoice, updateInvoice } = require("./sld.controller");
+const fs = require('fs');
+const path = require('path');
 
 const postOrdenController = async (req, res) => {
     try {
@@ -123,14 +125,13 @@ const postInvoiceController = async (req, res) => {
     try {
         const { CardCode, DocumentLines } = req.body
         const sapResponse = await postInvoice(CardCode, DocumentLines)
-        console.log({sapResponse})
-        if(sapResponse.value){
-            return res.status(400).json({messageSap:`${sapResponse.value}`})
+        console.log({ sapResponse })
+        if (sapResponse.value) {
+            return res.status(400).json({ messageSap: `${sapResponse.value}` })
         }
         const response = {
             status: sapResponse.status || {},
             statusText: sapResponse.statusText || {},
-
         }
         return res.json({ ...response })
     } catch (error) {
@@ -156,6 +157,58 @@ const findOneInvoiceController = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en findOneInvoiceController' })
     }
 }
+const updateInvoiceController = async (req, res) => {
+    try {
+        const { list } = req.body
+
+        console.log(list)
+        const filePath = path.join(__dirname, 'static', 'patchfacturassapv2.txt');
+        if (!fs.existsSync(filePath)) {
+            console.error("El archivo no existe:", filePath);
+            return res.json('El archivo no existe');
+        } else {
+            const data = fs.readFileSync(filePath, 'utf-8');
+
+            // Dividir el contenido en líneas
+            const lines = data.trim().split('\n');
+
+            // Crear una lista para almacenar los objetos
+            const invoiceList = [];
+
+            // Saltar la primera línea (asumiendo que es el encabezado) y procesar el resto
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    // Dividir cada línea por espacios o tabulación
+                    const [id, DocDueDate] = line.split(/\s+/);
+
+                    // Agregar el objeto a la lista
+                    invoiceList.push({ id: parseInt(id, 10), DocDueDate });
+                }
+            }
+            let listResponse = []
+            await Promise.all(invoiceList.map(async (item) => {
+                const { id, DocDueDate } = item;
+                console.log({ item });
+                console.log({ id });
+                console.log({ DocDueDate });
+
+                const sapResponse = await updateInvoice(id, DocDueDate);
+                console.log({ sapResponse });
+                if (!sapResponse.status) {
+                    if (sapResponse.value) {
+                        listResponse.push({ value: sapResponse.value, item });
+                    }
+                }
+
+            }));
+            return res.json({ cantidadErrores: listResponse.length, listaErrores: listResponse });
+        }
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en findOneInvoiceController' })
+    }
+}
 module.exports = {
     getUsuariosController,
     getLotesController,
@@ -163,5 +216,6 @@ module.exports = {
     postOrdenController,
     postInvoiceController,
     postEntregaController,
-    findOneInvoiceController
+    findOneInvoiceController,
+    updateInvoiceController,
 }
