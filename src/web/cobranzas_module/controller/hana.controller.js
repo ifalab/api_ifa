@@ -223,6 +223,18 @@ const cobranzaPorSupervisor = async (userCode,dim1) => {
     }
 }
 
+const cobranzaPorZona = async (username) => {
+    try {
+        if(!connection){
+            await connectHANA()
+        }
+        const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA"(${username})`
+        return await executeQuery(query)
+    } catch (error) {
+        console 
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -237,5 +249,6 @@ module.exports = {
     cobranzaIfavetMesAnterior,
     cobranzaMasivoMesAnterior,
     cobranzaInstitucionesMesAnterior,
-    cobranzaPorSupervisor
+    cobranzaPorSupervisor,
+    cobranzaPorZona
 }

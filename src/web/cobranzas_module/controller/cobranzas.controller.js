@@ -1,4 +1,5 @@
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor } = require("./hana.controller")
+const { request, response } = require("express")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor,cobranzaPorZona } = require("./hana.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -13,6 +14,32 @@ const cobranzaGeneralController = async (req, res) => {
         })
     }
 }
+const cobranzasPorZonasController = async(req= request, res= response)=>{
+    const {username} = req.query;
+    try {
+        if(!username && typeof username != "string")
+            return res.status(400).json({
+                mensaje: 'Ingrese un username valido'
+            })
+        const response = await cobranzaPorZona(username);
+        if(response.length == 0) {
+            return res.status(400).json({mensaje: 'Ingrese un usuario valido'})
+        }
+        const data =  response.map( r => ({
+            ...r,
+            cumplimiento: r.Quota == 0? 0 : r.Collection/r.Quota
+        }))
+        return res.status(200).json({
+            response: data,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
 
 const cobranzaPorSucursalController = async (req, res) => {
     try {
@@ -316,5 +343,6 @@ module.exports = {
     cobranzaInstitucionesController,
     cobranzaMasivosMesAnteriorController,
     cobranzaInstitucionesMesAnteriorController,
-    cobranzaPorSupervisorController
+    cobranzaPorSupervisorController,
+    cobranzasPorZonasController
 }

@@ -292,8 +292,12 @@ const ventasVendedorPorZona= async(req= request, res= response) =>{
         if(response.length == 0) {
             return res.status(400).json({mensaje: 'Ingrese un usuario valido'})
         }
+        const data =  response.map( r => ({
+            ...r,
+            cumplimiento: r.Quota == 0? 0 : r.Sales/r.Quota
+        }))
         return res.status(200).json({
-            response,
+            response: data,
             mensaje: "Todas las zonas del usuario"
         });
     } catch (err) {
