@@ -1,7 +1,7 @@
 const express = require('express');
 const { validarCampos } = require('../../../middleware/validar_campos.middleware');
 const { validarToken } = require('../../../middleware/validar_token.middleware');
-const { getUsuariosController, getDocDueDateController, postOrdenController, postEntregaController, postInvoiceController, findOneInvoiceController, updateInvoiceController, findAllIncomingPaymentController, findOneIncomingPaymentController, findOneByCardCodeIncomingPaymentController, createIncomminPaymentController, cancelIncomingPaymentController } = require('../controller/ventas.controller');
+const { getUsuariosController, getDocDueDateController, postOrdenController, postEntregaController, postInvoiceController, findOneInvoiceController, updateInvoiceController, findAllIncomingPaymentController, findOneIncomingPaymentController, findOneByCardCodeIncomingPaymentController, createIncomminPaymentController, cancelIncomingPaymentController, descuentosPorArticuloController, descuentosPorCondicionController, descuentosPorLineaController } = require('../controller/ventas.controller');
 const checkToken = require('../../../middleware/authMiddleware');
 const router = express.Router();
 
@@ -9,6 +9,9 @@ router.get('/usuarios', [checkToken], getUsuariosController)
 router.post('/get-due-date', [checkToken], getDocDueDateController)
 router.post('/orden', [checkToken], postOrdenController)
 router.post('/entrega', [checkToken], postEntregaController)
+router.get('/descuento-articulo', [checkToken], descuentosPorArticuloController)
+router.get('/descuento-condicion', [checkToken], descuentosPorCondicionController)
+router.get('/descuento-linea', [checkToken], descuentosPorLineaController)
 //?------------------------------------------------------------------------------------------
 router.post('/invoice', [checkToken], postInvoiceController)
 router.get('/invoice/:id', [checkToken], findOneInvoiceController)

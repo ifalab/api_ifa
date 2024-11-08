@@ -1,8 +1,9 @@
-const { response } = require("express");
-const { getLotes, getDocDueDate, getUsuarios } = require("./hana.controller");
+const { response, json } = require("express");
+const { getLotes, getDocDueDate, getUsuarios, descuentosPorArticulo, descuentosPorCondicion, descuentosPorLinea } = require("./hana.controller");
 const { postOrden, postEntrega, postInvoice, findOneInvoice, updateInvoice, findAllIncomingPayment, findOneIncomingPayment, findOneByCardCodeIncomingPayment, createIncomingPayment, cancelIncomingPayment } = require("./sld.controller");
 const fs = require('fs');
 const path = require('path');
+const { syncBuiltinESMExports } = require("module");
 
 const postOrdenController = async (req, res) => {
     try {
@@ -348,6 +349,36 @@ const cancelIncomingPaymentController = async (req, res) => {
     }
 }
 
+const descuentosPorArticuloController = async (req, res) => {
+    try {
+        const response = await descuentosPorArticulo()
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500), json({ mensaje: 'error en descuentosPorArticuloController' })
+    }
+}
+
+const descuentosPorCondicionController = async (req, res) => {
+    try {
+        const response = await descuentosPorCondicion()
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500), json({ mensaje: 'error en descuentosPorArticuloController' })
+    }
+}
+
+const descuentosPorLineaController = async (req, res) => {
+    try {
+        const response = await descuentosPorLinea()
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500), json({ mensaje: 'error en descuentosPorArticuloController' })
+    }
+}
+
 module.exports = {
     getUsuariosController,
     getLotesController,
@@ -362,4 +393,7 @@ module.exports = {
     findOneByCardCodeIncomingPaymentController,
     createIncomminPaymentController,
     cancelIncomingPaymentController,
+    descuentosPorArticuloController,
+    descuentosPorCondicionController,
+    descuentosPorLineaController,
 }

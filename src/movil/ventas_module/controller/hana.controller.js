@@ -152,11 +152,52 @@ const userById = async (userCode) => {
     }
 }
 
+const descuentosPorArticulo = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.DBSAPPRD}.IFA_VM_DESCUENTOS_POR_ARTICULO`
+        return await executeQuery(query)
+    } catch (error) {
+        console.log(error)
+        throw new Error('Error en la consulta: ', error)
+    }
+}
+
+const descuentosPorCondicion = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.DBSAPPRD}.IFA_VM_DESCUENTOS_POR_CONDICION`
+        return await executeQuery(query)
+    } catch (error) {
+        console.log(error)
+        throw new Error('Error en la consulta: ', error)
+    }
+}
+
+const descuentosPorLinea = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.DBSAPPRD}.IFA_VM_DESCUENTOS_POR_LINEA`
+        return await executeQuery(query)
+    } catch (error) {
+        console.log(error)
+        throw new Error('Error en la consulta: ', error)
+    }
+}
 module.exports = {
     getDocDueDate,
     getUsuarios,
     getLotes,
     getAbastecimiento,
     userById,
+    descuentosPorArticulo,
+    descuentosPorCondicion,
+    descuentosPorLinea,
 }
 
