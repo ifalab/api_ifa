@@ -1,5 +1,6 @@
+const { response } = require("express");
 const { getLotes, getDocDueDate, getUsuarios } = require("./hana.controller");
-const { postOrden, postEntrega, postInvoice, findOneInvoice, updateInvoice } = require("./sld.controller");
+const { postOrden, postEntrega, postInvoice, findOneInvoice, updateInvoice, findAllIncomingPayment, findOneIncomingPayment, findOneByCardCodeIncomingPayment, createIncomingPayment, cancelIncomingPayment } = require("./sld.controller");
 const fs = require('fs');
 const path = require('path');
 
@@ -209,6 +210,144 @@ const updateInvoiceController = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en findOneInvoiceController' })
     }
 }
+
+const findAllIncomingPaymentController = async (req, res) => {
+    try {
+        const response = await findAllIncomingPayment()
+        console.log({ response })
+        const sapResponse = {
+            // Asume que `data` contiene solo la información necesaria
+            data: response.data || {},
+        };
+        return res.json({ ...sapResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en all incomming controller' })
+    }
+}
+
+const findOneIncomingPaymentController = async (req, res) => {
+    try {
+        const id = req.params.id
+        const response = await findOneIncomingPayment(id)
+        console.log({ response })
+        if (response.value) {
+            return res.status(400).json({ menssageSap: `${response.value}` })
+        }
+        const sapResponse = {
+            data: response.data || {},
+        };
+        return res.json({ ...sapResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en one incomming controller' })
+    }
+}
+
+const findOneByCardCodeIncomingPaymentController = async (req, res) => {
+    try {
+        const id = req.params.id
+        console.log({ id })
+        const response = await findOneByCardCodeIncomingPayment(id)
+        const sapResponse = {
+            data: response.data || {},
+        };
+        if (sapResponse.data.value.length == 0) return res.status(404).json({ messageSap: 'CardCode not found' })
+        return res.json({ ...sapResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en one By CardCode Incoming Payment Controller' })
+    }
+}
+
+const createIncomminPaymentController = async (req, res) => {
+    try {
+        const {
+            DocDate,
+            CardCode,
+            CashAccount,
+            TransferAccount,
+            TransferSum,
+            TransferDate,
+            TransferReference,
+            Remarks,
+            JournalRemarks,
+            Series,
+            U_OSLP_ID,
+            U_Sucursal_Interna,
+            U_ORIGIN,
+            PaymentInvoices,
+        } = req.body
+
+        let CashSum = 0
+
+        PaymentInvoices.map((item) => {
+            CashSum = +CashSum + (+item.SumApplied)
+        })
+
+        const sapResponse = await createIncomingPayment({
+            DocDate,
+            CardCode,
+            CashAccount,
+            CashSum,
+            TransferAccount,
+            TransferSum,
+            TransferDate,
+            TransferReference,
+            Remarks,
+            JournalRemarks,
+            Series,
+            U_OSLP_ID,
+            U_Sucursal_Interna,
+            U_ORIGIN,
+            PaymentInvoices,
+        })
+        if (sapResponse.value) {
+            return res.status(404).json({ messageSap: `${sapResponse.value}` })
+        }
+        const location = sapResponse.headers.location
+        const [, value] = location.split('(')
+        const [id,] = value.split(')')
+        const createIncoming = await findOneIncomingPayment(id)
+        if (createIncoming.value) {
+            return res.status(400).json({ menssageSap: `${createIncoming.value}` })
+        }
+        const response = {
+            data: createIncoming.data || {}
+        }
+        return res.json({ ...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en create Incoming Payment Controller' })
+    }
+}
+
+const cancelIncomingPaymentController = async (req, res) => {
+    try {
+        const id = req.params.id
+        const sapResponse = await cancelIncomingPayment(id)
+        console.log({ sapResponse })
+
+        if (sapResponse.value) {
+            const value = sapResponse.value
+            if (value.includes('No matching records found')) {
+                return res.status(404).json({ messageSap: `${value}` })
+            }
+            return res.status(400).json({ messageSap: `${value}` })
+        }
+
+        const response = {
+            data: sapResponse.data || {},
+            status: 200,
+            statusText: sapResponse.statusText || 'Success',
+        }
+        return res.json({ ...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el cancel incoming payment controller' })
+    }
+}
+
 module.exports = {
     getUsuariosController,
     getLotesController,
@@ -218,4 +357,9 @@ module.exports = {
     postEntregaController,
     findOneInvoiceController,
     updateInvoiceController,
+    findAllIncomingPaymentController,
+    findOneIncomingPaymentController,
+    findOneByCardCodeIncomingPaymentController,
+    createIncomminPaymentController,
+    cancelIncomingPaymentController,
 }

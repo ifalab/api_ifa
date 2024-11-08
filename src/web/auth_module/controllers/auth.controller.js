@@ -1,5 +1,7 @@
 
 const bcrypt = require('bcryptjs')
+const fs = require('fs');
+const path = require('path');
 const { generarToken } = require("../../../helpers/generar_token.helper");
 const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles } = require("./hana.controller")
 
@@ -76,7 +78,7 @@ const createUserController = async (req, res) => {
             dimensionUno: [...dimensionUno],
             dimensionDos: [...dimensionDos],
             dimensionTres: [...dimensionTres],
-            roles:[...roles]
+            roles: [...roles]
         })
 
         if (pass !== confirm_pass) {
@@ -160,6 +162,65 @@ const createUserController = async (req, res) => {
     }
 }
 
+const createUsertxt = async (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'static', 'empleadosap.txt');
+        let listResponse = []
+        if (!fs.existsSync(filePath)) {
+            console.error("El archivo no existe:", filePath);
+            return res.json('El archivo no existe');
+        } else {
+            const data = fs.readFileSync(filePath, 'utf-8');
+            const lines = data.trim().split('\n');
+            console.log({ lines })
+            let nameList = []
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const [id, name] = line.replace('\r', '').split(/\t/);
+                nameList.push(name)
+            }
+            // return res.json({ nameList });
+            const salt = bcrypt.genSaltSync()
+            const encryptPassword = bcrypt.hashSync('Vendedor123', salt)
+            console.log({ nameList })
+            await Promise.all(nameList.map(async (item) => {
+                const itemArry = item.split(' ')
+                const result = await createUser(
+                    `${itemArry[itemArry.length - 1].toLowerCase()}123456`,
+                    item,
+                    encryptPassword,
+                    false,
+                    `${itemArry[itemArry.length - 1].toUpperCase()}123456`,
+                )
+
+                const response = result[0]
+                const value = response["response"]
+                console.log({ response })
+                console.log({ value })
+
+                if (value === 409 && value !== 200) {
+                    listResponse.push({
+                        mensaje: 'el usuario YA EXISTE',
+                        usercode: `${itemArry[itemArry.length - 1].toLowerCase()}123456`,
+                        name: item,
+                        encryptPassword,
+                        superuser: false,
+                        etiqueta: `${itemArry[itemArry.length - 1].toUpperCase()}123456`,
+                    })
+                }
+            }))
+
+        }
+        return res.json({ cantidadErrores: listResponse.length, listaErrores: listResponse });
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: "error en create user createUsertxt",
+            error
+        })
+    }
+}
 const findAllUserController = async (req, res) => {
     try {
 
@@ -270,15 +331,15 @@ const updateUserController = async (req, res) => {
         console.log({ rollBackDim3 })
 
         const responseRole = await deleteRolUser(id_user)
-        console.log({ responseRole})
+        console.log({ responseRole })
 
         roles.map(async (id_rol) => {
             const response = await addRolUser(id_user, id_rol);
             console.log({ mensaje: 'add rol: ' })
-            console.log({ response})
-            
+            console.log({ response })
+
         })
-        
+
 
         dimensionUno.map(async (item) => {
             const id_dim = item.ID
@@ -515,5 +576,6 @@ module.exports = {
     deleteAllRoleController,
     deleteOneRoleController,
     updateRolesByUserController,
-    findAllRolesController
+    findAllRolesController,
+    createUsertxt
 }

@@ -12,7 +12,7 @@ const connectSLD = async () => {
     try {
         const url = 'https://172.16.11.25:50000/b1s/v1/Login';
         const data = {
-            CompanyDB: process.env.DBSAPPRD,
+            CompanyDB: process.env.DBSAPDEV,
             UserName: process.env.USERSAP,
             Password: process.env.PASSSAP
         };
@@ -80,8 +80,6 @@ const postOrden = async (newOrderDate) => {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-
-
 // Controlador para manejar la solicitud POST de consulta de batch
 const postEntrega = async (responseJson) => {
 
@@ -188,10 +186,135 @@ const updateInvoice = async (id, DocDueDate) => {
     }
 }
 
+const findAllIncomingPayment = async () => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/IncomingPayments`
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return sapResponse
+
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud GET';
+        return errorMessage
+    }
+}
+
+const findOneIncomingPayment = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/IncomingPayments(${id})`
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return sapResponse
+
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud GET';
+        return errorMessage
+    }
+}
+
+const findOneByCardCodeIncomingPayment = async (code) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        // console.log({ code })
+        const url = `https://srvhana:50000/b1s/v1/IncomingPayments?$filter=CardCode eq '${code}'`
+        console.log({ url })
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return sapResponse
+
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud GET';
+        return errorMessage
+    }
+}
+
+const createIncomingPayment = async (data) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+
+        const url = `https://srvhana:50000/b1s/v1/IncomingPayments`
+        console.log({ url })
+        console.log({ data })
+        const sapResponse = await axios.post(url, data, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return sapResponse
+
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud GET';
+        return errorMessage
+    }
+}
+
+const cancelIncomingPayment = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+
+        const url = `https://srvhana:50000/b1s/v1/IncomingPayments(${id})/Cancel`
+        
+        const sapResponse = await axios.post(url,{}, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return sapResponse
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud GET';
+        return errorMessage
+    }
+}
 module.exports = {
     postOrden,
     postEntrega,
     postInvoice,
     findOneInvoice,
     updateInvoice,
+    findAllIncomingPayment,
+    findOneIncomingPayment,
+    findOneByCardCodeIncomingPayment,
+    createIncomingPayment,
+    cancelIncomingPayment
 }
