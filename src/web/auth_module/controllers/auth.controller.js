@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs')
 const fs = require('fs');
 const path = require('path');
 const { generarToken } = require("../../../helpers/generar_token.helper");
-const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles } = require("./hana.controller")
+const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles, userVendedor } = require("./hana.controller")
 
 const authLoginPost = async (req, res) => {
     try {
@@ -558,6 +558,34 @@ const findAllRolesController = async (req, res) => {
     }
 }
 
+//! eliminar:
+const userVendedorController=async(req,res)=>{
+    try {
+        const response = await userVendedor()
+        return res.json({response})
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({error})
+    }
+}
+
+//! eliminar 
+const userInsertVendedorController = async(req,res)=>{
+    try {
+        const {response} = req.body
+        let list = []
+        await Promise.all(response.map(async (id) => {
+            const idUser = id.ID
+            console.log({idUser})
+            const insert = await addRolUser(idUser,12)
+            list.push(insert)
+        }))
+        return res.json({list})
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({error})
+    }
+}
 module.exports = {
     authLoginPost,
     createUserController,
@@ -577,5 +605,7 @@ module.exports = {
     deleteOneRoleController,
     updateRolesByUserController,
     findAllRolesController,
-    createUsertxt
+    createUsertxt,
+    userVendedorController,
+    userInsertVendedorController
 }

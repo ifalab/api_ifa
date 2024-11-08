@@ -157,6 +157,24 @@ const findAllSubLines = async () => {
     }
 }
 
+const findAllGroupAlmacenes = async () => {
+    try {
+
+        if (!connection) {
+            await connectHANA();
+        }
+
+        console.log('findAllGroupAlmacenes execute')
+        const query = `select * from lab_ifa_prd.ifa_dm_almacenes_grupo`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findAllGroupAlmacenes')
+    }
+}
 module.exports = {
     parteDiario,
     abastecimiento,
@@ -165,4 +183,5 @@ module.exports = {
     findAllRegions,
     findAllLines,
     findAllSubLines,
+    findAllGroupAlmacenes,
 }

@@ -36,7 +36,7 @@ router.get('/instituciones-mes-anterior', [validarToken, validarCampos], ventasI
 router.get('/ifavet-mes-anterior', [validarToken, validarCampos], ventasIFAVETControllerMesAnterior)
 router.get('/masivo-mes-anterior', [validarToken, validarCampos], ventasMasivoControllerMesAnterior)
 
-router.get('/ventas-zona',[validarToken],ventasVendedorPorZona)
+router.get('/ventas-zona',[validarToken,validarCampos],ventasVendedorPorZona)
 
 router.post('/usuario', [validarToken, validarCampos], ventasUsuarioController)
 

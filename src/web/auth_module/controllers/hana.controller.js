@@ -436,6 +436,21 @@ const addRolUser = async (id_user, id_rol) => {
     }
 }
 
+const userVendedor = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('userVendedor execute')
+        const query = `SELECT ID FROM "LAB_IFA_LAPP"."LAPP_USUARIO" WHERE USERCODE LIKE '%123%'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en userVendedor')
+    }
+}
 const deleteRolUser = async(id_user)=>{
     try {
         
@@ -519,5 +534,6 @@ module.exports = {
     deleteRolUser,
     deleteOneRolUser,
     findAllRoles,
+    userVendedor,
 
 }
