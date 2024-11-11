@@ -100,6 +100,20 @@ const abastecimientoMesActual = async () => {
     }
 }
 
+const abastecimientoPorFecha = async (view_month, view_year) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_PRD.IFA_LAPP_ABAS_COMPRASCOMERCIALES_X_FECHA(${view_month},${view_year})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log('error en abastecimientoPorFecha')
+        console.log(error)
+    }
+}
+
 const findAllRegions = async () => {
     try {
 
@@ -184,4 +198,5 @@ module.exports = {
     findAllLines,
     findAllSubLines,
     findAllGroupAlmacenes,
+    abastecimientoPorFecha,
 }
