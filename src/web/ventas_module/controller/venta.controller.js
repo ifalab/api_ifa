@@ -282,16 +282,18 @@ const ventasMasivoControllerMesAnterior = async (req, res) => {
 }
 
 const ventasVendedorPorZona= async(req= request, res= response) =>{
-    const {username} = req.query;
+    const {username,line,groupBy} = req.query;
     try {
-        if(!username && typeof username != "string")
+        if(!username && typeof username != "string"){
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
             })
-        const response = await ventasPorZonasVendedor(username);
-        if(response.length == 0) {
-            return res.status(400).json({mensaje: 'Ingrese un usuario valido'})
         }
+        console.log({
+            username,line,groupBy   
+        })
+        const response = await ventasPorZonasVendedor(username,line,groupBy);
+       
         const data =  response.map( r => ({
             ...r,
             cumplimiento: r.Quota == 0? 0 : r.Sales/r.Quota

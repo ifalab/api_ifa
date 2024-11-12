@@ -230,12 +230,12 @@ const ventasPorSupervisor = async (userCode, dim1, dim2, dim3, groupBy) => {
     }
 }
 
-const ventasPorZonasVendedor = async(username)=>{
+const ventasPorZonasVendedor = async(username,line,groupBy)=>{
     try {
         if(!connection){
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA(${username});`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA('${username}','${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en ventas por zona: ', err.message);
