@@ -78,6 +78,7 @@ const inventarioHabilitacion = async (docentry) => {
             await connectHANA()
         }
         const query = `CALL "LAB_IFA_PRD".IFA_LAPP_INV_HABILITACION('${docentry}')`
+        console.log({query})
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -116,10 +117,27 @@ const descripcionArticulo = async (itemCode) => {
     }
 }
 
+const fechaVencLote = async (lote) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `CALL LAB_IFA_PRD.IFA_LAPP_INV_HABILITACION_OBTENER_VENCIMIENTOXLOTE('${lote}')`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en fechaVencLote')
+    }
+}
+
+
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
     inventarioHabilitacion,
     inventarioValorado,
-    descripcionArticulo
+    descripcionArticulo,
+    fechaVencLote
 }

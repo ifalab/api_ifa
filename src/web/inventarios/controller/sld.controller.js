@@ -92,6 +92,7 @@ const postEntradaHabilitacion = async (data) => {
       // Verifica o genera una sesión
       console.log('entrada habilitada - 1 ')
       console.log({...data})
+      // data.DocumentLines.map((item)=>{})
       const currentSession = await validateSession();
       const sessionSldId = currentSession.SessionId;
   

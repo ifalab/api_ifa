@@ -100,12 +100,14 @@ const abastecimientoMesActual = async () => {
     }
 }
 
-const abastecimientoPorFecha = async (view_month, view_year) => {
+const abastecimientoPorFecha = async () => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        const query = `call LAB_IFA_PRD.IFA_LAPP_ABAS_COMPRASCOMERCIALES_X_FECHA(${view_month},${view_year})`
+        
+        const query = `call LAB_IFA_PRD.IFA_LAPP_ABAS_COMPRASCOMERCIALES_X_FECHA()`
+        console.log({query})
         const result = await executeQuery(query)
         return result
     } catch (error) {

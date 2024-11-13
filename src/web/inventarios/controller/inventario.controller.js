@@ -1,5 +1,5 @@
 const { json } = require("express")
-const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo } = require("./hana.controller")
+const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
@@ -95,9 +95,7 @@ const postHabilitacionController = async (req, res) => {
         for (const item of inventario) {
             console.log({ item })
             if (!item.articulo || item.articulo == null || item.articulo == '') {
-
                 return res.status(400).json({ mensaje: 'El codigo del articulo es obligatorio' })
-                break
             }
 
             if (!item.lote || item.lote == null || item.lote == '') {
@@ -135,6 +133,7 @@ const postHabilitacionController = async (req, res) => {
                     }
                 ]
             }
+
             index++
             console.log({ itemInventario })
             itemInventario["BatchNumbers"].map((itemBatch) => {
@@ -182,12 +181,19 @@ const postHabilitacionController = async (req, res) => {
             return res.status(400).json({ response });
         }
         //todo-------------------------------------------------------------
+
         const orderNumber = response.orderNumber
+        console.log({orderNumber})
         const responseHana = await inventarioHabilitacion(orderNumber)
+        console.log('inventarioHabilitacion')
+        // const lote = await fechaVencLote('1231231313213213')
+        // if(lote.length==0){
+        //     return res.status(400).json({ mensaje: 'el lote no se encontro' });
+        // }
         console.log({ responseHana })
         const cabecera = {
             // DocEntry: responseHana[0].DocEntry,
-            Ref2: responseHana[0].Ref2,
+            Reference2: responseHana[0].Ref2,
             U_CardCode: responseHana[0].U_CardCode,
             U_Tipo_entradas: responseHana[0].U_Tipo_entradas,
             Comments: responseHana[0].Comments,
@@ -196,14 +202,16 @@ const postHabilitacionController = async (req, res) => {
         }
         const DocumentLines = []
 
-        responseHana.map((item) => {
+        responseHana.map(async(item) => {
             const BatchNumbers = []
             const batch = {
                 BatchNumber: item.BatchNumber,
                 Quantity: item.Quantity,
                 BaseLineNumber: item.DocLineNum,
                 ItemCode: item.ItemCode,
+                ExpiryDate: item.ExpiryDate,
             }
+
             BatchNumbers.push(batch)
             const linea = {
                 DocLineNum: item.DocLineNum,
@@ -225,6 +233,7 @@ const postHabilitacionController = async (req, res) => {
             ...cabecera,
             DocumentLines
         }
+        console.log({dataFinal})
         const responseEntradaHabilitacion = await postEntradaHabilitacion(dataFinal)
         console.log('respuesta post entrada habilitacion')
         console.log({ responseEntradaHabilitacion })
@@ -268,20 +277,32 @@ const descripcionArticuloController = async (req, res) => {
     }
 }
 
-const createQuotationController = async (req,res) => {
+const createQuotationController = async (req, res) => {
     try {
         const { CardCode, DocumentLines } = req.body
         const sapResponse = await createQuotation({ CardCode, DocumentLines })
-        console.log({sapResponse})
-        if(sapResponse.value) return res.status(400).json({messageSap:`${sapResponse.value}`})
+        console.log({ sapResponse })
+        if (sapResponse.value) return res.status(400).json({ messageSap: `${sapResponse.value}` })
         const response = {
             status: sapResponse.status || 200,
-            statusText:sapResponse.statusText || ''
+            statusText: sapResponse.statusText || ''
         }
-        return res.json({...response })
+        return res.json({ ...response })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en createQuotationController' })
+    }
+}
+
+const fechaVenLoteController = async (req, res) => {
+    try {
+        const lotep = '22284'
+        const lote = await fechaVencLote(lotep)
+        return res.json({ lote })
+    } catch (error) {
+        console.log({ error })
+
+        return res.status(500).json({ mensaje: 'error' })
     }
 }
 module.exports = {
@@ -291,4 +312,5 @@ module.exports = {
     inventarioValoradoController,
     descripcionArticuloController,
     createQuotationController,
+    fechaVenLoteController
 }

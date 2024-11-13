@@ -298,21 +298,36 @@ const abastecimientoMesAnteriorController = async (req, res) => {
 
 const abastecimientoPorFechaController = async (req, res) => {
   try {
-    
-    const { view_moth, view_year } = req.query
-    const result = await abastecimientoPorFecha(view_moth, view_year)
+
+    const sapResponse = await abastecimientoPorFecha();
+    const meses = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre'
+    ]
     let data = []
     let response = []
     let totalBs = 0, totalDolares = 0, totalPorcentaje = 1
-    result.map((item) => {
+    sapResponse.map((item) => {
       const newData = {
+        year: item.year,
+        month: item.month,
+        monthName: `${meses[item.month - 1]}`,
         Tipo: item.Tipo,
         CostoComercial: item["Costo Comercial"],
         CostoComercialDolares: item["SUM(ROUND(COSTO COMERCIAL TOTAL/6.96,2))"]
       }
       data.push(newData)
     })
-
     data.map((item) => {
       totalBs += +item.CostoComercial
       totalDolares += +item.CostoComercialDolares
@@ -331,7 +346,70 @@ const abastecimientoPorFechaController = async (req, res) => {
         response.push(newData)
       })
     }
-    return res.status(200).json({ response, totalBs, totalDolares, totalPorcentaje })
+
+    const agrupadoPorMes = response.reduce((acc, item) => {
+      const { year, month, monthName, Tipo, CostoComercial, CostoComercialDolares, porcentaje } = item;
+
+      let mesExistente = acc.find(mes => mes.year === year && mes.month === month);
+
+      if (!mesExistente) {
+        mesExistente = {
+          year,
+          month,
+          monthName,
+          Tipo: []
+        };
+        acc.push(mesExistente);
+      }
+
+      mesExistente.Tipo.push({
+        name: Tipo,
+        CostoComercial,
+        CostoComercialDolares,
+        porcentaje
+      });
+
+      return acc;
+    }, []);
+
+    const ordenarTiposYCalcularVariacion = (agrupadoPorMes) => {
+      // Ordenar los tipos en cada mes alfabéticamente por el atributo 'name'
+      agrupadoPorMes.forEach(mes => {
+        mes.Tipo.sort((a, b) => a.name.localeCompare(b.name));
+      });
+
+      // Calcular variación después de ordenar los tipos
+      agrupadoPorMes.forEach((mesActual, index) => {
+        // No calcular variación para el primer mes, pues no tiene mes anterior
+        if (index === 0) {
+          mesActual.Tipo.forEach(tipo => tipo.variacion = 0);
+          return;
+        }
+
+        // Obtener el mes anterior, que también tiene los tipos ordenados
+        const mesAnterior = agrupadoPorMes[index - 1];
+
+        // Calcular variación directamente para cada tipo (mismo orden)
+        mesActual.Tipo.forEach((tipoActual, idx) => {
+          const tipoAnterior = mesAnterior.Tipo[idx];
+
+          
+          if (tipoAnterior && tipoAnterior.name === tipoActual.name) {
+            const variacion = (parseFloat(tipoActual.CostoComercial) / parseFloat(tipoAnterior.CostoComercial)) - 1;
+            tipoActual.variacion = variacion;
+          } else {
+            
+            tipoActual.variacion = 0;
+          }
+        });
+      });
+
+      return agrupadoPorMes;
+    };
+    
+    const result = ordenarTiposYCalcularVariacion(agrupadoPorMes);
+    return res.status(200).json({ result });
+
   } catch (error) {
     console.log('error en abastecimientoPorFechaController')
     console.log(error)
