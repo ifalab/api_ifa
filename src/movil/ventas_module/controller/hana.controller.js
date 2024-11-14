@@ -184,6 +184,7 @@ const descuentosPorLinea = async () => {
             await connectHANA();
         }
         const query = `select * from ${process.env.DBSAPPRD}.IFA_VM_DESCUENTOS_POR_LINEA`
+        console.log({query})
         return await executeQuery(query)
     } catch (error) {
         console.log(error)
