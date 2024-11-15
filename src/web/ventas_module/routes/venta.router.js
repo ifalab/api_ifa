@@ -15,13 +15,19 @@ const {
     ventasNormalesControllerMesAnterior,
     ventasPorSupervisorController,
     ventasVendedorPorZona,
+    ventasHistoricoSucursalController,
+    ventasHistoricoNormalesController,
+    ventasHistoricoCadenasController,
+    ventasHistoricoIfaVetController,
+    ventasHistoricoMasivosController,
+    ventasHistoricoInstitucionesController,
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
 
-router.get('/sucursales', [validarToken, validarCampos],  ventasPorSucursalController)
+router.get('/sucursales', [validarToken, validarCampos], ventasPorSucursalController)
 router.get('/normales', [validarToken, validarCampos], ventasNormalesController)
 router.get('/cadenas', [validarToken, validarCampos], ventasCadenasController)
 router.get('/instituciones', [validarToken, validarCampos], ventasInstitucionesController)
@@ -36,7 +42,14 @@ router.get('/instituciones-mes-anterior', [validarToken, validarCampos], ventasI
 router.get('/ifavet-mes-anterior', [validarToken, validarCampos], ventasIFAVETControllerMesAnterior)
 router.get('/masivo-mes-anterior', [validarToken, validarCampos], ventasMasivoControllerMesAnterior)
 
-router.get('/ventas-zona',[validarToken,validarCampos],ventasVendedorPorZona)
+router.get('/historico-sucursales', [validarToken, validarCampos], ventasHistoricoSucursalController)
+router.get('/historico-normales', [validarToken, validarCampos], ventasHistoricoNormalesController)
+router.get('/historico-cadenas', [validarToken, validarCampos], ventasHistoricoCadenasController)
+router.get('/historico-ifavet', [validarToken, validarCampos], ventasHistoricoIfaVetController)
+router.get('/historico-masivos', [validarToken, validarCampos], ventasHistoricoMasivosController)
+router.get('/historico-instituciones', [validarToken, validarCampos], ventasHistoricoInstitucionesController)
+
+router.get('/ventas-zona', [validarToken, validarCampos], ventasVendedorPorZona)
 
 router.post('/usuario', [validarToken, validarCampos], ventasUsuarioController)
 

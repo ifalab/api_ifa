@@ -243,6 +243,83 @@ const ventasPorZonasVendedor = async(username,line,groupBy)=>{
     }
 }
 
+const ventasHistoricoSucursal  = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_SEMESTRAL('','')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasHistoricoSucursal:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasHistoricoSucursal');
+    }
+}
+
+const ventasHistoricoNormales = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_SEMESTRAL('','NORMALES')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasHistoricoNormales:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasHistoricoNormales');
+    }
+}
+
+const ventasHistoricoCadenas = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_SEMESTRAL('','CADENAS')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasHistoricoCadenas:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasHistoricoCadenas');
+    }
+}
+
+const ventasHistoricoInstituciones = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_SEMESTRAL('','INSTITUCIONES')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasHistoricoInstituciones:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasHistoricoInstituciones');
+    }
+}
+
+const ventasHistoricoMasivos = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_SEMESTRAL('','MASIVOS')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasHistoricoMasivos:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasHistoricoMasivos');
+    }
+}
+
+const ventasHistoricoIfaVet = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_SEMESTRAL('','IFAVET')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en ventasIfaVet:', error.message);
+        throw new Error('Error al procesar la solicitud: ventasIfaVet');
+    }
+}
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -258,5 +335,11 @@ module.exports = {
     ventasIfaVetMesAnterior,
     ventasMasivoMesAnterior,
     ventasPorSupervisor,
-    ventasPorZonasVendedor
+    ventasPorZonasVendedor,
+    ventasHistoricoSucursal,
+    ventasHistoricoNormales,
+    ventasHistoricoCadenas,
+    ventasHistoricoIfaVet,
+    ventasHistoricoMasivos,
+    ventasHistoricoInstituciones,
 }

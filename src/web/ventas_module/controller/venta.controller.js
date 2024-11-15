@@ -1,4 +1,4 @@
-const { request,response } = require("express")
+const { request, response } = require("express")
 const {
     ventaPorSucursal,
     ventasNormales,
@@ -14,7 +14,13 @@ const {
     ventasIfaVetMesAnterior,
     ventasMasivoMesAnterior,
     ventasPorSupervisor,
-    ventasPorZonasVendedor
+    ventasPorZonasVendedor,
+    ventasHistoricoSucursal,
+    ventasHistoricoNormales,
+    ventasHistoricoIfaVet,
+    ventasHistoricoCadenas,
+    ventasHistoricoMasivos,
+    ventasHistoricoInstituciones
 } = require("./hana.controller")
 
 
@@ -281,22 +287,22 @@ const ventasMasivoControllerMesAnterior = async (req, res) => {
     }
 }
 
-const ventasVendedorPorZona= async(req= request, res= response) =>{
-    const {username,line,groupBy} = req.query;
+const ventasVendedorPorZona = async (req = request, res = response) => {
+    const { username, line, groupBy } = req.query;
     try {
-        if(!username && typeof username != "string"){
+        if (!username && typeof username != "string") {
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
             })
         }
         console.log({
-            username,line,groupBy   
+            username, line, groupBy
         })
-        const response = await ventasPorZonasVendedor(username,line,groupBy);
-       
-        const data =  response.map( r => ({
+        const response = await ventasPorZonasVendedor(username, line, groupBy);
+
+        const data = response.map(r => ({
             ...r,
-            cumplimiento: r.Quota == 0? 0 : r.Sales/r.Quota
+            cumplimiento: r.Quota == 0 ? 0 : r.Sales / r.Quota
         }))
         return res.status(200).json({
             response: data,
@@ -354,6 +360,271 @@ const ventasPorSupervisorController = async (req, res) => {
     }
 }
 
+const ventasHistoricoSucursalController = async (req, res) => {
+    try {
+        const data = await ventasHistoricoSucursal()
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en ventas historicos controller' })
+    }
+}
+
+const ventasHistoricoNormalesController = async (req, res) => {
+    try {
+        const data = await ventasHistoricoNormales()
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en ventas historicos controller' })
+    }
+}
+
+const ventasHistoricoCadenasController = async (req, res) => {
+    try {
+        const data = await ventasHistoricoCadenas()
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en ventas historicos controller' })
+    }
+}
+
+const ventasHistoricoIfaVetController = async (req, res) => {
+    try {
+        const data = await ventasHistoricoIfaVet()
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en ventas historicos controller' })
+    }
+}
+
+
+const ventasHistoricoMasivosController = async (req, res) => {
+    try {
+        const data = await ventasHistoricoMasivos()
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en ventas historicos controller' })
+    }
+}
+
+const ventasHistoricoInstitucionesController = async (req, res) => {
+    try {
+        const data = await ventasHistoricoInstituciones()
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en ventas historicos controller' })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -369,5 +640,11 @@ module.exports = {
     ventasIFAVETControllerMesAnterior,
     ventasMasivoControllerMesAnterior,
     ventasPorSupervisorController,
-    ventasVendedorPorZona
+    ventasVendedorPorZona,
+    ventasHistoricoSucursalController,
+    ventasHistoricoNormalesController,
+    ventasHistoricoCadenasController,
+    ventasHistoricoIfaVetController,
+    ventasHistoricoMasivosController,
+    ventasHistoricoInstitucionesController,
 };
