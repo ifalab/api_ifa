@@ -33,7 +33,8 @@ app.use('/v1/web/centro-costo', require('./web/centro_costos_module/routes/cc.ro
 //TODO VERSION MOVIL --------------------------------------------------------------------------------------
 app.use('/v1/movil/ventas',require('./movil/ventas_module/routes/ventas.routes'))
 
-//TODO --------------------------------------------------------------------------------------
+//TODO VERSION MOVIL V2 -----------------------------------------------------------------------------------
+app.use('/v1/movil-v2/sync', require('./movil-v2/sincronizacion/routes/sync.routes'));
 //!------------------------------------------------------------------------------------------
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
