@@ -1,4 +1,4 @@
-const { findClientePorVendedor, findDescuentosArticulos, findDescuentosArticulosCatalogo, findDescuentosCondicion, findDescuentosLineas } = require("./hana.controller")
+const { findClientePorVendedor, findDescuentosArticulos, findDescuentosArticulosCatalogo, findDescuentosCondicion, findDescuentosLineas, moraCliente } = require("./hana.controller")
 
 const sync = async (req, res) => {
     try {
@@ -14,4 +14,18 @@ const sync = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en la sincronizacion' })
     }
 }
-module.exports ={ sync }
+
+const moraClienteController = async (req, res) => {
+    try {
+        const { cardCode } = req.body
+        const response = await moraCliente(cardCode)
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en moraClienteController' })
+    }
+}
+module.exports = {
+    sync,
+    moraClienteController,
+}
