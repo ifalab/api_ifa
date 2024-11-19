@@ -211,27 +211,105 @@ const cobranzaInstitucionesMesAnterior = async () => {
     }
 }
 
-const cobranzaPorSupervisor = async (userCode,dim1) => {
+const cobranzaPorSupervisor = async (userCode, dim1) => {
     try {
-        if(!connection){
+        if (!connection) {
             await connectHANA()
         }
         const query = `call "LAB_IFA_PRD".IFA_COB_DETALLADO_X_ZONA_USER('${userCode}','${dim1}')`
         return await executeQuery(query)
     } catch (error) {
-        console 
+        console
     }
 }
 
 const cobranzaPorZona = async (username) => {
     try {
-        if(!connection){
+        if (!connection) {
             await connectHANA()
         }
         const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA"(${username})`
         return await executeQuery(query)
     } catch (error) {
-        console 
+        console
+    }
+}
+
+const cobranzaHistoricoNacional = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.COB_GROUPBY_DIMA_SEMESTRAL('','')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaHistoricoNacional:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaHistoricoNacional');
+    }
+}
+
+const cobranzaHistoricoNormales = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.COB_GROUPBY_DIMA_SEMESTRAL('','NORMALES')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaHistoricoNormales:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaHistoricoNormales');
+    }
+}
+
+const cobranzaHistoricoCadenas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.COB_GROUPBY_DIMA_SEMESTRAL('','CADENAS')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaHistoricoCadenas:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaHistoricoCadenas');
+    }
+}
+
+const cobranzaHistoricoIfaVet = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.COB_GROUPBY_DIMA_SEMESTRAL('','IFAVET')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaHistoricoIfaVet:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaHistoricoIfaVet');
+    }
+}
+
+const cobranzaHistoricoInstituciones = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.COB_GROUPBY_DIMA_SEMESTRAL('','INSTITUCIONES')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaHistoricoInstituciones:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaHistoricoInstituciones');
+    }
+}
+
+const cobranzaHistoricoMasivos = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_DATA.COB_GROUPBY_DIMA_SEMESTRAL('','MASIVOS')`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error('Error en cobranzaHistoricoMasivos:', error.message);
+        throw new Error('Error al procesar la solicitud: cobranzaHistoricoMasivos');
     }
 }
 
@@ -250,5 +328,11 @@ module.exports = {
     cobranzaMasivoMesAnterior,
     cobranzaInstitucionesMesAnterior,
     cobranzaPorSupervisor,
-    cobranzaPorZona
+    cobranzaPorZona,
+    cobranzaHistoricoNacional,
+    cobranzaHistoricoNormales,
+    cobranzaHistoricoCadenas,
+    cobranzaHistoricoIfaVet,
+    cobranzaHistoricoInstituciones,
+    cobranzaHistoricoMasivos,
 }

@@ -1,4 +1,4 @@
-const { tipoDeCambion } = require("./hana.controller")
+const { tipoDeCambion, empleadosHana, findEmpleadoByCode } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 
 const asientoContableController = async (req, res) => {
@@ -181,8 +181,116 @@ const asientoContableCC_Controller = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en asientoContableCC_Controller' })
     }
 }
+
+const createAsientoContableController = async (req, res) => {
+    try {
+        const {
+            ReferenceDate,
+            Memo,
+            Indicator,
+            JournalEntryLines, } = req.body
+
+
+        console.log({
+            ReferenceDate,
+            Memo,
+            Indicator,
+            JournalEntryLines,
+        })
+        const tipoCambio = await tipoDeCambion()
+        const usd = tipoCambio[0]
+        console.log({ usd })
+        const journalList = []
+        JournalEntryLines.map((item) => {
+            const { Credit, Debit, ...restData } = item
+            const cambio = +usd.Rate
+            if (Credit !== 0 && Debit == 0) {
+                const newValue = +Credit / cambio
+                const newJournal = {
+                    ...restData,
+                    Credit,
+                    Debit: 0,
+                    DebitSys: 0,
+                    CreditSys: parseFloat(newValue.toFixed(2))
+                }
+                const newContraJournal = {
+                    ...restData,
+                    Credit: 0,
+                    Debit: Credit,
+                    DebitSys: parseFloat(newValue.toFixed(2)),
+                    CreditSys: 0
+                }
+                journalList.push(newJournal)
+                journalList.push(newContraJournal)
+            }
+
+            if (Credit == 0 && Debit !== 0) {
+                const newValue = +Debit / cambio
+                const newJournal = {
+                    ...restData,
+                    Credit: 0,
+                    Debit,
+                    DebitSys: parseFloat(newValue.toFixed(2)),
+                    CreditSys: 0
+                }
+                const newContraJournal = {
+                    ...restData,
+                    Credit: Debit,
+                    Debit: 0,
+                    DebitSys: 0,
+                    CreditSys: parseFloat(newValue.toFixed(2)),
+                }
+                journalList.push(newJournal)
+                journalList.push(newContraJournal)
+            }
+        })
+
+        const data = {
+            ReferenceDate,
+            Memo,
+            Indicator,
+            JournalEntryLines: journalList,
+        }
+        console.log('final data -----------------------------------------------')
+        console.log({ data })
+
+        const response = await asientoContable({
+            ...data
+        })
+        return res.json({ ...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en createAsientoContableController' })
+    }
+}
+
+const empleadosController = async (req, res) => {
+    try {
+        const response = await empleadosHana()
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en emplados controller' })
+    }
+}
+
+const empleadosByCodeController = async (req, res) => {
+    try {
+        const code = req.params.code
+        const response = await findEmpleadoByCode(code)
+        if(response.length == 0) return res.status(404).json({mensaje:'El empleado no fue encontrado' }) 
+        return res.json({ ...response[0] })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en emplados controller' })
+    }
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
-    asientoContableCC_Controller
+    asientoContableCC_Controller,
+    createAsientoContableController,
+    empleadosController,
+    empleadosByCodeController
 }

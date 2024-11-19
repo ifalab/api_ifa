@@ -1,5 +1,5 @@
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor,cobranzaPorZona } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos } = require("./hana.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -14,20 +14,20 @@ const cobranzaGeneralController = async (req, res) => {
         })
     }
 }
-const cobranzasPorZonasController = async(req= request, res= response)=>{
-    const {username} = req.query;
+const cobranzasPorZonasController = async (req = request, res = response) => {
+    const { username } = req.query;
     try {
-        if(!username && typeof username != "string")
+        if (!username && typeof username != "string")
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
             })
         const response = await cobranzaPorZona(username);
-        if(response.length == 0) {
-            return res.status(400).json({mensaje: 'Ingrese un usuario valido'})
+        if (response.length == 0) {
+            return res.status(400).json({ mensaje: 'Ingrese un usuario valido' })
         }
-        const data =  response.map( r => ({
+        const data = response.map(r => ({
             ...r,
-            cumplimiento: r.Quota == 0? 0 : r.Collection/r.Quota
+            cumplimiento: r.Quota == 0 ? 0 : r.Collection / r.Quota
         }))
         return res.status(200).json({
             response: data,
@@ -329,6 +329,276 @@ const cobranzaPorSupervisorController = async (req, res) => {
     }
 }
 
+const cobranzaHistoricoNacionalController = async (req, res) => {
+    try {
+        const data = await cobranzaHistoricoNacional()
+        console.log({data})
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en cobranzaHistoricoNacional controller' })
+    }
+}
+
+const cobranzaHistoricoNormalesController = async (req, res) => {
+    try {
+        const data = await cobranzaHistoricoNormales()
+        // console.log({data})
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en cobranzaHistoricoNacional controller' })
+    }
+}
+
+const cobranzaHistoricoCadenasController = async (req, res) => {
+    try {
+        const data = await cobranzaHistoricoCadenas()
+        // console.log({data})
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en cobranzaHistoricoNacional controller' })
+    }
+}
+
+const cobranzaHistoricoIfavetController = async (req, res) => {
+    try {
+        const data = await cobranzaHistoricoIfaVet()
+        // console.log({data})
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en cobranzaHistoricoNacional controller' })
+    }
+}
+
+const cobranzaHistoricoInstitucionesController = async (req, res) => {
+    try {
+        const data = await cobranzaHistoricoInstituciones()
+        // console.log({data})
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en cobranzaHistoricoNacional controller' })
+    }
+}
+
+const cobranzaHistoricoMasivosController = async (req, res) => {
+    try {
+        const data = await cobranzaHistoricoMasivos()
+        // console.log({data})
+        // Mapa de nombres de meses
+        const monthNames = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+
+        // Agrupar datos por SucName
+        const groupedResponse = data.reduce((acc, item) => {
+            const sucursalIndex = acc.findIndex(suc => suc.SucName === item.SucName);
+
+            const itemWithMonthName = {
+                ...item,
+                MonthName: monthNames[item.Month - 1] // Asigna el nombre del mes
+            };
+
+            if (sucursalIndex === -1) {
+                // Si la sucursal no existe, agregarla
+                acc.push({
+                    SucName: item.SucName,
+                    meses: [itemWithMonthName]
+                });
+            } else {
+                // Si ya existe, agregar el mes a la lista
+                acc[sucursalIndex].meses.push(itemWithMonthName);
+            }
+
+            return acc;
+        }, []);
+
+        // Ordenar los meses dentro de cada sucursal
+        groupedResponse.forEach(sucursal => {
+            sucursal.meses.sort((a, b) => a.Month - b.Month);
+        });
+        // Retornar la respuesta agrupada
+        return res.json({ response: groupedResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en cobranzaHistoricoNacional controller' })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -344,5 +614,11 @@ module.exports = {
     cobranzaMasivosMesAnteriorController,
     cobranzaInstitucionesMesAnteriorController,
     cobranzaPorSupervisorController,
-    cobranzasPorZonasController
+    cobranzasPorZonasController,
+    cobranzaHistoricoNacionalController,
+    cobranzaHistoricoNormalesController,
+    cobranzaHistoricoCadenasController,
+    cobranzaHistoricoIfavetController,
+    cobranzaHistoricoInstitucionesController,
+    cobranzaHistoricoMasivosController,
 }

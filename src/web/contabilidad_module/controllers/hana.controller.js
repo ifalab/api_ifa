@@ -58,6 +58,39 @@ const tipoDeCambion = async ()=>{
     }
 }
 
+const empleadosHana = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('empleadosHana EXECUTE')
+        const query = `SELECT * FROM "LAB_IFA_PRD"."IFA_DM_EMPLEADOS"`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({error})
+        throw new Error('error en empleadosHana')
+    }
+}
+
+const findEmpleadoByCode = async(code)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('findEmpleadoByCode EXECUTE')
+        const query = `CALL "LAB_IFA_PRD".IFA_DM_BUSCAR_EMPLEADO_POR_CODIGO('${code}')`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({error})
+        throw new Error('error en findEmpleadoByCode')
+    }
+}
 module.exports = {
-    tipoDeCambion
+    tipoDeCambion,
+    empleadosHana,
+    findEmpleadoByCode
 }
