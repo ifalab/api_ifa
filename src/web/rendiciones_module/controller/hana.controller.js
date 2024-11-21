@@ -43,7 +43,7 @@ const executeQuery = async (query) => {
     })
 }
 
-const tipoDeCambion = async ()=>{
+const tipoDeCambion = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -53,61 +53,27 @@ const tipoDeCambion = async ()=>{
         const result = await executeQuery(query)
         return result
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         throw new Error('error en tipoDeCambion')
     }
 }
 
-const empleadosHana = async()=>{
+const findAllAperturaCaja = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        console.log('empleadosHana EXECUTE')
-        const query = `SELECT * FROM "LAB_IFA_PRD"."IFA_DM_EMPLEADOS"`
-        console.log({query})
+        console.log('findAllAperturaCaja EXECUTE')
+        const query = `SELECT * FROM "LAB_IFA_DEV".ifa_rw_estado_cajas`
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
-        console.log({error})
-        throw new Error('error en empleadosHana')
+        console.log({ error })
+        throw new Error('error en findAllAperturaCaja')
     }
 }
 
-const findEmpleadoByCode = async(code)=>{
-    try {
-        if (!connection) {
-            await connectHANA();
-        }
-        console.log('findEmpleadoByCode EXECUTE')
-        const query = `CALL "LAB_IFA_PRD".IFA_DM_BUSCAR_EMPLEADO_POR_CODIGO('${code}')`
-        console.log({query})
-        const result = await executeQuery(query)
-        return result
-    } catch (error) {
-        console.log({error})
-        throw new Error('error en findEmpleadoByCode')
-    }
-}
-
-const findAllBancos = async()=>{
-    try {
-        if (!connection) {
-            await connectHANA();
-        }
-        console.log('findAllBancos EXECUTE')
-        const query = `SELECT * FROM "LAB_IFA_PRD"."IFA_DM_TODOS_BANCOS"`
-        console.log({query})
-        const result = await executeQuery(query)
-        return result
-    } catch (error) {
-        console.log({error})
-        throw new Error('error en findAllBancos')
-    }
-}
 module.exports = {
-    tipoDeCambion,
-    empleadosHana,
-    findEmpleadoByCode,
-    findAllBancos
+    findAllAperturaCaja
 }

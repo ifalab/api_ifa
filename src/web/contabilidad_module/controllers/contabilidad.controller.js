@@ -1,4 +1,4 @@
-const { tipoDeCambion, empleadosHana, findEmpleadoByCode } = require("./hana.controller")
+const { tipoDeCambion, empleadosHana, findEmpleadoByCode, findAllBancos } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 
 const asientoContableController = async (req, res) => {
@@ -185,79 +185,70 @@ const asientoContableCC_Controller = async (req, res) => {
 const createAsientoContableController = async (req, res) => {
     try {
         const {
-            ReferenceDate,
-            Memo,
-            Indicator,
-            JournalEntryLines, } = req.body
-
-
-        console.log({
-            ReferenceDate,
-            Memo,
-            Indicator,
-            JournalEntryLines,
-        })
+            codEmp,
+            date,
+            monto,
+            banckAccount,
+            glosa,
+            cheque
+        } = req.body
         const tipoCambio = await tipoDeCambion()
-        const usd = tipoCambio[0]
-        console.log({ usd })
-        const journalList = []
-        JournalEntryLines.map((item) => {
-            const { Credit, Debit, ...restData } = item
-            const cambio = +usd.Rate
-            if (Credit !== 0 && Debit == 0) {
-                const newValue = +Credit / cambio
-                const newJournal = {
-                    ...restData,
-                    Credit,
-                    Debit: 0,
-                    DebitSys: 0,
-                    CreditSys: parseFloat(newValue.toFixed(2))
-                }
-                const newContraJournal = {
-                    ...restData,
-                    Credit: 0,
-                    Debit: Credit,
-                    DebitSys: parseFloat(newValue.toFixed(2)),
-                    CreditSys: 0
-                }
-                journalList.push(newJournal)
-                journalList.push(newContraJournal)
-            }
-
-            if (Credit == 0 && Debit !== 0) {
-                const newValue = +Debit / cambio
-                const newJournal = {
-                    ...restData,
-                    Credit: 0,
-                    Debit,
-                    DebitSys: parseFloat(newValue.toFixed(2)),
-                    CreditSys: 0
-                }
-                const newContraJournal = {
-                    ...restData,
-                    Credit: Debit,
-                    Debit: 0,
-                    DebitSys: 0,
-                    CreditSys: parseFloat(newValue.toFixed(2)),
-                }
-                journalList.push(newJournal)
-                journalList.push(newContraJournal)
-            }
-        })
-
-        const data = {
-            ReferenceDate,
-            Memo,
-            Indicator,
-            JournalEntryLines: journalList,
+        const usdRate = tipoCambio[0]
+        const usd = +usdRate.Rate
+        if (monto == 0) return res.status(400).json({ mensaje: 'El monto no puede ser cero' })
+        if (usd == 0) return res.status(400).json({ mensaje: 'El tipo de cambio no puede ser cero' })
+        const newValue = +monto / usd
+        let firstAccount = {
+            AccountCode: '1120501',
+            ShortName: `${codEmp}`,
+            Credit: 0,
+            Debit: monto,
+            CreditSys: 0,
+            DebitSys: parseFloat(newValue.toFixed(2)),
+            ContraAccount: `${banckAccount}`,
+            LineMemo: `${glosa}`,
+            Reference1: '',
+            Reference2: ''
         }
-        console.log('final data -----------------------------------------------')
-        console.log({ data })
+        let contraAccount = {
+            AccountCode: `${banckAccount}`,
+            ShortName: `${banckAccount}`,
+            Credit: monto,
+            Debit: 0,
+            CreditSys: parseFloat(newValue.toFixed(2)),
+            DebitSys: 0,
+            ContraAccount: '',
+            LineMemo: glosa,
+            Reference1: `${cheque}`,
+            Reference2: '',
+        }
 
+        let JournalEntryLines = []
+        JournalEntryLines.push(firstAccount)
+        JournalEntryLines.push(contraAccount)
+        let data = {
+            ReferenceDate: date,
+            Memo: glosa,
+            Indicator: '11',
+            JournalEntryLines
+        }
+
+        console.log({...data})
+        // return
+        // return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja` })
         const response = await asientoContable({
             ...data
         })
-        return res.json({ ...response })
+        if (response.value) {
+            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja` })
+            // return res.status(400).json({ mensaje: `${response.value}` })
+            //{ lang: 'en-us', value: '10000415 - Linked value 11 does not exist' }
+            // value: "Enter valid code  [JournalEntryLines.ContraAccount][line: 2] , '1120501'"
+        }
+        return res.json({mensaje:'Apertura de Caja creado con exito' })
+
+
+
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en createAsientoContableController' })
@@ -278,7 +269,7 @@ const empleadosByCodeController = async (req, res) => {
     try {
         const code = req.params.code
         const response = await findEmpleadoByCode(code)
-        if(response.length == 0) return res.status(404).json({mensaje:'El empleado no fue encontrado' }) 
+        if (response.length == 0) return res.status(404).json({ mensaje: 'El empleado no fue encontrado' })
         return res.json({ ...response[0] })
     } catch (error) {
         console.log({ error })
@@ -286,11 +277,21 @@ const empleadosByCodeController = async (req, res) => {
     }
 }
 
+const findAllBancoController = async (req, res) => {
+    try {
+        const listBank = await findAllBancos()
+        return res.json({ listBank })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el find all bank controlador' })
+    }
+}
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
     asientoContableCC_Controller,
     createAsientoContableController,
     empleadosController,
-    empleadosByCodeController
+    empleadosByCodeController,
+    findAllBancoController
 }

@@ -29,12 +29,14 @@ app.use('/v1/web/visitas-medicas', require('./web/visitas-medicas/routes/visitas
 app.use('/v1/web/inventario', require('./web/inventarios/routers/inventarios.routes'));
 app.use('/v1/web/contabilidad', require('./web/contabilidad_module/routers/contabilidad.routes'));
 app.use('/v1/web/centro-costo', require('./web/centro_costos_module/routes/cc.routes'));
+app.use('/v1/web/rendiciones', require('./web/rendiciones_module/routes/rendiciones.routes'));
 
 //TODO VERSION MOVIL --------------------------------------------------------------------------------------
 app.use('/v1/movil/ventas',require('./movil/ventas_module/routes/ventas.routes'))
 
 //TODO VERSION MOVIL V2 -----------------------------------------------------------------------------------
 app.use('/v1/movil-v2/sync', require('./movil-v2/sincronizacion/routes/sync.routes'));
+app.use('/v1/movil-v2/pedidos', require('./movil-v2/pedidos/routes/pedidos.routes'));
 //!------------------------------------------------------------------------------------------
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 

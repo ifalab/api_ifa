@@ -9,6 +9,7 @@ const { asientoContableController,
     createAsientoContableController,
     empleadosController,
     empleadosByCodeController,
+    findAllBancoController,
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -19,5 +20,6 @@ router.post('/asiento-contable-cc', [validarToken, validarCampos], asientoContab
 router.post('/create-asiento-contable', [validarToken, validarCampos], createAsientoContableController)
 router.get('/empleados', [validarToken, validarCampos], empleadosController)
 router.get('/empleado-by-code/:code', [validarToken, validarCampos], empleadosByCodeController)
+router.get('/find-all-bancos', [validarToken, validarCampos],findAllBancoController)
 
 module.exports = router
