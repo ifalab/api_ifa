@@ -190,7 +190,9 @@ const createAsientoContableController = async (req, res) => {
             monto,
             banckAccount,
             glosa,
-            cheque
+            cheque,
+            indicador,
+            reference
         } = req.body
         const tipoCambio = await tipoDeCambion()
         const usdRate = tipoCambio[0]
@@ -207,7 +209,7 @@ const createAsientoContableController = async (req, res) => {
             DebitSys: parseFloat(newValue.toFixed(2)),
             ContraAccount: `${banckAccount}`,
             LineMemo: `${glosa}`,
-            Reference1: '',
+            Reference1:`${reference}`,
             Reference2: ''
         }
         let contraAccount = {
@@ -229,7 +231,8 @@ const createAsientoContableController = async (req, res) => {
         let data = {
             ReferenceDate: date,
             Memo: glosa,
-            Indicator: '11',
+            Indicator: indicador,
+            Reference:reference,
             JournalEntryLines
         }
 
