@@ -74,6 +74,23 @@ const findAllAperturaCaja = async () => {
     }
 }
 
+const findCajasEmpleado = async (codEmp)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('findCajasEmpleado EXECUTE')
+        const query = `CALL LAB_IFA_DEV.IFA_CAJAS_X_EMPLEADO('${codEmp}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findCajasEmpleado ')
+    }
+}
+
 module.exports = {
-    findAllAperturaCaja
+    findAllAperturaCaja,
+    findCajasEmpleado
 }

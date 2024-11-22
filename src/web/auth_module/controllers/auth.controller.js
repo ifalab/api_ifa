@@ -58,6 +58,7 @@ const createUserController = async (req, res) => {
         const {
             usercode,
             username,
+            codemp,
             pass,
             confirm_pass,
             superuser,
@@ -72,6 +73,7 @@ const createUserController = async (req, res) => {
             usercode,
             username,
             pass,
+            codemp,
             confirm_pass,
             superuser,
             etiqueta,
@@ -89,6 +91,7 @@ const createUserController = async (req, res) => {
         const result = await createUser(
             usercode,
             username,
+            codemp,
             encryptPassword,
             superuser,
             etiqueta,)
@@ -236,6 +239,7 @@ const findAllUserController = async (req, res) => {
                 ISACTIVE: value.ISACTIVE,
                 CREATED_AT: value.CREATED_AT,
                 ETIQUETA: value.ETIQUETA,
+                CODEMP: value.CODEMP,
             }
             listUser.push(user)
         })
@@ -267,6 +271,7 @@ const findUserByIdController = async (req, res) => {
             ISACTIVE: value.ISACTIVE,
             CREATED_AT: value.CREATED_AT,
             ETIQUETA: value.ETIQUETA,
+            CODEMP: value.CODEMP,
 
         }
         return res.json({ ...user })
@@ -286,6 +291,7 @@ const updateUserController = async (req, res) => {
             new_usercode,
             new_username,
             new_pass,
+            new_codemp,
             confirm_pass,
             new_superuser,
             new_isactive,
@@ -301,6 +307,7 @@ const updateUserController = async (req, res) => {
             id_user,
             new_usercode,
             new_username,
+            new_codemp,
             new_superuser,
             new_isactive,
             new_etiqueta)

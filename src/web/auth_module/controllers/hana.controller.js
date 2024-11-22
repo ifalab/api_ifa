@@ -100,6 +100,7 @@ const loginUser = async (username, password) => {
 const createUser = async (
     new_usercode,
     new_username,
+    new_codemp,
     new_pass,
     new_superuser,
     new_etiqueta,
@@ -115,7 +116,7 @@ const createUser = async (
             new_superuser,
             new_etiqueta,
         })
-        const query = `call LAB_IFA_LAPP.LAPP_CREAR_USUARIO('${new_usercode}', '${new_username}','${new_pass}',${new_superuser},'${new_etiqueta}')`;
+        const query = `call LAB_IFA_LAPP.LAPP_CREAR_USUARIO('${new_usercode}', '${new_username}','${new_codemp}','${new_pass}',${new_superuser},'${new_etiqueta}')`;
         console.log({ query });
         const result = await executeQuery(query);
         console.log('hana')
@@ -175,6 +176,7 @@ const updateUser = async (
     id_user,
     new_usercode,
     new_username,
+    new_codemp,
     new_superuser,
     new_isactive,
     new_etiqueta
@@ -184,7 +186,7 @@ const updateUser = async (
             await connectHANA();
         }
         console.log('update User execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ACTUALIZAR_USUARIO(${id_user},'${new_usercode}','${new_username}',${new_superuser},${new_isactive},'${new_etiqueta}')`
+        const query = `call LAB_IFA_LAPP.LAPP_ACTUALIZAR_USUARIO(${id_user},'${new_usercode}','${new_username}','${new_codemp}',${new_superuser},${new_isactive},'${new_etiqueta}')`
         const result = await executeQuery(query)
         console.log({query})
         // console.log({result})
