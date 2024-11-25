@@ -90,7 +90,41 @@ const findCajasEmpleado = async (codEmp)=>{
     }
 }
 
+const rendicionDetallada = async (id)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('rendicionDetallada EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_RENDICION_DETALLADA_BY_ID(${id})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en rendicionDetallada ')
+    }
+}
+
+const rendicionByTransac = async (codTransac)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('rendicionDetallada EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_LISTA_REND_BY_TRANSID(${codTransac})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en rendicionDetallada ')
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
-    findCajasEmpleado
+    findCajasEmpleado,
+    rendicionDetallada,
+    rendicionByTransac,
 }
