@@ -1,4 +1,4 @@
-const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac } = require("./hana.controller")
+const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -84,7 +84,7 @@ const rendicionDetalladaController = async (req, res) => {
             MONTH_RENDICION,
             listaDetalles
         }
-        return res.json({...dataFinal })
+        return res.json({ ...dataFinal })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
@@ -103,9 +103,109 @@ const rendicionByTransacController = async (req, res) => {
     }
 }
 
+const crearRendicionController = async (req, res) => {
+    try {
+        const {
+            codEmp,
+            transacId,
+            listaGastos
+        } = req.body
+        const date = new Date('2024-02-23')
+        const year = date.getFullYear()
+        const month = date.getMonth() + 1
+        const response = await crearRendicion(transacId, codEmp, 1, month, year)
+        if (!response[0].ID) return res.status(404).json({ mensaje: 'error al crear la rendicion' })
+        const idRendicion = response[0].ID
+
+        let gastos = []
+        let result = []
+        listaGastos.map((item) => {
+            const newData = {
+                ...item,
+                idRendicion,
+                month,
+                year
+            }
+            gastos.push(newData)
+        })
+
+        await Promise.all(gastos.map(async (item) => {
+            const {
+                new_nit,
+                new_tipo,
+                new_gasto,
+                new_nroFactura,
+                new_codAut,
+                new_fecha,
+                new_nombreRazon,
+                new_glosa,
+                new_importeTotal,
+                new_ice,
+                new_iehd,
+                new_ipj,
+                new_tasas,
+                new_otroNoSujeto,
+                new_exento,
+                new_tasaCero,
+                new_descuento,
+                new_codControl,
+                new_gifCard,
+                idRendicion,
+                month,
+                year,
+            } = item
+            const responseHana = await crearGasto(
+                new_nit,
+                new_tipo,
+                new_gasto,
+                new_nroFactura,
+                new_codAut,
+                new_fecha,
+                new_nombreRazon,
+                new_glosa,
+                new_importeTotal,
+                new_ice,
+                new_iehd,
+                new_ipj,
+                new_tasas,
+                new_otroNoSujeto,
+                new_exento,
+                new_tasaCero,
+                new_descuento,
+                new_codControl,
+                new_gifCard,
+                idRendicion,
+                month,
+                year,
+            )
+            result.push(responseHana[0] || responseHana)
+
+        }))
+
+        const hasError = result.some((item) => item.error); // Busca si algún objeto contiene la propiedad "error"
+
+        if (hasError) {
+            return res.status(400).json({ result }); // Responde con status 400 y el resultado
+        }
+
+        return res.json({ result })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const actualizarRendicion = async (req, res) => {
+    try {
+
+    } catch (error) {
+        console.log({error})
+    }
+}
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
     rendicionDetalladaController,
-    rendicionByTransacController
+    rendicionByTransacController,
+    crearRendicionController
 }

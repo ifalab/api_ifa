@@ -74,7 +74,7 @@ const findAllAperturaCaja = async () => {
     }
 }
 
-const findCajasEmpleado = async (codEmp)=>{
+const findCajasEmpleado = async (codEmp) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -90,7 +90,7 @@ const findCajasEmpleado = async (codEmp)=>{
     }
 }
 
-const rendicionDetallada = async (id)=>{
+const rendicionDetallada = async (id) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -106,7 +106,7 @@ const rendicionDetallada = async (id)=>{
     }
 }
 
-const rendicionByTransac = async (codTransac)=>{
+const rendicionByTransac = async (codTransac) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -122,9 +122,110 @@ const rendicionByTransac = async (codTransac)=>{
     }
 }
 
+const crearRendicion = async (NEW_TransactionId, NEW_CodEmp, NEW_ESTADO, NEW_MES, NEW_YEAR) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('crearRendicion EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION('${NEW_TransactionId}','${NEW_CodEmp}','${NEW_ESTADO}',${NEW_MES},${NEW_YEAR})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en crearRendicion ')
+    }
+}
+
+const crearGasto = async (
+    new_nit,
+    new_tipo,
+    new_gasto,
+    new_nroFactura,
+    new_codAut,
+    new_fecha,
+    new_nombreRazon,
+    new_glosa,
+    new_importeTotal,
+    new_ice,
+    new_iehd,
+    new_ipj,
+    new_tasas,
+    new_otroNoSujeto,
+    new_exento,
+    new_tasaCero,
+    new_descuento,
+    new_codControl,
+    new_gifCard,
+    idRendicion,
+    month,
+    year,
+) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('crearRendicion EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION_GASTOS('${new_nit}','${new_tipo}',${new_gasto},'${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'1',${idRendicion},${month},${year})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `Error, no se pudieron insertar los datos con nit: ${new_nit || 'No definido'},Tipo: ${new_tipo || 'No definido'}, Factura: ${new_nroFactura || 'No definido'}, Razon: ${new_nombreRazon || 'No definido'}, Glosa: ${new_glosa || 'No definido'}`
+        }
+        throw new Error('error crear gasto')
+    }
+}
+
+const actualizarGastos = async (
+    ID,
+    new_nit,
+    new_tipo,
+    new_gasto,
+    new_nroFactura,
+    new_codAut,
+    new_fecha,
+    new_nombreRazon,
+    new_glosa,
+    new_importeTotal,
+    new_ice,
+    new_iehd,
+    new_ipj,
+    new_tasas,
+    new_otroNoSujeto,
+    new_exento,
+    new_tasaCero,
+    new_descuento,
+    new_codControl,
+    new_gifCard,
+    idRendicion,
+) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarGastos EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS(${ID},'${new_nit}','${new_tipo}',${new_gasto},'${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'1',${idRendicion})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `Error, no se pudieron actualizar los datos con nit: ${new_nit || 'No definido'},Tipo: ${new_tipo || 'No definido'}, Factura: ${new_nroFactura || 'No definido'}, Razon: ${new_nombreRazon || 'No definido'}, Glosa: ${new_glosa || 'No definido'}`
+        }
+    }
+    
+}
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
     rendicionDetallada,
     rendicionByTransac,
+    crearRendicion,
+    crearGasto,
+    actualizarGastos,
 }
