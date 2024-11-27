@@ -154,13 +154,18 @@ const crearRendicionController = async (req, res) => {
                 month,
                 year,
             } = item
+
+            const fecha = new_fecha.split('/')
+            const fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
+            console.log({ fechaFormateada, fecha, new_fecha })
+
             const responseHana = await crearGasto(
                 new_nit,
                 new_tipo,
                 new_gasto,
                 new_nroFactura,
                 new_codAut,
-                new_fecha,
+                fechaFormateada,
                 new_nombreRazon,
                 new_glosa,
                 new_importeTotal,
@@ -207,7 +212,14 @@ const crearActualizarGastoController = async (req, res) => {
         const date = new Date()
         const year = date.getFullYear()
         const month = date.getMonth() + 1
-
+        let errores = []
+        listaGastos.map((item) => {
+            const { new_fecha } = item
+            if (!new_fecha) {
+                errores.push(`Falta la fecha en el gasto con nit ${item.new_nit || 'No definido'} y glosa ${item.new_glosa || 'No definido'}`)
+            }
+        })
+        if (errores.length > 0) return res.json({ errores })
         let gastos = []
         let result = []
         listaGastos.map((item) => {
@@ -219,13 +231,14 @@ const crearActualizarGastoController = async (req, res) => {
             }
             gastos.push(newData)
         })
-        // return res.json({ gastos })
+
         await Promise.all(gastos.map(async (item) => {
             const {
                 id_gasto,
                 new_nit,
                 new_tipo,
                 new_gasto,
+                new_estado,
                 new_nroFactura,
                 new_codAut,
                 new_fecha,
@@ -246,6 +259,10 @@ const crearActualizarGastoController = async (req, res) => {
                 month,
                 year,
             } = item
+
+            const fecha = new_fecha.split('/')
+            const fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
+            console.log({ fechaFormateada, fecha, new_fecha })
             if (id_gasto == 0) {
                 const responseHana = await crearGasto(
                     new_nit,
@@ -253,7 +270,7 @@ const crearActualizarGastoController = async (req, res) => {
                     new_gasto,
                     new_nroFactura,
                     new_codAut,
-                    new_fecha,
+                    fechaFormateada,
                     new_nombreRazon,
                     new_glosa,
                     new_importeTotal,
@@ -280,7 +297,111 @@ const crearActualizarGastoController = async (req, res) => {
                     new_gasto,
                     new_nroFactura,
                     new_codAut,
-                    new_fecha,
+                    fechaFormateada,
+                    new_nombreRazon,
+                    new_glosa,
+                    new_importeTotal,
+                    new_ice,
+                    new_iehd,
+                    new_ipj,
+                    new_tasas,
+                    new_otroNoSujeto,
+                    new_exento,
+                    new_tasaCero,
+                    new_descuento,
+                    new_codControl,
+                    new_gifCard,
+                    new_estado,
+                    idRendicion,
+                )
+                result.push(responseHana[0] || responseHana)
+            }
+
+
+        }))
+
+        const hasError = result.some((item) => item.error);
+        if (hasError) {
+            return res.status(400).json({ result });
+        }
+
+        return res.json({ result })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const gastosEnRevisionController = async (req, res) => {
+    try {
+        const {
+            codEmp,
+            transacId,
+            idRendicion,
+            listaGastos
+        } = req.body
+
+        const date = new Date()
+        const year = date.getFullYear()
+        const month = date.getMonth() + 1
+        let errores = []
+        listaGastos.map((item) => {
+            const { new_fecha } = item
+            if (!new_fecha) {
+                errores.push(`Falta la fecha en el gasto con nit ${item.new_nit || 'No definido'} y glosa ${item.new_glosa || 'No definido'}`)
+            }
+        })
+        if (errores.length > 0) return res.json({ errores })
+        let gastos = []
+        let result = []
+        listaGastos.map((item) => {
+            const newData = {
+                ...item,
+                idRendicion,
+                month,
+                year
+            }
+            gastos.push(newData)
+        })
+
+        await Promise.all(gastos.map(async (item) => {
+            const {
+                id_gasto,
+                new_nit,
+                new_tipo,
+                new_gasto,
+                new_nroFactura,
+                new_codAut,
+                new_fecha,
+                new_nombreRazon,
+                new_glosa,
+                new_importeTotal,
+                new_ice,
+                new_iehd,
+                new_ipj,
+                new_tasas,
+                new_otroNoSujeto,
+                new_exento,
+                new_tasaCero,
+                new_descuento,
+                new_codControl,
+                new_gifCard,
+                idRendicion,
+                month,
+                year,
+            } = item
+
+            const fecha = new_fecha.split('/')
+            const fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
+            console.log({ fechaFormateada, fecha, new_fecha })
+            if (id_gasto == 0) {
+                const responseHana = await crearGasto(
+                    new_nit,
+                    new_tipo,
+                    new_gasto,
+                    new_nroFactura,
+                    new_codAut,
+                    fechaFormateada,
                     new_nombreRazon,
                     new_glosa,
                     new_importeTotal,
@@ -295,29 +416,59 @@ const crearActualizarGastoController = async (req, res) => {
                     new_codControl,
                     new_gifCard,
                     idRendicion,
+                    month,
+                    year,
+                )
+                result.push(responseHana[0] || responseHana)
+            } else {
+                const responseHana = await actualizarGastos(
+                    id_gasto,
+                    new_nit,
+                    new_tipo,
+                    new_gasto,
+                    new_nroFactura,
+                    new_codAut,
+                    fechaFormateada,
+                    new_nombreRazon,
+                    new_glosa,
+                    new_importeTotal,
+                    new_ice,
+                    new_iehd,
+                    new_ipj,
+                    new_tasas,
+                    new_otroNoSujeto,
+                    new_exento,
+                    new_tasaCero,
+                    new_descuento,
+                    new_codControl,
+                    new_gifCard,
+                    '2',
+                    idRendicion,
                 )
                 result.push(responseHana[0] || responseHana)
             }
-            
+
 
         }))
 
-        const hasError = result.some((item) => item.error); // Busca si algún objeto contiene la propiedad "error"
-
+        const hasError = result.some((item) => item.error);
         if (hasError) {
-            return res.status(400).json({ result }); // Responde con status 400 y el resultado
+            return res.status(400).json({ result });
         }
 
         return res.json({ result })
     } catch (error) {
         console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
     rendicionDetalladaController,
     rendicionByTransacController,
     crearRendicionController,
-    crearActualizarGastoController
+    crearActualizarGastoController,
+    gastosEnRevisionController,
 }
