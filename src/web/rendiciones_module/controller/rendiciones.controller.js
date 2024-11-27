@@ -110,7 +110,7 @@ const crearRendicionController = async (req, res) => {
             transacId,
             listaGastos
         } = req.body
-        const date = new Date('2024-02-23')
+        const date = new Date()
         const year = date.getFullYear()
         const month = date.getMonth() + 1
         const response = await crearRendicion(transacId, codEmp, 1, month, year)
@@ -195,11 +195,122 @@ const crearRendicionController = async (req, res) => {
     }
 }
 
-const actualizarRendicion = async (req, res) => {
+const crearActualizarGastoController = async (req, res) => {
     try {
+        const {
+            codEmp,
+            transacId,
+            idRendicion,
+            listaGastos
+        } = req.body
 
+        const date = new Date()
+        const year = date.getFullYear()
+        const month = date.getMonth() + 1
+
+        let gastos = []
+        let result = []
+        listaGastos.map((item) => {
+            const newData = {
+                ...item,
+                idRendicion,
+                month,
+                year
+            }
+            gastos.push(newData)
+        })
+        // return res.json({ gastos })
+        await Promise.all(gastos.map(async (item) => {
+            const {
+                id_gasto,
+                new_nit,
+                new_tipo,
+                new_gasto,
+                new_nroFactura,
+                new_codAut,
+                new_fecha,
+                new_nombreRazon,
+                new_glosa,
+                new_importeTotal,
+                new_ice,
+                new_iehd,
+                new_ipj,
+                new_tasas,
+                new_otroNoSujeto,
+                new_exento,
+                new_tasaCero,
+                new_descuento,
+                new_codControl,
+                new_gifCard,
+                idRendicion,
+                month,
+                year,
+            } = item
+            if (id_gasto == 0) {
+                const responseHana = await crearGasto(
+                    new_nit,
+                    new_tipo,
+                    new_gasto,
+                    new_nroFactura,
+                    new_codAut,
+                    new_fecha,
+                    new_nombreRazon,
+                    new_glosa,
+                    new_importeTotal,
+                    new_ice,
+                    new_iehd,
+                    new_ipj,
+                    new_tasas,
+                    new_otroNoSujeto,
+                    new_exento,
+                    new_tasaCero,
+                    new_descuento,
+                    new_codControl,
+                    new_gifCard,
+                    idRendicion,
+                    month,
+                    year,
+                )
+                result.push(responseHana[0] || responseHana)
+            } else {
+                const responseHana = await actualizarGastos(
+                    id_gasto,
+                    new_nit,
+                    new_tipo,
+                    new_gasto,
+                    new_nroFactura,
+                    new_codAut,
+                    new_fecha,
+                    new_nombreRazon,
+                    new_glosa,
+                    new_importeTotal,
+                    new_ice,
+                    new_iehd,
+                    new_ipj,
+                    new_tasas,
+                    new_otroNoSujeto,
+                    new_exento,
+                    new_tasaCero,
+                    new_descuento,
+                    new_codControl,
+                    new_gifCard,
+                    idRendicion,
+                )
+                result.push(responseHana[0] || responseHana)
+            }
+            
+
+        }))
+
+        const hasError = result.some((item) => item.error); // Busca si algún objeto contiene la propiedad "error"
+
+        if (hasError) {
+            return res.status(400).json({ result }); // Responde con status 400 y el resultado
+        }
+
+        return res.json({ result })
     } catch (error) {
-        console.log({error})
+        console.log({ error })
     }
 }
 module.exports = {
@@ -207,5 +318,6 @@ module.exports = {
     findAllCajasEmpleadoController,
     rendicionDetalladaController,
     rendicionByTransacController,
-    crearRendicionController
+    crearRendicionController,
+    crearActualizarGastoController
 }

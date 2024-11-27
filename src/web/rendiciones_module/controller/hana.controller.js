@@ -176,7 +176,7 @@ const crearGasto = async (
         return {
             error: `Error, no se pudieron insertar los datos con nit: ${new_nit || 'No definido'},Tipo: ${new_tipo || 'No definido'}, Factura: ${new_nroFactura || 'No definido'}, Razon: ${new_nombreRazon || 'No definido'}, Glosa: ${new_glosa || 'No definido'}`
         }
-        throw new Error('error crear gasto')
+       
     }
 }
 

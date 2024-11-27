@@ -125,11 +125,26 @@ const moraCliente = async(cardCode)=>{
         throw new Error('Error al procesar la solicitud: moraCliente');
     }
 }
+
+const clientesMora = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VEN_WHITE_LIST`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: moraCliente');
+    }
+}
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
     findDescuentosArticulosCatalogo,
     findDescuentosCondicion,
     findDescuentosLineas,
-    moraCliente
+    moraCliente,
+    clientesMora
 }
