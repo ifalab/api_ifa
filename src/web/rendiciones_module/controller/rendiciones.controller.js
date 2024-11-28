@@ -1,4 +1,4 @@
-const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos } = require("./hana.controller")
+const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -108,12 +108,13 @@ const crearRendicionController = async (req, res) => {
         const {
             codEmp,
             transacId,
+            estado,
             listaGastos
         } = req.body
         const date = new Date()
         const year = date.getFullYear()
         const month = date.getMonth() + 1
-        const response = await crearRendicion(transacId, codEmp, 1, month, year)
+        const response = await crearRendicion(transacId, codEmp, estado, month, year)
         if (!response[0].ID) return res.status(404).json({ mensaje: 'error al crear la rendicion' })
         const idRendicion = response[0].ID
 
@@ -206,8 +207,13 @@ const crearActualizarGastoController = async (req, res) => {
             codEmp,
             transacId,
             idRendicion,
+            estado,
             listaGastos
         } = req.body
+        const response = await cambiarEstadoRendicion(idRendicion, estado)
+        const status = response[0]
+        if (response.error) return res.status(404).json({ mensaje: 'error al cambiar el estado de la rendicion' })
+        if (status.reponse != 200) return res.status(404).json({ mensaje: 'no se encontro la rendicion' })
 
         const date = new Date()
         const year = date.getFullYear()
@@ -338,8 +344,13 @@ const gastosEnRevisionController = async (req, res) => {
             codEmp,
             transacId,
             idRendicion,
+            estado,
             listaGastos
         } = req.body
+        const response = await cambiarEstadoRendicion(idRendicion, estado)
+        const status = response[0]
+        if (response.error) return res.status(404).json({ mensaje: 'error al cambiar el estado de la rendicion' })
+        if (status.reponse != 200) return res.status(404).json({ mensaje: 'no se encontro la rendicion' })
 
         const date = new Date()
         const year = date.getFullYear()
@@ -463,6 +474,54 @@ const gastosEnRevisionController = async (req, res) => {
     }
 }
 
+const cambiarEstadoRendicionController = async (req, res) => {
+    try {
+
+        const { id, estado } = req.body
+        if (!id) return res.status(400).json({ mensaje: 'faltan datos: id' })
+        if (!estado) return res.status(400).json({ mensaje: 'faltan datos: estado' })
+        const response = await cambiarEstadoRendicion(id, estado)
+        const status = response[0]
+        if (response.error) return res.status(404).json({ mensaje: 'error al cambiar el estado' })
+        if (status.reponse != 200) return res.status(404).json({ mensaje: 'no se encontro la rendicion' })
+        return res.json({ mensaje: 'la rendicion se cambio de estado con exito', })
+
+    } catch (error) {
+
+        console.log({ error })
+        return res.status(500).json({ mensaje: "Error en el controlador" })
+
+    }
+}
+
+const verRendicionesEnRevisionController = async (req, res) => {
+    try {
+        const response = await verRendicionesEnRevision()
+        const listaRendiciones = []
+
+        await Promise.all(response.map(async (item) => {
+            const { CODEMP, ...rest } = item
+            Empleado = await employedByCardCode(CODEMP)
+            if (Empleado && Empleado[0]) {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: Empleado[0]
+                })
+            } else {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: null
+                })
+            }
+
+        }))
+
+        return res.json({ listaRendiciones })
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -471,4 +530,6 @@ module.exports = {
     crearRendicionController,
     crearActualizarGastoController,
     gastosEnRevisionController,
+    cambiarEstadoRendicionController,
+    verRendicionesEnRevisionController,
 }

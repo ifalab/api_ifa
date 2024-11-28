@@ -176,9 +176,10 @@ const crearGasto = async (
         return {
             error: `Error, no se pudieron insertar los datos con nit: ${new_nit || 'No definido'},Tipo: ${new_tipo || 'No definido'}, Factura: ${new_nroFactura || 'No definido'}, Razon: ${new_nombreRazon || 'No definido'}, Glosa: ${new_glosa || 'No definido'}`
         }
-       
+
     }
 }
+
 
 const actualizarGastos = async (
     ID,
@@ -219,8 +220,65 @@ const actualizarGastos = async (
             error: `Error, no se pudieron actualizar los datos con nit: ${new_nit || 'No definido'},Tipo: ${new_tipo || 'No definido'}, Factura: ${new_nroFactura || 'No definido'}, Razon: ${new_nombreRazon || 'No definido'}, Glosa: ${new_glosa || 'No definido'}`
         }
     }
-    
+
 }
+
+const cambiarEstadoRendicion = async (id, estado) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('cambiarEstadoRendicion EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_ESTADO_RENDICION(${id},'${estado}');`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `cambiarEstadoRendicion'}`
+        }
+    }
+}
+
+const verRendicionesEnRevision = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('verRendicionesEnRevision EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '2';`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudieron traer las rendiciones desde la base de datos`
+        }
+
+    }
+}
+
+const employedByCardCode = async(cardCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('verRendicionesEnRevision EXECUTE')
+        const query = `CALL LAB_IFA_PRD.IFA_DM_BUSCAR_EMPLEADO_POR_CODIGO('${cardCode}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudieron traer los datos del empleado de la base de datos`
+        }
+
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -229,4 +287,7 @@ module.exports = {
     crearRendicion,
     crearGasto,
     actualizarGastos,
+    cambiarEstadoRendicion,
+    verRendicionesEnRevision,
+    employedByCardCode,
 }

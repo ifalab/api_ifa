@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController } = require('../controller/rendiciones.controller')
+const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController, cambiarEstadoRendicionController, verRendicionesEnRevisionController } = require('../controller/rendiciones.controller')
 const router = Router()
 
 router.get('/find-all-aperturas', [validarToken, validarCampos], findAllAperturaController)
@@ -11,5 +11,7 @@ router.get('/rendicion-by-transac/:transacId', [validarToken, validarCampos], re
 router.post('/crear-rendicion', [validarToken, validarCampos], crearRendicionController)
 router.patch('/crear-actualizar-gastos', [validarToken, validarCampos], crearActualizarGastoController)
 router.patch('/en-revision-gastos', [validarToken, validarCampos], gastosEnRevisionController)
+router.patch('/cambiar-estado-rendicion', [validarToken, validarCampos],cambiarEstadoRendicionController)
+router.get('/ver-rendiciones-revision', [validarToken, validarCampos],verRendicionesEnRevisionController)
 
 module.exports = router
