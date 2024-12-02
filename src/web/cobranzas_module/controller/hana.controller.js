@@ -313,6 +313,22 @@ const cobranzaHistoricoMasivos = async () => {
     }
 }
 
+const cobranzaPorZonaMesAnt = async (username) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_ANT"(${username})`
+        console.log({query})
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({error})
+        return {
+            error:`no se pudieron traer las cobranzas del mes anterior del vendedor ${username}`
+        }
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -335,4 +351,5 @@ module.exports = {
     cobranzaHistoricoIfaVet,
     cobranzaHistoricoInstituciones,
     cobranzaHistoricoMasivos,
+    cobranzaPorZonaMesAnt,
 }
