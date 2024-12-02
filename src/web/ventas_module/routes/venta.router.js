@@ -21,6 +21,7 @@ const {
     ventasHistoricoIfaVetController,
     ventasHistoricoMasivosController,
     ventasHistoricoInstitucionesController,
+    vendedorPorZonaMesAntController,
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -50,6 +51,7 @@ router.get('/historico-masivos', [validarToken, validarCampos], ventasHistoricoM
 router.get('/historico-instituciones', [validarToken, validarCampos], ventasHistoricoInstitucionesController)
 
 router.get('/ventas-zona', [validarToken, validarCampos], ventasVendedorPorZona)
+router.get('/ventas-zona-mes-ant', [validarToken, validarCampos],vendedorPorZonaMesAntController)
 
 router.post('/usuario', [validarToken, validarCampos], ventasUsuarioController)
 
