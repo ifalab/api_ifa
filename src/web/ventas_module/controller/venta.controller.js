@@ -20,7 +20,8 @@ const {
     ventasHistoricoIfaVet,
     ventasHistoricoCadenas,
     ventasHistoricoMasivos,
-    ventasHistoricoInstituciones
+    ventasHistoricoInstituciones,
+    ventasPorZonasVendedorMesAnt
 } = require("./hana.controller")
 
 
@@ -625,6 +626,34 @@ const ventasHistoricoInstitucionesController = async (req, res) => {
     }
 }
 
+const vendedorPorZonaMesAntController = async(req,res)=>{
+    const { username, line, groupBy } = req.query;
+    try {
+        if (!username && typeof username != "string") {
+            return res.status(400).json({
+                mensaje: 'Ingrese un username valido'
+            })
+        }
+        console.log({
+            username, line, groupBy
+        })
+        const response = await ventasPorZonasVendedorMesAnt(username, line, groupBy);
+
+        const data = response.map(r => ({
+            ...r,
+            cumplimiento: r.Quota == 0 ? 0 : r.Sales / r.Quota
+        }))
+        return res.status(200).json({
+            response: data,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -647,4 +676,5 @@ module.exports = {
     ventasHistoricoIfaVetController,
     ventasHistoricoMasivosController,
     ventasHistoricoInstitucionesController,
+    vendedorPorZonaMesAntController,
 };

@@ -230,9 +230,9 @@ const ventasPorSupervisor = async (userCode, dim1, dim2, dim3, groupBy) => {
     }
 }
 
-const ventasPorZonasVendedor = async(username,line,groupBy)=>{
+const ventasPorZonasVendedor = async (username, line, groupBy) => {
     try {
-        if(!connection){
+        if (!connection) {
             await connectHANA();
         }
         const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA('${username}','${line}','${groupBy}');`;
@@ -243,7 +243,7 @@ const ventasPorZonasVendedor = async(username,line,groupBy)=>{
     }
 }
 
-const ventasHistoricoSucursal  = async()=>{
+const ventasHistoricoSucursal = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -256,7 +256,7 @@ const ventasHistoricoSucursal  = async()=>{
     }
 }
 
-const ventasHistoricoNormales = async()=>{
+const ventasHistoricoNormales = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -269,7 +269,7 @@ const ventasHistoricoNormales = async()=>{
     }
 }
 
-const ventasHistoricoCadenas = async()=>{
+const ventasHistoricoCadenas = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -282,7 +282,7 @@ const ventasHistoricoCadenas = async()=>{
     }
 }
 
-const ventasHistoricoInstituciones = async()=>{
+const ventasHistoricoInstituciones = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -295,7 +295,7 @@ const ventasHistoricoInstituciones = async()=>{
     }
 }
 
-const ventasHistoricoMasivos = async()=>{
+const ventasHistoricoMasivos = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -320,6 +320,21 @@ const ventasHistoricoIfaVet = async () => {
         throw new Error('Error al procesar la solicitud: ventasIfaVet');
     }
 }
+
+const ventasPorZonasVendedorMesAnt = async (username, line, groupBy) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT('${username}','${line}','${groupBy}');`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ error })
+        return {
+            error: `No se pudieron traer las ventas por zonas del mes anterior , el vendedor es ${username}`
+        }
+    }
+}
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -342,4 +357,5 @@ module.exports = {
     ventasHistoricoIfaVet,
     ventasHistoricoMasivos,
     ventasHistoricoInstituciones,
+    ventasPorZonasVendedorMesAnt,
 }

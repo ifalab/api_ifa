@@ -236,7 +236,7 @@ const cambiarEstadoRendicion = async (id, estado) => {
     } catch (error) {
         console.log({ error })
         return {
-            error: `cambiarEstadoRendicion'}`
+            error: `cambiarEstadoRendicion`
         }
     }
 }
