@@ -1,3 +1,4 @@
+const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -52,7 +53,7 @@ const rendicionDetalladaController = async (req, res) => {
             } = item
             const data = {
                 ...rest,
-                GASTO: +GASTO,
+                GASTO: GASTO,
                 IMPORTETOTAL: +IMPORTETOTAL,
                 ICE: +ICE,
                 IEHD: +IEHD,
@@ -522,6 +523,55 @@ const verRendicionesEnRevisionController = async (req, res) => {
     }
 }
 
+const sendToSapController = async (req, res) => {
+    try {
+        const {
+            codEmp,
+            estado,
+            idRendicion,
+            transacId,
+            listaGastos
+        } = req.body
+
+        let listRecibos = []
+        let listFacturas = []
+        let errores = []
+
+        listaGastos.map((item) => {
+            const { new_tipo, new_nit, new_glosa } = item
+            if (!new_tipo) {
+                errores.push(`el tipo no existe en el item con nit: ${new_nit || 'no definido'} y glosa : ${new_glosa}`)
+            } else {
+                if (new_tipo == 'F') {
+                    listFacturas.push(item)
+                } else {
+                    listRecibos.push(item)
+                }
+            }
+
+        })
+        // Llama al servicio con el body dinámico
+        const { statusCode, data } = await sapService.sendRendiciones({
+            codEmp,
+            estado,
+            idRendicion,
+            transacId,
+            listFacturas,
+            listRecibos,
+        });
+
+        // Retorna el código de estado y los datos de la respuesta
+        return res.status(statusCode).json(data);
+    } catch (error) {
+        console.error({ error });
+
+        // Maneja errores y responde al cliente
+        const statusCode = error.statusCode || 500;
+        const message = error.message || 'Error desconocido en el controlador';
+        return res.status(statusCode).json({ mensaje: message });
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -532,4 +582,5 @@ module.exports = {
     gastosEnRevisionController,
     cambiarEstadoRendicionController,
     verRendicionesEnRevisionController,
+    sendToSapController
 }

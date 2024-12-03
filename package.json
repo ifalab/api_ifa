@@ -16,7 +16,7 @@
   "dependencies": {
     "@sap/hana-client": "^2.21.28",
     "api-nodejs": "file:",
-    "axios": "^1.7.4",
+    "axios": "^1.7.8",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
