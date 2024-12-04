@@ -1,5 +1,5 @@
 const sapService = require("../services/sap.service")
-const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode } = require("./hana.controller")
+const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -49,6 +49,7 @@ const rendicionDetalladaController = async (req, res) => {
                 TASACERO,
                 DESCUENTO,
                 GIFCARD,
+                // COMENTARIO,
                 ...rest
             } = item
             const data = {
@@ -64,6 +65,7 @@ const rendicionDetalladaController = async (req, res) => {
                 TASACERO: +TASACERO,
                 DESCUENTO: +DESCUENTO,
                 GIFCARD: +GIFCARD,
+                // COMENTARIO:COMENTARIO
             }
             listaDetalles.push(data)
         })
@@ -524,15 +526,15 @@ const verRendicionesEnRevisionController = async (req, res) => {
 }
 
 const sendToSapController = async (req, res) => {
-    try {
-        const {
-            codEmp,
-            estado,
-            idRendicion,
-            transacId,
-            listaGastos
-        } = req.body
+    const {
+        codEmp,
+        estado,
+        idRendicion,
+        transacId,
+        listaGastos
+    } = req.body
 
+    try {
         let listRecibos = []
         let listFacturas = []
         let errores = []
@@ -559,16 +561,46 @@ const sendToSapController = async (req, res) => {
             listFacturas,
             listRecibos,
         });
-
+        // return res.json({codEmp,
+        //     estado,
+        //     idRendicion,
+        //     transacId,
+        //     listFacturas,
+        //     listRecibos,})
         // Retorna el código de estado y los datos de la respuesta
-        return res.status(statusCode).json(data);
+        // await Promise.all(gastos.map(async (item) => {
+        console.log({ data })
+        let listResSap = []
+        await Promise.all(data.map(async (item) => {
+            const { id, code, message } = item
+            const responseSap = await actualizarEstadoComentario(id, code, message)
+            listResSap.push(responseSap)
+        }))
+        const estadoRend = await actualizarEstadoRendicion(idRendicion, '3')
+        console.log({listResSap, estadoRend})
+        return res.status(statusCode).json({ listResSap, estadoRend });
     } catch (error) {
         console.error({ error });
 
         // Maneja errores y responde al cliente
         const statusCode = error.statusCode || 500;
-        const message = error.message || 'Error desconocido en el controlador';
-        return res.status(statusCode).json({ mensaje: message });
+        const data = error.message || 'Error desconocido en el controlador';
+        let listResSap = []
+        let estadoRend
+        console.log({ data })
+        if (statusCode == 400 && data.length > 0) {
+            await Promise.all(data.map(async (item) => {
+                const { id, code, message } = item
+                console.log({ id, code, message })
+                const cleanMessage = message.replace(/['".,:;]/g, "");
+                console.log({ id, code, cleanMessage })
+                const responseSap = await actualizarEstadoComentario(id, code, cleanMessage)
+                listResSap.push(responseSap)
+            }))
+            estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
+        }
+        console.log({data, listResSap, estadoRend})
+        return res.status(statusCode).json({ data, listResSap, estadoRend, });
     }
 }
 

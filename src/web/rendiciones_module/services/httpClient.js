@@ -7,6 +7,7 @@ const httpClient = axios.create({
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        authorization:`${process.env.TOKEN_NEST}`
     },
 });
 

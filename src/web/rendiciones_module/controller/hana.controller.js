@@ -161,13 +161,14 @@ const crearGasto = async (
     idRendicion,
     month,
     year,
+    new_comentario
 ) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('crearRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION_GASTOS('${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'1',${idRendicion},${month},${year})`
+        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION_GASTOS('${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'1',${idRendicion},${month},${year},'${new_comentario || ''}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -204,13 +205,14 @@ const actualizarGastos = async (
     new_gifCard,
     new_estado,
     idRendicion,
+    new_comentario
 ) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('actualizarGastos EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS(${ID},'${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'${new_estado}',${idRendicion})`
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS(${ID},'${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'${new_estado}',${idRendicion},'${new_comentario || ''}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -247,7 +249,7 @@ const verRendicionesEnRevision = async () => {
             await connectHANA();
         }
         console.log('verRendicionesEnRevision EXECUTE')
-        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '2';`
+        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '2' OR ESTADO = '3'`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -260,7 +262,7 @@ const verRendicionesEnRevision = async () => {
     }
 }
 
-const employedByCardCode = async(cardCode)=>{
+const employedByCardCode = async (cardCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -279,10 +281,48 @@ const employedByCardCode = async(cardCode)=>{
     }
 }
 
+const actualizarEstadoComentario = async(id, estado,comentario)=>{
+    
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarEstadoComentario EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS_ESTADO_COMENTARIO(${id},'${estado}','${comentario}');`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudieron actualizar el estado y comentario`
+        }
+
+    }
+}
+
+const actualizarEstadoRendicion = async(id,estado)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarEstadoRendicion EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_ESTADO_RENDICION(${id},'${estado}');`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudieron actualizar el estado de la rendicion`
+        }
+
+    }
+}
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
-    rendicionDetallada,
+    rendicionDetallada, 
     rendicionByTransac,
     crearRendicion,
     crearGasto,
@@ -290,4 +330,6 @@ module.exports = {
     cambiarEstadoRendicion,
     verRendicionesEnRevision,
     employedByCardCode,
+    actualizarEstadoComentario,
+    actualizarEstadoRendicion,
 }
