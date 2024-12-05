@@ -249,7 +249,7 @@ const verRendicionesEnRevision = async () => {
             await connectHANA();
         }
         console.log('verRendicionesEnRevision EXECUTE')
-        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '2' OR ESTADO = '3'`
+        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '2' OR ESTADO = '3' OR ESTADO = '7'`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -319,6 +319,26 @@ const actualizarEstadoRendicion = async(id,estado)=>{
 
     }
 }
+
+const eliminarGastoID = async(idGasto)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('eliminarGastoID EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ELIMINAR_GASTO_ID(${idGasto});`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo eliminar el gasto`
+        }
+
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -332,4 +352,5 @@ module.exports = {
     employedByCardCode,
     actualizarEstadoComentario,
     actualizarEstadoRendicion,
+    eliminarGastoID
 }

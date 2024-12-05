@@ -1,5 +1,5 @@
 const sapService = require("../services/sap.service")
-const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion } = require("./hana.controller")
+const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -539,6 +539,13 @@ const sendToSapController = async (req, res) => {
         let listFacturas = []
         let errores = []
 
+        for (const iterator of listaGastos) {
+            if (iterator.new_estado !== '2') {
+                return res.status(400).json({ mensaje: 'Todas las filas deben estar EN REVISION' });
+                break
+            }
+        }
+
         listaGastos.map((item) => {
             const { new_tipo, new_nit, new_glosa } = item
             if (!new_tipo) {
@@ -552,7 +559,7 @@ const sendToSapController = async (req, res) => {
             }
 
         })
-        // Llama al servicio con el body dinámico
+
         const { statusCode, data } = await sapService.sendRendiciones({
             codEmp,
             estado,
@@ -561,14 +568,7 @@ const sendToSapController = async (req, res) => {
             listFacturas,
             listRecibos,
         });
-        // return res.json({codEmp,
-        //     estado,
-        //     idRendicion,
-        //     transacId,
-        //     listFacturas,
-        //     listRecibos,})
-        // Retorna el código de estado y los datos de la respuesta
-        // await Promise.all(gastos.map(async (item) => {
+
         console.log({ data })
         let listResSap = []
         await Promise.all(data.map(async (item) => {
@@ -577,7 +577,7 @@ const sendToSapController = async (req, res) => {
             listResSap.push(responseSap)
         }))
         const estadoRend = await actualizarEstadoRendicion(idRendicion, '3')
-        console.log({listResSap, estadoRend})
+        console.log({ listResSap, estadoRend })
         return res.status(statusCode).json({ listResSap, estadoRend });
     } catch (error) {
         console.error({ error });
@@ -599,11 +599,24 @@ const sendToSapController = async (req, res) => {
             }))
             estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
         }
-        console.log({data, listResSap, estadoRend})
+        console.log({ data, listResSap, estadoRend })
         return res.status(statusCode).json({ data, listResSap, estadoRend, });
     }
 }
 
+const eliminarGastoController = async(req,res)=>{
+    try {
+        const id = req.params.id
+        const response = await eliminarGastoID(id)
+        const status = response[0].reponse
+        console.log({status})
+        if(status!=200) return res.status(409).json({mensaje:'no se pudo eliminar el gasto'})
+        return res.json({mensaje:'el gasto fue eliminado'})
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'problemas en el controlador'})
+    }
+}
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -614,5 +627,6 @@ module.exports = {
     gastosEnRevisionController,
     cambiarEstadoRendicionController,
     verRendicionesEnRevisionController,
-    sendToSapController
+    sendToSapController,
+    eliminarGastoController
 }

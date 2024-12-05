@@ -1,5 +1,5 @@
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor } = require("./hana.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -333,7 +333,7 @@ const cobranzaPorSupervisorController = async (req, res) => {
 const cobranzaHistoricoNacionalController = async (req, res) => {
     try {
         const data = await cobranzaHistoricoNacional()
-        console.log({data})
+        console.log({ data })
         // Mapa de nombres de meses
         const monthNames = [
             "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -626,6 +626,20 @@ const cobranzasPorZonasMesAntController = async (req = request, res = response) 
     }
 }
 
+const cobranzaClientePorVendedorController = async (req, res) => {
+    try {
+        const { nombre } = req.body
+        if (!nombre) return res.status(400).json({ mensaje: 'no hay el nombre del vendedor' })
+
+        const response = await cobranzaSaldoDeudor(nombre, '')
+        return res.json({ response })
+
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'error en el controlador'})
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -649,4 +663,5 @@ module.exports = {
     cobranzaHistoricoInstitucionesController,
     cobranzaHistoricoMasivosController,
     cobranzasPorZonasMesAntController,
+    cobranzaClientePorVendedorController,
 }

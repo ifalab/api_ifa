@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController, cambiarEstadoRendicionController, verRendicionesEnRevisionController, sendToSapController } = require('../controller/rendiciones.controller')
+const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController, cambiarEstadoRendicionController, verRendicionesEnRevisionController, sendToSapController, eliminarGastoController } = require('../controller/rendiciones.controller')
 const router = Router()
 
 router.get('/find-all-aperturas', [validarToken, validarCampos], findAllAperturaController)
@@ -14,5 +14,6 @@ router.patch('/en-revision-gastos', [validarToken, validarCampos], gastosEnRevis
 router.patch('/cambiar-estado-rendicion', [validarToken, validarCampos],cambiarEstadoRendicionController)
 router.get('/ver-rendiciones-revision', [validarToken, validarCampos],verRendicionesEnRevisionController)
 router.post('/send-to-sap', [validarToken, validarCampos],sendToSapController )
+router.delete('/eliminar-gasto/:id', [validarToken, validarCampos],eliminarGastoController )
 
 module.exports = router

@@ -1,4 +1,4 @@
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses } = require("./hana.controller")
 
 const parteDiaroController = async (req, res) => {
   try {
@@ -419,6 +419,255 @@ const abastecimientoPorFechaController = async (req, res) => {
     })
   }
 }
+
+const abastecimientoFechaAnualController = async(req,res)=>{
+  try {
+    const sapResponse = await abastecimientoPorFechaAnual();
+    // return res.json({sapResponse})
+    const meses = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre'
+    ]
+    let data = []
+    let response = []
+    let totalBs = 0, totalDolares = 0, totalPorcentaje = 1
+    sapResponse.map((item) => {
+      const newData = {
+        year: item.year,
+        month: item.month,
+        monthName: `${meses[item.month - 1]}`,
+        Tipo: item.Tipo,
+        CostoComercial: item["Costo Comercial"],
+        CostoComercialDolares: item["SUM(ROUND(COSTO COMERCIAL TOTAL/6.96,2))"]
+      }
+      data.push(newData)
+    })
+    data.map((item) => {
+      totalBs += +item.CostoComercial
+      totalDolares += +item.CostoComercialDolares
+    })
+
+    if (totalBs > 0) {
+      data.map((item) => {
+        let porcentaje = 0
+        if (item.CostoComercial != 0) {
+          porcentaje = item.CostoComercial / totalBs
+        }
+        const newData = {
+          ...item,
+          porcentaje
+        }
+        response.push(newData)
+      })
+    }
+
+    const agrupadoPorMes = response.reduce((acc, item) => {
+      const { year, month, monthName, Tipo, CostoComercial, CostoComercialDolares, porcentaje } = item;
+
+      let mesExistente = acc.find(mes => mes.year === year && mes.month === month);
+
+      if (!mesExistente) {
+        mesExistente = {
+          year,
+          month,
+          monthName,
+          Tipo: []
+        };
+        acc.push(mesExistente);
+      }
+
+      mesExistente.Tipo.push({
+        name: Tipo,
+        CostoComercial,
+        CostoComercialDolares,
+        porcentaje
+      });
+
+      return acc;
+    }, []);
+
+    const ordenarTiposYCalcularVariacion = (agrupadoPorMes) => {
+      // Ordenar los tipos en cada mes alfabéticamente por el atributo 'name'
+      agrupadoPorMes.forEach(mes => {
+        mes.Tipo.sort((a, b) => a.name.localeCompare(b.name));
+      });
+
+      // Calcular variación después de ordenar los tipos
+      agrupadoPorMes.forEach((mesActual, index) => {
+        // No calcular variación para el primer mes, pues no tiene mes anterior
+        if (index === 0) {
+          mesActual.Tipo.forEach(tipo => tipo.variacion = 0);
+          return;
+        }
+
+        // Obtener el mes anterior, que también tiene los tipos ordenados
+        const mesAnterior = agrupadoPorMes[index - 1];
+
+        // Calcular variación directamente para cada tipo (mismo orden)
+        mesActual.Tipo.forEach((tipoActual, idx) => {
+          const tipoAnterior = mesAnterior.Tipo[idx];
+
+          
+          if (tipoAnterior && tipoAnterior.name === tipoActual.name) {
+            const variacion = (parseFloat(tipoActual.CostoComercial) / parseFloat(tipoAnterior.CostoComercial)) - 1;
+            tipoActual.variacion = variacion;
+          } else {
+            
+            tipoActual.variacion = 0;
+          }
+        });
+      });
+
+      return agrupadoPorMes;
+    };
+    
+    const result = ordenarTiposYCalcularVariacion(agrupadoPorMes);
+    return res.status(200).json({ result });
+
+  } catch (error) {
+    console.log('error en abastecimientoPorFechaController')
+    console.log(error)
+    return res.status(500).json({
+      mensaje: 'error en el abastecimientoPorFechaController',
+      error
+    })
+  }
+}
+
+const abastecimientoFecha24MesesController = async(req,res)=>{
+  try {
+    const sapResponse = await abastecimientoPorFecha_24_meses();
+    // return res.json({sapResponse})
+    const meses = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre'
+    ]
+    let data = []
+    let response = []
+    let totalBs = 0, totalDolares = 0, totalPorcentaje = 1
+    sapResponse.map((item) => {
+      const newData = {
+        year: item.year,
+        month: item.month,
+        monthName: `${meses[item.month - 1]}`,
+        Tipo: item.Tipo,
+        CostoComercial: item["Costo Comercial"],
+        CostoComercialDolares: item["SUM(ROUND(COSTO COMERCIAL TOTAL/6.96,2))"]
+      }
+      data.push(newData)
+    })
+    data.map((item) => {
+      totalBs += +item.CostoComercial
+      totalDolares += +item.CostoComercialDolares
+    })
+
+    if (totalBs > 0) {
+      data.map((item) => {
+        let porcentaje = 0
+        if (item.CostoComercial != 0) {
+          porcentaje = item.CostoComercial / totalBs
+        }
+        const newData = {
+          ...item,
+          porcentaje
+        }
+        response.push(newData)
+      })
+    }
+
+    const agrupadoPorMes = response.reduce((acc, item) => {
+      const { year, month, monthName, Tipo, CostoComercial, CostoComercialDolares, porcentaje } = item;
+
+      let mesExistente = acc.find(mes => mes.year === year && mes.month === month);
+
+      if (!mesExistente) {
+        mesExistente = {
+          year,
+          month,
+          monthName,
+          Tipo: []
+        };
+        acc.push(mesExistente);
+      }
+
+      mesExistente.Tipo.push({
+        name: Tipo,
+        CostoComercial,
+        CostoComercialDolares,
+        porcentaje
+      });
+
+      return acc;
+    }, []);
+
+    const ordenarTiposYCalcularVariacion = (agrupadoPorMes) => {
+      // Ordenar los tipos en cada mes alfabéticamente por el atributo 'name'
+      agrupadoPorMes.forEach(mes => {
+        mes.Tipo.sort((a, b) => a.name.localeCompare(b.name));
+      });
+
+      // Calcular variación después de ordenar los tipos
+      agrupadoPorMes.forEach((mesActual, index) => {
+        // No calcular variación para el primer mes, pues no tiene mes anterior
+        if (index === 0) {
+          mesActual.Tipo.forEach(tipo => tipo.variacion = 0);
+          return;
+        }
+
+        // Obtener el mes anterior, que también tiene los tipos ordenados
+        const mesAnterior = agrupadoPorMes[index - 1];
+
+        // Calcular variación directamente para cada tipo (mismo orden)
+        mesActual.Tipo.forEach((tipoActual, idx) => {
+          const tipoAnterior = mesAnterior.Tipo[idx];
+
+          
+          if (tipoAnterior && tipoAnterior.name === tipoActual.name) {
+            const variacion = (parseFloat(tipoActual.CostoComercial) / parseFloat(tipoAnterior.CostoComercial)) - 1;
+            tipoActual.variacion = variacion;
+          } else {
+            
+            tipoActual.variacion = 0;
+          }
+        });
+      });
+
+      return agrupadoPorMes;
+    };
+    
+    const result = ordenarTiposYCalcularVariacion(agrupadoPorMes);
+    return res.status(200).json({ result });
+
+  } catch (error) {
+    console.log('error en abastecimientoPorFechaController')
+    console.log(error)
+    return res.status(500).json({
+      mensaje: 'error en el abastecimientoPorFechaController',
+      error
+    })
+  }
+}
+
 const findAllRegionsController = async (req, res) => {
   try {
     const regiones = await findAllRegions()
@@ -458,6 +707,7 @@ const findAllGroupAlmacenController = async (req, res) => {
     return res.status(500).json({ mensaje: 'Error en findAllGroupAlmacenController ' })
   }
 }
+
 module.exports = {
   parteDiaroController,
   abastecimientoController,
@@ -469,4 +719,6 @@ module.exports = {
   findAllSublineController,
   findAllGroupAlmacenController,
   abastecimientoPorFechaController,
+  abastecimientoFechaAnualController,
+  abastecimientoFecha24MesesController,
 }

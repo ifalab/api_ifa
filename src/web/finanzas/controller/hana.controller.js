@@ -36,7 +36,7 @@ const executeQuery = async (query) => {
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
-                // console.log({result})
+
             }
         })
     })
@@ -105,14 +105,51 @@ const abastecimientoPorFecha = async () => {
         if (!connection) {
             await connectHANA()
         }
-        
-        const query = `call LAB_IFA_PRD.IFA_LAPP_ABAS_COMPRASCOMERCIALES_X_FECHA()`
-        console.log({query})
+
+        const query = `call LAB_IFA_PRD.IFA_LAPP_ABAS_COMPRASCOMERCIALES_SEMESTRAL()`
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log('error en abastecimientoPorFecha')
         console.log(error)
+    }
+}
+
+const abastecimientoPorFechaAnual = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+
+        const query = `call LAB_IFA_PRD.IFA_LAPP_ABAS_COMPRASCOMERCIALES_ANUAL()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log('error en abastecimientoPorFechaAnual: ', error)
+        return {
+            error: 'no se pudo traer los datos'
+        }
+
+    }
+}
+
+const abastecimientoPorFecha_24_meses = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+
+        const query = `call LAB_IFA_PRD.IFA_LAPP_ABAS_COMPRASCOMERCIALES_24MESES()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log('error en abastecimientoPorFecha_24_meses: ', error)
+        return {
+            error: 'no se pudo traer los datos'
+        }
     }
 }
 
@@ -201,4 +238,6 @@ module.exports = {
     findAllSubLines,
     findAllGroupAlmacenes,
     abastecimientoPorFecha,
+    abastecimientoPorFechaAnual,
+    abastecimientoPorFecha_24_meses,
 }
