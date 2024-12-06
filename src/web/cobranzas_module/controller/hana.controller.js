@@ -329,6 +329,22 @@ const cobranzaPorZonaMesAnt = async (username) => {
     }
 }
 
+const clientePorVendedor = async(nombre)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `CALL LAB_IFA_PRD.IFA_LAPP_SALDO_DEUDOR_CLI_BY_VEND('${nombre}')`
+        console.log({query})
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({error})
+        return {
+            error:`no se pudo traer los datos`
+        }
+    }
+}
+
 const cobranzaSaldoDeudor = async (nombre,codigo) => {
     try {
         if (!connection) {
@@ -369,4 +385,5 @@ module.exports = {
     cobranzaHistoricoMasivos,
     cobranzaPorZonaMesAnt,
     cobranzaSaldoDeudor,
+    clientePorVendedor,
 }

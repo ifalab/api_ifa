@@ -1,5 +1,5 @@
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor } = require("./hana.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -628,15 +628,33 @@ const cobranzasPorZonasMesAntController = async (req = request, res = response) 
 
 const cobranzaClientePorVendedorController = async (req, res) => {
     try {
-        const { nombre } = req.body
+        const nombre = req.query.nombre
+        // console.log({nombre})
         if (!nombre) return res.status(400).json({ mensaje: 'no hay el nombre del vendedor' })
-
-        const response = await cobranzaSaldoDeudor(nombre, '')
+        // return res.json({nombre})
+        const response = await clientePorVendedor(nombre, '')
         return res.json({ response })
 
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'error en el controlador'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const cobranzaFacturaPorClienteController = async (req, res) => {
+    try {
+        const nombre = req.query.nombre
+        const codigo = req.query.codigo
+        // console.log({nombre})
+        if (!codigo) return res.status(400).json({ mensaje: 'no hay el codigo del cliente' })
+        if (!nombre) return res.status(400).json({ mensaje: 'no hay el nombre del vendedor' })
+        // return res.json({nombre})
+        const response = await cobranzaSaldoDeudor(nombre, codigo)
+        return res.json({ response })
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
 
@@ -664,4 +682,5 @@ module.exports = {
     cobranzaHistoricoMasivosController,
     cobranzasPorZonasMesAntController,
     cobranzaClientePorVendedorController,
+    cobranzaFacturaPorClienteController
 }
