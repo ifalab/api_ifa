@@ -145,6 +145,21 @@ const stockDisponible = async()=>{
     }
 }
 
+const inventarioHabilitacionDict = async (cod) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `call LAB_IFA_PRD.IFA_LAPP_INV_HABILITACION_DICT('${cod}')`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en inventarioHabilitacionDict:', error.message);
+        return { message: 'Error al procesar la solicitud: inventarioHabilitacionDict' }
+    }
+}
 
 module.exports = {
     clientesPorDimensionUno,
@@ -153,5 +168,6 @@ module.exports = {
     inventarioValorado,
     descripcionArticulo,
     fechaVencLote,
-    stockDisponible
+    stockDisponible,
+    inventarioHabilitacionDict
 }

@@ -1,5 +1,5 @@
 const { json } = require("express")
-const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote, stockDisponible } = require("./hana.controller")
+const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
@@ -330,6 +330,22 @@ const stockDisponibleController = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
+const habilitacionDiccionarioController = async (req, res) => {
+    try {
+        const cod = req.body.cod
+        const response = await inventarioHabilitacionDict(cod)
+        return res.status(200).json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el habilitacionDiccionarioController',
+            error
+        })
+
+    }
+}
+
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -338,5 +354,6 @@ module.exports = {
     descripcionArticuloController,
     createQuotationController,
     fechaVenLoteController,
-    stockDisponibleController
+    stockDisponibleController,
+    habilitacionDiccionarioController
 }

@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, postHabilitacionController, inventarioValoradoController, descripcionArticuloController, fechaVenLoteController, stockDisponibleController } = require('../controller/inventario.controller')
+const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, postHabilitacionController, inventarioValoradoController, descripcionArticuloController, fechaVenLoteController, stockDisponibleController, habilitacionDiccionarioController } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -11,5 +11,6 @@ router.get('/inventario-valorado', [validarToken, validarCampos], inventarioValo
 router.post('/descripcion-articulo', [validarToken, validarCampos], descripcionArticuloController)
 router.get('/fecha-prueba', fechaVenLoteController)
 router.get('/stock-disponible', [validarToken, validarCampos], stockDisponibleController)
+router.post('/habilitacion-diccionario', [validarToken, validarCampos], habilitacionDiccionarioController)
 
 module.exports = router

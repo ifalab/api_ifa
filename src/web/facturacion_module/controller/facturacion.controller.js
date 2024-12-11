@@ -1,4 +1,5 @@
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
+const { facturacionProsin } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad } = require("./hana.controller")
 const { postEntrega } = require("./sld.controller")
 
@@ -61,15 +62,17 @@ const facturacionController = async (req, res) => {
             DocumentLines:docLines,
         }
         const responseSapEntrega = await postEntrega(finalData)
+        console.log('response post entrega ejecutado')
+
         const {responseData}= responseSapEntrega
-        const detalles =[];
+        const detalle =[];
         const cabezera =[];
         for(const line of responseData){
             const {producto, descripcion, cantidad, precioUnitario, montoDescuento, subTotal, numeroImei, numeroSerie, complemento, ...result} = line
             if (!cabezera.length) {
                 cabezera.push({...result, complemento: complemento || ""})
             }            
-            detalles.push({
+            detalle.push({
                 producto,
                 descripcion,
                 cantidad,
@@ -80,13 +83,15 @@ const facturacionController = async (req, res) => {
                 numeroSerie
             })
         }
-            const resultado = {
-                ...cabezera[0],
-                detalles
-            }
+        const bodyFactura = {
+            ...cabezera[0],
+            detalle
+        }
 
-        console.log('response post entrega ejecutado')
-        return res.json({ resultado })
+        const responseProsin = await facturacionProsin(bodyFactura)
+        console.log({responseProsin})
+        
+        return res.json({ bodyFactura })
     } catch (error) {
         console.log({ error })
         const { statusCode } = error
