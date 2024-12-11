@@ -1,5 +1,6 @@
 const axios = require('axios');
 const https = require('https');
+const { obtenerEntregaDetalle } = require("./hana.controller")
 
 const agent = new https.Agent({ rejectUnauthorized: false })
 
@@ -50,14 +51,14 @@ const postEntrega = async (responseJson) => {
         const deliveryNumberMatch = locationHeader.match(/\((\d+)\)$/);
         const deliveryNumber = deliveryNumberMatch ? deliveryNumberMatch[1] : 'Desconocido';
         console.log({ sapResponse })
-
+        const responseHana = await obtenerEntregaDetalle(deliveryNumber);
         console.log('Nueva Entrega: #', deliveryNumber);
         return {
             message: 'Entrega grabada con éxito',
             deliveryN44umber: deliveryNumber,
             status: sapResponse.status,
             statusText: sapResponse.statusText,
-            responseData: responseJson
+            responseData: responseHana,
         }
 
     } catch (error) {

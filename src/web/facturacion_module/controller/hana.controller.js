@@ -58,6 +58,23 @@ const lotesArticuloAlmacenCantidad = async (articulo, almacen, lote) => {
     }
 }
 
+const obtenerEntregaDetalle = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL LAB_IFA_DEV.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE(${id})`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerEntregaDetalle:', error.message);
+        return { message: 'Error al procesar la solicitud: obtenerEntregaDetalle' }
+    }
+}
+
 module.exports = {
-    lotesArticuloAlmacenCantidad
+    lotesArticuloAlmacenCantidad,
+    obtenerEntregaDetalle
 }

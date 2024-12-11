@@ -21,7 +21,7 @@ const facturacionController = async (req, res) => {
             if (!batchData || batchData.length === 0) {
                 return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}` });
             }
-            console.log({ batchData })
+            //console.log({ batchData })
             batchNumbers = batchData.map(batch => ({
                 BaseLineNumber: LineNum,
                 BatchNumber: batch.BatchNum,
@@ -61,8 +61,32 @@ const facturacionController = async (req, res) => {
             DocumentLines:docLines,
         }
         const responseSapEntrega = await postEntrega(finalData)
+        const {responseData}= responseSapEntrega
+        const detalles =[];
+        const cabezera =[];
+        for(const line of responseData){
+            const {producto, descripcion, cantidad, precioUnitario, montoDescuento, subTotal, numeroImei, numeroSerie, complemento, ...result} = line
+            if (!cabezera.length) {
+                cabezera.push({...result, complemento: complemento || ""})
+            }            
+            detalles.push({
+                producto,
+                descripcion,
+                cantidad,
+                precioUnitario,
+                montoDescuento,
+                subTotal,
+                numeroImei,
+                numeroSerie
+            })
+        }
+            const resultado = {
+                ...cabezera[0],
+                detalles
+            }
+
         console.log('response post entrega ejecutado')
-        return res.json({ responseSapEntrega })
+        return res.json({ resultado })
     } catch (error) {
         console.log({ error })
         const { statusCode } = error
