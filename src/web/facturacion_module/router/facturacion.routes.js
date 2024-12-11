@@ -5,7 +5,7 @@ const { facturacionController, facturacionStatusController } = require('../contr
 const router = Router()
 
 router.post('/facturar', [validarToken, validarCampos], facturacionController)
-router.get('/facturacion-pedido', [validarToken, validarCampos],facturacionStatusController)
+router.get('/facturacion-pedido', [validarToken, validarCampos], facturacionStatusController)
 
 
 module.exports = router

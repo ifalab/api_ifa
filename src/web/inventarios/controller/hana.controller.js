@@ -131,6 +131,19 @@ const fechaVencLote = async (lote) => {
     }
 }
 
+const stockDisponible = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_LAPP_INV_STOCK_DISPONIBLE`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en stockDisponible')
+    }
+}
 
 
 module.exports = {
@@ -139,5 +152,6 @@ module.exports = {
     inventarioHabilitacion,
     inventarioValorado,
     descripcionArticulo,
-    fechaVencLote
+    fechaVencLote,
+    stockDisponible
 }

@@ -1,5 +1,5 @@
 const { json } = require("express")
-const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote } = require("./hana.controller")
+const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote, stockDisponible } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
@@ -183,7 +183,7 @@ const postHabilitacionController = async (req, res) => {
         //todo-------------------------------------------------------------
 
         const orderNumber = response.orderNumber
-        console.log({orderNumber})
+        console.log({ orderNumber })
         const responseHana = await inventarioHabilitacion(orderNumber)
         console.log('inventarioHabilitacion')
         // const lote = await fechaVencLote('1231231313213213')
@@ -202,7 +202,7 @@ const postHabilitacionController = async (req, res) => {
         }
         const DocumentLines = []
 
-        responseHana.map(async(item) => {
+        responseHana.map(async (item) => {
             const BatchNumbers = []
             const batch = {
                 BatchNumber: item.BatchNumber,
@@ -233,7 +233,7 @@ const postHabilitacionController = async (req, res) => {
             ...cabecera,
             DocumentLines
         }
-        console.log({dataFinal})
+        console.log({ dataFinal })
         const responseEntradaHabilitacion = await postEntradaHabilitacion(dataFinal)
         console.log('respuesta post entrada habilitacion')
         console.log({ responseEntradaHabilitacion })
@@ -305,6 +305,31 @@ const fechaVenLoteController = async (req, res) => {
         return res.status(500).json({ mensaje: 'error' })
     }
 }
+
+const stockDisponibleController = async (req, res) => {
+    try {
+        const stock = await stockDisponible();
+        const toCamelCase = (str) =>
+            str
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
+                .replace(/\.$/, '')
+                
+        const formattedStock = stock.map(item => {
+            const formattedItem = {};
+            Object.keys(item).forEach(key => {
+                const newKey = toCamelCase(key);
+                formattedItem[newKey] = item[key];
+            });
+            return formattedItem;
+        });
+
+        return res.json({ stock: formattedStock });
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -312,5 +337,6 @@ module.exports = {
     inventarioValoradoController,
     descripcionArticuloController,
     createQuotationController,
-    fechaVenLoteController
+    fechaVenLoteController,
+    stockDisponibleController
 }
