@@ -1,0 +1,72 @@
+const axios = require('axios');
+const https = require('https');
+
+const agent = new https.Agent({ rejectUnauthorized: false })
+
+let session = null
+
+const connectSLD = async () => {
+    try {
+        const url = 'https://172.16.11.25:50000/b1s/v1/Login';
+        const data = {
+            CompanyDB: process.env.DBSAPDEV,
+            UserName: process.env.USERSAP,
+            Password: process.env.PASSSAP
+        }
+        const response = await axios.post(url, data, { httpsAgent: agent });
+        session = response.data;
+
+        return response.data;
+    } catch (error) {
+        console.error('Error de logueo al SLD', error.message);
+        throw new Error('Error de logueo al SLD');
+    }
+}
+
+const validateSession = async () => {
+    if (!session || !session.SessionId) {
+        return await connectSLD();
+    }
+    return session;
+};
+
+const postEntrega = async (responseJson) => {
+
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = 'https://srvhana:50000/b1s/v1/DeliveryNotes';
+        const sapResponse = await axios.post(url, responseJson, {
+            httpsAgent: agent,
+            headers: headers
+        });
+
+        const locationHeader = sapResponse.headers.location;
+        const deliveryNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        const deliveryNumber = deliveryNumberMatch ? deliveryNumberMatch[1] : 'Desconocido';
+        console.log({ sapResponse })
+
+        console.log('Nueva Entrega: #', deliveryNumber);
+        return {
+            message: 'Entrega grabada con éxito',
+            deliveryN44umber: deliveryNumber,
+            status: sapResponse.status,
+            statusText: sapResponse.statusText,
+            responseData: responseJson
+        }
+
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        console.error('Error en la solicitud POST para Entrega:', error.response?.data || error.message);
+        return errorMessage
+    }
+};
+
+module.exports = {
+    postEntrega
+}

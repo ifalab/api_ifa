@@ -54,7 +54,7 @@ const parteDiario = async () => {
 
     } catch (error) {
         console.error('Error en finanzas/ parteDiario:', error.message);
-        res.status(500).json({ message: 'Error al procesar la solicitud: finanzas/parteDiario user' });
+        return { message: 'Error al procesar la solicitud: finanzas/parteDiario user' }
     }
 }
 

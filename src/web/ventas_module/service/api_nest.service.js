@@ -1,12 +1,13 @@
 const httpClient = require('../../service/httpClient');
 
-const sapService = {
-    async sendRendiciones(body) {
+const apiNestService = {
+    async facturacionPedido(docStatus) {
         try {
-            // Realiza la solicitud HTTP
-            const response = await httpClient.post('/rendicion', body);
+            // Realiza la solicitud HTTP GET con parámetros en la URL
+            const response = await httpClient.get('/lapp/facturacion/pedidos', {
+                params: { docStatus },
+            });
 
-            // Retorna un objeto con el código de estado y los datos
             return {
                 statusCode: response.status, // Código de estado de la respuesta
                 data: response.data, // Datos de la respuesta
@@ -17,17 +18,17 @@ const sapService = {
                 // Error específico de la API
                 throw {
                     statusCode: error.response.status,
-                    message: error.response.data || 'Error en la solicitud POST',
+                    message: error.response.data || 'Error en la solicitud GET',
                 };
             }
 
             // Otros errores (como errores de red)
             throw {
                 statusCode: 500,
-                message: error.message || 'Error desconocido en la solicitud POST',
+                message: error.message || 'Error desconocido en la solicitud GET',
             };
         }
     },
 };
 
-module.exports = sapService;
+module.exports = apiNestService;

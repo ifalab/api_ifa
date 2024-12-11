@@ -30,6 +30,7 @@ app.use('/v1/web/inventario', require('./web/inventarios/routers/inventarios.rou
 app.use('/v1/web/contabilidad', require('./web/contabilidad_module/routers/contabilidad.routes'));
 app.use('/v1/web/centro-costo', require('./web/centro_costos_module/routes/cc.routes'));
 app.use('/v1/web/rendiciones', require('./web/rendiciones_module/routes/rendiciones.routes'));
+app.use('/v1/web/facturacion', require('./web/facturacion_module/router/facturacion.routes'));
 
 //TODO VERSION MOVIL --------------------------------------------------------------------------------------
 app.use('/v1/movil/ventas',require('./movil/ventas_module/routes/ventas.routes'))

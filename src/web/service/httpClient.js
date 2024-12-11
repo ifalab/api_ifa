@@ -3,7 +3,7 @@ const axios = require('axios');
 // Crear una instancia personalizada de axios
 const httpClient = axios.create({
     baseURL: process.env.API_NEST || 'https://api.example.com',
-    timeout: 5000, // Tiempo de espera en milisegundos
+    timeout: 60000, // Tiempo de espera en milisegundos
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',

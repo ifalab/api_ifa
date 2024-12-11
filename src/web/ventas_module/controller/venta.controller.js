@@ -23,6 +23,7 @@ const {
     ventasHistoricoInstituciones,
     ventasPorZonasVendedorMesAnt
 } = require("./hana.controller")
+const { facturacionPedido } = require("../service/api_nest.service")
 
 
 
@@ -654,6 +655,20 @@ const vendedorPorZonaMesAntController = async(req,res)=>{
     }
 }
 
+const facturacionController = async(req,res)=>{
+    try { 
+        const {opcion } = req.query;
+        const response  = await facturacionPedido(opcion)
+        return res.json({response})
+        
+    } catch (error) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+    }
+}
+
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -677,4 +692,5 @@ module.exports = {
     ventasHistoricoMasivosController,
     ventasHistoricoInstitucionesController,
     vendedorPorZonaMesAntController,
+    facturacionController,
 };
