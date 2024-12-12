@@ -5,11 +5,11 @@ const apiFacturacionProsin = {
         try {
             
             const response = await httpClientProsin.post('/api/sfl/FacturaCompraVenta', body);
-            return response;
-            // return {
-            //     statusCode: response.estado,
-            //     data: response.datos,
-            // };
+            // return response;
+            return {
+                statusCode: response.status,
+                data: response.data,
+            };
         } catch (error) {
             // Maneja los errores y propaga el error al controlador
             if (error.response) {

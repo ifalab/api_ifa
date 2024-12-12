@@ -23,6 +23,7 @@ const clientePorDimensionUnoController = async (req, res) => {
 
     }
 }
+
 const almacenesPorDimensionUnoController = async (req, res) => {
     try {
         const { dimension } = req.body
@@ -83,6 +84,7 @@ const postHabilitacionController = async (req, res) => {
         } else {
             return res.status(400).json({ mensaje: 'El usuario es obligatorio' })
         }
+        
         let listItem = []
         let index = 0
 
@@ -96,6 +98,10 @@ const postHabilitacionController = async (req, res) => {
             console.log({ item })
             if (!item.articulo || item.articulo == null || item.articulo == '') {
                 return res.status(400).json({ mensaje: 'El codigo del articulo es obligatorio' })
+            }
+
+            if (!item.articuloDict || item.articuloDict == null || item.articuloDict == '') {
+                return res.status(400).json({ mensaje: 'El codigo del articulo EQUIVALENTE es obligatorio' })
             }
 
             if (!item.lote || item.lote == null || item.lote == '') {
@@ -122,6 +128,7 @@ const postHabilitacionController = async (req, res) => {
                 "ItemCode": `${item.articulo}`,
                 "WarehouseCode": `${warehouseCode}`,
                 "Quantity": `${item.cantidadIngreso}`,
+                "U_DIM_ARTICULO":`${item.articuloDict}`,
                 "AccountCode": "6110401",
                 "BatchNumbers": [
                     {
@@ -157,6 +164,7 @@ const postHabilitacionController = async (req, res) => {
         // return res.json({ data })
 
         const response = await postSalidaHabilitacion(data)
+        // return res.json({response })
         console.log('postSalidaHabilitacion ejecutado')
         console.log({ response })
         if (response.lang) {
@@ -185,6 +193,7 @@ const postHabilitacionController = async (req, res) => {
         const orderNumber = response.orderNumber
         console.log({ orderNumber })
         const responseHana = await inventarioHabilitacion(orderNumber)
+        // return res.json({responseHana})
         console.log('inventarioHabilitacion')
         // const lote = await fechaVencLote('1231231313213213')
         // if(lote.length==0){
@@ -213,6 +222,7 @@ const postHabilitacionController = async (req, res) => {
             }
 
             BatchNumbers.push(batch)
+            //? item code por articuloDict
             const linea = {
                 DocLineNum: item.DocLineNum,
                 ItemCode: item.ItemCode,
@@ -333,6 +343,7 @@ const stockDisponibleController = async (req, res) => {
 const habilitacionDiccionarioController = async (req, res) => {
     try {
         const cod = req.body.cod
+        console.log({cod})
         const response = await inventarioHabilitacionDict(cod)
         return res.status(200).json({ response })
     } catch (error) {

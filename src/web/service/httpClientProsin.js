@@ -1,12 +1,12 @@
 const axios = require('axios');
 
 const httpProsin = axios.create({
-    baseURL: process.env.API_PROSIN || 'https://api.example.com',
+    baseURL: process.env.API_PROSIN || 'https://api.example.com prosin',
     timeout: 60000,
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        authorization:`${process.env.TOKEN_PROSIN}`
+        Authorization:`Basic SUZBOkdlbmVzaXM6eg==`
     },
 });
 // Interceptor para manejar respuestas
