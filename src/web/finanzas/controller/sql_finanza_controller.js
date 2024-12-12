@@ -4,7 +4,7 @@ async function todosGastos() {
     try {
       const pool = await poolPromise;
   
-      const result = await pool.request().query('select * from hchGastos');
+      const result = await pool.request().query('select * from hchGastosGestion');
       console.log('Resultados:', result.recordset);
       return result.recordset
     } catch (err) {
