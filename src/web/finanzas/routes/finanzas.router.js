@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController } = require('../controller/finanzas.controller')
+const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController } = require('../controller/finanzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -16,5 +16,6 @@ router.get('/find-all-regions', [validarToken, validarCampos], findAllRegionsCon
 router.get('/find-all-line', [validarToken, validarCampos], findAllLineController)
 router.get('/find-all-subline', [validarToken, validarCampos], findAllSublineController)
 router.get('/find-all-group-almacen', [validarToken, validarCampos], findAllGroupAlmacenController)
+router.get('/find-all-gastos', [validarToken, validarCampos], findAllGastosController)
 
 module.exports = router

@@ -1,4 +1,5 @@
 const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses } = require("./hana.controller")
+const {todosGastos} = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
   try {
@@ -708,6 +709,16 @@ const findAllGroupAlmacenController = async (req, res) => {
   }
 }
 
+const findAllGastosController = async (req, res) => {
+  try {
+    const gastos = await todosGastos()
+    return res.json({ gastos })
+  } catch (error) {
+    console.log({ error })
+    return res.status(500).json({ mensaje: 'Error en findAllGroupAlmacenController ' })
+  }
+}
+
 module.exports = {
   parteDiaroController,
   abastecimientoController,
@@ -721,4 +732,5 @@ module.exports = {
   abastecimientoPorFechaController,
   abastecimientoFechaAnualController,
   abastecimientoFecha24MesesController,
+  findAllGastosController,
 }
