@@ -33,19 +33,21 @@ const facturacionController = async (req, res) => {
                 Quantity: Number(batch.Quantity).toFixed(6),
                 ItemCode: batch.ItemCode
             }))
-
+            console.log({ LineNum, id, BaseType: 17, BaseEntry: id });
             newLine = {
                 ItemCode,
                 WarehouseCode,
                 Quantity,
                 LineNum,
                 BaseType: 17,
-                BaseEntry: id ,
+                BaseEntry: id,
                 BaseLine: LineNum,
                 ...restLine,
                 BatchNumbers: batchNumbers
-            }
-
+              };
+            newLine = { ...newLine }; 
+            console.log({newLine})
+            
             newDocumentLines.push(newLine)
 
         }
@@ -68,7 +70,7 @@ const facturacionController = async (req, res) => {
             CardCode,
             DocumentLines: docLines,
         }
-        // return {finalData}
+        return res.json({ ...finalData })
         const responseSapEntrega = await postEntrega(finalData)
         console.log('response post entrega ejecutado')
 
