@@ -20,7 +20,7 @@ const facturacionController = async (req, res) => {
         // return res.json({data})
         for (const line of DocumentLines) {
             let newLine = {}
-            const { ItemCode, WarehouseCode, Quantity, LineNum, ...restLine } = line;
+            const { ItemCode, WarehouseCode, Quantity, LineNum,...restLine } = line;
             const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
 
             if (!batchData || batchData.length === 0) {
@@ -39,6 +39,9 @@ const facturacionController = async (req, res) => {
                 WarehouseCode,
                 Quantity,
                 LineNum,
+                BaseType: 17,
+                BaseEntry: id ,
+                BaseLine: LineNum,
                 ...restLine,
                 BatchNumbers: batchNumbers
             }
