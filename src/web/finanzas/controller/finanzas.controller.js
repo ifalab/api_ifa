@@ -714,17 +714,37 @@ const findAllGastosController = async (req, res) => {
     const gastos = await todosGastos()
     const datosProcesados = procesarGastos(gastos);
     const data = calcularPorcentajes(datosProcesados);
-    let processData =[]
-    data.datosConPorcentajes.map((item)=>{
-      const {desc_grupo,...rest} = item
+
+    const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
+      year,
+      total,
+    }));
+
+    let processData = [];
+    data.datosConPorcentajes.map((item) => {
+      const { desc_grupo, montos, porcentajes, ...rest } = item;
+      const montosArray = Object.entries(montos).map(([year, monto]) => ({
+        year,
+        monto,
+      }));
+
+      const porcentajesArray = Object.entries(porcentajes).map(([year, porcentaje]) => ({
+        year,
+        porcentaje,
+      }));
+
       const newData = {
-        desc_grupo:desc_grupo.trim(),
+        desc_grupo: desc_grupo.trim(),
+        montos: montosArray,
+        porcentajes: porcentajesArray,
         ...rest,
-      }
-      processData.push(newData)
-    })
-    const {datosConPorcentajes,...restData} = data
-    return res.json({ ...restData ,processData})
+      };
+      processData.push(newData);
+    });
+
+    const { datosConPorcentajes, ...restData } = data;
+
+    return res.json({ ...restData, totalByYear: totalByYearArray, processData });
   } catch (error) {
     console.log({ error })
     return res.status(500).json({ mensaje: 'Error en findAllGroupAlmacenController ' })

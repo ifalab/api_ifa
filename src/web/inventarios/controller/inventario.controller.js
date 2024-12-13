@@ -100,9 +100,9 @@ const postHabilitacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: 'El codigo del articulo es obligatorio' })
             }
 
-            if (!item.articuloDict || item.articuloDict == null || item.articuloDict == '') {
-                return res.status(400).json({ mensaje: 'El codigo del articulo EQUIVALENTE es obligatorio' })
-            }
+            // if (!item.articuloDict || item.articuloDict == null || item.articuloDict == '') {
+            //     return res.status(400).json({ mensaje: 'El codigo del articulo EQUIVALENTE es obligatorio' })
+            // }
 
             if (!item.lote || item.lote == null || item.lote == '') {
                 return res.status(400).json({ mensaje: 'El lote es obligatorio' })
@@ -128,7 +128,7 @@ const postHabilitacionController = async (req, res) => {
                 "ItemCode": `${item.articulo}`,
                 "WarehouseCode": `${warehouseCode}`,
                 "Quantity": `${item.cantidadIngreso}`,
-                "U_DIM_ARTICULO":`${item.articuloDict}`,
+                // "U_DIM_ARTICULO":`${item.articuloDict}`,
                 "AccountCode": "6110401",
                 "BatchNumbers": [
                     {
