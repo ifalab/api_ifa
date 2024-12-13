@@ -712,12 +712,70 @@ const findAllGroupAlmacenController = async (req, res) => {
 const findAllGastosController = async (req, res) => {
   try {
     const gastos = await todosGastos()
-    return res.json({ gastos })
+    const datosProcesados = procesarGastos(gastos);
+    const data = calcularPorcentajes(datosProcesados);
+    let processData =[]
+    data.datosConPorcentajes.map((item)=>{
+      const {desc_grupo,...rest} = item
+      const newData = {
+        desc_grupo:desc_grupo.trim(),
+        ...rest,
+      }
+      processData.push(newData)
+    })
+    const {datosConPorcentajes,...restData} = data
+    return res.json({ ...restData ,processData})
   } catch (error) {
     console.log({ error })
     return res.status(500).json({ mensaje: 'Error en findAllGroupAlmacenController ' })
   }
 }
+
+const procesarGastos = (gastos) => {
+  const resultado = {};
+
+  // Agrupar por desc_grupo
+  gastos.forEach((gasto) => {
+    const { Gestion, desc_grupo, monto } = gasto;
+    if (!resultado[desc_grupo]) {
+      resultado[desc_grupo] = { desc_grupo, montos: {}, total: 0 };
+    }
+    // Agregar monto por año (Gestion)
+    resultado[desc_grupo].montos[Gestion] = 
+      (resultado[desc_grupo].montos[Gestion] || 0) + monto;
+
+    // Sumar al total
+    resultado[desc_grupo].total += monto;
+  });
+
+  // Formatear el resultado en un array para mayor flexibilidad
+  return Object.values(resultado);
+};
+
+const calcularPorcentajes = (datosProcesados) => {
+  // Calcular el total general por año
+  const totalByYear = {};
+
+  datosProcesados.forEach((grupo) => {
+    Object.entries(grupo.montos).forEach(([year, monto]) => {
+      totalByYear[year] = (totalByYear[year] || 0) + monto;
+    });
+  });
+
+  // Agregar porcentajes al resultado
+  const datosConPorcentajes = datosProcesados.map((grupo) => {
+    const porcentajes = {};
+    Object.entries(grupo.montos).forEach(([year, monto]) => {
+      porcentajes[year] = ((monto / totalByYear[year]) * 100).toFixed(2); // Formatear a 2 decimales
+    });
+    return {
+      ...grupo,
+      porcentajes,
+    };
+  });
+
+  return { datosConPorcentajes, totalByYear };
+};
 
 module.exports = {
   parteDiaroController,
