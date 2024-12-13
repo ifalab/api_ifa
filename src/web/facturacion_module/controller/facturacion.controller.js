@@ -126,7 +126,38 @@ const facturacionController = async (req, res) => {
         const fechaFormater = year + month + day
         // return res.json({fechaFormater})
         const responseHana = await entregaDetallerFactura(+delivery,cuf, +nroFactura,fechaFormater )
-        return res.json({ responseHana })
+        console.log({responseHana})
+
+        const DocumentLinesHana = [];
+        let cabezeraHana = [];
+        
+        let DocumentAdditionalExpenses= [];
+
+        for (const line of responseHana) {
+            const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA, 
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4, 
+                DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+
+            if (!cabezeraHana.length) {
+                cabezeraHana = { 
+                    ...result, 
+                    DocTotal: Number(DocTotal), 
+                    U_OSLP_ID: U_OSLP_ID || "",  
+                    U_UserCode: U_UserCode || "" 
+                  };
+                DocumentAdditionalExpenses = [{ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1},{ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2},{ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3},{ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4}]
+            }
+            DocumentLinesHana.push({
+                LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity) , GrossPrice: Number(GrossPrice),GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+            })
+        }
+        const responseHanaB = {
+            ...cabezeraHana,
+            DocumentLines: DocumentLinesHana,
+            DocumentAdditionalExpenses
+        }
+
+        return res.json({ ...responseHanaB })
     } catch (error) {
         console.log({ error })
         const { statusCode } = error
