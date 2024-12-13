@@ -1,12 +1,14 @@
+const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad } = require("./hana.controller")
 const { postEntrega } = require("./sld.controller")
 
 const facturacionController = async (req, res) => {
-    // let body = {}
+    let body = {}
     try {
         const { id } = req.body
+        // return {id}
         if (!id || id == '') return res.status(400).json({ mensaje: 'debe haber un ID valido' })
         const { data } = await facturacionById(id)
         if (!data) return res.status(400).json({ mensaje: 'Hubo un error al facturar' })
@@ -15,6 +17,7 @@ const facturacionController = async (req, res) => {
 
         let batchNumbers = []
         let newDocumentLines = []
+        // return res.json({data})
         for (const line of DocumentLines) {
             let newLine = {}
             const { ItemCode, WarehouseCode, Quantity, LineNum, ...restLine } = line;
@@ -62,10 +65,14 @@ const facturacionController = async (req, res) => {
             CardCode,
             DocumentLines: docLines,
         }
+        // return {finalData}
         const responseSapEntrega = await postEntrega(finalData)
         console.log('response post entrega ejecutado')
 
         const { responseData } = responseSapEntrega
+        const delivery = responseSapEntrega.deliveryN44umber
+        if (!delivery) return res.status(400).json({ mensaje: 'error del sap, no se pudo crear la entrega' })
+        // return res.json({ delivery })
         const detalle = [];
         const cabezera = [];
         for (const line of responseData) {
@@ -100,9 +107,26 @@ const facturacionController = async (req, res) => {
         const responseProsin = await facturacionProsin(bodyFinalFactura)
         console.log({ responseProsin })
         const { data: dataProsin } = responseProsin
-        if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ error: dataProsin, bodyFinalFactura })
-        return res.json({ ...responseProsin })
-
+        if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje: dataProsin, bodyFinalFactura })
+        if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin, bodyFinalFactura })
+        const fecha = dataProsin.fecha
+        const nroFactura = dataProsin.datos.factura
+        const cuf = dataProsin.datos.cuf
+        //TODO ENVIAR A call IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE_TOFACTURAR(dcoentry, cuf,nrofactura, fecha)
+        // return res.json({ delivery, fecha,nroFactura,cuf })
+        console.log({ fecha })
+        const formater = fecha.split('/')
+        const day = formater[0]
+        const month = formater[1]
+        const yearTime = formater[2]
+        const yearFomater = yearTime.split(' ')
+        const year = yearFomater[0]
+        console.log({ day, month, year })
+        if (year.length > 4) return res.status(400).json({ mensaje: 'error al formateo de la fecha' })
+        const fechaFormater = year + month + day
+        // return res.json({fechaFormater})
+        const responseHana = await entregaDetallerFactura(+delivery,cuf, +nroFactura,fechaFormater )
+        return res.json({ responseHana })
     } catch (error) {
         console.log({ error })
         const { statusCode } = error
@@ -116,6 +140,9 @@ const facturacionController = async (req, res) => {
                 message: error.message,
                 stack: error.stack,
                 statusCode: error.statusCode || 500,
+            },
+            errorController: {
+                ...error
             },
             bodyFactura: body
         })
