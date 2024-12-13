@@ -343,11 +343,12 @@ const stockDisponibleController = async (req, res) => {
 const habilitacionDiccionarioController = async (req, res) => {
     try {
         const cod = req.body.cod
-        const codcliente = req.body.codcliente
+        const codCliente = req.body.codCliente
         console.log({cod})
         const response = await inventarioHabilitacionDict(cod)
+        // console.log({response})
         console.log({response})
-        if(codcliente!="C000487"){
+        if(codCliente!="C000487"){
             console.log("No es igual")
             const responseFiltrado = response.filter(item => {
                 const {ItemEq} = item
@@ -361,7 +362,7 @@ const habilitacionDiccionarioController = async (req, res) => {
             //         responseFiltrado
             //     }
             // }
-            return res.status(200).json({ responseFiltrado })
+            return res.status(200).json({ response:responseFiltrado })
         }
         
         return res.status(200).json({ response })

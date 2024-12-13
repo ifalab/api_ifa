@@ -20,7 +20,7 @@ const facturacionController = async (req, res) => {
         // return res.json({data})
         for (const line of DocumentLines) {
             let newLine = {}
-            const { ItemCode, WarehouseCode, Quantity, LineNum,...restLine } = line;
+            const { ItemCode, WarehouseCode, Quantity, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, ...restLine } = line;
             const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
 
             if (!batchData || batchData.length === 0) {
@@ -34,20 +34,22 @@ const facturacionController = async (req, res) => {
                 ItemCode: batch.ItemCode
             }))
             console.log({ LineNum, id, BaseType: 17, BaseEntry: id });
+            const data = {
+                BaseLine: LineNum,
+                BaseType: 17,
+                BaseEntry: id,
+            }
+            console.log({ data })
             newLine = {
+                ...data,
                 ItemCode,
                 WarehouseCode,
                 Quantity,
                 LineNum,
-                BaseType: 17,
-                BaseEntry: id,
-                BaseLine: LineNum,
                 ...restLine,
                 BatchNumbers: batchNumbers
-              };
-            newLine = { ...newLine }; 
-            console.log({newLine})
-            
+            };
+            newLine = { ...newLine };
             newDocumentLines.push(newLine)
 
         }
@@ -70,7 +72,7 @@ const facturacionController = async (req, res) => {
             CardCode,
             DocumentLines: docLines,
         }
-        return res.json({ ...finalData })
+        // return res.json({ ...finalData })
         const responseSapEntrega = await postEntrega(finalData)
         console.log('response post entrega ejecutado')
 
@@ -130,30 +132,30 @@ const facturacionController = async (req, res) => {
         if (year.length > 4) return res.status(400).json({ mensaje: 'error al formateo de la fecha' })
         const fechaFormater = year + month + day
         // return res.json({fechaFormater})
-        const responseHana = await entregaDetallerFactura(+delivery,cuf, +nroFactura,fechaFormater )
-        console.log({responseHana})
+        const responseHana = await entregaDetallerFactura(+delivery, cuf, +nroFactura, fechaFormater)
+        console.log({ responseHana })
 
         const DocumentLinesHana = [];
         let cabezeraHana = [];
-        
-        let DocumentAdditionalExpenses= [];
+
+        let DocumentAdditionalExpenses = [];
 
         for (const line of responseHana) {
-            const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA, 
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4, 
+            const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
                 DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
 
             if (!cabezeraHana.length) {
-                cabezeraHana = { 
-                    ...result, 
-                    DocTotal: Number(DocTotal), 
-                    U_OSLP_ID: U_OSLP_ID || "",  
-                    U_UserCode: U_UserCode || "" 
-                  };
-                DocumentAdditionalExpenses = [{ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1},{ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2},{ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3},{ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4}]
+                cabezeraHana = {
+                    ...result,
+                    DocTotal: Number(DocTotal),
+                    U_OSLP_ID: U_OSLP_ID || "",
+                    U_UserCode: U_UserCode || ""
+                };
+                DocumentAdditionalExpenses = [{ ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1 }, { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2 }, { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3 }, { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4 }]
             }
             DocumentLinesHana.push({
-                LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity) , GrossPrice: Number(GrossPrice),GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
             })
         }
         const responseHanaB = {
