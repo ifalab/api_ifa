@@ -74,7 +74,24 @@ const obtenerEntregaDetalle = async (id) => {
     }
 }
 
+const solicitarId = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL LAB_IFA_PRD.IFA_SOLICITUD_ID(${id})`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en solicitarId:', error.message);
+        return { message: 'Error al procesar la solicitud: solicitarId' }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
-    obtenerEntregaDetalle
+    obtenerEntregaDetalle,
+    solicitarId
 }

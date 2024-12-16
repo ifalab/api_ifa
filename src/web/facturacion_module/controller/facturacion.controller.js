@@ -1,7 +1,7 @@
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad } = require("./hana.controller")
+const { lotesArticuloAlmacenCantidad, solicitarId } = require("./hana.controller")
 const { postEntrega } = require("./sld.controller")
 
 const facturacionController = async (req, res) => {
@@ -10,6 +10,16 @@ const facturacionController = async (req, res) => {
         const { id } = req.body
         // return {id}
         if (!id || id == '') return res.status(400).json({ mensaje: 'debe haber un ID valido' })
+        const solicitud = await solicitarId(id);
+        
+        if(solicitud.length>1){
+            return res.status(400).json({ mensaje: 'Existe más de una entrega' })
+        }
+        else if(solicitud.length==1){
+            //return res.json({solicitud})
+            console.log({solicitud})
+        }
+        
         const { data } = await facturacionById(id)
         if (!data) return res.status(400).json({ mensaje: 'Hubo un error al facturar' })
         const { DocumentLines, ...restData } = data
@@ -33,13 +43,13 @@ const facturacionController = async (req, res) => {
                 Quantity: Number(batch.Quantity).toFixed(6),
                 ItemCode: batch.ItemCode
             }))
-            console.log({ LineNum, id, BaseType: 17, BaseEntry: id });
+            
             const data = {
                 BaseLine: LineNum,
                 BaseType: 17,
                 BaseEntry: id,
             }
-            console.log({ data })
+            
             newLine = {
                 ...data,
                 ItemCode,
