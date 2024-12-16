@@ -1,5 +1,5 @@
 const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses } = require("./hana.controller")
-const {todosGastos} = require('./sql_finanza_controller')
+const { todosGastos } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
   try {
@@ -394,12 +394,12 @@ const abastecimientoPorFechaController = async (req, res) => {
         mesActual.Tipo.forEach((tipoActual, idx) => {
           const tipoAnterior = mesAnterior.Tipo[idx];
 
-          
+
           if (tipoAnterior && tipoAnterior.name === tipoActual.name) {
             const variacion = (parseFloat(tipoActual.CostoComercial) / parseFloat(tipoAnterior.CostoComercial)) - 1;
             tipoActual.variacion = variacion;
           } else {
-            
+
             tipoActual.variacion = 0;
           }
         });
@@ -407,7 +407,7 @@ const abastecimientoPorFechaController = async (req, res) => {
 
       return agrupadoPorMes;
     };
-    
+
     const result = ordenarTiposYCalcularVariacion(agrupadoPorMes);
     return res.status(200).json({ result });
 
@@ -421,7 +421,7 @@ const abastecimientoPorFechaController = async (req, res) => {
   }
 }
 
-const abastecimientoFechaAnualController = async(req,res)=>{
+const abastecimientoFechaAnualController = async (req, res) => {
   try {
     const sapResponse = await abastecimientoPorFechaAnual();
     // return res.json({sapResponse})
@@ -518,12 +518,12 @@ const abastecimientoFechaAnualController = async(req,res)=>{
         mesActual.Tipo.forEach((tipoActual, idx) => {
           const tipoAnterior = mesAnterior.Tipo[idx];
 
-          
+
           if (tipoAnterior && tipoAnterior.name === tipoActual.name) {
             const variacion = (parseFloat(tipoActual.CostoComercial) / parseFloat(tipoAnterior.CostoComercial)) - 1;
             tipoActual.variacion = variacion;
           } else {
-            
+
             tipoActual.variacion = 0;
           }
         });
@@ -531,7 +531,7 @@ const abastecimientoFechaAnualController = async(req,res)=>{
 
       return agrupadoPorMes;
     };
-    
+
     const result = ordenarTiposYCalcularVariacion(agrupadoPorMes);
     return res.status(200).json({ result });
 
@@ -545,7 +545,7 @@ const abastecimientoFechaAnualController = async(req,res)=>{
   }
 }
 
-const abastecimientoFecha24MesesController = async(req,res)=>{
+const abastecimientoFecha24MesesController = async (req, res) => {
   try {
     const sapResponse = await abastecimientoPorFecha_24_meses();
     // return res.json({sapResponse})
@@ -642,12 +642,12 @@ const abastecimientoFecha24MesesController = async(req,res)=>{
         mesActual.Tipo.forEach((tipoActual, idx) => {
           const tipoAnterior = mesAnterior.Tipo[idx];
 
-          
+
           if (tipoAnterior && tipoAnterior.name === tipoActual.name) {
             const variacion = (parseFloat(tipoActual.CostoComercial) / parseFloat(tipoAnterior.CostoComercial)) - 1;
             tipoActual.variacion = variacion;
           } else {
-            
+
             tipoActual.variacion = 0;
           }
         });
@@ -655,7 +655,7 @@ const abastecimientoFecha24MesesController = async(req,res)=>{
 
       return agrupadoPorMes;
     };
-    
+
     const result = ordenarTiposYCalcularVariacion(agrupadoPorMes);
     return res.status(200).json({ result });
 
@@ -751,6 +751,101 @@ const findAllGastosController = async (req, res) => {
   }
 }
 
+const findAllSimpleGastosController = async (req, res) => {
+  try {
+    const gastos = await todosGastos()
+    const datosProcesados = procesarGastos(gastos);
+    const data = calcularPorcentajes(datosProcesados);
+
+    const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
+      date:year,
+      monto:total,
+    }));
+
+    let processData = [];
+    data.datosConPorcentajes.map((item) => {
+      const { desc_grupo, montos, porcentajes, ...rest } = item;
+      const montosArray = Object.entries(montos).map(([year, monto]) => ({
+        year,
+        monto,
+      }));
+
+      const porcentajesArray = Object.entries(porcentajes).map(([year, porcentaje]) => ({
+        year,
+        porcentaje,
+      }));
+
+      const newData = {
+        desc_grupo: desc_grupo.trim(),
+        montos: montosArray,
+        porcentajes: porcentajesArray,
+        ...rest,
+      };
+      processData.push(newData);
+    });
+
+    const { datosConPorcentajes, ...restData } = data;
+    const montos = processData[0].montos
+    const year = []
+    montos.map((item) => {
+      year.push(item.year)
+    })
+
+    const formatDataByYear = (processData) => {
+      // Inicializamos un objeto para almacenar los datos agrupados por año
+      const groupedData = processData.reduce((acc, item) => {
+        const { desc_grupo, montos, porcentajes, total } = item;
+    
+        // Iteramos sobre los años en montos
+        montos.forEach((montoItem) => {
+          const date = montoItem.year;
+          const monto = montoItem.monto;
+    
+          // Buscamos el porcentaje correspondiente para este año
+          const porcentajeObj = porcentajes.find((p) => p.year === date);
+          const porcentaje = porcentajeObj ? porcentajeObj.porcentaje : null;
+    
+          // Creamos un objeto de detalle
+          const detalle = {
+            desc_grupo,
+            monto,
+            porcentaje,
+          };
+    
+          // Si el año no existe en el acumulador, lo inicializamos
+          if (!acc[date]) {
+            acc[date] = { date, detalle: [] };
+          }
+    
+          // Agregamos el detalle al año correspondiente
+          acc[date].detalle.push(detalle);
+        });
+    
+        return acc;
+      }, {});
+    
+      // Convertimos el objeto agrupado en un array
+      return Object.values(groupedData);
+    };
+
+    const formattedData = formatDataByYear(processData);
+    // formattedData.map((item))
+    let totalizado = []
+    processData.map((item)=>{
+      totalizado.push({
+        desc_grupo:item.desc_grupo,
+        monto:item.total
+      })
+    })
+
+    formattedData.push({date:'Total',detalle:totalizado})
+    return res.json({ totalByYear: totalByYearArray, formattedData });
+  } catch (error) {
+    console.log({ error })
+    return res.status(500).json({ mensaje: 'Error en findAllGroupAlmacenController ' })
+  }
+}
+
 const procesarGastos = (gastos) => {
   const resultado = {};
 
@@ -761,7 +856,7 @@ const procesarGastos = (gastos) => {
       resultado[desc_grupo] = { desc_grupo, montos: {}, total: 0 };
     }
     // Agregar monto por año (Gestion)
-    resultado[desc_grupo].montos[Gestion] = 
+    resultado[desc_grupo].montos[Gestion] =
       (resultado[desc_grupo].montos[Gestion] || 0) + monto;
 
     // Sumar al total
@@ -811,4 +906,5 @@ module.exports = {
   abastecimientoFechaAnualController,
   abastecimientoFecha24MesesController,
   findAllGastosController,
+  findAllSimpleGastosController,
 }

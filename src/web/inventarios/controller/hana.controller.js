@@ -77,7 +77,7 @@ const inventarioHabilitacion = async (docentry) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "LAB_IFA_DEV".IFA_LAPP_INV_HABILITACION('${docentry}')`
+        const query = `CALL "LAB_IFA_PRD".IFA_LAPP_INV_HABILITACION('${docentry}')`
         console.log({query})
         const result = executeQuery(query)
         return result
@@ -151,7 +151,7 @@ const inventarioHabilitacionDict = async (cod) => {
             await connectHANA();
         }
 
-        const query = `call LAB_IFA_DEV.IFA_LAPP_INV_HABILITACION_DICT('${cod}')`;
+        const query = `call LAB_IFA_PRD.IFA_LAPP_INV_HABILITACION_DICT('${cod}')`;
         const result = await executeQuery(query)
         return result
 
