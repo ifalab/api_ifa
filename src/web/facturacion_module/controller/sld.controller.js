@@ -68,6 +68,34 @@ const postEntrega = async (responseJson) => {
     }
 };
 
+const postInvoice = async (body) => {
+    try {
+        // const responseJson = { CardCode, DocumentLines }
+        // return responseJson
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = 'https://srvhana:50000/b1s/v1/Invoices';
+        const sapResponse = await axios.post(url, body, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        const locationHeader = sapResponse.headers.location;
+        const invoiceID = locationHeader.match(/\((\d+)\)$/);
+        const idInvoice = invoiceID ? invoiceID[1] : 'Desconocido';
+        return { sapResponse, idInvoice }
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        return errorMessage
+    }
+}
+
 module.exports = {
-    postEntrega
+    postEntrega,
+    postInvoice
 }

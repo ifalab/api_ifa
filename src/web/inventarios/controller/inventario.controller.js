@@ -1,5 +1,5 @@
 const { json } = require("express")
-const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict } = require("./hana.controller")
+const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
@@ -100,9 +100,9 @@ const postHabilitacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: 'El codigo del articulo es obligatorio' })
             }
 
-            // if (!item.articuloDict || item.articuloDict == null || item.articuloDict == '') {
-            //     return res.status(400).json({ mensaje: 'El codigo del articulo EQUIVALENTE es obligatorio' })
-            // }
+            if (!item.articuloDict || item.articuloDict == null || item.articuloDict == '') {
+                return res.status(400).json({ mensaje: 'El codigo del articulo EQUIVALENTE es obligatorio' })
+            }
 
             if (!item.lote || item.lote == null || item.lote == '') {
                 return res.status(400).json({ mensaje: 'El lote es obligatorio' })
@@ -128,7 +128,7 @@ const postHabilitacionController = async (req, res) => {
                 "ItemCode": `${item.articulo}`,
                 "WarehouseCode": `${warehouseCode}`,
                 "Quantity": `${item.cantidadIngreso}`,
-                // "U_DIM_ARTICULO":`${item.articuloDict}`,
+                "U_DIM_ARTICULO":`${item.articuloDict}`,
                 "AccountCode": "6110401",
                 "BatchNumbers": [
                     {
@@ -250,7 +250,6 @@ const postHabilitacionController = async (req, res) => {
         console.log({ value: responseEntradaHabilitacion.value })
         console.log({ lang: responseEntradaHabilitacion.lang })
         if (responseEntradaHabilitacion.value) {
-
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
         }
 
@@ -376,7 +375,30 @@ const habilitacionDiccionarioController = async (req, res) => {
     }
 }
 
+const stockDisponibleIfavetController = async (req, res) => {
+    try {
+        const stock = await stockDisponibleIfavet();
+        const toCamelCase = (str) =>
+            str
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
+                .replace(/\.$/, '')
+                
+        const formattedStock = stock.map(item => {
+            const formattedItem = {};
+            Object.keys(item).forEach(key => {
+                const newKey = toCamelCase(key);
+                formattedItem[newKey] = item[key];
+            });
+            return formattedItem;
+        });
 
+        return res.json({ stock: formattedStock });
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -386,5 +408,6 @@ module.exports = {
     createQuotationController,
     fechaVenLoteController,
     stockDisponibleController,
-    habilitacionDiccionarioController
+    habilitacionDiccionarioController,
+    stockDisponibleIfavetController
 }

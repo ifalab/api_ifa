@@ -48,7 +48,8 @@ const lotesArticuloAlmacenCantidad = async (articulo, almacen, lote) => {
             await connectHANA();
         }
 
-        const query = `CALL LAB_IFA_DEV.IFA_VM_SELECTION_BATCH_FEFO('${articulo}','${almacen}',${lote})`;
+        const query = `CALL ${process.env.PRD}.IFA_VM_SELECTION_BATCH_FEFO('${articulo}','${almacen}',${lote})`;
+        console.log({query})
         const result = await executeQuery(query)
         return result
 
@@ -64,7 +65,7 @@ const obtenerEntregaDetalle = async (id) => {
             await connectHANA();
         }
 
-        const query = `CALL LAB_IFA_DEV.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE(${id})`;
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE(${id})`;
         const result = await executeQuery(query)
         return result
 
@@ -80,7 +81,8 @@ const solicitarId = async (id) => {
             await connectHANA();
         }
 
-        const query = `CALL LAB_IFA_PRD.IFA_SOLICITUD_ID(${id})`;
+        const query = `CALL ${process.env.PRD}.IFA_SOLICITUD_ID(${id})`;
+        console.log({query})
         const result = await executeQuery(query)
         return result
 

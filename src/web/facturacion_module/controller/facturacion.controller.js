@@ -1,97 +1,149 @@
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId } = require("./hana.controller")
-const { postEntrega } = require("./sld.controller")
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle } = require("./hana.controller")
+const { postEntrega, postInvoice } = require("./sld.controller")
 
 const facturacionController = async (req, res) => {
     let body = {}
     try {
         const { id } = req.body
+        let deliveryData
+        let deliveryBody
+        let finalDataEntrega
         // return {id}
         if (!id || id == '') return res.status(400).json({ mensaje: 'debe haber un ID valido' })
         const solicitud = await solicitarId(id);
-        
-        if(solicitud.length>1){
+        console.log('1 solicitud')
+        console.log({ solicitud })
+
+        if (solicitud.length > 1) {
             return res.status(400).json({ mensaje: 'Existe más de una entrega' })
         }
-        else if(solicitud.length==1){
+        else if (solicitud.length == 1) {
             //return res.json({solicitud})
-            console.log({solicitud})
+            deliveryData = solicitud[0].DocEntry
+            deliveryBody = await obtenerEntregaDetalle(deliveryData)
+            console.log('1 solicitud tiene mas de uno')
+            console.log({ solicitud, deliveryData })
         }
-        
-        const { data } = await facturacionById(id)
-        if (!data) return res.status(400).json({ mensaje: 'Hubo un error al facturar' })
-        const { DocumentLines, ...restData } = data
-        if (!DocumentLines) return res.status(400).json({ mensaje: 'No existe los DocumentLines en la facturacio por ID ' })
 
-        let batchNumbers = []
-        let newDocumentLines = []
-        // return res.json({data})
-        for (const line of DocumentLines) {
-            let newLine = {}
-            const { ItemCode, WarehouseCode, Quantity, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, ...restLine } = line;
-            const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
+        if (!deliveryBody) {
 
-            if (!batchData || batchData.length === 0) {
-                return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}` });
+            const { data } = await facturacionById(id)
+            console.log('2 facturacion ')
+            console.log({ data })
+            if (!data) return res.status(400).json({ mensaje: 'Hubo un error al facturar' })
+            const { DocumentLines, ...restData } = data
+            if (!DocumentLines) return res.status(400).json({ mensaje: 'No existe los DocumentLines en la facturacio por ID ' })
+
+            let batchNumbers = []
+            let newDocumentLines = []
+            // return res.json({data})
+            for (const line of DocumentLines) {
+                let newLine = {}
+                const { ItemCode, WarehouseCode, Quantity, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, ...restLine } = line;
+                const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
+                // console.log({ batchData })
+                if (batchData && batchData.length !== 0) {
+                    // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
+
+                    //console.log({ batchData })
+                    batchNumbers = batchData.map(batch => ({
+                        BaseLineNumber: LineNum,
+                        BatchNumber: batch.BatchNum,
+                        Quantity: Number(batch.Quantity).toFixed(6),
+                        ItemCode: batch.ItemCode
+                    }))
+
+                    const data = {
+                        BaseLine: LineNum,
+                        BaseType: 17,
+                        BaseEntry: id,
+                    }
+
+                    newLine = {
+                        ...data,
+                        ItemCode,
+                        WarehouseCode,
+                        Quantity,
+                        LineNum,
+                        ...restLine,
+                        BatchNumbers: batchNumbers
+                    };
+                    newLine = { ...newLine };
+                    newDocumentLines.push(newLine)
+
+                }
+
+
             }
-            //console.log({ batchData })
-            batchNumbers = batchData.map(batch => ({
-                BaseLineNumber: LineNum,
-                BatchNumber: batch.BatchNum,
-                Quantity: Number(batch.Quantity).toFixed(6),
-                ItemCode: batch.ItemCode
-            }))
-            
-            const data = {
-                BaseLine: LineNum,
-                BaseType: 17,
-                BaseEntry: id,
+            let newData = {
+                ...restData,
+                DocumentLines: newDocumentLines
             }
-            
-            newLine = {
-                ...data,
-                ItemCode,
-                WarehouseCode,
-                Quantity,
-                LineNum,
-                ...restLine,
-                BatchNumbers: batchNumbers
-            };
-            newLine = { ...newLine };
-            newDocumentLines.push(newLine)
+
+            const {
+                DocDate,
+                DocDueDate,
+                CardCode,
+                DocumentLines: docLines,
+                ...restNewData
+            } = newData;
+
+            const finalData = {
+                DocDate,
+                DocDueDate,
+                CardCode,
+                DocumentLines: docLines,
+            }
+
+            finalDataEntrega = finalData
+            // return res.json({ ...finalDataEntrega })
+            console.log('FINAL ENTREGA------------------------------------------------------------')
+            console.log({ finalDataEntrega })
+            deliveryBody = await postEntrega(finalDataEntrega)
+            if (deliveryBody.lang) {
+                return res.status(400).json({ mensaje: 'error interno en la entrega de sap', respuestaSapEntrega: deliveryBody ,finalDataEntrega})
+            }
+            console.log('3 post entrega')
+            console.log({ deliveryBody })
+            // console.log('response post entrega ejecutado')
 
         }
-        let newData = {
-            ...restData,
-            DocumentLines: newDocumentLines
+
+        console.log('4 delivery body fuera del if')
+        console.log({ deliveryBody })
+
+        let { responseData } = deliveryBody
+        if (deliveryBody) {
+            responseData = deliveryBody
+        } else {
+            const delivery = deliveryBody.deliveryN44umber
+            if (!delivery) return res.status(400).json({ mensaje: 'error del sap, no se pudo crear la entrega' })
+            deliveryData = delivery
+            console.log('5 deliveryData')
+            console.log({ deliveryData })
         }
 
-        const {
-            DocDate,
-            DocDueDate,
-            CardCode,
-            DocumentLines: docLines,
-            ...restNewData
-        } = newData;
-
-        const finalData = {
-            DocDate,
-            DocDueDate,
-            CardCode,
-            DocumentLines: docLines,
+        console.log('6 responseData de delivery body')
+        console.log({ responseData })
+        if (responseData.deliveryN44umber) {
+            deliveryData = responseData.deliveryN44umber
         }
-        // return res.json({ ...finalData })
-        const responseSapEntrega = await postEntrega(finalData)
-        console.log('response post entrega ejecutado')
+        console.log('7 deliveryData')
+        console.log({ deliveryData })
 
-        const { responseData } = responseSapEntrega
-        const delivery = responseSapEntrega.deliveryN44umber
-        if (!delivery) return res.status(400).json({ mensaje: 'error del sap, no se pudo crear la entrega' })
+        if (responseData.lang) {
+            return res.status(400).json({ mensaje: 'error interno de sap' })
+        }
         // return res.json({ delivery })
         const detalle = [];
         const cabezera = [];
+        if (responseData.responseData) {
+            responseData = responseData.responseData
+        }
+
         for (const line of responseData) {
             const { producto, descripcion, cantidad, precioUnitario, montoDescuento, subTotal, numeroImei, numeroSerie, complemento, ...result } = line
             if (!cabezera.length) {
@@ -122,10 +174,11 @@ const facturacionController = async (req, res) => {
         body = bodyFinalFactura
         // return res.json({bodyFinalFactura})
         const responseProsin = await facturacionProsin(bodyFinalFactura)
+        // return res.json({bodyFinalFactura,responseProsin,deliveryData})
         console.log({ responseProsin })
         const { data: dataProsin } = responseProsin
-        if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje: dataProsin, bodyFinalFactura })
-        if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin, bodyFinalFactura })
+        if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje:dataProsin.mensaje, dataProsin, bodyFinalFactura })
+        if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin.mensaje,dataProsin, bodyFinalFactura })
         const fecha = dataProsin.fecha
         const nroFactura = dataProsin.datos.factura
         const cuf = dataProsin.datos.cuf
@@ -142,15 +195,17 @@ const facturacionController = async (req, res) => {
         if (year.length > 4) return res.status(400).json({ mensaje: 'error al formateo de la fecha' })
         const fechaFormater = year + month + day
         // return res.json({fechaFormater})
-        const responseHana = await entregaDetallerFactura(+delivery, cuf, +nroFactura, fechaFormater)
+        const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
         console.log({ responseHana })
-
+        if (responseHana.message) {
+            return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
+        }
         const DocumentLinesHana = [];
         let cabezeraHana = [];
 
         let DocumentAdditionalExpenses = [];
 
-        for (const line of responseHana) {
+        for (const line of responseHana) {  
             const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
                 ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
                 DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
@@ -168,13 +223,26 @@ const facturacionController = async (req, res) => {
                 LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
             })
         }
+
         const responseHanaB = {
             ...cabezeraHana,
             DocumentLines: DocumentLinesHana,
             DocumentAdditionalExpenses
         }
 
-        return res.json({ ...responseHanaB })
+        //TODO - ENVIAR A INVOICE:
+        console.log({ responseHanaB })
+        const invoiceResponse = await postInvoice(responseHanaB)
+        console.log({ invoiceResponse })
+        if (invoiceResponse.value) {
+            return res.status(400).json({ messageSap: `${sapResponse.value}` })
+        }
+        const response = {
+            status: invoiceResponse.status || {},
+            statusText: invoiceResponse.statusText || {},
+            idInvoice: invoiceResponse.idInvoice
+        }
+        return res.json({ ...response })
     } catch (error) {
         console.log({ error })
         const { statusCode } = error

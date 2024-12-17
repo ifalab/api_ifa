@@ -47,7 +47,7 @@ const clientesPorDimensionUno = async (dimension) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select "CardCode","CardName","Dim1PrcName","GroupName" from lab_ifa_prd.ifa_dm_clientes where "CardCode"='C000487';`
+        const query = `select "CardCode","CardName","Dim1PrcName","GroupName" from ${process.env.PRD}.ifa_dm_clientes where "CardCode"='C000487';`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -62,7 +62,7 @@ const almacenesPorDimensionUno = async (dimension) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "LAB_IFA_PRD".IFA_PRD_ALMACEN_X_DIMENSION_UNO('${dimension}')`
+        const query = `CALL "${process.env.PRD}".IFA_PRD_ALMACEN_X_DIMENSION_UNO('${dimension}')`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -77,7 +77,7 @@ const inventarioHabilitacion = async (docentry) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "LAB_IFA_PRD".IFA_LAPP_INV_HABILITACION('${docentry}')`
+        const query = `CALL "${process.env.PRD}".IFA_LAPP_INV_HABILITACION('${docentry}')`
         console.log({query})
         const result = executeQuery(query)
         return result
@@ -93,7 +93,7 @@ const inventarioValorado = async () => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select 'SANTA CRUZ' "SucName", "WhsCode", "PrcName" "LineItemName", "PrcName2" "SublineItemName", "ItemCode", 10 "Quantity", "ComlPrice", "LineTotalComl" from "LAB_IFA_PRD".ifa_inv_inventario_kardex limit 10`
+        const query = `select 'SANTA CRUZ' "SucName", "WhsCode", "PrcName" "LineItemName", "PrcName2" "SublineItemName", "ItemCode", 10 "Quantity", "ComlPrice", "LineTotalComl" from "${process.env.PRD}".ifa_inv_inventario_kardex limit 10`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -108,7 +108,7 @@ const descripcionArticulo = async (itemCode) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select "ItemName" from lab_ifa_prd.oitm where "ItemCode" = '${itemCode}'`
+        const query = `select "ItemName" from ${process.env.PRD}.oitm where "ItemCode" = '${itemCode}'`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -122,7 +122,7 @@ const fechaVencLote = async (lote) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL LAB_IFA_PRD.IFA_LAPP_INV_HABILITACION_OBTENER_VENCIMIENTOXLOTE('${lote}')`
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_INV_HABILITACION_OBTENER_VENCIMIENTOXLOTE('${lote}')`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -136,7 +136,21 @@ const stockDisponible = async()=>{
         if (!connection) {
             await connectHANA()
         }
-        const query = `SELECT * FROM LAB_IFA_PRD.IFA_LAPP_INV_STOCK_DISPONIBLE`
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_LAPP_INV_STOCK_DISPONIBLE`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en stockDisponible')
+    }
+}
+
+const stockDisponibleIfavet = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_LAPP_INV_STOCK_DISPONIBLE_IFAVET`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -151,7 +165,7 @@ const inventarioHabilitacionDict = async (cod) => {
             await connectHANA();
         }
 
-        const query = `call LAB_IFA_PRD.IFA_LAPP_INV_HABILITACION_DICT('${cod}')`;
+        const query = `call ${process.env.PRD}.IFA_LAPP_INV_HABILITACION_DICT('${cod}')`;
         const result = await executeQuery(query)
         return result
 
@@ -167,7 +181,8 @@ const entregaDetallerFactura= async (docentry, cuf,nrofactura, fecha) => {
             await connectHANA();
         }
 
-        const query = `call LAB_IFA_DEV.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE_TOFACTURAR(${docentry},'${cuf}',${nrofactura},'${fecha}')`;
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE_TOFACTURAR(${docentry},'${cuf}',${nrofactura},'${fecha}')`;
+        console.log({query})
         const result = await executeQuery(query)
         return result
 
@@ -185,5 +200,6 @@ module.exports = {
     fechaVencLote,
     stockDisponible,
     inventarioHabilitacionDict,
-    entregaDetallerFactura
+    entregaDetallerFactura,
+    stockDisponibleIfavet
 }
