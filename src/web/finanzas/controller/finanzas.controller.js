@@ -1,5 +1,5 @@
 const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses } = require("./hana.controller")
-const { todosGastos } = require('./sql_finanza_controller')
+const { todosGastos, gastosXAgencia } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
   try {
@@ -892,6 +892,105 @@ const calcularPorcentajes = (datosProcesados) => {
   return { datosConPorcentajes, totalByYear };
 };
 
+const findXAgenciaSimpleGastosController = async (req, res) => {
+  try {
+    const codigo = req.query.codigo;
+    console.log(codigo)
+
+    const gastos = await gastosXAgencia(codigo)
+    const datosProcesados = procesarGastos(gastos);
+    console.log({datosProcesados})
+    const data = calcularPorcentajes(datosProcesados);
+
+    const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
+      date:year,
+      monto:total,
+    }));
+
+    let processData = [];
+    data.datosConPorcentajes.map((item) => {
+      const { desc_grupo, montos, porcentajes, ...rest } = item;
+      const montosArray = Object.entries(montos).map(([year, monto]) => ({
+        year,
+        monto,
+      }));
+
+      const porcentajesArray = Object.entries(porcentajes).map(([year, porcentaje]) => ({
+        year,
+        porcentaje,
+      }));
+
+      const newData = {
+        desc_grupo: desc_grupo.trim(),
+        montos: montosArray,
+        porcentajes: porcentajesArray,
+        ...rest,
+      };
+      processData.push(newData);
+    });
+
+    const { datosConPorcentajes, ...restData } = data;
+    const montos = processData[0].montos
+    const year = []
+    montos.map((item) => {
+      year.push(item.year)
+    })
+
+    const formatDataByYear = (processData) => {
+      // Inicializamos un objeto para almacenar los datos agrupados por año
+      const groupedData = processData.reduce((acc, item) => {
+        const { desc_grupo, montos, porcentajes, total } = item;
+    
+        // Iteramos sobre los años en montos
+        montos.forEach((montoItem) => {
+          const date = montoItem.year;
+          const monto = montoItem.monto;
+    
+          // Buscamos el porcentaje correspondiente para este año
+          const porcentajeObj = porcentajes.find((p) => p.year === date);
+          const porcentaje = porcentajeObj ? porcentajeObj.porcentaje : null;
+    
+          // Creamos un objeto de detalle
+          const detalle = {
+            desc_grupo,
+            monto,
+            porcentaje,
+          };
+    
+          // Si el año no existe en el acumulador, lo inicializamos
+          if (!acc[date]) {
+            acc[date] = { date, detalle: [] };
+          }
+    
+          // Agregamos el detalle al año correspondiente
+          acc[date].detalle.push(detalle);
+        });
+    
+        return acc;
+      }, {});
+    
+      // Convertimos el objeto agrupado en un array
+      return Object.values(groupedData);
+    };
+
+    const formattedData = formatDataByYear(processData);
+    // formattedData.map((item))
+    let totalizado = []
+    processData.map((item)=>{
+      totalizado.push({
+        desc_grupo:item.desc_grupo,
+        monto:item.total
+      })
+    })
+
+    formattedData.push({date:'Total',detalle:totalizado})
+    return res.json({ totalByYear: totalByYearArray, formattedData });
+  } catch (error) {
+    console.log({ error })
+    return res.status(500).json({ mensaje: 'Error en findXAgenciaSimpleGastosController ' })
+  }
+}
+
 module.exports = {
   parteDiaroController,
   abastecimientoController,
@@ -907,4 +1006,5 @@ module.exports = {
   abastecimientoFecha24MesesController,
   findAllGastosController,
   findAllSimpleGastosController,
+  findXAgenciaSimpleGastosController
 }
