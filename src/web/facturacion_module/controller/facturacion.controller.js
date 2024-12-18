@@ -82,7 +82,9 @@ const facturacionController = async (req, res) => {
                 ...restData,
                 DocumentLines: newDocumentLines
             }
-
+            console.log('rest data------------------------------------------------------------')
+            console.log({ restData })
+            const { U_NIT, U_RAZSOC } = restData
             const {
                 DocDate,
                 DocDueDate,
@@ -95,6 +97,8 @@ const facturacionController = async (req, res) => {
                 DocDate,
                 DocDueDate,
                 CardCode,
+                U_NIT,
+                U_RAZSOC,
                 DocumentLines: docLines,
             }
 
@@ -104,7 +108,7 @@ const facturacionController = async (req, res) => {
             console.log({ finalDataEntrega })
             deliveryBody = await postEntrega(finalDataEntrega)
             if (deliveryBody.lang) {
-                return res.status(400).json({ mensaje: 'error interno en la entrega de sap', respuestaSapEntrega: deliveryBody ,finalDataEntrega})
+                return res.status(400).json({ mensaje: 'error interno en la entrega de sap', respuestaSapEntrega: deliveryBody, finalDataEntrega })
             }
             console.log('3 post entrega')
             console.log({ deliveryBody })
@@ -177,8 +181,8 @@ const facturacionController = async (req, res) => {
         // return res.json({bodyFinalFactura,responseProsin,deliveryData})
         console.log({ responseProsin })
         const { data: dataProsin } = responseProsin
-        if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje:dataProsin.mensaje, dataProsin, bodyFinalFactura })
-        if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin.mensaje,dataProsin, bodyFinalFactura })
+        if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
+        if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
         const fecha = dataProsin.fecha
         const nroFactura = dataProsin.datos.factura
         const cuf = dataProsin.datos.cuf
@@ -205,7 +209,7 @@ const facturacionController = async (req, res) => {
 
         let DocumentAdditionalExpenses = [];
 
-        for (const line of responseHana) {  
+        for (const line of responseHana) {
             const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
                 ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
                 DocTotal, U_OSLP_ID, U_UserCode, ...result } = line

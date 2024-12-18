@@ -10,6 +10,9 @@ const config = {
     encrypt: false, // Configura según tus necesidades
     trustServerCertificate: true, // Útil para entornos locales
   },
+  connectionTimeout: 30000, 
+  requestTimeout: 60000, 
+  
 };
 
 // Exportar el pool de conexión

@@ -1,5 +1,5 @@
 const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses } = require("./hana.controller")
-const { todosGastos, gastosXAgencia } = require('./sql_finanza_controller')
+const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
   try {
@@ -758,8 +758,8 @@ const findAllSimpleGastosController = async (req, res) => {
     const data = calcularPorcentajes(datosProcesados);
 
     const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
-      date:year,
-      monto:total,
+      date: year,
+      monto: total,
     }));
 
     let processData = [];
@@ -795,35 +795,35 @@ const findAllSimpleGastosController = async (req, res) => {
       // Inicializamos un objeto para almacenar los datos agrupados por año
       const groupedData = processData.reduce((acc, item) => {
         const { desc_grupo, montos, porcentajes, total } = item;
-    
+
         // Iteramos sobre los años en montos
         montos.forEach((montoItem) => {
           const date = montoItem.year;
           const monto = montoItem.monto;
-    
+
           // Buscamos el porcentaje correspondiente para este año
           const porcentajeObj = porcentajes.find((p) => p.year === date);
           const porcentaje = porcentajeObj ? porcentajeObj.porcentaje : null;
-    
+
           // Creamos un objeto de detalle
           const detalle = {
             desc_grupo,
             monto,
             porcentaje,
           };
-    
+
           // Si el año no existe en el acumulador, lo inicializamos
           if (!acc[date]) {
             acc[date] = { date, detalle: [] };
           }
-    
+
           // Agregamos el detalle al año correspondiente
           acc[date].detalle.push(detalle);
         });
-    
+
         return acc;
       }, {});
-    
+
       // Convertimos el objeto agrupado en un array
       return Object.values(groupedData);
     };
@@ -831,18 +831,117 @@ const findAllSimpleGastosController = async (req, res) => {
     const formattedData = formatDataByYear(processData);
     // formattedData.map((item))
     let totalizado = []
-    processData.map((item)=>{
+    processData.map((item) => {
       totalizado.push({
-        desc_grupo:item.desc_grupo,
-        monto:item.total
+        desc_grupo: item.desc_grupo,
+        monto: item.total
       })
     })
 
-    formattedData.push({date:'Total',detalle:totalizado})
+    formattedData.push({ date: 'Total', detalle: totalizado })
     return res.json({ totalByYear: totalByYearArray, formattedData });
   } catch (error) {
     console.log({ error })
     return res.status(500).json({ mensaje: 'Error en findAllGroupAlmacenController ' })
+  }
+}
+
+const findXAgenciaSimpleGastosController = async (req, res) => {
+  try {
+    const codigo = req.query.codigo;
+    console.log(codigo)
+
+    const gastos = await gastosXAgencia(codigo)
+    const datosProcesados = procesarGastos(gastos);
+    console.log({ datosProcesados })
+    const data = calcularPorcentajes(datosProcesados);
+
+    const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
+      date: year,
+      monto: total,
+    }));
+
+    let processData = [];
+    data.datosConPorcentajes.map((item) => {
+      const { desc_grupo, montos, porcentajes, ...rest } = item;
+      const montosArray = Object.entries(montos).map(([year, monto]) => ({
+        year,
+        monto,
+      }));
+
+      const porcentajesArray = Object.entries(porcentajes).map(([year, porcentaje]) => ({
+        year,
+        porcentaje,
+      }));
+
+      const newData = {
+        desc_grupo: desc_grupo.trim(),
+        montos: montosArray,
+        porcentajes: porcentajesArray,
+        ...rest,
+      };
+      processData.push(newData);
+    });
+
+    const { datosConPorcentajes, ...restData } = data;
+    const montos = processData[0].montos
+    const year = []
+    montos.map((item) => {
+      year.push(item.year)
+    })
+
+    const formatDataByYear = (processData) => {
+      // Inicializamos un objeto para almacenar los datos agrupados por año
+      const groupedData = processData.reduce((acc, item) => {
+        const { desc_grupo, montos, porcentajes, total } = item;
+
+        // Iteramos sobre los años en montos
+        montos.forEach((montoItem) => {
+          const date = montoItem.year;
+          const monto = montoItem.monto;
+
+          // Buscamos el porcentaje correspondiente para este año
+          const porcentajeObj = porcentajes.find((p) => p.year === date);
+          const porcentaje = porcentajeObj ? porcentajeObj.porcentaje : null;
+
+          // Creamos un objeto de detalle
+          const detalle = {
+            desc_grupo,
+            monto,
+            porcentaje,
+          };
+
+          // Si el año no existe en el acumulador, lo inicializamos
+          if (!acc[date]) {
+            acc[date] = { date, detalle: [] };
+          }
+
+          // Agregamos el detalle al año correspondiente
+          acc[date].detalle.push(detalle);
+        });
+
+        return acc;
+      }, {});
+
+      // Convertimos el objeto agrupado en un array
+      return Object.values(groupedData);
+    };
+
+    const formattedData = formatDataByYear(processData);
+    // formattedData.map((item))
+    let totalizado = []
+    processData.map((item) => {
+      totalizado.push({
+        desc_grupo: item.desc_grupo,
+        monto: item.total
+      })
+    })
+
+    formattedData.push({ date: 'Total', detalle: totalizado })
+    return res.json({ totalByYear: totalByYearArray, formattedData });
+  } catch (error) {
+    console.log({ error })
+    return res.status(500).json({ mensaje: 'Error en findXAgenciaSimpleGastosController ' })
   }
 }
 
@@ -892,104 +991,55 @@ const calcularPorcentajes = (datosProcesados) => {
   return { datosConPorcentajes, totalByYear };
 };
 
-const findXAgenciaSimpleGastosController = async (req, res) => {
+const gastosGestionAgenciaController = async (req, res) => {
+
   try {
-    const codigo = req.query.codigo;
-    console.log(codigo)
+    const gestion = req.query.gestion
+    const codigo = req.query.codigo
+    const response = await gastosGestionAgencia(+gestion, +codigo)
+    const agrupado = agruparPorMes(response);
+    return res.json({ gestion, codigo, agrupado })
 
-    const gastos = await gastosXAgencia(codigo)
-    const datosProcesados = procesarGastos(gastos);
-    console.log({datosProcesados})
-    const data = calcularPorcentajes(datosProcesados);
-
-    const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
-      date:year,
-      monto:total,
-    }));
-
-    let processData = [];
-    data.datosConPorcentajes.map((item) => {
-      const { desc_grupo, montos, porcentajes, ...rest } = item;
-      const montosArray = Object.entries(montos).map(([year, monto]) => ({
-        year,
-        monto,
-      }));
-
-      const porcentajesArray = Object.entries(porcentajes).map(([year, porcentaje]) => ({
-        year,
-        porcentaje,
-      }));
-
-      const newData = {
-        desc_grupo: desc_grupo.trim(),
-        montos: montosArray,
-        porcentajes: porcentajesArray,
-        ...rest,
-      };
-      processData.push(newData);
-    });
-
-    const { datosConPorcentajes, ...restData } = data;
-    const montos = processData[0].montos
-    const year = []
-    montos.map((item) => {
-      year.push(item.year)
-    })
-
-    const formatDataByYear = (processData) => {
-      // Inicializamos un objeto para almacenar los datos agrupados por año
-      const groupedData = processData.reduce((acc, item) => {
-        const { desc_grupo, montos, porcentajes, total } = item;
-    
-        // Iteramos sobre los años en montos
-        montos.forEach((montoItem) => {
-          const date = montoItem.year;
-          const monto = montoItem.monto;
-    
-          // Buscamos el porcentaje correspondiente para este año
-          const porcentajeObj = porcentajes.find((p) => p.year === date);
-          const porcentaje = porcentajeObj ? porcentajeObj.porcentaje : null;
-    
-          // Creamos un objeto de detalle
-          const detalle = {
-            desc_grupo,
-            monto,
-            porcentaje,
-          };
-    
-          // Si el año no existe en el acumulador, lo inicializamos
-          if (!acc[date]) {
-            acc[date] = { date, detalle: [] };
-          }
-    
-          // Agregamos el detalle al año correspondiente
-          acc[date].detalle.push(detalle);
-        });
-    
-        return acc;
-      }, {});
-    
-      // Convertimos el objeto agrupado en un array
-      return Object.values(groupedData);
-    };
-
-    const formattedData = formatDataByYear(processData);
-    // formattedData.map((item))
-    let totalizado = []
-    processData.map((item)=>{
-      totalizado.push({
-        desc_grupo:item.desc_grupo,
-        monto:item.total
-      })
-    })
-
-    formattedData.push({date:'Total',detalle:totalizado})
-    return res.json({ totalByYear: totalByYearArray, formattedData });
   } catch (error) {
+
     console.log({ error })
-    return res.status(500).json({ mensaje: 'Error en findXAgenciaSimpleGastosController ' })
+    return res.status(500).json({ mensaje: 'error en el controlador' })
+
   }
 }
+
+function agruparPorMes(data) {
+  const resultado = data.reduce((acumulador, item) => {
+    const mes = item.mes.trim(); // Asegúrate de eliminar espacios
+    const desc_grupo = item.desc_grupo.trim(); // Asegúrate de eliminar espacios
+
+    // Busca si el mes ya existe en el acumulador
+    let entradaMes = acumulador.find((entrada) => entrada.date === mes);
+
+    if (!entradaMes) {
+      // Si el mes no existe, inicialízalo
+      entradaMes = { date: mes, detalle: [] };
+      acumulador.push(entradaMes);
+    }
+
+    // Busca si el desc_grupo ya existe en el detalle de este mes
+    let entradaGrupo = entradaMes.detalle.find((detalle) => detalle.desc_grupo === desc_grupo);
+
+    if (!entradaGrupo) {
+      // Si el grupo no existe, inicialízalo
+      entradaGrupo = { desc_grupo: desc_grupo, monto: 0 };
+      entradaMes.detalle.push(entradaGrupo);
+    }
+
+    // Suma el monto al grupo
+    entradaGrupo.monto += parseFloat(item.monto);
+
+    return acumulador;
+  }, []);
+
+  return resultado;
+}
+
 
 module.exports = {
   parteDiaroController,
@@ -1006,5 +1056,6 @@ module.exports = {
   abastecimientoFecha24MesesController,
   findAllGastosController,
   findAllSimpleGastosController,
-  findXAgenciaSimpleGastosController
+  findXAgenciaSimpleGastosController,
+  gastosGestionAgenciaController
 }
