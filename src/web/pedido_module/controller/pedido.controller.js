@@ -1,5 +1,11 @@
 const { response } = require("express")
-const { findClientePorVendedor, clientesMora, moraCliente } = require("./hana.controller")
+const { findClientePorVendedor,
+    clientesMora,
+    moraCliente,
+    findDescuentosArticulosCatalogo,
+    findDescuentosArticulos,
+    listaPrecioOficial,
+} = require("./hana.controller")
 
 const clientesVendedorController = async (req, res) => {
     try {
@@ -8,7 +14,7 @@ const clientesVendedorController = async (req, res) => {
         const response = await findClientePorVendedor(name);
 
         let clientes = [];
-        
+
         for (const item of response) {
             const { CreditLine, AmountDue, ...restCliente } = item;
             const saldoDisponible = (+CreditLine) - (+AmountDue);
@@ -72,8 +78,44 @@ const tieneMora = async (cardCode) => {
     return mora
 }
 
+const catalogoController = async (req, res) => {
+    try {
+        const catalogo = await findDescuentosArticulosCatalogo()
+        return res.json({ catalogo })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const descuentoArticuloController = async (req, res) => {
+    try {
+        const articulos = await findDescuentosArticulos()
+        return res.json({ articulos })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const listaPreciosOficilaController = async (req, res) => {
+    try {
+
+        const cardCode = req.query.cardCode
+        const noDiscount = req.query.noDiscount
+        const listaPrecio = await listaPrecioOficial()
+        return res.json({ cardCode, noDiscount, listaPrecio })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
-    moraController
+    moraController,
+    catalogoController,
+    descuentoArticuloController,
+    listaPreciosOficilaController
 }

@@ -47,7 +47,7 @@ const findClientePorVendedor = async (name) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_PRD.IFA_DM_CLIENTES_X_VENDEDOR('${name}')`
+        const query = `CALL ${process.env.PRD}.IFA_DM_CLIENTES_X_VENDEDOR('${name}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -61,7 +61,7 @@ const findDescuentosArticulos = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VM_DESCUENTOS_POR_ARTICULO`
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_VM_DESCUENTOS_POR_ARTICULO`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -75,7 +75,7 @@ const findDescuentosCondicion = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VM_DESCUENTOS_POR_CONDICION`
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_VM_DESCUENTOS_POR_CONDICION`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -89,7 +89,7 @@ const findDescuentosLineas = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VM_DESCUENTOS_POR_LINEA`
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_VM_DESCUENTOS_POR_LINEA`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -103,7 +103,7 @@ const findDescuentosArticulosCatalogo = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM LAB_IFA_PRD.IFA_DM_ARTICULOS_CATALOGO`
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_ARTICULOS_CATALOGO`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -117,7 +117,7 @@ const moraCliente = async(cardCode)=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_PRD.IFA_VM_MORA_CLIENTE('${cardCode}')`
+        const query = `CALL ${process.env.PRD}.IFA_VM_MORA_CLIENTE('${cardCode}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -131,14 +131,29 @@ const clientesMora = async()=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VEN_WHITE_LIST`
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_VEN_WHITE_LIST`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
-        throw new Error('Error al procesar la solicitud: moraCliente');
+        throw new Error('Error al procesar la solicitud: clientesMora');
     }
 }
+
+const listaPrecioOficial = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_DM_PRECIOS_OFICIAL`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: listaPrecioOficial');
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -146,5 +161,6 @@ module.exports = {
     findDescuentosCondicion,
     findDescuentosLineas,
     moraCliente,
-    clientesMora
+    clientesMora,
+    listaPrecioOficial
 }
