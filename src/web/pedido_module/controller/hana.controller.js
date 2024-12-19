@@ -1,0 +1,150 @@
+const hana = require('@sap/hana-client');
+
+// Configura la conexión a la base de datos HANA
+const connOptions = {
+    serverNode: `${process.env.HANASERVER}:${process.env.HANAPORT}`,
+    uid: process.env.HANAUSER,
+    pwd: process.env.HANAPASS
+};
+
+// Variable para almacenar la conexión a la base de datos
+let connection = null;
+
+// Función para conectar a la base de datos HANA
+const connectHANA = () => {
+    return new Promise((resolve, reject) => {
+        connection = hana.createConnection();
+        connection.connect(connOptions, (err) => {
+            if (err) {
+                console.error('Error de conexión a HANA:', err.message);
+                reject(err);
+            } else {
+                console.log('Conectado a la base de datos HANA');
+                resolve(connection);
+            }
+        });
+    });
+};
+
+
+const executeQuery = async (query) => {
+    console.log(query)
+    return new Promise((resolve, reject) => {
+        connection.exec(query, (err, result) => {
+            if (err) {
+                console.log('error en la consulta:', err.message)
+                reject(new Error('error en la consulta'))
+            } else {
+                console.log('Datos obtenidos con exito');
+                resolve(result);
+            }
+        })
+    })
+}
+
+const findClientePorVendedor = async (name) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_PRD.IFA_DM_CLIENTES_X_VENDEDOR('${name}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: findClientePorVendedor');
+    }
+}
+
+const findDescuentosArticulos = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VM_DESCUENTOS_POR_ARTICULO`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: findDescuentosArticulos');
+    }
+}
+
+const findDescuentosCondicion = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VM_DESCUENTOS_POR_CONDICION`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: findDescuentosCondicion');
+    }
+}
+
+const findDescuentosLineas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VM_DESCUENTOS_POR_LINEA`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: findDescuentosLineas');
+    }
+}
+
+const findDescuentosArticulosCatalogo = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_DM_ARTICULOS_CATALOGO`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: findDescuentosArticulosCatalogo');
+    }
+}
+
+const moraCliente = async(cardCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_PRD.IFA_VM_MORA_CLIENTE('${cardCode}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: moraCliente');
+    }
+}
+
+const clientesMora = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_VEN_WHITE_LIST`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: moraCliente');
+    }
+}
+module.exports = {
+    findClientePorVendedor,
+    findDescuentosArticulos,
+    findDescuentosArticulosCatalogo,
+    findDescuentosCondicion,
+    findDescuentosLineas,
+    moraCliente,
+    clientesMora
+}

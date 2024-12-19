@@ -12,7 +12,7 @@ require('dotenv').config();
 
 //cors
 app.use(cors({
-  origin:'*'
+  origin: '*'
 }))
 // Middleware
 app.use(morgan('dev'));
@@ -31,9 +31,10 @@ app.use('/v1/web/contabilidad', require('./web/contabilidad_module/routers/conta
 app.use('/v1/web/centro-costo', require('./web/centro_costos_module/routes/cc.routes'));
 app.use('/v1/web/rendiciones', require('./web/rendiciones_module/routes/rendiciones.routes'));
 app.use('/v1/web/facturacion', require('./web/facturacion_module/router/facturacion.routes'));
+app.use('/v1/web/pedido', require('./web/pedido_module/routes/pedido.routes'));
 
 //TODO VERSION MOVIL --------------------------------------------------------------------------------------
-app.use('/v1/movil/ventas',require('./movil/ventas_module/routes/ventas.routes'))
+app.use('/v1/movil/ventas', require('./movil/ventas_module/routes/ventas.routes'))
 
 //TODO VERSION MOVIL V2 -----------------------------------------------------------------------------------
 app.use('/v1/movil-v2/sync', require('./movil-v2/sincronizacion/routes/sync.routes'));

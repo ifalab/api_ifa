@@ -239,14 +239,14 @@ const facturacionController = async (req, res) => {
         const invoiceResponse = await postInvoice(responseHanaB)
         console.log({ invoiceResponse })
         if (invoiceResponse.value) {
-            return res.status(400).json({ messageSap: `${sapResponse.value}` })
+            return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
         }
         const response = {
             status: invoiceResponse.status || {},
             statusText: invoiceResponse.statusText || {},
             idInvoice: invoiceResponse.idInvoice
         }
-        return res.json({ ...response })
+        return res.json({ ...response, cuf })
     } catch (error) {
         console.log({ error })
         const { statusCode } = error
