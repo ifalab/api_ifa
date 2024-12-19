@@ -1,26 +1,29 @@
 const { response } = require("express")
-const { findClientePorVendedor } = require("./hana.controller")
+const { findClientePorVendedor, clientesMora, moraCliente } = require("./hana.controller")
 
 const clientesVendedorController = async (req, res) => {
     try {
-        
-        const { name } = req.body
-        const response = await findClientePorVendedor(name)
-        
-        let clientes = []
 
-        response.map((item) => {
-            const { CreditLine, AmountDue, ...restCliente } = item
-            const saldoDisponible = (+CreditLine) - (+AmountDue)
+        const { name } = req.body;
+        const response = await findClientePorVendedor(name);
+
+        let clientes = [];
+        
+        for (const item of response) {
+            const { CreditLine, AmountDue, ...restCliente } = item;
+            const saldoDisponible = (+CreditLine) - (+AmountDue);
+            const mora = await tieneMora(item.CardCode);
             const newData = {
                 ...restCliente,
                 CreditLine,
                 AmountDue,
-                saldoDisponible
-            }
-            clientes.push({...newData})
-        })
-        return res.json({ clientes })
+                mora,
+                saldoDisponible,
+            };
+            clientes.push({ ...newData });
+        }
+
+        return res.json({ clientes });
 
     } catch (error) {
         console.log({ error })
@@ -28,6 +31,49 @@ const clientesVendedorController = async (req, res) => {
     }
 }
 
+const clientesMoraController = async (req, res) => {
+    try {
+        const clientes = await clientesMora()
+        return res.json({ clientes })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const moraController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const mora = await moraCliente(cardCode)
+        return res.json({ mora })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const tieneMora = async (cardCode) => {
+    const response = await moraCliente(cardCode)
+    const clientes = await clientesMora()
+    let listCardCode = []
+
+    clientes.map((item) => {
+        listCardCode.push(item.CardCode)
+    })
+
+    let mora = false
+    if (response.length > 0) {
+        mora = true
+
+        if (listCardCode.includes(cardCode)) {
+            mora = false
+        }
+    }
+    return mora
+}
+
 module.exports = {
     clientesVendedorController,
+    clientesMoraController,
+    moraController
 }
