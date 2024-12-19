@@ -5,6 +5,8 @@ const { findClientePorVendedor,
     findDescuentosArticulosCatalogo,
     findDescuentosArticulos,
     listaPrecioOficial,
+    findDescuentosLineas,
+    findDescuentosCondicion,
 } = require("./hana.controller")
 
 const clientesVendedorController = async (req, res) => {
@@ -98,17 +100,51 @@ const descuentoArticuloController = async (req, res) => {
     }
 }
 
-const listaPreciosOficilaController = async (req, res) => {
+const descuentoCondicionController = async (req, res) => {
     try {
-
-        const cardCode = req.query.cardCode
-        const noDiscount = req.query.noDiscount
-        const listaPrecio = await listaPrecioOficial()
-        return res.json({ cardCode, noDiscount, listaPrecio })
+        const condicion = await findDescuentosCondicion()
+        return res.json({ condicion })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
+}
+
+const listaPreciosOficilaController = async (req, res) => {
+    try {
+        const noDiscount = req.query.noDiscount
+        const listaPrecioResponse = await listaPrecioOficial()
+        let descuentosLinea = []
+        descuentosLinea = await findDescuentosLineas()
+        listaDescLinea = procesarListaCodigo(descuentosLinea)
+        let listaPrecio = []
+
+        listaPrecioResponse.map((item) => {
+            const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemCode === item.LineItemName)
+            if (noDiscount == 'Y') {
+                if (desc) {
+                    listaPrecio.push({ ...item, descEsp: +desc.Desc})
+                } else {
+                    listaPrecio.push({ ...item, descEsp: 0 })
+                }
+            } else {
+                listaPrecio.push({ ...item, descEsp: 0 })
+            }
+        })
+        // return res.json({ listaDescLinea})
+        return res.json({ listaPrecio })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const procesarListaCodigo = (descuentos) => {
+    let lista = []
+    descuentos.map((item) => {
+        lista.push(item.LineItemCode)
+    })
+    return lista
 }
 
 module.exports = {
@@ -117,5 +153,6 @@ module.exports = {
     moraController,
     catalogoController,
     descuentoArticuloController,
-    listaPreciosOficilaController
+    listaPreciosOficilaController,
+    descuentoCondicionController,
 }
