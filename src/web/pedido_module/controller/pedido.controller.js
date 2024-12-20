@@ -7,6 +7,8 @@ const { findClientePorVendedor,
     listaPrecioOficial,
     findDescuentosLineas,
     findDescuentosCondicion,
+    pedidoSugeridoXZona,
+    pedidoSugeridoXCliente,
 } = require("./hana.controller")
 
 const clientesVendedorController = async (req, res) => {
@@ -147,6 +149,28 @@ const procesarListaCodigo = (descuentos) => {
     return lista
 }
 
+const sugeridosXZonaController = async (req, res) => {
+    try {
+        const zoneCode = req.query.zoneCode
+        const sugeridos = await pedidoSugeridoXZona(zoneCode)
+        return res.json({ sugeridos })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador: sugeridosXZonaController' })
+    }
+}
+
+const sugeridosXClienteController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const sugeridos = await pedidoSugeridoXCliente(cardCode)
+        return res.json({ sugeridos })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador:sugeridosXClienteController' })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -155,4 +179,6 @@ module.exports = {
     descuentoArticuloController,
     listaPreciosOficilaController,
     descuentoCondicionController,
+    sugeridosXZonaController,
+    sugeridosXClienteController,
 }

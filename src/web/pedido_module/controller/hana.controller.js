@@ -154,6 +154,34 @@ const listaPrecioOficial = async()=>{
     }
 }
 
+const pedidoSugeridoXZona = async(zoneCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_pedido_sugerido_by_zona('${zoneCode}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: pedido sugerido por zona');
+    }
+}
+
+const pedidoSugeridoXCliente = async(cardCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_pedido_sugerido_by_cliente('${cardCode}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: pedido sugerido por cliente');
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -162,5 +190,7 @@ module.exports = {
     findDescuentosLineas,
     moraCliente,
     clientesMora,
-    listaPrecioOficial
+    listaPrecioOficial,
+    pedidoSugeridoXZona,
+    pedidoSugeridoXCliente,
 }
