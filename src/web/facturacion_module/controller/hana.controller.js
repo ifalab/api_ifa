@@ -92,8 +92,26 @@ const solicitarId = async (id) => {
     }
 }
 
+const notaEntrega = async (delivery) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `CALL ${process.env.PRD}.IFA_VEN_ENTREGA_LAYOUT(${delivery})`;
+        const query = `CALL LAB_IFA_DEV.IFA_VEN_ENTREGA_LAYOUT(${delivery})`;
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en notaEntrega:', error.message);
+        return { message: 'Error al procesar la solicitud: notaEntrega' }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
-    solicitarId
+    solicitarId,
+    notaEntrega
 }

@@ -1,7 +1,12 @@
+const ejs = require('ejs');
+const pdf = require('html-pdf');
+const QRCode = require('qrcode');
+const path = require('path');
+
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle } = require("./hana.controller")
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega } = require("./hana.controller")
 const { postEntrega, postInvoice } = require("./sld.controller")
 
 const facturacionController = async (req, res) => {
@@ -282,7 +287,98 @@ const facturacionStatusController = async (req, res) => {
     }
 }
 
+const noteEntregaController = async (req, res) => {
+    try {
+        const delivery = req.query.delivery;
+
+        // Llamada a la función notaEntrega para obtener los datos
+        const response = await notaEntrega(delivery);
+
+        // Validación: si no hay datos en la respuesta
+        if (response.length == 0) {
+            return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de entrega' });
+        }
+
+        // Mapeo y estructuración de datos
+        const detailsList = [];
+        const {
+            BarCode,
+            DocNum,
+            USER_CODE,
+            U_NAME,
+            WhsCode,
+            WhsName,
+            DocDate,
+            DocDueDate,
+            CardCode,
+            CardName,
+            PymntGroup,
+            DocTotal,
+            DocTime,
+            Phone1,
+            Address2,
+            U_Zona,
+            U_Comentario,
+            ...restData
+        } = response[0];
+
+        response.map((item) => {
+            const { ...restData } = item;
+            detailsList.push({ ...restData });
+        });
+
+        const data = {
+            DocNum,
+            BarCode,
+            USER_CODE,
+            U_NAME,
+            WhsCode,
+            WhsName,
+            DocDate,
+            DocDueDate,
+            CardCode,
+            CardName,
+            PymntGroup,
+            DocTotal,
+            DocTime,
+            Phone1,
+            Address2,
+            U_Zona,
+            U_Comentario,
+            detailsList,
+        };
+
+        // Ruta del archivo PDF (asegúrate de que el directorio tenga permisos de escritura)
+        const filePath = path.join(__dirname, `nota_entrega_${data.DocNum}.pdf`);
+        // Generar el QR Code
+        const qrCode = await QRCode.toDataURL(data.BarCode.toString());
+
+        // Renderizar la plantilla EJS a HTML
+        const html = await ejs.renderFile(path.join(__dirname,'notaEntrega', 'template.ejs'), { data, qrCode });
+
+        // Configuración para html-pdf
+        const options = { format: 'A4', orientation: 'portrait' };
+
+        // Generar el PDF
+        pdf.create(html, options).toStream((err, stream) => {
+            if (err) {
+                console.error('Error al generar el PDF:', err);
+                return res.status(500).json({ mensaje: 'Error al generar el PDF' });
+            }
+
+            // Enviar el PDF en la respuesta
+            res.setHeader('Content-Type', 'application/pdf');
+            stream.pipe(res);
+        });
+    } catch (error) {
+        // Manejar cualquier error general
+        console.error('Error en el controlador:', error);
+        return res.status(500).json({ mensaje: 'Error en el controlador' });
+    }
+};
+
 module.exports = {
     facturacionController,
-    facturacionStatusController
+    facturacionStatusController,
+    noteEntregaController
 }
