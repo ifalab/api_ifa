@@ -182,6 +182,20 @@ const pedidoSugeridoXCliente = async(cardCode)=>{
     }
 }
 
+const findZonasXVendedor = async(id_vendedor_sap)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_zonas_by_vendedor('${id_vendedor_sap}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: pedido sugerido por cliente');
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -193,4 +207,5 @@ module.exports = {
     listaPrecioOficial,
     pedidoSugeridoXZona,
     pedidoSugeridoXCliente,
+    findZonasXVendedor,
 }

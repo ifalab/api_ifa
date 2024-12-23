@@ -9,6 +9,7 @@ const { findClientePorVendedor,
     findDescuentosCondicion,
     pedidoSugeridoXZona,
     pedidoSugeridoXCliente,
+    findZonasXVendedor,
 } = require("./hana.controller")
 
 const clientesVendedorController = async (req, res) => {
@@ -171,6 +172,17 @@ const sugeridosXClienteController = async (req, res) => {
     }
 }
 
+const findZonasXVendedorController = async (req, res) => {
+    try {
+        const idVendedorSap = req.query.idVendedorSap
+        const zonas = await findZonasXVendedor(idVendedorSap)
+        return res.json({ ...zonas })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador:findZonasXVendedorController' })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -181,4 +193,5 @@ module.exports = {
     descuentoCondicionController,
     sugeridosXZonaController,
     sugeridosXClienteController,
+    findZonasXVendedorController,
 }
