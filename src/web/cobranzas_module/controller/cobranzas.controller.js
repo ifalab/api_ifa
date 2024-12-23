@@ -1,5 +1,5 @@
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones } = require("./hana.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -658,6 +658,31 @@ const cobranzaFacturaPorClienteController = async (req, res) => {
     }
 }
 
+const clientesInstitucionesSaldoDeudorController = async (req, res) => {
+    try {
+        const response = await clientesInstitucionesSaldoDeudor()
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'error en el controlador'
+        })
+    }
+}
+
+const saldoDeudorInstitucionesController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const response = await saldoDeudorInstituciones(cardCode)
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'error en el controlador'
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -682,5 +707,7 @@ module.exports = {
     cobranzaHistoricoMasivosController,
     cobranzasPorZonasMesAntController,
     cobranzaClientePorVendedorController,
-    cobranzaFacturaPorClienteController
+    cobranzaFacturaPorClienteController,
+    clientesInstitucionesSaldoDeudorController,
+    saldoDeudorInstitucionesController,
 }

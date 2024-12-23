@@ -319,48 +319,79 @@ const cobranzaPorZonaMesAnt = async (username) => {
             await connectHANA()
         }
         const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_ANT"(${username})`
-        console.log({query})
+        console.log({ query })
         return await executeQuery(query)
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         return {
-            error:`no se pudieron traer las cobranzas del mes anterior del vendedor ${username}`
+            error: `no se pudieron traer las cobranzas del mes anterior del vendedor ${username}`
         }
     }
 }
 
-const clientePorVendedor = async(nombre)=>{
+const clientePorVendedor = async (nombre) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `CALL LAB_IFA_PRD.IFA_LAPP_SALDO_DEUDOR_CLI_BY_VEND('${nombre}')`
-        console.log({query})
+        console.log({ query })
         return await executeQuery(query)
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         return {
-            error:`no se pudo traer los datos`
+            error: `no se pudo traer los datos`
         }
     }
 }
 
-const cobranzaSaldoDeudor = async (nombre,codigo) => {
+const cobranzaSaldoDeudor = async (nombre, codigo) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `CALL LAB_IFA_PRD.IFA_LAPP_SALDO_DEUDOR_BY_VEND_OR_CLI('${nombre}','${codigo}')`
-        console.log({query})
+        console.log({ query })
         return await executeQuery(query)
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         return {
-            error:`no se pudo traer los datos`
+            error: `no se pudo traer los datos`
         }
     }
 }
 
+const clientesInstitucionesSaldoDeudor = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from LAB_IFA_PRD.ifa_dm_clientes where "GroupName" = 'INSTITUCIONES'`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: 'no se pudo traer los datos'
+        }
+    }
+}
+
+const saldoDeudorInstituciones = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `CALL LAB_IFA_PRD.IFA_LAPP_SALDO_DEUDOR_BY_INST('${cardCode}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: 'no se pudo traer los datos'
+        }
+    }
+}
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -386,4 +417,6 @@ module.exports = {
     cobranzaPorZonaMesAnt,
     cobranzaSaldoDeudor,
     clientePorVendedor,
+    clientesInstitucionesSaldoDeudor,
+    saldoDeudorInstituciones
 }
