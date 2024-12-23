@@ -249,7 +249,8 @@ const facturacionController = async (req, res) => {
         const response = {
             status: invoiceResponse.status || {},
             statusText: invoiceResponse.statusText || {},
-            idInvoice: invoiceResponse.idInvoice
+            idInvoice: invoiceResponse.idInvoice,
+            delivery: +deliveryData
         }
         return res.json({ ...response, cuf })
     } catch (error) {
@@ -290,16 +291,10 @@ const facturacionStatusController = async (req, res) => {
 const noteEntregaController = async (req, res) => {
     try {
         const delivery = req.query.delivery;
-
-        // Llamada a la función notaEntrega para obtener los datos
         const response = await notaEntrega(delivery);
-
-        // Validación: si no hay datos en la respuesta
         if (response.length == 0) {
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de entrega' });
         }
-
-        // Mapeo y estructuración de datos
         const detailsList = [];
         const {
             BarCode,
@@ -347,14 +342,14 @@ const noteEntregaController = async (req, res) => {
             U_Comentario,
             detailsList,
         };
-
+        return res.json({data})
         // Ruta del archivo PDF (asegúrate de que el directorio tenga permisos de escritura)
         const filePath = path.join(__dirname, `nota_entrega_${data.DocNum}.pdf`);
         // Generar el QR Code
         const qrCode = await QRCode.toDataURL(data.BarCode.toString());
 
         // Renderizar la plantilla EJS a HTML
-        const html = await ejs.renderFile(path.join(__dirname,'notaEntrega', 'template.ejs'), { data, qrCode });
+        const html = await ejs.renderFile(path.join(__dirname, 'notaEntrega', 'template.ejs'), { data, qrCode });
 
         // Configuración para html-pdf
         const options = { format: 'A4', orientation: 'portrait' };

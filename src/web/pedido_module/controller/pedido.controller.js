@@ -118,11 +118,12 @@ const listaPreciosOficilaController = async (req, res) => {
         const listaPrecioResponse = await listaPrecioOficial()
         let descuentosLinea = []
         descuentosLinea = await findDescuentosLineas()
+        // return res.json({descuentosLinea})
         listaDescLinea = procesarListaCodigo(descuentosLinea)
         let listaPrecio = []
-
+        // return res.json({listaPrecioResponse})
         listaPrecioResponse.map((item) => {
-            const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemCode === item.LineItemName)
+            const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemName === item.LineItemName)
             if (noDiscount == 'Y') {
                 if (desc) {
                     listaPrecio.push({ ...item, descEsp: +desc.Desc})
