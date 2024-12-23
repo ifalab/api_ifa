@@ -10,13 +10,15 @@ const { findClientePorVendedor,
     pedidoSugeridoXZona,
     pedidoSugeridoXCliente,
     findZonasXVendedor,
-} = require("./hana.controller")
+} = require("./hana.controller");
+const { postOrden } = require("../../../movil/ventas_module/controller/sld.controller");
+const { findClientesByVendedor } = require("../../shared/controller/hana.controller");
 
 const clientesVendedorController = async (req, res) => {
     try {
 
         const { name } = req.body;
-        const response = await findClientePorVendedor(name);
+        const response = await findClientesByVendedor(name);
 
         let clientes = [];
 
@@ -184,6 +186,21 @@ const findZonasXVendedorController = async (req, res) => {
     }
 }
 
+const crearOrderController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log(body)
+        const ordenResponse = await postOrden(body)
+        if(ordenResponse.lang)
+            return res.status(400).json({ ...ordenResponse })
+        return res.json({ ...ordenResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador:crearOrderController' })
+    }
+    
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -195,4 +212,5 @@ module.exports = {
     sugeridosXZonaController,
     sugeridosXClienteController,
     findZonasXVendedorController,
+    crearOrderController,
 }

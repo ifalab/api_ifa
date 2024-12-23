@@ -51,7 +51,7 @@ const postOrden = async (newOrderDate) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-
+        console.log({newOrderDate})
         // Realiza la solicitud POST a la API externa usando el agente y los encabezados
         const response = await axios.post(url, newOrderDate, {
             httpsAgent: agent,
