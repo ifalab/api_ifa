@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController, cobranzasPorZonasController, cobranzaHistoricoNacionalController, cobranzaHistoricoNormalesController, cobranzaHistoricoCadenasController, cobranzaHistoricoIfavetController, cobranzaHistoricoInstitucionesController, cobranzaHistoricoMasivosController, cobranzasPorZonasMesAntController, cobranzaClientePorVendedorController, cobranzaFacturaPorClienteController } = require('../controller/cobranzas.controller')
+const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController, cobranzasPorZonasController, cobranzaHistoricoNacionalController, cobranzaHistoricoNormalesController, cobranzaHistoricoCadenasController, cobranzaHistoricoIfavetController, cobranzaHistoricoInstitucionesController, cobranzaHistoricoMasivosController, cobranzasPorZonasMesAntController, cobranzaClientePorVendedorController, cobranzaFacturaPorClienteController, clientesInstitucionesSaldoDeudorController, saldoDeudorInstitucionesController } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -31,6 +31,9 @@ router.get('/historico-instituciones',[validarToken, validarCampos], cobranzaHis
 router.get('/historico-masivos',[validarToken, validarCampos], cobranzaHistoricoMasivosController)
 router.get('/clientes-vendedor',[validarToken, validarCampos], cobranzaClientePorVendedorController)
 router.get('/facturas-cliente',[validarToken, validarCampos], cobranzaFacturaPorClienteController)
+
+router.get('/cliente-instituciones',[validarToken, validarCampos], clientesInstitucionesSaldoDeudorController)
+router.get('/saldo-deudor-instituciones',[validarToken, validarCampos], saldoDeudorInstitucionesController)
 
 
 module.exports = router
