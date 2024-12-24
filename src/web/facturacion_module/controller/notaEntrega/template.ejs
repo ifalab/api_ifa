@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Nota de Entrega</title>
@@ -9,62 +10,97 @@
             font-family: "Courier New", Courier, monospace;
             font-size: 12px;
             padding: 20px;
+            line-height: 0.5;
         }
+
         .qr-code {
             width: 100px;
             height: 100px;
         }
-        .table td, .table th {
+
+        .table td,
+        .table th {
             vertical-align: middle;
             text-align: center;
         }
+
         .footer-text {
             margin-top: 20px;
             text-align: right;
             font-style: italic;
         }
+
         .footer-signatures {
-            margin-top: 60px; /* Más espacio arriba del pie de página */
+            margin-top: 60px;
+            /* Más espacio arriba del pie de página */
             display: flex;
-            justify-content: space-around; /* Alineación horizontal */
+            justify-content: space-around;
+            /* Alineación horizontal */
             text-align: center;
         }
+
         .footer-signatures div {
             display: inline-block;
             width: 20%;
             border-top: 1px solid black;
             margin: 0 5px;
         }
+
         .content {
-            margin: 20px 10px; /* Evita que el contenido quede pegado al borde */
+            margin: 20px 10px;
+            /* Evita que el contenido quede pegado al borde */
         }
+
         .total-row {
             font-weight: bold;
         }
     </style>
 </head>
+
 <body>
     <div class="content">
         <h3 class="text-center">LABORATORIOS IFA</h3>
-        <h5 class="text-center">NOTA DE ENTREGA #<%= data.DocNum %></h5>
+        <h5 class="text-center">NOTA DE ENTREGA #<%= data.DocNum %>
+        </h5>
+        <h5 class="text-center">ALMACEN : <%= data.WhsCode %>
+        </h5>
+        <h5 class="text-center"><%= data.WhsName %>
+        </h5>
         <hr>
-        <div class="row">
-            <div class="col-md-3 text-center">
+        <div class="d-flex justify-content-between">
+
+            <div class="text-end">
                 <img class="qr-code" src="<%= qrCode %>" alt="QR Code">
             </div>
-            <div class="col-md-9">
-                <p><strong>Usuario:</strong> <%= data.USER_CODE %></p>
-                <p><strong>Creado por:</strong> <%= data.U_NAME %></p>
-                <p><strong>Fecha de creación:</strong> <%= new Date(data.DocDate).toLocaleDateString('es-ES') %></p>
-                <p><strong>Teléfono:</strong> <%= data.Phone1 %></p>
-                <p><strong>Dirección:</strong> <%= data.Address2 %></p>
-                <p><strong>Zona:</strong> <%= data.U_Zona %></p>
-                <p><strong>Cliente:</strong> <%= data.CardCode %> - <%= data.CardName %></p>
-               
+
+            <div class="">
+                <p><strong>Usuario:</strong>
+                    <%= data.USER_CODE %>
+                </p>
+                <p><strong>Creado por:</strong>
+                    <%= data.U_NAME %>
+                </p>
+                <p><strong>Fecha de creación:</strong>
+                    <%= new Date(data.DocDate).toLocaleDateString('es-ES') %>
+                </p>
+                <p><strong>Hora:</strong>
+                    <%= data.time %>
+                </p>
+                <p><strong>Teléfono:</strong>
+                    <%= data.Phone1 %>
+                </p>
+                <p><strong>Dirección:</strong>
+                    <%= data.Address2 %>
+                </p>
+                <p><strong>Zona:</strong>
+                    <%= data.U_Zona %>
+                </p>
+                <p><strong>Cliente:</strong>
+                    <%= data.CardCode %> - <%= data.CardName %>
+                </p>
             </div>
         </div>
         <hr>
-        <h5>Detalles</h5>
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
@@ -78,40 +114,68 @@
                 </tr>
             </thead>
             <tbody>
-                <% let totalGeneral = 0; %>
-                <% data.detailsList.forEach(item => { 
-                    totalGeneral += parseFloat(item.LineTotal); // Acumular el total
-                %>
-                    <tr>
-                        <td><%= item.ItemCode %></td>
-                        <td><%= item.Dscription %></td>
-                        <td><%= item.BatchNum %></td>
-                        <td><%= new Date(item.ExpDate).toLocaleDateString('es-ES') %></td>
-                        <td><%= item.Quantity %></td>
-                        <td><%= parseFloat(item.Price).toFixed(2) %></td>
-                        <td><%= parseFloat(item.LineTotal).toFixed(2) %></td>
-                    </tr>
-                <% }); %>
+                <% let totalGeneral=0; %>
+                    <% data.detailsList.forEach(item=> {
+                        totalGeneral += parseFloat(item.LineTotal); // Acumular el total
+                        %>
+                        <tr>
+                            <td>
+                                <%= item.ItemCode %>
+                            </td>
+                            <td>
+                                <%= item.Dscription %>
+                            </td>
+                            <td>
+                                <%= item.BatchNum %>
+                            </td>
+                            <td>
+                                <%= new Date(item.ExpDate).toLocaleDateString('es-ES') %>
+                            </td>
+                            <td>
+                                <%= item.Quantity %>
+                            </td>
+                            <td>
+                                <%= parseFloat(item.Price).toFixed(2) %>
+                            </td>
+                            <td>
+                                <%= parseFloat(item.LineTotal).toFixed(2) %>
+                            </td>
+                        </tr>
+                        <% }); %>
             </tbody>
             <tfoot>
                 <tr class="total-row">
                     <td colspan="6" class="text-end">Total General:</td>
-                    <td><%= totalGeneral.toFixed(2) %> BOB</td>
+                    <td>
+                        <%= totalGeneral.toFixed(2) %> BOB
+                    </td>
                 </tr>
             </tfoot>
         </table>
         <div class="footer-text">
-            <p><strong>Empleado:</strong> MEDLING ARDAYA JENNIFER</p>
-            <p><strong>Condición de pago:</strong> <%= data.PymntGroup %></p>
-            <p><strong>Glosa:</strong> solicitado por correo ent. hoy en el trans de la tarde basado en pedidos de cliente 240006460.</p>
-            <p><strong>Total en texto:</strong> Eleven Thousand Four Hundred Ninety-Five And 39/100 Bolivianos</p>
+            <!-- <p><strong>Empleado:</strong> MEDLING ARDAYA JENNIFER</p> -->
+            <p><strong>Condición de pago:</strong>
+                <%= data.PymntGroup %>
+            </p>
+            <!-- <p><strong>Glosa:</strong> solicitado por correo ent. hoy en el trans de la tarde basado en pedidos de cliente 240006460.</p> -->
+            <!-- <p><strong>Total en texto:</strong> Eleven Thousand Four Hundred Ninety-Five And 39/100 Bolivianos</p> -->
         </div>
         <div class="footer-signatures">
-            <div style="margin-top: 10rem;">Creado por<br><%= data.U_NAME %></div>
-            <div>Preparado por</div>
-            <div>Revisado por</div>
-            <div>Recibí conforme</div>
+            <div style="margin-top: 10rem;">Creado por ></div>
+            <div>Preparado por <%= data.U_N %>
+            </div>
+            <div>Revisado por <%= data.U_N %>
+            </div>
+            <div>Recibí conforme <%= data.U_N %>
+            </div>
+        </div>
+        <div style="
+        margin-left: 6rem;
+        margin-top: 0.5rem;
+        ">
+            <%= data.U_NAME %>
         </div>
     </div>
 </body>
+
 </html>

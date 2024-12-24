@@ -14,6 +14,7 @@ const apiFacturacion = {
             // Maneja los errores y propaga el error al controlador
             if (error.response) {
                 // Error específico de la API
+                console.log({error:error.response.data})
                 throw {
                     statusCode: error.response.status,
                     message: error.response.data || 'Error en la solicitud GET',

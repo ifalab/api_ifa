@@ -1,22 +1,33 @@
 const axios = require('axios');
+const https = require('https');
 
 // Crear una instancia personalizada de axios
 const httpClient = axios.create({
-    baseURL: process.env.API_NEST || 'https://api.example.com pai nest',
+    baseURL: process.env.API_NEST || 'https://api.example.com nest',
     timeout: 60000, // Tiempo de espera en milisegundos
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        authorization:`${process.env.TOKEN_NEST}`
+        authorization: `${process.env.TOKEN_NEST}`
     },
+    httpsAgent: new https.Agent({
+        rejectUnauthorized: false, // Permite certificados no verificados
+    }),
 });
+
 
 // Interceptor para agregar un token de autenticación si es necesario
 httpClient.interceptors.request.use(
     (config) => {
+
+        console.log(`Token utilizado: ${process.env.TOKEN_NEST}`);
+        console.log(`base url: ${process.env.API_NEST}`);
         return config; // Asegúrate de devolver la configuración
     },
     (error) => {
+
+        console.log(`Token utilizado: ${process.env.TOKEN_NEST}`);
+        console.log(`base url: ${process.env.API_NEST}`);
         return Promise.reject(error);
     }
 );

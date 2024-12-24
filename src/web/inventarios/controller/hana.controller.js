@@ -177,6 +177,7 @@ const inventarioHabilitacionDict = async (cod) => {
 
 const entregaDetallerFactura= async (docentry, cuf,nrofactura, fecha) => {
     try {
+        
         if (!connection) {
             await connectHANA();
         }
