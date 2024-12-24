@@ -11,7 +11,7 @@ const { entregaDetallerFactura } = require("../../inventarios/controller/hana.co
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega } = require("./hana.controller")
-const { postEntrega, postInvoice } = require("./sld.controller");
+const { postEntrega, postInvoice, facturacionByIdSld } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 
 const facturacionController = async (req, res) => {
@@ -41,9 +41,11 @@ const facturacionController = async (req, res) => {
 
         if (!deliveryBody) {
 
-            const { data } = await facturacionById(id)
+            // const { data } = await facturacionById(id)
+            const {data} = await facturacionByIdSld(id)
             console.log('2 facturacion ')
-            // console.log({ data })
+            console.log({ data })
+            // return res.json({data})
             if (!data) return res.status(400).json({ mensaje: 'Hubo un error al facturar' })
             const { DocumentLines, ...restData } = data
             if (!DocumentLines) return res.status(400).json({ mensaje: 'No existe los DocumentLines en la facturacio por ID ' })

@@ -95,7 +95,31 @@ const postInvoice = async (body) => {
     }
 }
 
+const facturacionByIdSld= async (id) => {
+    try {
+       
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/Orders(${id})`
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return { data:sapResponse.data }
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        return errorMessage
+    }
+}
+
 module.exports = {
     postEntrega,
-    postInvoice
+    postInvoice,
+    facturacionByIdSld
 }
