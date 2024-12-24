@@ -48,7 +48,6 @@ const findClientePorVendedor = async (name) => {
             await connectHANA();
         }
         const query = `CALL ${process.env.PRD}.IFA_DM_CLIENTES_X_VENDEDOR('${name}')`
-        console.log({ query })
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
