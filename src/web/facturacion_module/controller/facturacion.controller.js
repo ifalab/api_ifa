@@ -19,6 +19,9 @@ const facturacionController = async (req, res) => {
     let responseBatch = []
     try {
         const { id } = req.body
+        const user = req.usuarioAutorizado
+        const id_sap= user.ID_SAP
+        // return res.json({id_sap})
         let deliveryData
         let deliveryBody
         let finalDataEntrega
@@ -55,7 +58,7 @@ const facturacionController = async (req, res) => {
             // return res.json({data})
             for (const line of DocumentLines) {
                 let newLine = {}
-                const { ItemCode, WarehouseCode, Quantity, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, ...restLine } = line;
+                const { ItemCode, WarehouseCode, Quantity, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, LineStatus, ...restLine } = line;
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
                 responseBatch.push(batchData)
                 console.log({ batch:batchData })
@@ -97,8 +100,9 @@ const facturacionController = async (req, res) => {
                 DocumentLines: newDocumentLines
             }
             console.log('rest data------------------------------------------------------------')
-            // console.log({ restData })
-            const { U_NIT, U_RAZSOC } = restData
+            // return res.json({ restData })
+            const { U_NIT, U_RAZSOC, U_UserCode } = restData
+            console.log({restData})
             const {
                 DocDate,
                 DocDueDate,
@@ -113,6 +117,7 @@ const facturacionController = async (req, res) => {
                 CardCode,
                 U_NIT,
                 U_RAZSOC,
+                U_UserCode: id_sap,
                 DocumentLines: docLines,
             }
 
