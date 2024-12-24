@@ -372,6 +372,7 @@ const noteEntregaController = async (req, res) => {
     try {
         const delivery = req.query.delivery;
         const response = await notaEntrega(delivery);
+        console.log({notaEntregaResponse:response})
         if (response.length == 0) {
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de entrega' });
         }
