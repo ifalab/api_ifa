@@ -109,9 +109,27 @@ const notaEntrega = async (delivery) => {
     }
 }
 
+const obtenerEntregasPorFactura = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `CALL ${process.env.PRD}.ifa_lapp_obtener_entregas_por_factura(${id})`;
+        const query = `CALL lab_ifa_dev.ifa_lapp_obtener_entregas_por_factura(${id})`;
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerEntregasPorFactura:', error.message);
+        return { message: 'Error al procesar la solicitud: obtenerEntregasPorFactura' }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
     solicitarId,
-    notaEntrega
+    notaEntrega,
+    obtenerEntregasPorFactura
 }

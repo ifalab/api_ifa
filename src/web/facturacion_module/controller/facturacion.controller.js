@@ -10,8 +10,8 @@ const PdfPrinter = require('pdfmake');
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega } = require("./hana.controller")
-const { postEntrega, postInvoice, facturacionByIdSld } = require("./sld.controller");
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura } = require("./hana.controller")
+const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 
 const facturacionController = async (req, res) => {
@@ -657,9 +657,44 @@ const obtenerCuf = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
+
+const obtenerEntregasPorFacturaController = async (req, res) => {
+    try {
+        const id = req.body.id
+        console.log(id)
+        const response = await obtenerEntregasPorFactura(id)
+        if(response.lang) return res.status(400).json({message: response.value})
+        
+        return res.json({ response })
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: 'error en obtenerEntregasPorFacturaController' })
+    }
+}
+
+const obtenerInvoicesCancel = async (req, res) => {
+    try {
+        console.log(req.body)
+        // return res.json(req.body)
+        const id = req.body.id
+        console.log(id)
+        const response = await cancelInvoice(id)
+        // const response = await cancelDeliveryNotes(id)
+        if(response.lang)
+            return res.status(400).json({message: response.value})
+        
+        return res.json({ response })
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: 'error en obtenerEntregasPorFacturaController' })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
     noteEntregaController,
-    obtenerCuf
+    obtenerCuf,
+    obtenerEntregasPorFacturaController,
+    obtenerInvoicesCancel
 }

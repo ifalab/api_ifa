@@ -118,8 +118,56 @@ const facturacionByIdSld= async (id) => {
     }
 }
 
+const cancelInvoice= async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/Invoices(${id})/Cancel`
+        const sapResponse = await axios.post(url, {}, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        console.log(sapResponse)
+        return { data:sapResponse.data }
+    } catch (error) {
+        console.log("Error sld controller ",{ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        return errorMessage
+    }
+}
+
+const cancelDeliveryNotes= async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/DeliveryNotes(${id})/Cancel`
+        const sapResponse = await axios.post(url, {}, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        console.log(sapResponse)
+        return { data:sapResponse.data }
+    } catch (error) {
+        console.log("Error sld controller ",{ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        return errorMessage
+    }
+}
+
 module.exports = {
     postEntrega,
     postInvoice,
-    facturacionByIdSld
+    facturacionByIdSld,
+    cancelInvoice,
+    cancelDeliveryNotes,
 }
