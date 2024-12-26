@@ -1,4 +1,10 @@
 const axios = require('axios');
+const https = require('https');
+
+// Crear un agente HTTPS con rejectUnauthorized: false
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+});
 
 const httpProsin = axios.create({
     baseURL: process.env.API_PROSIN || 'https://api.example.com prosin',
@@ -6,8 +12,9 @@ const httpProsin = axios.create({
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        Authorization:`Basic SUZBOkdlbmVzaXM6eg==`
+        Authorization: `Basic SUZBOkdlbmVzaXM6eg==`
     },
+    httpsAgent,
 });
 // Interceptor para manejar respuestas
 httpProsin.interceptors.response.use(
@@ -20,7 +27,7 @@ httpProsin.interceptors.response.use(
         if (error.response) {
             console.error(`[HTTP Error]: ${error.response.status} - ${error.response.data.message}`);
         } else if (error.request) {
-            console.error('[HTTP Error]: No response received from server');
+            console.error('[HTTP Error]: No response received from server CLIENT PROSIN');
         } else {
             console.error(`[HTTP Error]: ${error.message}`);
         }
