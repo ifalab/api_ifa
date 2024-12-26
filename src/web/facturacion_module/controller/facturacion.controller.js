@@ -10,7 +10,7 @@ const PdfPrinter = require('pdfmake');
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura } = require("./hana.controller")
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 
@@ -20,7 +20,7 @@ const facturacionController = async (req, res) => {
     try {
         const { id } = req.body
         const user = req.usuarioAutorizado
-        const id_sap= user.ID_SAP
+        const id_sap = user.ID_SAP
         // return res.json({id_sap})
         let deliveryData
         let deliveryBody
@@ -45,7 +45,7 @@ const facturacionController = async (req, res) => {
         if (!deliveryBody) {
 
             // const { data } = await facturacionById(id)
-            const {data} = await facturacionByIdSld(id)
+            const { data } = await facturacionByIdSld(id)
             console.log('2 facturacion ')
             console.log({ data })
             // return res.json({data})
@@ -61,7 +61,7 @@ const facturacionController = async (req, res) => {
                 const { ItemCode, WarehouseCode, Quantity, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, LineStatus, ...restLine } = line;
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
                 responseBatch.push(batchData)
-                console.log({ batch:batchData })
+                console.log({ batch: batchData })
                 if (batchData && batchData.length !== 0) {
                     // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
 
@@ -102,7 +102,7 @@ const facturacionController = async (req, res) => {
             console.log('rest data------------------------------------------------------------')
             // return res.json({ restData })
             const { U_NIT, U_RAZSOC, U_UserCode } = restData
-            console.log({restData})
+            console.log({ restData })
             const {
                 DocDate,
                 DocDueDate,
@@ -205,9 +205,15 @@ const facturacionController = async (req, res) => {
             const dataGenesis = responseGenesis[0]
             const cuf = dataGenesis.cuf
             const nroFactura = dataGenesis.factura
-            const fechaFormater = dataGenesis.fecha_emision
-            console.log({ deliveryData, cuf, nroFactura, fechaFormater })
-            const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
+            const fechaFormater = new Date(dataGenesis.fecha_emision)
+            // Extraer componentes de la fecha
+            const year = fechaFormater.getUTCFullYear();
+            const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+            const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+
+            // Formatear la fecha en YYYYMMDD
+            const formater = `${year}${month}${day}`;
+            const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
             console.log({ responseHana })
             if (responseHana.message) {
                 return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
@@ -377,7 +383,7 @@ const noteEntregaController = async (req, res) => {
     try {
         const delivery = req.query.delivery;
         const response = await notaEntrega(delivery);
-        console.log({notaEntregaResponse:response})
+        console.log({ notaEntregaResponse: response })
         if (response.length == 0) {
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de entrega' });
         }
@@ -553,7 +559,19 @@ const noteEntregaController = async (req, res) => {
         console.error('Error en el controlador:', error);
         return res.status(500).json({ mensaje: 'Error en el controlador' });
     }
-};
+}
+
+const listaFacturasAnular = async (req, res) => {
+    try {
+        const sucursal = req.query.sucursal
+        console.log({sucursal})
+        const listaFacturas = await facturasParaAnular(sucursal)
+        return res.json({ listaFacturas })
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
 
 const generatePDF = (data) => {
     const fonts = {
@@ -645,7 +663,7 @@ const generatePDF = (data) => {
     const pdfDoc = printer.createPdfKitDocument(docDefinition);
     pdfDoc.pipe(fs.createWriteStream('nota_entrega.pdf'));
     pdfDoc.end();
-};
+}
 
 const obtenerCuf = async (req, res) => {
     try {
@@ -690,11 +708,14 @@ const obtenerInvoicesCancel = async (req, res) => {
     }
 }
 
+
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
     noteEntregaController,
     obtenerCuf,
     obtenerEntregasPorFacturaController,
-    obtenerInvoicesCancel
+    obtenerInvoicesCancel,
+    listaFacturasAnular,
 }
