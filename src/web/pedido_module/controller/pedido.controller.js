@@ -192,7 +192,7 @@ const crearOrderController = async (req, res) => {
         console.log(body)
         const ordenResponse = await postOrden(body)
         if(ordenResponse.lang)
-            return res.status(400).json({ ...ordenResponse })
+            return res.status(400).json({ message: ordenResponse.value })
         return res.json({ ...ordenResponse })
     } catch (error) {
         console.log({ error })
