@@ -28,6 +28,33 @@ const apiFacturacionProsin = {
             };
         }
     },
+    async anulacionFacturacion(body) {
+        try {
+            console.log({body})
+            const response = await httpClientProsin.post('/api/sfl/AnulacionDocumento', {...body});
+            // return response;
+            return {
+                statusCode: response.status,
+                data: response.data,
+            };
+        } catch (error) {
+            // Maneja los errores y propaga el error al controlador
+            console.log({error})
+            if (error.response) {
+                // Error específico de la API
+                throw {
+                    statusCode: error.response.status,
+                    message: error.response.data || 'Error en la solicitud anulacionFacturacion POST',
+                };
+            }
+
+            // Otros errores (como errores de red)
+            throw {
+                statusCode: 500,
+                message: error.message || 'Error desconocido en la solicitud anulacionFacturacion POST',
+            };
+        }
+    },
 };
 
 module.exports = apiFacturacionProsin;

@@ -9,8 +9,8 @@ const PdfPrinter = require('pdfmake');
 
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
-const { facturacionProsin } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular } = require("./hana.controller")
+const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 
@@ -564,8 +564,9 @@ const noteEntregaController = async (req, res) => {
 const listaFacturasAnular = async (req, res) => {
     try {
         const sucursal = req.query.sucursal
-        console.log({sucursal})
+        console.log({ sucursal })
         const listaFacturas = await facturasParaAnular(sucursal)
+        if (listaFacturas.message) return res.status(404).json({ mensaje: listaFacturas.message })
         return res.json({ listaFacturas })
     } catch (error) {
         console.error({ error })
@@ -681,8 +682,8 @@ const obtenerEntregasPorFacturaController = async (req, res) => {
         const id = req.body.id
         console.log(id)
         const response = await obtenerEntregasPorFactura(id)
-        if(response.lang) return res.status(400).json({message: response.value})
-        
+        if (response.lang) return res.status(400).json({ message: response.value })
+
         return res.json({ response })
     } catch (error) {
         console.error({ error })
@@ -698,9 +699,9 @@ const obtenerInvoicesCancel = async (req, res) => {
         console.log(id)
         const response = await cancelInvoice(id)
         // const response = await cancelDeliveryNotes(id)
-        if(response.lang)
-            return res.status(400).json({message: response.value})
-        
+        if (response.lang)
+            return res.status(400).json({ message: response.value })
+
         return res.json({ response })
     } catch (error) {
         console.error({ error })
@@ -708,7 +709,83 @@ const obtenerInvoicesCancel = async (req, res) => {
     }
 }
 
+const infoFacturaController = async (req, res) => {
+    try {
+        const info = await facturaInfo()
+        let infoFactura = []
+        info.map((itemInfo) => {
+            if (itemInfo.VALUE_DESCR == 1 || itemInfo.VALUE_DESCR == 3) {
+                infoFactura.push({ ...itemInfo })
+            }
+        })
+        return res.json({ infoFactura })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
 
+const cancelToProsinController = async (req, res) => {
+    try {
+        const {
+            sucursal,
+            punto,
+            cuf,
+            descripcion,
+            motivoAnulacion,
+            tipoDocumento,
+            usuario,
+            mediaPagina,
+            docEntry
+        } = req.body
+
+        const responseProsin = await anulacionFacturacion({
+            sucursal,
+            punto,
+            cuf,
+            descripcion,
+            motivoAnulacion,
+            tipoDocumento,
+            usuario,
+            mediaPagina,
+        })
+
+        if (responseProsin.data.mensaje) {
+            const mess = responseProsin.data.mensaje.split('§')
+            return res.status(400).json({ mensaje: `${mess[1]}` })
+        }
+        if (!docEntry) return res.status(400).json({ mensaje: `debe venir el doc entry` })
+        const reponseInvoice = await cancelInvoice(docEntry)
+
+        if (reponseInvoice.value) {
+            return res.status(400).json({ mensaje: `${reponseInvoice.value}, cuf: ${cuf}` })
+        }
+
+        const responseEntregas = await obtenerEntregasPorFactura(docEntry)
+        if (responseEntregas.length == 0) {
+            return res.status(400).json({ mensaje: `no hay entregas de la factura` })
+        }
+
+        let listResponseDelivery = []
+
+        for (const iterator of responseEntregas) {
+            const responseDeliveryNotes =  await cancelDeliveryNotes(iterator.BaseEntry)
+            listResponseDelivery.push(responseDeliveryNotes)
+        }
+
+        return res.json({
+            responseProsin: { ...responseProsin, cuf },
+            reponseInvoice,
+            responseEntregas,
+            listResponseDelivery,
+        })
+
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
 
 module.exports = {
     facturacionController,
@@ -718,4 +795,6 @@ module.exports = {
     obtenerEntregasPorFacturaController,
     obtenerInvoicesCancel,
     listaFacturasAnular,
+    infoFacturaController,
+    cancelToProsinController
 }

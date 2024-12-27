@@ -95,9 +95,9 @@ const postInvoice = async (body) => {
     }
 }
 
-const facturacionByIdSld= async (id) => {
+const facturacionByIdSld = async (id) => {
     try {
-       
+
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
@@ -110,7 +110,7 @@ const facturacionByIdSld= async (id) => {
             httpsAgent: agent,
             headers: headers
         });
-        return { data:sapResponse.data }
+        return { data: sapResponse.data }
     } catch (error) {
         console.log({ error })
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
@@ -118,7 +118,7 @@ const facturacionByIdSld= async (id) => {
     }
 }
 
-const cancelInvoice= async (id) => {
+const cancelInvoice = async (id) => {
     try {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
@@ -133,15 +133,15 @@ const cancelInvoice= async (id) => {
             headers: headers
         });
         console.log(sapResponse)
-        return { data:sapResponse.data }
+        return { data: sapResponse.data }
     } catch (error) {
-        console.log("Error sld controller ",{ error })
+        console.log("Error sld controller ", { error })
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
         return errorMessage
     }
 }
 
-const cancelDeliveryNotes= async (id) => {
+const cancelDeliveryNotes = async (id) => {
     try {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
@@ -156,11 +156,11 @@ const cancelDeliveryNotes= async (id) => {
             headers: headers
         });
         console.log(sapResponse)
-        return { data:sapResponse.data }
+        return { data: sapResponse.data, status: 200 }
     } catch (error) {
-        console.log("Error sld controller ",{ error })
+        console.log("Error sld controller ", { error })
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
-        return errorMessage
+        return { data: errorMessage, status: 400, }
     }
 }
 

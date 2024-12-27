@@ -115,8 +115,8 @@ const obtenerEntregasPorFactura = async (id) => {
             await connectHANA();
         }
         // const query = `CALL ${process.env.PRD}.ifa_lapp_obtener_entregas_por_factura(${id})`;
-        const query = `CALL lab_ifa_dev.ifa_lapp_obtener_entregas_por_factura(${id})`;
-        console.log({query})
+        const query = `CALL lab_ifa_dev.ifa_lapp_ven_obtener_entregas_por_factura(${id})`;
+        console.log({ query })
         const result = await executeQuery(query)
         return result
 
@@ -131,8 +131,8 @@ const facturasParaAnular = async (sucursal) => {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `CALL lab_ifa_dev.ifa_lapp_obtener_factura('${sucursal}')`;
-        const query = `CALL lab_ifa_dev.ifa_lapp_obtener_factura()`;
+        const query = `CALL lab_ifa_dev.ifa_lapp_ven_obtener_factura('${sucursal}')`;
+        // const query = `CALL lab_ifa_dev.ifa_lapp_ven_obtener_factura()`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -148,7 +148,6 @@ const facturaInfo = async () => {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `CALL lab_ifa_dev.ifa_lapp_obtener_factura('${sucursal}')`;
         const query = `SELECT * FROM LAB_IFA_PRD.IFA_INFO_FACTURACION`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -156,7 +155,7 @@ const facturaInfo = async () => {
 
     } catch (error) {
         console.error('Error en notaEntrega:', error.message);
-        return { message: 'Error al procesar la solicitud: facturaInfor' }
+        return { message: 'Error al procesar la solicitud: facturaInfo' }
     }
 }
 
