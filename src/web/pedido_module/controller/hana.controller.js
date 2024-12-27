@@ -139,12 +139,12 @@ const clientesMora = async()=>{
     }
 }
 
-const listaPrecioOficial = async()=>{
+const listaPrecioOficial = async(cardCode)=>{
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM LAB_IFA_PRD.IFA_DM_PRECIOS_OFICIAL`
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_catalogo_vm('${cardCode}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {

@@ -118,7 +118,9 @@ const descuentoCondicionController = async (req, res) => {
 const listaPreciosOficilaController = async (req, res) => {
     try {
         const noDiscount = req.query.noDiscount
-        const listaPrecioResponse = await listaPrecioOficial()
+        const cardCode = req.query.cardCode
+        const listaPrecioResponse = await listaPrecioOficial(cardCode)
+        // return res.json({listaPrecioResponse})
         let descuentosLinea = []
         descuentosLinea = await findDescuentosLineas()
         // return res.json({descuentosLinea})
