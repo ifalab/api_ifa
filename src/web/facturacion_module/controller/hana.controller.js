@@ -159,6 +159,22 @@ const facturaInfo = async () => {
     }
 }
 
+const facturaPedidoDB = async (whsCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos(${whsCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en notaEntrega:', error.message);
+        return { message: 'Error al procesar la solicitud: facturaInfo' }
+    }
+}
+
 
 module.exports = {
     lotesArticuloAlmacenCantidad,
@@ -168,4 +184,5 @@ module.exports = {
     obtenerEntregasPorFactura,
     facturasParaAnular,
     facturaInfo,
+    facturaPedidoDB
 }

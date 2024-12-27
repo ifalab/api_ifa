@@ -10,7 +10,7 @@ const PdfPrinter = require('pdfmake');
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo } = require("./hana.controller")
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 
@@ -368,14 +368,16 @@ const facturacionController = async (req, res) => {
 
 const facturacionStatusController = async (req, res) => {
     try {
-        const { opcion } = req.query;
-        const response = await facturacionPedido(opcion)
-        return res.json({ response })
+        // const { opcion } = req.query
+        const whsCode= req.query.whsCode
+        // const response = await facturacionPedido(opcion)
+        const data = await facturaPedidoDB(whsCode)
+        return res.json({data })
 
     } catch (error) {
-        console.log('error en ventasInstitucionesController')
+        console.log('error en facturacionStatusController')
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
 
