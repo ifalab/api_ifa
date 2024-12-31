@@ -11,7 +11,7 @@ const { entregaDetallerFactura } = require("../../inventarios/controller/hana.co
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB } = require("./hana.controller")
-const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes } = require("./sld.controller");
+const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 
@@ -214,6 +214,17 @@ const facturacionController = async (req, res) => {
 
             // Formatear la fecha en YYYYMMDD
             const formater = `${year}${month}${day}`;
+            //TODO ------------------------------------------------------------ PATCH ENTREGA
+            const responsePatchEntrega = await patchEntrega(deliveryData, {
+                U_B_cuf: `${cuf}`,
+                U_B_em_date: `${formater}`,
+                NumAtCard: `${nroFactura}`
+            })
+            if (responsePatchEntrega.status == 400) {
+                console.error({ error: responsePatchEntrega.errorMessage })
+                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: patchEntrega' })
+            }
+            //TODO ------------------------------------------------------------ ENTREGA DETALLER TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
             console.log({ responseHana })
             if (responseHana.message) {
@@ -236,7 +247,12 @@ const facturacionController = async (req, res) => {
                         U_OSLP_ID: U_OSLP_ID || "",
                         U_UserCode: U_UserCode || ""
                     };
-                    DocumentAdditionalExpenses = [{ ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1 }, { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2 }, { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3 }, { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4 }]
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                    ]
                 }
                 DocumentLinesHana.push({
                     LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
@@ -267,9 +283,17 @@ const facturacionController = async (req, res) => {
             return res.json({ ...response, cuf })
 
         } else {
-
-            // const responseProsin = await facturacionProsin(bodyFinalFactura)
-            const responseProsin = await postFacturacionProsin(bodyFinalFactura)
+            let dataToProsin = {}
+            const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
+            if (direccion == null || direccion == undefined) {
+                dataToProsin = {
+                    ...restBodyFinalFactura,
+                    direccion: ''
+                }
+            } else {
+                dataToProsin = bodyFinalFactura
+            }
+            const responseProsin = await facturacionProsin(dataToProsin)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
@@ -291,6 +315,16 @@ const facturacionController = async (req, res) => {
             const fechaFormater = year + month + day
             // return res.json({fechaFormater})
             console.log({ deliveryData, cuf, nroFactura, fechaFormater, })
+            //TODO --------------------------------------------------------------  PATCH ENTREGA
+            const responsePatchEntrega = await patchEntrega(deliveryData, {
+                U_B_cuf: `${cuf}`,
+                U_B_em_date: `${fechaFormater}`,
+                NumAtCard: `${nroFactura}`
+            })
+            if (responsePatchEntrega.status == 400) {
+                console.error({ error: responsePatchEntrega.errorMessage })
+                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: patchEntrega' })
+            }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
             console.log({ responseHana })
@@ -314,7 +348,13 @@ const facturacionController = async (req, res) => {
                         U_OSLP_ID: U_OSLP_ID || "",
                         U_UserCode: U_UserCode || ""
                     };
-                    DocumentAdditionalExpenses = [{ ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1 }, { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2 }, { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3 }, { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4 }]
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                    ]
+
                 }
                 DocumentLinesHana.push({
                     LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
@@ -371,10 +411,10 @@ const facturacionController = async (req, res) => {
 const facturacionStatusController = async (req, res) => {
     try {
         // const { opcion } = req.query
-        const whsCode= req.query.whsCode
+        const whsCode = req.query.whsCode
         // const response = await facturacionPedido(opcion)
         const data = await facturaPedidoDB(whsCode)
-        return res.json({data })
+        return res.json({ data })
 
     } catch (error) {
         console.log('error en facturacionStatusController')
@@ -448,93 +488,6 @@ const noteEntregaController = async (req, res) => {
             U_Comentario,
             detailsList,
         };
-
-        // return res.json({ data: data })
-        //! PDF MAKE
-        // const detailsListPDF = response.map((item) => [
-        //     { text: item.ItemCode || '-', fontSize: 8 }, // Código
-        //     { text: item.Dscription || '-', fontSize: 8 }, // Descripción
-        //     { text: item.BatchNum || '-', fontSize: 8 }, // Lote
-        //     { text: item.ExpDate ? new Date(item.ExpDate).toLocaleDateString() : '-', fontSize: 8 }, // Expiración
-        //     { text: item.Quantity || '0', fontSize: 8 }, // Cantidad
-        //     { text: item.Subnivel1 || '-', fontSize: 8 }, // Ubicación
-        //     { text: parseFloat(item.Price || '0').toFixed(2), fontSize: 8 }, // Precio
-        //     { text: parseFloat(item.LineTotal || '0').toFixed(2), fontSize: 8 }, // Total
-        // ]);
-
-        // const docDefinition = {
-        //     content: [
-        //         { text: 'LABORATORIOS IFA', style: 'header', alignment: 'center' },
-        //         { text: `NOTA DE ENTREGA ${DocNum}`, style: 'subheader', alignment: 'center' },
-        //         { text: `Usuario: ${USER_CODE}`, alignment: 'right', fontSize: 10 },
-        //         { text: `Fecha de creación: ${new Date(DocDate).toLocaleDateString()}`, fontSize: 10 },
-        //         { text: `Fecha de entrega: ${new Date(DocDueDate).toLocaleDateString()}`, fontSize: 10 },
-        //         { text: `Cliente: ${CardName}`, style: 'sectionHeader' },
-        //         { text: `Teléfono: ${Phone1}`, fontSize: 10 },
-        //         { text: `Dirección: ${Address2}`, fontSize: 10 },
-        //         { text: `Zona: ${U_Zona}`, fontSize: 10 },
-        //         { text: `Condición de pago: ${PymntGroup}`, fontSize: 10 },
-        //         { text: 'Detalle de Productos', style: 'sectionHeader' },
-        //         {
-        //             table: {
-        //                 headerRows: 1,
-        //                 widths: ['10%', '25%', '10%', '10%', '10%', '10%', '12.5%', '12.5%'],
-        //                 body: [
-        //                     [
-        //                         { text: 'Código', style: 'tableHeader' },
-        //                         { text: 'Descripción', style: 'tableHeader' },
-        //                         { text: 'Lote', style: 'tableHeader' },
-        //                         { text: 'Exp.', style: 'tableHeader' },
-        //                         { text: 'Cant.', style: 'tableHeader' },
-        //                         { text: 'Ubicación', style: 'tableHeader' },
-        //                         { text: 'Precio', style: 'tableHeader' },
-        //                         { text: 'Total', style: 'tableHeader' },
-        //                     ],
-        //                     ...detailsListPDF,
-        //                 ],
-        //             },
-        //             layout: 'lightHorizontalLines',
-        //         },
-        //         { text: `Total: ${parseFloat(DocTotal).toFixed(2)}`, style: 'total', alignment: 'right', margin: [0, 10, 0, 0] },
-        //     ],
-        //     styles: {
-        //         header: { fontSize: 16, bold: true },
-        //         subheader: { fontSize: 14, bold: true },
-        //         sectionHeader: { fontSize: 12, bold: true, margin: [0, 10, 0, 5] },
-        //         tableHeader: { bold: true, fontSize: 10, color: 'black' },
-        //         total: { bold: true, fontSize: 12 },
-        //     },
-        // };
-
-        // const pdfPath = path.join(__dirname, `nota_entrega_${response[0].DocNum}.pdf`);
-
-        // // Generar el PDF y guardarlo
-        // const pdfDoc = pdfMake.createPdf(docDefinition);
-
-        // // Convertir a buffer y escribir archivo
-        // const buffer = await new Promise((resolve, reject) => {
-        //     pdfDoc.getBuffer((data) => {
-        //         if (!data) reject(new Error('Error al generar el buffer del PDF'));
-        //         resolve(data);
-        //     });
-        // });
-
-        // await fs.promises.writeFile(pdfPath, buffer);
-
-        // // Enviar el archivo como respuesta
-        // res.sendFile(pdfPath, async (err) => {
-        //     if (err) {
-        //         console.error('Error al enviar el archivo PDF:', err);
-        //         return res.status(500).json({ mensaje: 'Error al enviar el PDF' });
-        //     }
-
-        //     // Eliminar el archivo después de enviarlo
-        //     try {
-        //         await fs.promises.unlink(pdfPath);
-        //     } catch (unlinkError) {
-        //         console.error('Error al eliminar el archivo PDF:', unlinkError);
-        //     }
-        // });
 
         //! EJS
         const filePath = path.join(__dirname, `nota_entrega_${data.DocNum}.pdf`);
@@ -773,7 +726,7 @@ const cancelToProsinController = async (req, res) => {
         let listResponseDelivery = []
 
         for (const iterator of responseEntregas) {
-            const responseDeliveryNotes =  await cancelDeliveryNotes(iterator.BaseEntry)
+            const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             listResponseDelivery.push(responseDeliveryNotes)
         }
 
