@@ -235,6 +235,7 @@ const pedidosPorVendedorPendientesController = async (req, res) => {
     try {
         const id = req.query.id
         console.log(id)
+   
         const pedidos = await pedidosPorVendedorPendientes(id)
         if (pedidos.lang)
             return res.status(400).json({ message: pedidos.value })
@@ -249,6 +250,7 @@ const pedidosPorVendedorFacturadosController = async (req, res) => {
     try {
         const id = req.query.id
         console.log(id)
+       
         const pedidos = await pedidosPorVendedorFacturados(id)
         if (pedidos.lang)
             return res.status(400).json({ message: pedidos.value })
