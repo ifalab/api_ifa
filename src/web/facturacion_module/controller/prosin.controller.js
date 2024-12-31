@@ -1,21 +1,21 @@
 const axios = require('axios');
 const https = require('https');
 
-// Crear un agente HTTPS que ignore la validación del certificado
-const httpsAgent = new https.Agent({
-    rejectUnauthorized: false
-})
-
-const headers = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    Authorization: `Basic SUZBOkdlbmVzaXM6eg==`
-}
+const agent = new https.Agent({ rejectUnauthorized: false })
 
 const postFacturacionProsin = async (body) => {
     try {
-        const url = `${process.env.process.env.API_PROSIN}/api/sfl/FacturaCompraVenta`
-        const responseProsin = await axios.pos(url, { ...body }, { headers, httpsAgent })
+        const headers = {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Authorization: `Basic SUZBOkdlbmVzaXM6eg==`
+        }
+        const url = `${process.env.API_PROSIN}/api/sfl/FacturaCompraVenta`
+        console.log({ url, body });
+        const responseProsin = await axios.post(url, { ...body }, {
+            httpsAgent: agent,
+            headers: headers
+        })
         return {
             statusCode: responseProsin.status,
             data: responseProsin.data,

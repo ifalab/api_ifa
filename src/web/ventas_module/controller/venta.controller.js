@@ -627,7 +627,7 @@ const ventasHistoricoInstitucionesController = async (req, res) => {
     }
 }
 
-const vendedorPorZonaMesAntController = async(req,res)=>{
+const vendedorPorZonaMesAntController = async (req, res) => {
     const { username, line, groupBy } = req.query;
     try {
         if (!username && typeof username != "string") {
@@ -655,12 +655,12 @@ const vendedorPorZonaMesAntController = async(req,res)=>{
     }
 }
 
-const facturacionController = async(req,res)=>{
-    try { 
-        const {opcion } = req.query;
-        const response  = await facturacionPedido(opcion)
-        return res.json({response})
-        
+const facturacionController = async (req, res) => {
+    try {
+        const { opcion } = req.query;
+        const response = await facturacionPedido(opcion)
+        return res.json({ response })
+
     } catch (error) {
         console.log('error en ventasInstitucionesController')
         console.log({ error })

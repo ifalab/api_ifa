@@ -13,6 +13,7 @@ const { facturacionProsin, anulacionFacturacion } = require("../service/apiFactu
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
+const { postFacturacionProsin } = require('./prosin.controller');
 
 const facturacionController = async (req, res) => {
     let body = {}
@@ -267,7 +268,8 @@ const facturacionController = async (req, res) => {
 
         } else {
 
-            const responseProsin = await facturacionProsin(bodyFinalFactura)
+            // const responseProsin = await facturacionProsin(bodyFinalFactura)
+            const responseProsin = await postFacturacionProsin(bodyFinalFactura)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin

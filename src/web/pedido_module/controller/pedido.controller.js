@@ -19,18 +19,22 @@ const clientesVendedorController = async (req, res) => {
 
         const { name } = req.body;
         const response = await findClientesByVendedor(name);
+        // const clientesWitheList = await clientesMora()
+        // let listCardCode = []
 
+        // clientesWitheList.map((item) => {
+        //     listCardCode.push(item.CardCode)
+        // })
+        // return res.json({ response, clientesWitheList })
         let clientes = [];
-
         for (const item of response) {
-            const { CreditLine, AmountDue, ...restCliente } = item;
+            const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
             const saldoDisponible = (+CreditLine) - (+AmountDue);
-            const mora = await tieneMora(item.CardCode);
             const newData = {
                 ...restCliente,
                 CreditLine,
                 AmountDue,
-                mora,
+                mora: HvMora,
                 saldoDisponible,
             };
             clientes.push({ ...newData });
@@ -131,7 +135,7 @@ const listaPreciosOficilaController = async (req, res) => {
             const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemName === item.LineItemName)
             if (noDiscount == 'Y') {
                 if (desc) {
-                    listaPrecio.push({ ...item, descEsp: +desc.Desc})
+                    listaPrecio.push({ ...item, descEsp: +desc.Desc })
                 } else {
                     listaPrecio.push({ ...item, descEsp: 0 })
                 }
@@ -193,16 +197,36 @@ const crearOrderController = async (req, res) => {
         const body = req.body
         console.log(body)
         const ordenResponse = await postOrden(body)
-        if(ordenResponse.lang)
+        if (ordenResponse.lang)
             return res.status(400).json({ message: ordenResponse.value })
         return res.json({ ...ordenResponse })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador:crearOrderController' })
     }
-    
+
 }
 
+const whiteListController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const clientes = await clientesMora()
+        let listCardCode = []
+
+        clientes.map((item) => {
+            listCardCode.push(item.CardCode)
+        })
+
+        let mora = true
+        if (listCardCode.includes(cardCode)) {
+            mora = false
+        }
+        return res.json({mora})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -215,4 +239,5 @@ module.exports = {
     sugeridosXClienteController,
     findZonasXVendedorController,
     crearOrderController,
+    whiteListController,
 }
