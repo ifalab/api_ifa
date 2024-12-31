@@ -1,27 +1,20 @@
-const fs = require('fs');
-const https = require('https');
-const http = require('http');
 const express = require('express');
 const morgan = require('morgan');
-const cors = require('cors');
+const cors = require('cors')
 const { swaggerUi, swaggerDocs } = require('./swagger');
+
 const app = express();
-const httpsPort = 97; // Puerto HTTPS estándar
-const httpPort = 96;  // Puerto HTTP estándar
+const port = 97;
+
+
+
 require('dotenv').config();
 
-
-// Configuración SSL
-const sslOptions = {
-  key: fs.readFileSync('C:/Users/Administrador/Documents/ssl/wildcard_laboratoriosifa.com.key'),
-  cert: fs.readFileSync('C:/Users/Administrador/Documents/ssl/wildcard_laboratoriosifa.com.cert'),
-};
-
-// Middleware
+//cors
 app.use(cors({
-  // origin: ['https://sapbo.laboratoriosifa.com:98', 'https://sapbo.laboratoriosifa.com'], // Agrega todos los orígenes permitidos
-  origin:'*'
-}));
+  origin: '*'
+}))
+// Middleware
 app.use(morgan('dev'));
 app.use(express.json());
 
@@ -42,26 +35,14 @@ app.use('/v1/web/pedido', require('./web/pedido_module/routes/pedido.routes'));
 app.use('/v1/web/shared', require('./web/shared/routes/shared.routes'));
 
 //TODO VERSION MOVIL --------------------------------------------------------------------------------------
-app.use('/v1/movil/ventas',require('./movil/ventas_module/routes/ventas.routes'))
+app.use('/v1/movil/ventas', require('./movil/ventas_module/routes/ventas.routes'))
 
-//TODO --------------------------------------------------------------------------------------
-// Swagger Docs
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 //TODO VERSION MOVIL V2 -----------------------------------------------------------------------------------
 app.use('/v1/movil-v2/sync', require('./movil-v2/sincronizacion/routes/sync.routes'));
 app.use('/v1/movil-v2/pedidos', require('./movil-v2/pedidos/routes/pedidos.routes'));
 //!------------------------------------------------------------------------------------------
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Crear servidor HTTPS
-https.createServer(sslOptions, app).listen(httpsPort, () => {
-  console.log(`Servidor HTTPS corriendo en https://sapbo.laboratoriosifa.com:${httpsPort}`);
-});
-
-// Crear servidor HTTP que redirige a HTTPS
-http.createServer((req, res) => {
-  res.writeHead(301, { Location: `https://sapbo.laboratoriosifa.com${req.url}` });
-  res.end();
-}).listen(httpPort, () => {
-  console.log(`Servidor HTTP escuchando en http://localhost:${httpPort}`);
+app.listen(port, () => {
+  console.log(`Servidor corriendo en http://localhost:${port}`)
 });
