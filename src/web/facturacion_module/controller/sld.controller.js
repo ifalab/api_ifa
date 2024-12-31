@@ -10,7 +10,7 @@ const connectSLD = async () => {
     try {
         const url = 'https://172.16.11.25:50000/b1s/v1/Login';
         const data = {
-            CompanyDB: process.env.DBSAPDEV,
+            CompanyDB: process.env.DBSAPPRD,
             UserName: process.env.USERSAP,
             Password: process.env.PASSSAP
         }
@@ -65,6 +65,37 @@ const postEntrega = async (responseJson) => {
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
         console.error('Error en la solicitud POST para Entrega:', error.response?.data || error.message);
         return errorMessage
+    }
+};
+
+const patchEntrega = async (delivery, responseJson) => {
+
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/DeliveryNotes(${delivery})`
+        const sapResponse = await axios.patch(url, responseJson, {
+            httpsAgent: agent,
+            headers: headers
+        });
+
+        return {
+            message: 'Patch Entrega grabada con éxito',
+            status: sapResponse.status || 200,
+        }
+
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        console.error('Error en la solicitud PATCH para Entrega:', error.response?.data || error.message);
+        return {
+            errorMessage,
+            status: 400,
+        }
     }
 };
 
@@ -167,6 +198,7 @@ const cancelDeliveryNotes = async (id) => {
 module.exports = {
     postEntrega,
     postInvoice,
+    patchEntrega,
     facturacionByIdSld,
     cancelInvoice,
     cancelDeliveryNotes,

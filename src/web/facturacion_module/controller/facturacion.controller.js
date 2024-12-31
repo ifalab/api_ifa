@@ -11,7 +11,7 @@ const { entregaDetallerFactura } = require("../../inventarios/controller/hana.co
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB } = require("./hana.controller")
-const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes } = require("./sld.controller");
+const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 
 const facturacionController = async (req, res) => {
@@ -213,6 +213,17 @@ const facturacionController = async (req, res) => {
 
             // Formatear la fecha en YYYYMMDD
             const formater = `${year}${month}${day}`;
+            //TODO ------------------------------------------------------------ PATCH ENTREGA
+            const responsePatchEntrega = await patchEntrega(deliveryData, {
+                U_B_cuf: `${cuf}`,
+                U_B_em_date: `${formater}`,
+                NumAtCard: `${nroFactura}`
+            })
+            if (responsePatchEntrega.status == 400) {
+                console.error({ error: responsePatchEntrega.errorMessage })
+                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: patchEntrega' })
+            }
+            //TODO ------------------------------------------------------------ ENTREGA DETALLER TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
             console.log({ responseHana })
             if (responseHana.message) {
@@ -235,7 +246,12 @@ const facturacionController = async (req, res) => {
                         U_OSLP_ID: U_OSLP_ID || "",
                         U_UserCode: U_UserCode || ""
                     };
-                    DocumentAdditionalExpenses = [{ ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1 }, { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2 }, { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3 }, { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4 }]
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                    ]
                 }
                 DocumentLinesHana.push({
                     LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
@@ -266,8 +282,17 @@ const facturacionController = async (req, res) => {
             return res.json({ ...response, cuf })
 
         } else {
-
-            const responseProsin = await facturacionProsin(bodyFinalFactura)
+            let dataToProsin = {}
+            const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
+            if (direccion == null || direccion == undefined) {
+                dataToProsin = {
+                    ...restBodyFinalFactura,
+                    direccion: ''
+                }
+            } else {
+                dataToProsin = bodyFinalFactura
+            }
+            const responseProsin = await facturacionProsin(dataToProsin)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
@@ -289,6 +314,16 @@ const facturacionController = async (req, res) => {
             const fechaFormater = year + month + day
             // return res.json({fechaFormater})
             console.log({ deliveryData, cuf, nroFactura, fechaFormater, })
+            //TODO --------------------------------------------------------------  PATCH ENTREGA
+            const responsePatchEntrega = await patchEntrega(deliveryData, {
+                U_B_cuf: `${cuf}`,
+                U_B_em_date: `${fechaFormater}`,
+                NumAtCard: `${nroFactura}`
+            })
+            if (responsePatchEntrega.status == 400) {
+                console.error({ error: responsePatchEntrega.errorMessage })
+                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: patchEntrega' })
+            }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
             console.log({ responseHana })
@@ -312,7 +347,13 @@ const facturacionController = async (req, res) => {
                         U_OSLP_ID: U_OSLP_ID || "",
                         U_UserCode: U_UserCode || ""
                     };
-                    DocumentAdditionalExpenses = [{ ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1 }, { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2 }, { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3 }, { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4 }]
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                    ]
+
                 }
                 DocumentLinesHana.push({
                     LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
@@ -369,10 +410,10 @@ const facturacionController = async (req, res) => {
 const facturacionStatusController = async (req, res) => {
     try {
         // const { opcion } = req.query
-        const whsCode= req.query.whsCode
+        const whsCode = req.query.whsCode
         // const response = await facturacionPedido(opcion)
         const data = await facturaPedidoDB(whsCode)
-        return res.json({data })
+        return res.json({ data })
 
     } catch (error) {
         console.log('error en facturacionStatusController')
@@ -771,7 +812,7 @@ const cancelToProsinController = async (req, res) => {
         let listResponseDelivery = []
 
         for (const iterator of responseEntregas) {
-            const responseDeliveryNotes =  await cancelDeliveryNotes(iterator.BaseEntry)
+            const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             listResponseDelivery.push(responseDeliveryNotes)
         }
 
