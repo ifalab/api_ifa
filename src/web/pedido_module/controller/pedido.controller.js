@@ -10,6 +10,9 @@ const { findClientePorVendedor,
     pedidoSugeridoXZona,
     pedidoSugeridoXCliente,
     findZonasXVendedor,
+    pedidosPorVendedorPendientes,
+    pedidosPorVendedorFacturados,
+    pedidosPorVendedorAnulados
 } = require("./hana.controller");
 const { postOrden } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor } = require("../../shared/controller/hana.controller");
@@ -227,6 +230,49 @@ const whiteListController = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
+
+const pedidosPorVendedorPendientesController = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log(id)
+        const pedidos = await pedidosPorVendedorPendientes(id)
+        if (pedidos.lang)
+            return res.status(400).json({ message: pedidos.value })
+        return res.json({ pedidos })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador:pedidosPorVendedorPendientesController' })
+    }
+}
+
+const pedidosPorVendedorFacturadosController = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log(id)
+        const pedidos = await pedidosPorVendedorFacturados(id)
+        if (pedidos.lang)
+            return res.status(400).json({ message: pedidos.value })
+        return res.json({ pedidos })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador:pedidosPorVendedorFacturadosController' })
+    }
+}
+
+const pedidosPorVendedorAnuladosController = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log(id)
+        const pedidos = await pedidosPorVendedorAnulados(id)
+        if (pedidos.lang)
+            return res.status(400).json({ message: pedidos.value })
+        return res.json({ pedidos })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador:pedidosPorVendedorFacturadosController' })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -240,4 +286,7 @@ module.exports = {
     findZonasXVendedorController,
     crearOrderController,
     whiteListController,
+    pedidosPorVendedorPendientesController,
+    pedidosPorVendedorFacturadosController,
+    pedidosPorVendedorAnuladosController,
 }

@@ -195,6 +195,47 @@ const findZonasXVendedor = async(id_vendedor_sap)=>{
     }
 }
 
+const pedidosPorVendedorPendientes = async(id)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_por_vendedor_pendiente(${id})`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: pedidosPorVendedorPendientes');
+    }
+}
+
+const pedidosPorVendedorFacturados = async(id)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_por_vendedor_facturado(${id})`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: pedidosPorVendedorFacturados');
+    }
+}
+
+const pedidosPorVendedorAnulados = async(id)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_por_vendedor_anulado(${id})`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: pedidosPorVendedorAnulados');
+    }
+}
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -207,4 +248,7 @@ module.exports = {
     pedidoSugeridoXZona,
     pedidoSugeridoXCliente,
     findZonasXVendedor,
+    pedidosPorVendedorPendientes,
+    pedidosPorVendedorFacturados,
+    pedidosPorVendedorAnulados
 }
