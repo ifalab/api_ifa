@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { facturacionController, facturacionStatusController, noteEntregaController, obtenerCuf, obtenerEntregasPorFacturaController, obtenerInvoicesCancel, listaFacturasAnular, infoFacturaController, cancelToProsinController } = require('../controller/facturacion.controller')
+const { facturacionController, facturacionStatusController, noteEntregaController, obtenerCuf, obtenerEntregasPorFacturaController, obtenerInvoicesCancel, listaFacturasAnular, infoFacturaController, cancelToProsinController, pedidosFacturadosController } = require('../controller/facturacion.controller')
 const router = Router()
 
 router.post('/facturar', [validarToken, validarCampos], facturacionController)
@@ -13,5 +13,6 @@ router.post('/obtener-invoices-cancel', [validarToken, validarCampos], obtenerIn
 router.get('/facturas-anular', [validarToken, validarCampos], listaFacturasAnular)
 router.get('/info-factura', [validarToken, validarCampos], infoFacturaController)
 router.post('/cancel-to-prosin', [validarToken, validarCampos], cancelToProsinController)
+router.get('/pedidos-facturados', [validarToken, validarCampos], pedidosFacturadosController)
 
 module.exports = router

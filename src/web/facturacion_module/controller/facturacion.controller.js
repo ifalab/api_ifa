@@ -10,7 +10,7 @@ const PdfPrinter = require('pdfmake');
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB } = require("./hana.controller")
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -744,6 +744,18 @@ const cancelToProsinController = async (req, res) => {
     }
 }
 
+const pedidosFacturadosController = async(req,res)=>{
+    try {
+        const whsCode = req.query.whsCode
+        if(!whsCode) return res.status(400).json({mensaje:'el WhsCode es obligatorio'})
+        const facturados = await pedidosFacturados(whsCode)
+        return res.json({facturados})
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'error en el controlador'})
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -753,5 +765,6 @@ module.exports = {
     obtenerInvoicesCancel,
     listaFacturasAnular,
     infoFacturaController,
-    cancelToProsinController
+    cancelToProsinController,
+    pedidosFacturadosController
 }

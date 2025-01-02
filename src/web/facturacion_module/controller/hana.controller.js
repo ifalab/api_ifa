@@ -175,8 +175,25 @@ const facturaPedidoDB = async (whsCode) => {
         return result
 
     } catch (error) {
-        console.error('Error en notaEntrega:', error.message);
-        return { message: 'Error al procesar la solicitud: facturaInfo' }
+        console.error('Error en facturaInfo:', error.message);
+        return { message: 'Error al procesar la solicitud: facturaPedidoDB' }
+    }
+}
+
+const pedidosFacturados = async (whsCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${whsCode})`;
+        // const query = `CALL LAB_IFA_DEV.ifa_lapp_ven_obtener_pedidos_facturados(${whsCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en pedidosFacturados:', error.message);
+        return { message: 'Error al procesar la solicitud: pedidosFacturados' }
     }
 }
 
@@ -189,5 +206,6 @@ module.exports = {
     obtenerEntregasPorFactura,
     facturasParaAnular,
     facturaInfo,
-    facturaPedidoDB
+    facturaPedidoDB,
+    pedidosFacturados
 }
