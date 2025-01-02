@@ -47,7 +47,7 @@ const postIncommingPayments = async (body) => {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
-        const url = `https://localhost:50000/b1s/v1/IncomingPayments`;
+        const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments`;
 
         // Configura los encabezados para la solicitud
         const headers = {
