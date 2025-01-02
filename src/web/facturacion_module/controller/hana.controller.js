@@ -180,13 +180,13 @@ const facturaPedidoDB = async (whsCode) => {
     }
 }
 
-const pedidosFacturados = async (whsCode) => {
+const pedidosFacturados = async (SucCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${whsCode})`;
-        // const query = `CALL LAB_IFA_DEV.ifa_lapp_ven_obtener_pedidos_facturados(${whsCode})`;
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
+        // const query = `CALL LAB_IFA_DEV.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result

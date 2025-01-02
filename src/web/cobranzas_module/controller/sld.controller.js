@@ -42,49 +42,8 @@ const validateSession = async () => {
     return session;
 };
 
-//TODO --------------------------------------------- CONEXION A OTRA BD DEL SLD
-// Variable para almacenar el estado de la sesión
-let sessionCC = null;
-
-// Función para conectar y obtener la sesión
-const connectSLDCC = async () => {
-    try {
-        const url = 'https://172.16.11.25:50000/b1s/v1/Login';
-        const data = {
-            CompanyDB: process.env.DBSAPCCQA,
-            UserName: process.env.USERSAP,
-            Password: process.env.PASSSAP
-        };
-
-        // Realiza la solicitud POST a la API externa usando el agente
-        const response = await axios.post(url, data, { httpsAgent: agent });
-
-        // Guarda la sesión en la variable global
-        sessionCC = response.data;
-
-        return response.data;
-    } catch (error) {
-        // Manejo de errores
-        console.error('Error de logueo al SLD', error.message);
-        throw new Error('Error de logueo al SLD');
-    }
-};
-
-
-// Verifica si la sesión sigue siendo válida
-const validateSessionCC = async () => {
-    if (!sessionCC || !sessionCC.SessionId) {
-        return await connectSLDCC();
-    }
-    // Puedes implementar una validación adicional si lo deseas, como hacer una solicitud de prueba aquí.
-    return sessionCC;
-};
-//TODO----------------------------------------------
 const postIncommingPayments = async (body) => {
     try {
-        // Verifica o genera una sesión
-        // console.log('sld id_asiento -----------------------------------------------')
-        console.log({ id_asiento: +id_asiento })
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
@@ -108,6 +67,7 @@ const postIncommingPayments = async (body) => {
         };
     } catch (error) {
         // Centraliza el manejo de errores
+        console.log({error})
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
         console.error('Error en la solicitud POST para  postIncommingPayments:', errorMessage);
         return {

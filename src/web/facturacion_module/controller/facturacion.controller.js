@@ -744,15 +744,19 @@ const cancelToProsinController = async (req, res) => {
     }
 }
 
-const pedidosFacturadosController = async(req,res)=>{
+const pedidosFacturadosController = async (req, res) => {
     try {
-        const whsCode = req.query.whsCode
-        if(!whsCode) return res.status(400).json({mensaje:'el WhsCode es obligatorio'})
-        const facturados = await pedidosFacturados(whsCode)
-        return res.json({facturados})
+        const { SucCodes } = req.body
+        if (SucCodes.length == 0) return res.status(400).json({ mensaje: 'el SucCodes es obligatorio y debe tener un item o mas' })
+        let facturados = []
+        for (const ItemCode of SucCodes) {
+            const facturas = await pedidosFacturados(ItemCode)
+            facturados = facturados.concat(facturas)
+        }
+        return res.json({ facturados })
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'error en el controlador'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
 

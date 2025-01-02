@@ -13,6 +13,6 @@ router.post('/obtener-invoices-cancel', [validarToken, validarCampos], obtenerIn
 router.get('/facturas-anular', [validarToken, validarCampos], listaFacturasAnular)
 router.get('/info-factura', [validarToken, validarCampos], infoFacturaController)
 router.post('/cancel-to-prosin', [validarToken, validarCampos], cancelToProsinController)
-router.get('/pedidos-facturados', [validarToken, validarCampos], pedidosFacturadosController)
+router.post('/pedidos-facturados', [validarToken, validarCampos], pedidosFacturadosController)
 
 module.exports = router
