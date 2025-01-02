@@ -82,13 +82,10 @@ const validateSessionCC = async () => {
 //TODO----------------------------------------------
 const postIncommingPayments = async (body) => {
     try {
-        // Verifica o genera una sesión
-        // console.log('sld id_asiento -----------------------------------------------')
-        console.log({ id_asiento: +id_asiento })
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
-        const url = `https://localhost:50000/b1s/v1/IncomingPayments`;
+        const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments`;
 
         // Configura los encabezados para la solicitud
         const headers = {
