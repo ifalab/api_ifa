@@ -5,7 +5,20 @@ const { findClientesByVendedor,
 const findClientesByVendedorController = async (req, res) => {
     try {
         const idVendedorSap = req.query.idVendedorSap
-        const clientes = await findClientesByVendedor(idVendedorSap)
+        const response = await findClientesByVendedor(idVendedorSap)
+        let clientes = [];
+        for (const item of response) {
+            const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
+            const saldoDisponible = (+CreditLine) - (+AmountDue);
+            const newData = {
+                ...restCliente,
+                CreditLine,
+                AmountDue,
+                mora: HvMora,
+                saldoDisponible,
+            };
+            clientes.push({ ...newData });
+        }
         return res.json({ clientes })
     } catch (error) {
         console.log({ error })
