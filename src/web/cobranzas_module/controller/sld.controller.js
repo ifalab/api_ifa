@@ -62,8 +62,8 @@ const postIncommingPayments = async (body) => {
         });
         return {
             status: 200,
-            data: response.data,
-            response,
+            data: response.data||{},
+            // response,
         };
     } catch (error) {
         // Centraliza el manejo de errores

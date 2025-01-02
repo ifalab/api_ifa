@@ -695,8 +695,8 @@ const realizarCobroController = async (req, res) => {
         const TransferAccount = body.TransferAccount
         const PaymentInvoices = body.PaymentInvoices
         let total = 0
-        
-        if(!PaymentInvoices) return res.status(400).json({mensaje:'el PaymentInvoices es obligatorio'})
+
+        if (!PaymentInvoices) return res.status(400).json({ mensaje: 'el PaymentInvoices es obligatorio' })
 
         PaymentInvoices.map((item) => {
             const sum = item.SumApplied
@@ -704,15 +704,21 @@ const realizarCobroController = async (req, res) => {
         })
 
         if (TransferAccount || TransferAccount != null) {
-            if(TransferSum!== total) return res.status(400).json({mensaje:'el total es diferente al TransferSum'})
+            if (TransferSum !== total) return res.status(400).json({ mensaje: 'el total es diferente al TransferSum' })
         }
 
         if (CashAccount || CashAccount != null) {
-            if(CashSum!== total) return res.status(400).json({mensaje:'el total es diferente al CashSum'})
+            if (CashSum !== total) return res.status(400).json({ mensaje: 'el total es diferente al CashSum' })
         }
 
         const responseSap = await postIncommingPayments(body)
-        if (responseSap.status !== 200) return res.status(400).json({ mensaje: `Error del SAP: ${responseSap.errorMessage}`, })
+        if (responseSap.status !== 200) {
+            if(responseSap.errorMessage && responseSap.errorMessage.value){
+                return res.status(400).json({ mensaje: `Error del SAP: ${responseSap.errorMessage.value}`, })
+            }else{
+                return res.status(400).json({ mensaje: `Error del SAP`, })  
+            } 
+        }
         return res.json({ responseSap })
     } catch (error) {
         console.log({ error })
