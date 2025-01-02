@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController, cobranzasPorZonasController, cobranzaHistoricoNacionalController, cobranzaHistoricoNormalesController, cobranzaHistoricoCadenasController, cobranzaHistoricoIfavetController, cobranzaHistoricoInstitucionesController, cobranzaHistoricoMasivosController, cobranzasPorZonasMesAntController, cobranzaClientePorVendedorController, cobranzaFacturaPorClienteController, clientesInstitucionesSaldoDeudorController, saldoDeudorInstitucionesController } = require('../controller/cobranzas.controller')
+const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController, cobranzasPorZonasController, cobranzaHistoricoNacionalController, cobranzaHistoricoNormalesController, cobranzaHistoricoCadenasController, cobranzaHistoricoIfavetController, cobranzaHistoricoInstitucionesController, cobranzaHistoricoMasivosController, cobranzasPorZonasMesAntController, cobranzaClientePorVendedorController, cobranzaFacturaPorClienteController, clientesInstitucionesSaldoDeudorController, saldoDeudorInstitucionesController, realizarCobroController } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -34,6 +34,7 @@ router.get('/facturas-cliente',[validarToken, validarCampos], cobranzaFacturaPor
 
 router.get('/cliente-instituciones',[validarToken, validarCampos], clientesInstitucionesSaldoDeudorController)
 router.get('/saldo-deudor-instituciones',[validarToken, validarCampos], saldoDeudorInstitucionesController)
+router.post('/realizar-cobro',[validarToken, validarCampos],realizarCobroController)
 
 
 module.exports = router

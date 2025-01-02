@@ -1,5 +1,6 @@
 const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones } = require("./hana.controller")
+const { postIncommingPayments } = require("./sld.controller")
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -683,6 +684,24 @@ const saldoDeudorInstitucionesController = async (req, res) => {
     }
 }
 
+const realizarCobroController = async (req, res) => {
+    try {
+    
+        const { CardCode, CashAccount, CashFlowAssignments, CashSum } = req.body
+        const responseSap = await postIncommingPayments({
+            CardCode,
+            CashAccount,
+            CashFlowAssignments,
+            CashSum,
+        })
+        if (responseSap.status !== 200) return res.status(400).json({ mensaje: `Error del SAP: ${responseSap.errorMessage}`, })
+        return res.json({ responseSap })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -710,4 +729,5 @@ module.exports = {
     cobranzaFacturaPorClienteController,
     clientesInstitucionesSaldoDeudorController,
     saldoDeudorInstitucionesController,
+    realizarCobroController,
 }
