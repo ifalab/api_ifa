@@ -686,14 +686,32 @@ const saldoDeudorInstitucionesController = async (req, res) => {
 
 const realizarCobroController = async (req, res) => {
     try {
-    
-        const { CardCode, CashAccount, CashFlowAssignments, CashSum } = req.body
-        const responseSap = await postIncommingPayments({
-            CardCode,
-            CashAccount,
-            CashFlowAssignments,
-            CashSum,
+
+        // const { CardCode, CashAccount, CashFlowAssignments, CashSum } = req.body
+        const body = req.body
+        const CashSum = body.CashSum
+        const CashAccount = body.CashAccount
+        const TransferSum = body.TransferSum
+        const TransferAccount = body.TransferAccount
+        const PaymentInvoices = body.PaymentInvoices
+        let total = 0
+        
+        if(!PaymentInvoices) return res.status(400).json({mensaje:'el PaymentInvoices es obligatorio'})
+
+        PaymentInvoices.map((item) => {
+            const sum = item.SumApplied
+            total += +sum
         })
+
+        if (TransferAccount || TransferAccount != null) {
+            if(TransferSum!== total) return res.status(400).json({mensaje:'el total es diferente al TransferSum'})
+        }
+
+        if (CashAccount || CashAccount != null) {
+            if(CashSum!== total) return res.status(400).json({mensaje:'el total es diferente al CashSum'})
+        }
+
+        const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) return res.status(400).json({ mensaje: `Error del SAP: ${responseSap.errorMessage}`, })
         return res.json({ responseSap })
     } catch (error) {
