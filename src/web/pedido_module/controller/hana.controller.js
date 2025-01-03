@@ -236,6 +236,22 @@ const pedidosPorVendedorAnulados = async(id)=>{
         throw new Error('Error al procesar la solicitud: pedidosPorVendedorAnulados');
     }
 }
+const pedidoLayout = async (delivery) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_PEDIDO_LAYOUT(${delivery})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en pedido layout:', error.message);
+        return { message: 'Error al procesar la solicitud: pedidoLayout' }
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -250,5 +266,6 @@ module.exports = {
     findZonasXVendedor,
     pedidosPorVendedorPendientes,
     pedidosPorVendedorFacturados,
-    pedidosPorVendedorAnulados
+    pedidosPorVendedorAnulados,
+    pedidoLayout
 }

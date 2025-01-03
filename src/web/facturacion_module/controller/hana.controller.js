@@ -197,6 +197,21 @@ const pedidosFacturados = async (SucCode) => {
     }
 }
 
+const obtenerEntregas = async (id_sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_entregas(${id_sucursal})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerEntregas:', error.message);
+        return { message: 'Error al procesar la solicitud: obtenerEntregas' }
+    }
+}
 
 module.exports = {
     lotesArticuloAlmacenCantidad,
@@ -207,5 +222,6 @@ module.exports = {
     facturasParaAnular,
     facturaInfo,
     facturaPedidoDB,
-    pedidosFacturados
+    pedidosFacturados,
+    obtenerEntregas,
 }

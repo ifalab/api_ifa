@@ -10,14 +10,13 @@ const PdfPrinter = require('pdfmake');
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados } = require("./hana.controller")
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 
 const facturacionController = async (req, res) => {
     let body = {}
-    let responseBatch = []
     try {
         const { id } = req.body
         const user = req.usuarioAutorizado
@@ -761,6 +760,288 @@ const pedidosFacturadosController = async (req, res) => {
     }
 }
 
+const obtenerEntregaDetalleController = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log({ id })
+        
+        const detalle = await obtenerEntregaDetalle(id)
+        return res.json({ detalle })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador: obtenerEntregaDetalleController' })
+    }
+}
+
+const obtenerEntregasController = async (req, res) => {
+    try {
+        const id_sucursal = req.query.idSucursal
+        console.log({ id_sucursal })
+        if (!id_sucursal) return res.status(400).json({ mensaje: 'el id de la sucursal es obligatorio' })
+        
+        const entregas = await obtenerEntregas(id_sucursal)
+        return res.json({ entregas })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador: obtenerEntregasController' })
+    }
+}
+
+const facturacionEntregaController = async (req, res) => {
+    let body = {}
+    try {
+        const { id } = req.body
+
+        const responseGenesis = await spObtenerCUF(id)
+        console.log({responseGenesis});
+        // return res.json({responseGenesis})
+
+        if (responseGenesis.length != 0) {
+            const dataGenesis = responseGenesis[0]
+            const cuf = dataGenesis.cuf
+            const nroFactura = dataGenesis.factura
+            const fechaFormater = new Date(dataGenesis.fecha_emision)
+            // Extraer componentes de la fecha
+            const year = fechaFormater.getUTCFullYear();
+            const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+            const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+
+            // Formatear la fecha en YYYYMMDD
+            const formater = `${year}${month}${day}`;
+            //TODO ------------------------------------------------------------ PATCH ENTREGA
+            const responsePatchEntrega = await patchEntrega(id, {
+                U_B_cuf: `${cuf}`,
+                U_B_em_date: `${formater}`,
+                NumAtCard: `${nroFactura}`
+            })
+            if (responsePatchEntrega.status == 400) {
+                console.error({ error: responsePatchEntrega.errorMessage })
+                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: patchEntrega' })
+            }
+            //TODO ------------------------------------------------------------ ENTREGA DETALLER TO FACTURA
+            const responseHana = await entregaDetallerFactura(+id, cuf, +nroFactura, formater)
+            console.log({ responseHana })
+            if (responseHana.message) {
+                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
+            }
+            const DocumentLinesHana = [];
+            let cabezeraHana = [];
+
+            let DocumentAdditionalExpenses = [];
+
+            for (const line of responseHana) {
+                const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                    ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                    DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+
+                if (!cabezeraHana.length) {
+                    cabezeraHana = {
+                        ...result,
+                        DocTotal: Number(DocTotal),
+                        U_OSLP_ID: U_OSLP_ID || "",
+                        U_UserCode: U_UserCode || ""
+                    };
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                    ]
+                }
+                DocumentLinesHana.push({
+                    LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                })
+            }
+
+            const responseHanaB = {
+                ...cabezeraHana,
+                DocumentLines: DocumentLinesHana,
+                DocumentAdditionalExpenses
+            }
+
+            //TODO --------------------------------------------------------------  INVOICE
+            console.log({ responseHanaB })
+            const invoiceResponse = await postInvoice(responseHanaB)
+            console.log({ invoiceResponse })
+            if (invoiceResponse.value) {
+                return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
+            }
+            const response = {
+                status: invoiceResponse.status || {},
+                statusText: invoiceResponse.statusText || {},
+                idInvoice: invoiceResponse.idInvoice,
+                delivery: deliveryData,
+                cuf
+            }
+            console.log({ response })
+            return res.json({ ...response, cuf })
+
+        } else {
+            const deliveryData= id
+            const deliveryBody = await obtenerEntregaDetalle(id)
+            console.log({deliveryBody})
+            let { responseData } = deliveryBody
+            if (deliveryBody) {
+                responseData = deliveryBody
+            } else {
+                const delivery = deliveryBody.deliveryN44umber
+                if (!delivery) return res.status(400).json({ mensaje: 'error del sap, no se pudo crear la entrega' })
+                deliveryData = delivery
+                console.log('5 deliveryData')
+                console.log({ deliveryData })
+            }
+
+            console.log({ responseData })
+            if (responseData.deliveryN44umber) {
+                deliveryData = responseData.deliveryN44umber
+            }
+            console.log({ deliveryData })
+
+            if (responseData.lang) {
+                return res.status(400).json({ mensaje: 'error interno de sap' })
+            }
+            // return res.json({ delivery })
+            const detalle = [];
+            const cabezera = [];
+            if (responseData.responseData) {
+                responseData = responseData.responseData
+            }
+
+            for (const line of responseData) {
+                const { producto, descripcion, cantidad, precioUnitario, montoDescuento, subTotal, numeroImei, numeroSerie, complemento, documento_via: docVia, direccion, ...result } = line
+                if (!cabezera.length) {
+                    cabezera.push({ ...result, complemento: complemento || "", documento_via: `${docVia}`, direccion: direccion || "" })
+                }
+                detalle.push({
+                    producto,
+                    descripcion,
+                    cantidad,
+                    precioUnitario,
+                    montoDescuento,
+                    subTotal,
+                    numeroImei,
+                    numeroSerie
+                })
+            }
+            const bodyFinalFactura = {
+                ...cabezera[0],
+                detalle
+            }
+
+            body = bodyFinalFactura
+            // return res.json({bodyFinalFactura});
+
+            const responseProsin = await facturacionProsin(bodyFinalFactura)
+            return res.json({bodyFinalFactura,responseProsin,deliveryData})
+            console.log({ responseProsin })
+            const { data: dataProsin } = responseProsin
+            if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
+            if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
+            const fecha = dataProsin.fecha
+            const nroFactura = dataProsin.datos.factura
+            const cuf = dataProsin.datos.cuf
+            // return res.json({ delivery, fecha,nroFactura,cuf })
+            console.log({ fecha })
+            const formater = fecha.split('/')
+            const day = formater[0]
+            const month = formater[1]
+            const yearTime = formater[2]
+            const yearFomater = yearTime.split(' ')
+            const year = yearFomater[0]
+            console.log({ day, month, year })
+            if (year.length > 4) return res.status(400).json({ mensaje: 'error al formateo de la fecha' })
+            const fechaFormater = year + month + day
+            // return res.json({fechaFormater})
+            console.log({ deliveryData, cuf, nroFactura, fechaFormater, })
+            //TODO --------------------------------------------------------------  PATCH ENTREGA
+            const responsePatchEntrega = await patchEntrega(deliveryData, {
+                U_B_cuf: `${cuf}`,
+                U_B_em_date: `${fechaFormater}`,
+                NumAtCard: `${nroFactura}`
+            })
+            if (responsePatchEntrega.status == 400) {
+                console.error({ error: responsePatchEntrega.errorMessage })
+                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: patchEntrega' })
+            }
+            //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
+            const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
+            console.log({ responseHana })
+            if (responseHana.message) {
+                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
+            }
+            const DocumentLinesHana = [];
+            let cabezeraHana = [];
+
+            let DocumentAdditionalExpenses = [];
+
+            for (const line of responseHana) {
+                const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                    ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                    DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+
+                if (!cabezeraHana.length) {
+                    cabezeraHana = {
+                        ...result,
+                        DocTotal: Number(DocTotal),
+                        U_OSLP_ID: U_OSLP_ID || "",
+                        U_UserCode: U_UserCode || ""
+                    };
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                    ]
+
+                }
+                DocumentLinesHana.push({
+                    LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                })
+            }
+
+            const responseHanaB = {
+                ...cabezeraHana,
+                DocumentLines: DocumentLinesHana,
+                DocumentAdditionalExpenses
+            }
+
+            //TODO --------------------------------------------------------------  INVOICE
+            console.log({ responseHanaB })
+            const invoiceResponse = await postInvoice(responseHanaB)
+            console.log({ invoiceResponse })
+            if (invoiceResponse.value) {
+                return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
+            }
+            const response = {
+                status: invoiceResponse.status || {},
+                statusText: invoiceResponse.statusText || {},
+                idInvoice: invoiceResponse.idInvoice,
+                delivery: deliveryData,
+                cuf
+            }
+            console.log({ response })
+            return res.json({ ...response, cuf })
+
+        }
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el controlador facturacionEntregaController',
+            sapMessage: `${error?.message?.error || 'No definido'}`,
+            error: {
+                message: error.message,
+                stack: error.stack,
+                statusCode: error.statusCode || 500,
+            },
+            errorController: {
+                ...error
+            },
+            bodyFactura: body
+        })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -771,5 +1052,8 @@ module.exports = {
     listaFacturasAnular,
     infoFacturaController,
     cancelToProsinController,
-    pedidosFacturadosController
+    pedidosFacturadosController,
+    obtenerEntregasController,
+    facturacionEntregaController,
+    obtenerEntregaDetalleController
 }
