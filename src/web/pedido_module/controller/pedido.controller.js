@@ -12,7 +12,8 @@ const { findClientePorVendedor,
     findZonasXVendedor,
     pedidosPorVendedorPendientes,
     pedidosPorVendedorFacturados,
-    pedidosPorVendedorAnulados
+    pedidosPorVendedorAnulados,
+    pedidoLayout
 } = require("./hana.controller");
 const { postOrden } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor } = require("../../shared/controller/hana.controller");
@@ -277,6 +278,19 @@ const pedidosPorVendedorAnuladosController = async (req, res) => {
     }
 }
 
+const pedidoLayoutController = async (req, res) => {
+    try {
+        const delivery = req.query.delivery;
+        console.log({ delivery })
+        
+        const pedidoLayout = await pedidoLayout(delivery)
+        return res.json({ pedidoLayout })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador: obtenerEntregaDetalleController' })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -293,4 +307,5 @@ module.exports = {
     pedidosPorVendedorPendientesController,
     pedidosPorVendedorFacturadosController,
     pedidosPorVendedorAnuladosController,
+    pedidoLayoutController,
 }
