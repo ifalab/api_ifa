@@ -165,7 +165,9 @@ const procesarListaCodigo = (descuentos) => {
 const sugeridosXZonaController = async (req, res) => {
     try {
         const zoneCode = req.query.zoneCode
-        const sugeridos = await pedidoSugeridoXZona(zoneCode)
+        const cardCode = req.query.cardCode
+
+        const sugeridos = await pedidoSugeridoXZona(zoneCode, cardCode)
         return res.json({ sugeridos })
     } catch (error) {
         console.log({ error })
