@@ -687,7 +687,6 @@ const saldoDeudorInstitucionesController = async (req, res) => {
 const realizarCobroController = async (req, res) => {
     try {
 
-        // const { CardCode, CashAccount, CashFlowAssignments, CashSum } = req.body
         const body = req.body
         const CashSum = body.CashSum
         const CashAccount = body.CashAccount
@@ -723,6 +722,14 @@ const realizarCobroController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const comprobanteController =async(req,res)=>{
+    try {
+        
+    } catch (error) {
+        console.log({error})
     }
 }
 

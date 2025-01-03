@@ -749,6 +749,7 @@ const pedidosFacturadosController = async (req, res) => {
         const { SucCodes } = req.body
         if (SucCodes.length == 0) return res.status(400).json({ mensaje: 'el SucCodes es obligatorio y debe tener un item o mas' })
         let facturados = []
+        console.log({ SucCodes })
         for (const ItemCode of SucCodes) {
             const facturas = await pedidosFacturados(ItemCode)
             facturados = facturados.concat(facturas)

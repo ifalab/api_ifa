@@ -60,9 +60,15 @@ const postIncommingPayments = async (body) => {
             httpsAgent: agent,
             headers: headers
         });
+        const status = response.status
+        const location = response.headers.location
+        const locationHeader = response.headers.location;
+        const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
         return {
             status: 200,
             data: response.data||{},
+            orderNumber
             // response,
         };
     } catch (error) {
