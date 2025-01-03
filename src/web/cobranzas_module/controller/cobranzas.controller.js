@@ -1,5 +1,5 @@
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller")
 
 const cobranzaGeneralController = async (req, res) => {
@@ -718,7 +718,7 @@ const realizarCobroController = async (req, res) => {
                 return res.status(400).json({ mensaje: `Error del SAP`, })  
             } 
         }
-        return res.json({ responseSap })
+        return res.json({ ...responseSap })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
@@ -727,9 +727,29 @@ const realizarCobroController = async (req, res) => {
 
 const comprobanteController =async(req,res)=>{
     try {
-        
+        const id = req.query.id
+        const response = await cobroLayout(id)
+        console.log(response)
+        const Facturas = [];
+        const cabezera = [];
+        for (const line of response) {
+            const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, ...result } = line
+            if (!cabezera.length) {
+                cabezera.push({ ...result })
+            }
+            Facturas.push({
+                DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob
+            })
+        }
+        const comprobante = {
+            ...cabezera[0],
+            Facturas
+        }
+
+        return res.json({...comprobante})
     } catch (error) {
         console.log({error})
+        return res.status(500).json({ mensaje: 'error en el comprobanteController' })
     }
 }
 
@@ -765,5 +785,5 @@ module.exports = {
     clientesInstitucionesSaldoDeudorController,
     saldoDeudorInstitucionesController,
     realizarCobroController,
-    prueba,
+    comprobanteController,
 }

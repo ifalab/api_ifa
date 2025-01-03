@@ -392,6 +392,23 @@ const saldoDeudorInstituciones = async (cardCode) => {
         }
     }
 }
+const cobroLayout = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
+        const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en cobroLayout:', error.message);
+        return { message: 'Error al procesar la solicitud: IFA_LAPP_VEN_COBRO_LAYOUT' }
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -418,5 +435,6 @@ module.exports = {
     cobranzaSaldoDeudor,
     clientePorVendedor,
     clientesInstitucionesSaldoDeudor,
-    saldoDeudorInstituciones
+    saldoDeudorInstituciones,
+    cobroLayout,
 }
