@@ -733,6 +733,10 @@ const comprobanteController =async(req,res)=>{
     }
 }
 
+const prueba = async(req,res)=>{
+
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -761,4 +765,5 @@ module.exports = {
     clientesInstitucionesSaldoDeudorController,
     saldoDeudorInstitucionesController,
     realizarCobroController,
+    prueba,
 }
