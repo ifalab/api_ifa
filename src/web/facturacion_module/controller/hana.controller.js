@@ -100,7 +100,7 @@ const notaEntrega = async (delivery) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}.IFA_VEN_ENTREGA_LAYOUT(${delivery})`;
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_ENTREGA_LAYOUT(${delivery})`;
         // const query = `CALL LAB_IFA_DEV.IFA_VEN_ENTREGA_LAYOUT(${delivery})`;
         console.log({ query })
         const result = await executeQuery(query)
