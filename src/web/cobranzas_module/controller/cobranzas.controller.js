@@ -1,6 +1,11 @@
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer');
+const QRCode = require('qrcode');
 const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout } = require("./hana.controller")
-const { postIncommingPayments } = require("./sld.controller")
+const { postIncommingPayments } = require("./sld.controller");
+const { syncBuiltinESMExports } = require('module');
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -712,11 +717,11 @@ const realizarCobroController = async (req, res) => {
 
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
-            if(responseSap.errorMessage && responseSap.errorMessage.value){
+            if (responseSap.errorMessage && responseSap.errorMessage.value) {
                 return res.status(400).json({ mensaje: `Error del SAP: ${responseSap.errorMessage.value}`, })
-            }else{
-                return res.status(400).json({ mensaje: `Error del SAP`, })  
-            } 
+            } else {
+                return res.status(400).json({ mensaje: `Error del SAP`, })
+            }
         }
         return res.json({ ...responseSap })
     } catch (error) {
@@ -725,7 +730,7 @@ const realizarCobroController = async (req, res) => {
     }
 }
 
-const comprobanteController =async(req,res)=>{
+const comprobanteController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await cobroLayout(id)
@@ -745,16 +750,169 @@ const comprobanteController =async(req,res)=>{
             ...cabezera[0],
             Facturas
         }
+        // return res.json({comprobante})
+        //TODO TXT
+        const formattedDate = formatDate(comprobante.DocDatePayments);
+        const cardName = comprobante.CardName.replace(/\s+/g, ''); // Eliminar espacios del nombre
+        const fileName = `${cardName}_${formattedDate}.txt`;
 
-        return res.json({...comprobante})
+        let cpclContent = `
+! 0 200 200 1400 1
+
+TEXT 4 0 30 30 LABORATORIOS IFA S.A.
+
+LINE 30 160 570 160 2
+
+TEXT 7 0 30 180 Comprobante: #${comprobante.DocNumPayments}
+TEXT 7 0 30 210 Fecha: ${formattedDate}
+TEXT 7 0 30 240 Cliente: ${comprobante.CardName}
+TEXT 7 0 30 270 Modalidad de Pago: ${comprobante.Modality}
+LINE 30 300 570 300 2
+
+TEXT 7 0 30 320 Fecha        Numero           Total
+LINE 30 350 570 350 2
+`;
+
+        // Añadir las facturas
+        let yPosition = 360;
+        comprobante.Facturas.forEach((factura) => {
+            const { DocNumInvoice, DocDateInvoice, NumAtCard, SumAppliedCob } = factura;
+            const formattedInvoiceDate = formattedDataInvoice(DocDateInvoice); // Asegúrate de que la función formatee bien las fechas
+            cpclContent += `TEXT 7 0 30 ${yPosition} ${formattedInvoiceDate}   ${NumAtCard.padEnd(6)}   ---->   bs ${parseFloat(SumAppliedCob).toFixed(2)}\n`;
+            yPosition += 30;
+        });
+
+        // Línea divisoria y total
+        cpclContent += `
+LINE 30 ${yPosition} 570 ${yPosition} 2
+TEXT 7 0 30 ${yPosition + 20} TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}
+TEXT 7 0 30 ${yPosition + 50} Glosa: ${comprobante.JrnlMemo}
+
+BARCODE QR 200 ${yPosition + 100} M 2 U 6
+MA,${comprobante.Qr}
+ENDQR
+
+PRINT
+`;
+        // Ruta donde se guardará el archivo
+        const filePath = path.join(__dirname, 'comprobantes', fileName);
+
+        // Crear directorio si no existe
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        // Escribir el archivo .txt
+        fs.writeFileSync(filePath, cpclContent);
+
+        // Enviar el archivo como respuesta al cliente
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        return res.sendFile(filePath);
+        // return res.json({ ...comprobante })
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         return res.status(500).json({ mensaje: 'error en el comprobanteController' })
     }
 }
 
-const prueba = async(req,res)=>{
+const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    // Formatear la fecha y reemplazar caracteres no válidos
+    return new Intl.DateTimeFormat('es-ES', options)
+        .format(date)
+        .replace(/[/]/g, '-') // Reemplazar "/" por "-"
+        .replace(/:/g, '-')   // Reemplazar ":" por "-"
+        .replace(',', '');    // Eliminar la coma
+};
 
+const formattedDataInvoice = (invoiceData) => {
+    const data = invoiceData.split(' ')
+    return data[0]
+}
+
+const comprobantePDFController = async (req, res) => {
+    try {
+        const id = req.query.id
+        const response = await cobroLayout(id)
+        console.log(response)
+        const Facturas = [];
+        const cabezera = [];
+        for (const line of response) {
+            const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, ...result } = line
+            if (!cabezera.length) {
+                cabezera.push({ ...result })
+            }
+            Facturas.push({
+                DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob
+            })
+        }
+        let comprobante = {
+            ...cabezera[0],
+            Facturas
+        }
+        const formattedDate = formattedDataInvoice(comprobante.DocDatePayments)
+        comprobante = {
+            ...comprobante,
+            DocDatePayments: formattedDate
+        }
+        const facturasItem = []
+        comprobante.Facturas.map((item) => {
+            const newData = {
+                ...item,
+                SumAppliedCob: parseFloat(item.SumAppliedCob).toFixed(2),
+                DocDateInvoice: formattedDataInvoice(item.DocDateInvoice)
+            }
+            facturasItem.push(newData)
+        })
+
+        comprobante = {
+            ...comprobante,
+            Facturas: facturasItem
+        }
+        // return res.json({comprobante})
+        const qrCodeData = await QRCode.toDataURL(JSON.stringify(comprobante.Qr));
+        const ejs = require('ejs');
+        const htmlTemplate = path.join(__dirname, './pdf/template.ejs'); // Ruta del archivo template.ejs
+        const htmlContent = await ejs.renderFile(htmlTemplate, {
+            comprobante,
+            qrCodeData,
+            staticBaseUrl: process.env.STATIC_BASE_URL,
+        });
+
+        // Generar el PDF con Puppeteer
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+
+        await page.setContent(htmlContent, { waitUntil: 'load' });
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true
+        });
+        // fs.writeFileSync('debug.pdf', pdfBuffer);
+        await browser.close();
+
+        // Guardar para depuración
+        // const fs = require('fs');
+        console.log('PDF Buffer Size:', pdfBuffer.length);
+        // fs.writeFileSync('debug.pdf', pdfBuffer); // Original
+        // fs.writeFileSync('sent_to_client.pdf', pdfBuffer); // Enviado
+
+        // Configurar encabezados y enviar
+        const fileName = `${comprobante.CardName}_${new Date()}.pdf`.replace(' ','').trim()
+        // return res.json({fileName})
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${fileName}"`,
+            'Content-Length': pdfBuffer.length
+        });
+
+        return res.end(pdfBuffer);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error del controlador' })
+    }
 }
 
 module.exports = {
@@ -786,4 +944,5 @@ module.exports = {
     saldoDeudorInstitucionesController,
     realizarCobroController,
     comprobanteController,
+    comprobantePDFController,
 }
