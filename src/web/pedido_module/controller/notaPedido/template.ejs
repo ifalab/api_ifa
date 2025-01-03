@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota del Pedido</title>
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> -->
+    <style>
+        body {
+            font-family: "Courier New", Courier, monospace;     
+            margin: 20px;
+            color: #333;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #4d4c4c;
+            margin: 10px 0;
+        }
+
+        h1 {
+            font-size: 28px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        p {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header img {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+
+        /* QR Code */
+        .qr-code {
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .qr-code img {
+            width: 150px;
+            height: 150px;
+        }
+        .content {
+            margin: 20px 10px;
+            /* Evita que el contenido quede pegado al borde */
+        }
+
+        .total-row {
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content">
+        <h3 class="text-center">LABORATORIOS IFA</h3>
+        <h5 class="text-center">NOTA DEL PEDIDO #<%= data.DocNum %>
+        </h5>
+        <h5 class="text-center">ALMACEN : <%= data.WhsCode %>
+        </h5>
+        <h5 class="text-center"><%= data.WhsName %>
+        </h5>
+        <hr>
+        <div class="d-flex justify-content-between">
+            <div class="">
+                <p><strong>Usuario:</strong>
+                    <%= data.USER_CODE %>
+                </p>
+                <p><strong>Creado por:</strong>
+                    <%= data.U_NAME %>
+                </p>
+                <p><strong>Fecha de creación:</strong>
+                    <%= new Date(data.DocDate).toLocaleDateString('es-ES') %>
+                </p>
+                <p><strong>Hora:</strong>
+                    <%= data.time %>
+                </p>
+                <p><strong>Teléfono:</strong>
+                    <%= data.Phone1 %>
+                </p>
+                <p><strong>Dirección:</strong>
+                    <%= data.Address2 %>
+                </p>
+                <p><strong>Zona:</strong>
+                    <%= data.U_Zona %>
+                </p>
+                <p><strong>Cliente:</strong>
+                    <%= data.CardCode %> - <%= data.CardName %>
+                </p>
+            </div>
+        </div>
+        <hr>
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Precio Unit.</th>
+                    <th>Cant.</th>
+                    <th>Desc.</th>
+                    <th>SubTotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% let totalGeneral=0; %>
+                    <% data.detailsList.forEach(item=> {
+                        totalGeneral += parseFloat(item.LineTotal);
+                        %>
+                        <tr>
+                            <td>
+                                <%= item.ItemCode %>
+                            </td>
+                            <td>
+                                <%= item.Dscription %>
+                            </td>
+                            <td>
+                                <%= item.Quantity %>
+                            </td>
+                            <td>
+                                <%= parseFloat(item.Price).toFixed(2) %>
+                            </td>
+                            <td>
+                                <%= parseFloat(item.DescLinea).toFixed(2) %>
+                            </td>
+                            <td>
+                                <%= parseFloat(item.LineTotal).toFixed(2) %>
+                            </td>
+                        </tr>
+                        <% }); %>
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="5" class="text-end">Total General:</td>
+                    <td>
+                        <%= totalGeneral.toFixed(2) %> BOB
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+        <div class="footer-text">
+            <!-- <p><strong>Empleado:</strong> MEDLING ARDAYA JENNIFER</p> -->
+            <p><strong>Condición de pago:</strong>
+                <%= data.PymntGroup %>
+            </p>
+            <!-- <p><strong>Glosa:</strong> solicitado por correo ent. hoy en el trans de la tarde basado en pedidos de cliente 240006460.</p> -->
+            <!-- <p><strong>Total en texto:</strong> Eleven Thousand Four Hundred Ninety-Five And 39/100 Bolivianos</p> -->
+        </div>
+<br>
+        <div class="qr-code">
+            <!-- <p>Escanea para verificar el pedido:</p> -->
+            <img src="<%= qrCode %>" alt="QR Code">
+        </div>
+
+        <!-- <div class="footer">
+            
+        </div> -->
+
+
+    </div>
+<footer class="footer">
+    <p>LABORATORIOS IFA - Todos los derechos reservados</p>
+            <p>Documento generado automáticamente el <%= new Date().toLocaleDateString() %></p>
+</footer>
+
+</body>
+
+</html>

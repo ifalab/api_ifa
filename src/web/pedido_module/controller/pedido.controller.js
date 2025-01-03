@@ -17,6 +17,10 @@ const { findClientePorVendedor,
 } = require("./hana.controller");
 const { postOrden } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor } = require("../../shared/controller/hana.controller");
+const QRCode = require('qrcode');
+const path = require('path');
+const ejs = require('ejs');
+const pdf = require('html-pdf');
 
 const clientesVendedorController = async (req, res) => {
     try {
@@ -201,14 +205,14 @@ const findZonasXVendedorController = async (req, res) => {
 const crearOrderController = async (req, res) => {
     try {
         const body = req.body
-        console.log(body)
         const ordenResponse = await postOrden(body)
+        console.log({ordenResponse})
         if (ordenResponse.lang)
             return res.status(400).json({ message: ordenResponse.value })
         return res.json({ ...ordenResponse })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador:crearOrderController' })
+        return res.status(500).json({ message: 'error en el controlador:crearOrderController' })
     }
 
 }
@@ -281,13 +285,99 @@ const pedidosPorVendedorAnuladosController = async (req, res) => {
 const pedidoLayoutController = async (req, res) => {
     try {
         const delivery = req.query.delivery;
-        console.log({ delivery })
+        const response = await pedidoLayout(delivery)
         
-        const pedidoLayout = await pedidoLayout(delivery)
-        return res.json({ pedidoLayout })
+        if (response.length == 0) {
+            return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de Pedido' });
+        }
+        console.log({response})
+        
+        // return res.json({ response })
+
+        const detailsList = [];
+        const {
+            BarCode,
+            DocNum,
+            USER_CODE,
+            U_NAME,
+            WhsCode,
+            WhsName,
+            DocDate,
+            DocDueDate,
+            CardCode,
+            CardName,
+            PymntGroup,
+            DocTotal,
+            DocTime,
+            Phone1,
+            Address2,
+            U_Zona,
+            U_Comentario,
+            ...restData
+        } = response[0];
+
+        response.map((item) => {
+            const { ...restData } = item;
+            detailsList.push({ ...restData });
+        });
+        const docDueDate = DocDueDate;
+        console.log("Fecha completa:", docDueDate);
+        let time
+        // Extraer la hora usando una expresión regular
+        const timeMatch = docDueDate.match(/(\d{2}:\d{2})/);
+        if (timeMatch) {
+            time = timeMatch[0];
+            console.log("Hora extraída:", time);
+        }
+
+        const data = {
+            time,
+            DocNum,
+            BarCode,
+            USER_CODE,
+            U_NAME,
+            U_N: ``,
+            WhsCode,
+            WhsName,
+            DocDate,
+            DocDueDate,
+            CardCode,
+            CardName,
+            PymntGroup,
+            DocTotal,
+            DocTime,
+            Phone1,
+            Address2,
+            U_Zona,
+            U_Comentario,
+            detailsList,
+        };
+
+        //! EJS
+        const filePath = path.join(__dirname, `nota_pedido_${data.DocNum}.pdf`);
+        // Generar el QR Code
+        const qrCode = await QRCode.toDataURL(data.BarCode.toString());
+
+        // Renderizar la plantilla EJS a HTML
+        const html = await ejs.renderFile(path.join(__dirname, 'notaPedido', 'template.ejs'), { data, qrCode });
+
+        // Configuración para html-pdf
+        const options = { format: 'A4', orientation: 'portrait' };
+
+        // Generar el PDF
+        pdf.create(html, options).toStream((err, stream) => {
+            if (err) {
+                console.error('Error al generar el PDF:', err);
+                return res.status(500).json({ mensaje: 'Error al generar el PDF' });
+            }
+
+            // Enviar el PDF en la respuesta
+            res.setHeader('Content-Type', 'application/pdf');
+            stream.pipe(res);
+        });
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador: obtenerEntregaDetalleController' })
+        return res.status(500).json({ mensaje: 'error en el controlador: pedidoLayoutController' })
     }
 }
 
