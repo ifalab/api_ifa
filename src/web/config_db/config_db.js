@@ -15,7 +15,6 @@ const config = {
   
 };
 
-// Exportar el pool de conexión
 const poolPromise = sql.connect(config)
   .then((pool) => {
     console.log('Conexión exitosa a SQL Server');

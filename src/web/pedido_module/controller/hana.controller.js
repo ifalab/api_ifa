@@ -241,7 +241,8 @@ const pedidoLayout = async (delivery) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_PEDIDO_LAYOUT(${delivery})`;
+        // const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_PEDIDO_LAYOUT(${delivery})`;
+        const query = `CALL LAB_IFA_DEV.IFA_LAPP_VEN_PEDIDO_LAYOUT(${delivery})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result

@@ -206,13 +206,17 @@ const crearOrderController = async (req, res) => {
     try {
         const body = req.body
         const ordenResponse = await postOrden(body)
-        console.log({ordenResponse})
-        if (ordenResponse.lang)
-            return res.status(400).json({ message: ordenResponse.value })
+        console.log({ ordenResponse })
+        // return res.json({body})
+        // if (ordenResponse.lang)
+        //     return res.status(400).json({ mensaje: ordenResponse.value })
+
+        if (ordenResponse.status == 400) return res.status(400).json({ mensaje: ordenResponse.errorMessage.value })
+
         return res.json({ ...ordenResponse })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ message: 'error en el controlador:crearOrderController' })
+        return res.status(500).json({ mensaje: 'error en el controlador:crearOrderController' })
     }
 
 }
@@ -231,7 +235,7 @@ const whiteListController = async (req, res) => {
         if (listCardCode.includes(cardCode)) {
             mora = false
         }
-        return res.json({mora})
+        return res.json({ mora })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
@@ -242,7 +246,7 @@ const pedidosPorVendedorPendientesController = async (req, res) => {
     try {
         const id = req.query.id
         console.log(id)
-   
+
         const pedidos = await pedidosPorVendedorPendientes(id)
         if (pedidos.lang)
             return res.status(400).json({ message: pedidos.value })
@@ -257,7 +261,7 @@ const pedidosPorVendedorFacturadosController = async (req, res) => {
     try {
         const id = req.query.id
         console.log(id)
-       
+
         const pedidos = await pedidosPorVendedorFacturados(id)
         if (pedidos.lang)
             return res.status(400).json({ message: pedidos.value })
@@ -285,13 +289,14 @@ const pedidosPorVendedorAnuladosController = async (req, res) => {
 const pedidoLayoutController = async (req, res) => {
     try {
         const delivery = req.query.delivery;
+        console.log({ delivery })
         const response = await pedidoLayout(delivery)
-        
+
         if (response.length == 0) {
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de Pedido' });
         }
-        console.log({response})
-        
+        console.log({ response })
+
         // return res.json({ response })
 
         const detailsList = [];

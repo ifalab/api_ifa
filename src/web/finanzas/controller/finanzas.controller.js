@@ -745,6 +745,7 @@ const findAllGastosController = async (req, res) => {
     const { datosConPorcentajes, ...restData } = data;
 
     return res.json({ ...restData, totalByYear: totalByYearArray, processData });
+    // return res.json({mensaje:'modificar codigo'})
   } catch (error) {
     console.log({ error })
     return res.status(500).json({ mensaje: 'Error en findAllGroupAlmacenController ' })
@@ -840,6 +841,7 @@ const findAllSimpleGastosController = async (req, res) => {
 
     formattedData.push({ date: 'Total', detalle: totalizado })
     return res.json({ totalByYear: totalByYearArray, formattedData });
+    // return res.json({ totalByYear:12 });
   } catch (error) {
     console.log({ error })
     return res.status(500).json({ mensaje: 'Error en findAllGroupAlmacenController ' })
@@ -938,7 +940,7 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
     })
 
     formattedData.push({ date: 'Total', detalle: totalizado })
-    return res.json({ totalByYear: totalByYearArray, formattedData });
+    // return res.json({ totalByYear:12 });
   } catch (error) {
     console.log({ error })
     return res.status(500).json({ mensaje: 'Error en findXAgenciaSimpleGastosController ' })
@@ -999,6 +1001,7 @@ const gastosGestionAgenciaController = async (req, res) => {
     const response = await gastosGestionAgencia(+gestion, +codigo)
     const agrupado = agruparPorMes(response);
     return res.json({ gestion, codigo, agrupado })
+    // return res.json({ mensaje:'modificar' })
 
   } catch (error) {
 

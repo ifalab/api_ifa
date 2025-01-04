@@ -74,7 +74,11 @@ const postOrden = async (newOrderDate) => {
     } catch (error) {
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
         console.error('Error en la solicitud POST para Entrega:', error.response?.data || error.message);
-        return errorMessage
+        return {
+            message: 'Hubo un problema en la solicitud',
+            status: 400,
+            errorMessage
+        }
     }
 
 };
