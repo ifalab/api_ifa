@@ -91,7 +91,7 @@ const solicitarId = async (id) => {
 
     } catch (error) {
         console.error('Error en solicitarId:', error.message);
-        return { message: 'Error al procesar la solicitud: solicitarId' }
+        return { message: `Error en solicitarId: ${error.message}` }
     }
 }
 

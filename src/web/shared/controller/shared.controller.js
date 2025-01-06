@@ -1,5 +1,6 @@
 const { response } = require("express")
-const { findClientesByVendedor,
+const { findClientesByVendedor, 
+    grabarLog
 } = require("./hana.controller")
 
 const findClientesByVendedorController = async (req, res) => {

@@ -1,4 +1,5 @@
 const hana = require('@sap/hana-client');
+const { query } = require('express');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -32,8 +33,8 @@ const executeQuery = async (query) => {
     return new Promise((resolve, reject) => {
         connection.exec(query, (err, result) => {
             if (err) {
-                console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
+                // console.log('error en la consulta:', err.message)
+                reject(new Error(`error en la consulta: ${err.message}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
@@ -172,12 +173,14 @@ const pedidoSugeridoXCliente = async(cardCode)=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}.ifa_lapp_pedido_sugerido_by_cliente('${cardCode}')`
+        const query = `CALL ${process.env.PRD}ifa_lapp_pedido_sugerido_by_cliente('${cardCode}')`
         console.log({ query })
-        return await executeQuery(query)
+        const sugeridos = await executeQuery(query)
+        console.log({sugeridos})
+        return {sugeridos, query}
     } catch (error) {
-        console.log({ error })
-        throw new Error('Error al procesar la solicitud: pedido sugerido por cliente');
+        // console.log({ error })
+        throw new Error(error.message);
     }
 }
 

@@ -57,6 +57,24 @@ const findClientesByVendedor = async(id_vendedor)=>{
     }
 }
 
+const grabarLog = async(userCode, username, modulo, mensaje, querystr, endpoint, base )=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const escapedQuerystr = querystr.replace(/'/g, "''");
+        const escapedmensajestr = mensaje.replace(/'/g, "''");
+
+        const query = `CALL LAB_IFA_LAPP.LAPP_GRABAR_LOG('${userCode}','${username}','${modulo}', '${escapedmensajestr}','${escapedQuerystr}','${endpoint}','${base}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        // throw new Error('Error al grabarLog');
+    }
+}
+
 module.exports = {
     findClientesByVendedor,
+    grabarLog
 }
