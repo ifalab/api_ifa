@@ -16,7 +16,7 @@ const { findClientePorVendedor,
     pedidoLayout
 } = require("./hana.controller");
 const { postOrden } = require("../../../movil/ventas_module/controller/sld.controller");
-const { findClientesByVendedor } = require("../../shared/controller/hana.controller");
+const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
 const QRCode = require('qrcode');
 const path = require('path');
 const ejs = require('ejs');
@@ -180,14 +180,31 @@ const sugeridosXZonaController = async (req, res) => {
     }
 }
 
-const sugeridosXClienteController = async (req, res) => {
+const sugeridosXClienteController = async (req, res, next) => {
     try {
         const cardCode = req.query.cardCode
+        
         const sugeridos = await pedidoSugeridoXCliente(cardCode)
-        return res.json({ sugeridos })
+        console.log({sugeridos})
+        const user= req.usuarioAutorizado
+        console.log({user})
+        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", sugeridos.query, "pedido/sugerido-cliente", process.env.PRD )
+
+        return res.json({ sugeridos: sugeridos.sugeridos })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador:sugeridosXClienteController' })
+
+        const query = error.query || 'No disponible'
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({usuario})
+        let mensaje = 'Error en el controlador: sugeridosXClienteController'
+        if (error.message) {
+            mensaje = error.message
+        }
+        // Registrar el error en los logs
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedidos sugeridos", mensaje, query, "pedido/sugerido-cliente", process.env.PRD)
+
+        return res.status(500).json(mensaje)
     }
 }
 
@@ -207,18 +224,28 @@ const crearOrderController = async (req, res) => {
         const body = req.body
         const ordenResponse = await postOrden(body)
         console.log({ ordenResponse })
-        // return res.json({body})
-        // if (ordenResponse.lang)
-        //     return res.status(400).json({ mensaje: ordenResponse.value })
-
-        if (ordenResponse.status == 400) return res.status(400).json({ mensaje: ordenResponse.errorMessage.value })
+        if (ordenResponse.status == 400) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", ordenResponse.errorMessage.value, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ mensaje: ordenResponse.errorMessage.value })
+        }
+        
+        const usuario= req.usuarioAutorizado
+        console.log({usuario})
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
 
         return res.json({ ...ordenResponse })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador:crearOrderController' })
-    }
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({usuario})
+        let mensaje = 'Error en el controlador: crearOrderController'
+        if (error.message) {
+            mensaje = error.message
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", mensaje, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
 
+        return res.status(500).json({ mensaje })
+    }
 }
 
 const whiteListController = async (req, res) => {
