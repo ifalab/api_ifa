@@ -157,8 +157,8 @@
                 <tr>
                     <th>Código</th>
                     <th>Descripción</th>
-                    <th>Precio Unit.</th>
                     <th>Cant.</th>
+                    <th>Precio Unit.</th>
                     <th>Desc.</th>
                     <th>SubTotal</th>
                 </tr>
@@ -176,7 +176,7 @@
                                 <%= item.Dscription %>
                             </td>
                             <td>
-                                <%= item.Quantity %>
+                                <%= Math.round(item.Quantity) %>
                             </td>
                             <td>
                                 <%= parseFloat(item.Price).toFixed(2) %>

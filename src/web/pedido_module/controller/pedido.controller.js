@@ -357,7 +357,7 @@ const pedidoLayoutController = async (req, res) => {
             U_Comentario,
             detailsList,
         };
-
+        // return res.json({data})
         //! EJS
         const filePath = path.join(__dirname, `nota_pedido_${data.DocNum}.pdf`);
         // Generar el QR Code
