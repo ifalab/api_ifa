@@ -1,11 +1,12 @@
 const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { facturacionController, facturacionStatusController, noteEntregaController, obtenerCuf, obtenerEntregasPorFacturaController, obtenerInvoicesCancel, listaFacturasAnular, infoFacturaController, cancelToProsinController, pedidosFacturadosController, obtenerEntregasController, obtenerEntregaDetalleController, facturacionEntregaController } = require('../controller/facturacion.controller')
+const { facturacionController, facturacionStatusController, noteEntregaController, obtenerCuf, obtenerEntregasPorFacturaController, obtenerInvoicesCancel, listaFacturasAnular, infoFacturaController, cancelToProsinController, pedidosFacturadosController, obtenerEntregasController, obtenerEntregaDetalleController, facturacionEntregaController, facturacionStatusListController } = require('../controller/facturacion.controller')
 const router = Router()
 
 router.post('/facturar', [validarToken, validarCampos], facturacionController)
 router.get('/facturacion-pedido', [validarToken, validarCampos], facturacionStatusController)
+router.post('/facturacion-pedido-list', [validarToken, validarCampos], facturacionStatusListController)
 router.get('/nota-entrega', [validarToken, validarCampos], noteEntregaController)
 router.get('/obtener-cuf', [validarToken, validarCampos], obtenerCuf)
 router.post('/obtener-entregas-factura', [validarToken, validarCampos], obtenerEntregasPorFacturaController)

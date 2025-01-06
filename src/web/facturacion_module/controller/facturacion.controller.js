@@ -409,10 +409,30 @@ const facturacionController = async (req, res) => {
 
 const facturacionStatusController = async (req, res) => {
     try {
-        // const { opcion } = req.query
         const whsCode = req.query.whsCode
-        // const response = await facturacionPedido(opcion)
+        // const {listWhsCode} = req.body
         const data = await facturaPedidoDB(whsCode)
+        return res.json({ data })
+
+    } catch (error) {
+        console.log('error en facturacionStatusController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const facturacionStatusListController = async (req, res) => {
+    try {
+        // const whsCode = req.query.whsCode
+        const {listWhsCode} = req.body
+        let data = []
+        for (const iterator of listWhsCode) {
+            const dataToList = await facturaPedidoDB(iterator)
+            dataToList.map((item)=>{
+                data.push({...item})
+            })
+            
+        }
         return res.json({ data })
 
     } catch (error) {
@@ -1055,5 +1075,6 @@ module.exports = {
     pedidosFacturadosController,
     obtenerEntregasController,
     facturacionEntregaController,
+    facturacionStatusListController,
     obtenerEntregaDetalleController
 }
