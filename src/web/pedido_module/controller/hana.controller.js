@@ -173,7 +173,7 @@ const pedidoSugeridoXCliente = async(cardCode)=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}ifa_lapp_pedido_sugerido_by_cliente('${cardCode}')`
+        const query = `CALL ${process.env.PRD}.ifa_lapp_pedido_sugerido_by_cliente('${cardCode}')`
         console.log({ query })
         const sugeridos = await executeQuery(query)
         console.log({sugeridos})
@@ -248,11 +248,10 @@ const pedidoLayout = async (delivery) => {
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_PEDIDO_LAYOUT(${delivery})`;
         console.log({ query })
         const result = await executeQuery(query)
-        return result
-
+        return {result, query}
     } catch (error) {
         console.error('Error en pedido layout:', error.message);
-        return { message: 'Error al procesar la solicitud: pedidoLayout' }
+        throw new Error(`Error en pedido layout ${error.message}`);
     }
 }
 
