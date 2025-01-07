@@ -100,7 +100,7 @@ const notaEntrega = async (delivery) => {
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_ENTREGA_LAYOUT(${delivery})`;
         console.log({ query })
         const result = await executeQuery(query)
-        return result
+        return {result, query}
 
     } catch (error) {
         console.error('Error en notaEntrega:', error.message);

@@ -21,9 +21,11 @@ const {
     ventasHistoricoCadenas,
     ventasHistoricoMasivos,
     ventasHistoricoInstituciones,
-    ventasPorZonasVendedorMesAnt
+    ventasPorZonasVendedorMesAnt,
+    marcarAsistencia
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
+const { grabarLog } = require("../../shared/controller/hana.controller");
 
 
 
@@ -668,6 +670,30 @@ const facturacionController = async (req, res) => {
     }
 }
 
+const marcarAsistenciaController = async (req, res) => {
+    try {
+        console.log(req.body)
+        const {id_vendedor_sap, fecha, hora} = req.body
+        const usuario= req.usuarioAutorizado
+        const asistencia = await marcarAsistencia(id_vendedor_sap, fecha, hora)
+        console.log(asistencia.response)
+        if (asistencia.response.lang){
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", asistencia.response.value, asistencia.query, "venta/marcar-asistencia", process.env.PRD)
+            return res.status(400).json({ message: asistencia.response.value })
+        }
+        console.log(asistencia.query)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", "Marcado con exito", asistencia.query, "venta/marcar-asistencia", process.env.PRD)
+
+        return res.json(asistencia.response == 1 ? true : false)
+    } catch (error) {
+        console.log({ error })
+        const usuario= req.usuarioAutorizado
+        let mensaje = error.message ||'error en el controlador:marcarAsistenciaController'
+        const query= error.query || "No disponible"
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", mensaje, query, "venta/marcar-asistencia", process.env.PRD)
+        return res.status(500).json({ mensaje })
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -693,4 +719,5 @@ module.exports = {
     ventasHistoricoInstitucionesController,
     vendedorPorZonaMesAntController,
     facturacionController,
+    marcarAsistenciaController
 };

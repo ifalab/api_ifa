@@ -335,6 +335,23 @@ const ventasPorZonasVendedorMesAnt = async (username, line, groupBy) => {
         }
     }
 }
+
+const marcarAsistencia = async (id_vendedor_sap, fecha, hora) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_LAPP.LAPP_MARCAR_ASISTENCIA(${id_vendedor_sap},'${fecha}','${hora}')`;
+        console.log({query})
+        const response = await executeQuery(query);
+
+        return {response, query}
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error en marcar asistencia: ${err.message}`);
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -358,4 +375,5 @@ module.exports = {
     ventasHistoricoMasivos,
     ventasHistoricoInstituciones,
     ventasPorZonasVendedorMesAnt,
+    marcarAsistencia,
 }
