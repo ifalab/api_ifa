@@ -475,9 +475,11 @@ const facturacionStatusListController = async (req, res) => {
 const noteEntregaController = async (req, res) => {
     try {
         const delivery = req.query.delivery;
+        const user = req.usuarioAutorizado
         const response = await notaEntrega(delivery);
-        console.log({ notaEntregaResponse: response })
-        if (response.length == 0) {
+        console.log({ notaEntregaResponse: response.result })
+        if (response.result.length == 0) {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota entrega", 'Error de SAP al crear la nota de entrega', response.query, "facturacion/nota-entrega", process.env.PRD)
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de entrega' });
         }
         const detailsList = [];
@@ -500,9 +502,9 @@ const noteEntregaController = async (req, res) => {
             U_Zona,
             U_Comentario,
             ...restData
-        } = response[0];
+        } = response.result[0];
 
-        response.map((item) => {
+        response.result.map((item) => {
             const { ...restData } = item;
             detailsList.push({ ...restData });
         });
@@ -553,17 +555,27 @@ const noteEntregaController = async (req, res) => {
         pdf.create(html, options).toStream((err, stream) => {
             if (err) {
                 console.error('Error al generar el PDF:', err);
-                return res.status(500).json({ mensaje: 'Error al generar el PDF' });
+                let mensaje = err.message || 'Error al generar el PDF'
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", mensaje, response.query, "facturacion/nota-entrega", process.env.PRD)
+
+                return res.status(500).json({ mensaje });
             }
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", "Nota Creada con exito", response.query, "facturacion/nota-entrega", process.env.PRD)
 
             // Enviar el PDF en la respuesta
             res.setHeader('Content-Type', 'application/pdf');
             stream.pipe(res);
         });
     } catch (error) {
-
+        const user = req.usuarioAutorizado
         console.error('Error en el controlador:', error);
-        return res.status(500).json({ mensaje: 'Error en el controlador' });
+        let mensaje = error.message || 'Error en el controlador: notaEntregaController'
+        if(mensaje.length >5000){
+            mensaje= 'Error en el controlador: notaEntregaController'
+        }
+        const query = error.query || "No disponible"
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", mensaje, query, "facturacion/nota-entrega", process.env.PRD)
+        return res.status(500).json({ mensaje });
     }
 }
 
