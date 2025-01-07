@@ -22,7 +22,8 @@ const {
     ventasHistoricoMasivos,
     ventasHistoricoInstituciones,
     ventasPorZonasVendedorMesAnt,
-    marcarAsistencia
+    marcarAsistencia,
+    pruebaaaBatch, prueba2Batch
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -695,6 +696,21 @@ const marcarAsistenciaController = async (req, res) => {
     }
 }
 
+const pruebaBatchController = async (req, res) => {
+    try {
+        const { articulo, almacen, cantidad } = req.body;
+        const response = await pruebaaaBatch(articulo, almacen, cantidad)
+        const todosDatos = await prueba2Batch(articulo, almacen);
+        console.log({response})
+        return res.json({ response, todosDatos })
+
+    } catch (error) {
+        console.log('error en pruebaBatchController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud: pruebaBatchController' })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -719,5 +735,6 @@ module.exports = {
     ventasHistoricoInstitucionesController,
     vendedorPorZonaMesAntController,
     facturacionController,
-    marcarAsistenciaController
+    marcarAsistenciaController,
+    pruebaBatchController
 };
