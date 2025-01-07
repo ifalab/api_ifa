@@ -69,7 +69,6 @@ const facturacionController = async (req, res) => {
                 let newLine = {}
                 const { ItemCode, WarehouseCode, Quantity, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, LineStatus, ...restLine } = line;
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
-                responseBatch.push(batchData)
                 console.log({ batch: batchData })
                 if (batchData && batchData.length !== 0) {
                     // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
