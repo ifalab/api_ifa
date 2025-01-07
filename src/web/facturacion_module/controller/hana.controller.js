@@ -49,7 +49,6 @@ const lotesArticuloAlmacenCantidad = async (articulo, almacen, lote) => {
         }
 
         const query = `CALL ${process.env.PRD}.IFA_VM_SELECTION_BATCH_FEFO('${articulo}','${almacen}',${lote})`;
-        // const query = `CALL LAB_IFA_DEV.IFA_VM_SELECTION_BATCH_FEFO('${articulo}','${almacen}',${lote})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -67,7 +66,6 @@ const obtenerEntregaDetalle = async (id) => {
         }
 
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE(${id})`;
-        // const query = `CALL LAB_IFA_DEV.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE(${id})`;
         const result = await executeQuery(query)
         return result
 
@@ -84,7 +82,6 @@ const solicitarId = async (id) => {
         }
 
         const query = `CALL ${process.env.PRD}.IFA_SOLICITUD_ID(${id})`;
-        // const query = `CALL LAB_IFA_DEV.IFA_SOLICITUD_ID(${id})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -101,7 +98,6 @@ const notaEntrega = async (delivery) => {
             await connectHANA();
         }
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_ENTREGA_LAYOUT(${delivery})`;
-        // const query = `CALL LAB_IFA_DEV.IFA_VEN_ENTREGA_LAYOUT(${delivery})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -118,7 +114,6 @@ const obtenerEntregasPorFactura = async (id) => {
             await connectHANA();
         }
         const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_entregas_por_factura(${id})`;
-        // const query = `CALL lab_ifa_dev.ifa_lapp_ven_obtener_entregas_por_factura(${id})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -134,7 +129,6 @@ const facturasParaAnular = async (sucursal) => {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `CALL lab_ifa_dev.ifa_lapp_ven_obtener_factura('${sucursal}')`;
         const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_factura(${sucursal})`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -152,7 +146,6 @@ const facturaInfo = async () => {
             await connectHANA();
         }
         const query = `SELECT * FROM ${process.env.PRD}.IFA_INFO_FACTURACION`;
-        // const query = `SELECT * FROM LAB_IFA_DEV.IFA_INFO_FACTURACION`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -169,7 +162,6 @@ const facturaPedidoDB = async (whsCode) => {
             await connectHANA();
         }
         const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos(${whsCode})`;
-        // const query = `CALL LAB_IFA_DEV.ifa_lapp_ven_obtener_pedidos(${whsCode})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -186,7 +178,6 @@ const pedidosFacturados = async (SucCode) => {
             await connectHANA();
         }
         const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
-        // const query = `CALL LAB_IFA_DEV.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
