@@ -183,12 +183,12 @@ const sugeridosXZonaController = async (req, res) => {
 const sugeridosXClienteController = async (req, res, next) => {
     try {
         const cardCode = req.query.cardCode
-        
+
         const sugeridos = await pedidoSugeridoXCliente(cardCode)
-        console.log({sugeridos})
-        const user= req.usuarioAutorizado
-        console.log({user})
-        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", sugeridos.query, "pedido/sugerido-cliente", process.env.PRD )
+        console.log({ sugeridos })
+        const user = req.usuarioAutorizado
+        console.log({ user })
+        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", sugeridos.query, "pedido/sugerido-cliente", process.env.PRD)
 
         return res.json({ sugeridos: sugeridos.sugeridos })
     } catch (error) {
@@ -196,7 +196,7 @@ const sugeridosXClienteController = async (req, res, next) => {
 
         const query = error.query || 'No disponible'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({usuario})
+        console.log({ usuario })
         let mensaje = 'Error en el controlador: sugeridosXClienteController'
         if (error.message) {
             mensaje = error.message
@@ -223,21 +223,23 @@ const crearOrderController = async (req, res) => {
     const body = req.body
     try {
         const ordenResponse = await postOrden(body)
-        console.log({ ordenResponse })
-        const usuario= req.usuarioAutorizado
-        console.log({usuario})
+        const usuario = req.usuarioAutorizado
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        console.log(JSON.stringify(ordenResponse, null, 2))
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${ordenResponse.errorMessage.value}, ${body}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ mensaje: ordenResponse.errorMessage.value })
         }
-        
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Orden creada con exito, ${body}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+
+        console.log({ usuario })
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
 
         return res.json({ ...ordenResponse })
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({usuario})
+        console.log({ usuario })
         let mensaje = 'Error en el controlador: crearOrderController'
         if (error.message) {
             mensaje = error.message
@@ -363,7 +365,8 @@ const pedidoLayoutController = async (req, res) => {
             time = timeMatch[0];
             console.log("Hora extraída:", time);
         }
-
+        time = `${DocTime[0] || 0}${DocTime[1] || 0}:${DocTime[2] || 0}${DocTime[3] || 0}`
+        console.log({time})
         const data = {
             time,
             DocNum,

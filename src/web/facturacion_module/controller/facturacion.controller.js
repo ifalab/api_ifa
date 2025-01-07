@@ -60,7 +60,8 @@ const facturacionController = async (req, res) => {
             if (!DocumentLines) {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'No existe los DocumentLines en la facturacio por ID', '', "facturacion/facturar", process.env.PRD)
 
-                return res.status(400).json({ mensaje: 'No existe los DocumentLines en la facturacio por ID ' })}
+                return res.status(400).json({ mensaje: 'No existe los DocumentLines en la facturacio por ID ' })
+            }
 
             let batchNumbers = []
             let newDocumentLines = []
@@ -299,7 +300,7 @@ const facturacionController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-            
+
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", '', "facturacion/facturar", process.env.PRD)
 
             return res.json({ ...response, cuf })
@@ -414,14 +415,14 @@ const facturacionController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({usuario})
+        console.log({ usuario })
         let mensaje = 'Error en el controlador Facturar'
         if (error.message) {
             mensaje = error.message
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Facturar", mensaje, '', "facturacion/facturar", process.env.PRD)
 
-        return res.status(error.statusCode??500).json({
+        return res.status(error.statusCode ?? 500).json({
             mensaje: 'Error en el controlador',
             sapMessage: `${error?.message?.error || 'No definido'}`,
             error: {
@@ -454,14 +455,14 @@ const facturacionStatusController = async (req, res) => {
 const facturacionStatusListController = async (req, res) => {
     try {
         // const whsCode = req.query.whsCode
-        const {listWhsCode} = req.body
+        const { listWhsCode } = req.body
         let data = []
         for (const iterator of listWhsCode) {
             const dataToList = await facturaPedidoDB(iterator)
-            dataToList.map((item)=>{
-                data.push({...item})
+            dataToList.map((item) => {
+                data.push({ ...item })
             })
-            
+
         }
         return res.json({ data })
 
@@ -517,6 +518,7 @@ const noteEntregaController = async (req, res) => {
             time = timeMatch[0];
             console.log("Hora extraída:", time);
         }
+        time = `${DocTime[0] || 0}${DocTime[1] || 0}:${DocTime[2] || 0}${DocTime[3] || 0}`
         const data = {
             time,
             DocNum,
@@ -768,14 +770,14 @@ const cancelToProsinController = async (req, res) => {
             mediaPagina,
         })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({user})
+        console.log({ user })
         if (responseProsin.data.mensaje) {
             const mess = responseProsin.data.mensaje.split('§')
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", mess[1], '', "facturacion/cancel-to-prosin", process.env.PRD)
 
             return res.status(400).json({ mensaje: `${mess[1]}` })
         }
-        if (!docEntry){ 
+        if (!docEntry) {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `debe venir el doc entry`, '', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `debe venir el doc entry` })
         }
@@ -800,9 +802,9 @@ const cancelToProsinController = async (req, res) => {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             listResponseDelivery.push(responseDeliveryNotes)
         }
-        
+
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", "Anulado con exito", '', "facturacion/cancel-to-prosin", process.env.PRD)
-        
+
         return res.json({
             responseProsin: { ...responseProsin, cuf },
             reponseInvoice,
@@ -814,15 +816,15 @@ const cancelToProsinController = async (req, res) => {
         console.log({ error })
 
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({usuario})
+        console.log({ usuario })
         let mensaje = 'Error en el controlador CancelToProsin'
         if (error.message) {
             mensaje = error.message
         }
-        console.log({statuscode: error.statusCode})
+        console.log({ statuscode: error.statusCode })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje, '', "facturacion/cancel-to-prosin", process.env.PRD)
 
-        return res.status(error.statusCode??500).json({ mensaje })
+        return res.status(error.statusCode ?? 500).json({ mensaje })
     }
 }
 
@@ -847,7 +849,7 @@ const obtenerEntregaDetalleController = async (req, res) => {
     try {
         const id = req.query.id
         console.log({ id })
-        
+
         const detalle = await obtenerEntregaDetalle(id)
         return res.json({ detalle })
     } catch (error) {
@@ -861,7 +863,7 @@ const obtenerEntregasController = async (req, res) => {
         const id_sucursal = req.query.idSucursal
         console.log({ id_sucursal })
         if (!id_sucursal) return res.status(400).json({ mensaje: 'el id de la sucursal es obligatorio' })
-        
+
         const entregas = await obtenerEntregas(id_sucursal)
         return res.json({ entregas })
     } catch (error) {
@@ -876,7 +878,7 @@ const facturacionEntregaController = async (req, res) => {
         const { id } = req.body
 
         const responseGenesis = await spObtenerCUF(id)
-        console.log({responseGenesis});
+        console.log({ responseGenesis });
         // return res.json({responseGenesis})
 
         if (responseGenesis.length != 0) {
@@ -960,9 +962,9 @@ const facturacionEntregaController = async (req, res) => {
             return res.json({ ...response, cuf })
 
         } else {
-            const deliveryData= id
+            const deliveryData = id
             const deliveryBody = await obtenerEntregaDetalle(id)
-            console.log({deliveryBody})
+            console.log({ deliveryBody })
             let { responseData } = deliveryBody
             if (deliveryBody) {
                 responseData = deliveryBody
@@ -1015,7 +1017,7 @@ const facturacionEntregaController = async (req, res) => {
             // return res.json({bodyFinalFactura});
 
             const responseProsin = await facturacionProsin(bodyFinalFactura)
-            return res.json({bodyFinalFactura,responseProsin,deliveryData})
+            return res.json({ bodyFinalFactura, responseProsin, deliveryData })
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
             if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
