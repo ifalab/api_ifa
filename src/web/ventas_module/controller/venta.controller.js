@@ -23,7 +23,8 @@ const {
     ventasHistoricoInstituciones,
     ventasPorZonasVendedorMesAnt,
     marcarAsistencia,
-    pruebaaaBatch, prueba2Batch
+    getAsistenciasVendedor,
+    pruebaaaBatch, prueba2Batch, prueba3Batch
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -674,13 +675,13 @@ const facturacionController = async (req, res) => {
 const marcarAsistenciaController = async (req, res) => {
     try {
         console.log(req.body)
-        const {id_vendedor_sap, fecha, hora} = req.body
+        const {ID_VENDEDOR_SAP, FECHA, HORA, MENSAJE} = req.body
         const usuario= req.usuarioAutorizado
-        const asistencia = await marcarAsistencia(id_vendedor_sap, fecha, hora)
+        const asistencia = await marcarAsistencia(ID_VENDEDOR_SAP, FECHA, HORA, MENSAJE)
         console.log(asistencia.response)
         if (asistencia.response.lang){
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", asistencia.response.value, asistencia.query, "venta/marcar-asistencia", process.env.PRD)
-            return res.status(400).json({ message: asistencia.response.value })
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", `${asistencia.response.value||'Error en la solicitud marcarAsistencia'}`, asistencia.query, "venta/marcar-asistencia", process.env.PRD)
+            return res.status(400).json({ mensaje: asistencia.response.value||'Error en la solicitud marcarAsistencia' })
         }
         console.log(asistencia.query)
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", "Marcado con exito", asistencia.query, "venta/marcar-asistencia", process.env.PRD)
@@ -696,13 +697,40 @@ const marcarAsistenciaController = async (req, res) => {
     }
 }
 
+const getAsistenciasVendedorController = async (req, res) => {
+    try {
+        // console.log(req.query)
+        const id_vendedor_sap = req.query.id
+        // console.log(id_vendedor_sap)
+        const usuario= req.usuarioAutorizado
+        const asistencias = await getAsistenciasVendedor(id_vendedor_sap)
+        console.log(asistencias.response)
+        if (asistencias.response.lang){
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", `${asistencias.response.value||'Error en getAsistenciasVendedor'}`, asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
+            return res.status(400).json({ mensaje: asistencias.response.value })
+        }
+        // console.log(asistencias.query)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", "Datos obtenidos con exito", asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
+
+        return res.json({asistencias: asistencias.response})
+    } catch (error) {
+        console.log({ error })
+        const usuario= req.usuarioAutorizado
+        let mensaje = error.message ||'error en el controlador:getAsistenciasVendedorController'
+        const query= error.query || "No disponible"
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", mensaje, query, "venta/asistencias-vendedor", process.env.PRD)
+        return res.status(500).json({ mensaje })
+    }
+}
+
 const pruebaBatchController = async (req, res) => {
     try {
         const { articulo, almacen, cantidad } = req.body;
         const response = await pruebaaaBatch(articulo, almacen, cantidad)
         const todosDatos = await prueba2Batch(articulo, almacen);
+        const tablaOIBT = await prueba3Batch(articulo, almacen)
         console.log({response})
-        return res.json({ response, todosDatos })
+        return res.json({ response, tablaOIBT, todosDatos })
 
     } catch (error) {
         console.log('error en pruebaBatchController')
@@ -736,5 +764,6 @@ module.exports = {
     vendedorPorZonaMesAntController,
     facturacionController,
     marcarAsistenciaController,
+    getAsistenciasVendedorController,
     pruebaBatchController
 };

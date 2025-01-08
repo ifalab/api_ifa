@@ -24,6 +24,7 @@ const {
     vendedorPorZonaMesAntController,
     facturacionController,
     marcarAsistenciaController,
+    getAsistenciasVendedorController,
     pruebaBatchController
 } = require('../controller/venta.controller')
 
@@ -56,6 +57,7 @@ router.get('/historico-instituciones', [validarToken, validarCampos], ventasHist
 router.get('/ventas-zona', [validarToken, validarCampos], ventasVendedorPorZona)
 router.get('/ventas-zona-mes-ant', [validarToken, validarCampos],vendedorPorZonaMesAntController)
 router.post('/marcar-asistencia', [validarToken, validarCampos],marcarAsistenciaController)
+router.get('/asistencias-vendedor', [validarToken, validarCampos],getAsistenciasVendedorController)
 router.post('/prueba', [validarToken, validarCampos],pruebaBatchController)
 
 
