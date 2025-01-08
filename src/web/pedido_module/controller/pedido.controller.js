@@ -228,7 +228,7 @@ const crearOrderController = async (req, res) => {
         console.log(JSON.stringify(ordenResponse, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         if (ordenResponse.status == 400) {
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${ordenResponse.errorMessage.value}, ${body}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden, mensaje: ${ordenResponse.errorMessage.value || ''}, body.CardCode: ${body.CardCode||''}, body.DocTotal: ${body.DocTotal||''}}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ mensaje: ordenResponse.errorMessage.value })
         }
 
@@ -244,7 +244,7 @@ const crearOrderController = async (req, res) => {
         if (error.message) {
             mensaje = error.message
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${mensaje}, ${body}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `mensaje: ${mensaje||''}, body.CardCode: ${body.CardCode||''}, body.DocTotal: ${body.DocTotal||''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
 
         return res.status(500).json({ mensaje })
     }
@@ -405,7 +405,7 @@ const pedidoLayoutController = async (req, res) => {
         pdf.create(html, options).toStream((err, stream) => {
             if (err) {
                 console.error('Error al generar el PDF:', err);
-                grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `Error al generar el PDF. ${err.message}`, response.query , "pedido/pedido-layout", process.env.PRD )
+                grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `Error al generar el PDF. ${err.message||''}`, response.query , "pedido/pedido-layout", process.env.PRD )
                 return res.status(500).json({ mensaje: 'Error al generar el PDF' });
             }
 

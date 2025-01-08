@@ -84,7 +84,7 @@ const solicitarId = async (id) => {
         const query = `CALL ${process.env.PRD}.IFA_SOLICITUD_ID(${id})`;
         console.log({ query })
         const result = await executeQuery(query)
-        return result
+        return {result, query}
 
     } catch (error) {
         console.error('Error en solicitarId:', error.message);
@@ -104,7 +104,7 @@ const notaEntrega = async (delivery) => {
 
     } catch (error) {
         console.error('Error en notaEntrega:', error.message);
-        return { message: 'Error al procesar la solicitud: notaEntrega' }
+        throw new Error(`Error al procesar notaEntrega: ${error.message||''}`)
     }
 }
 
