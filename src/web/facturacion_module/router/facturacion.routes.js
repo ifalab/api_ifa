@@ -11,7 +11,7 @@ router.get('/nota-entrega', [validarToken, validarCampos], noteEntregaController
 router.get('/obtener-cuf', [validarToken, validarCampos], obtenerCuf)
 router.post('/obtener-entregas-factura', [validarToken, validarCampos], obtenerEntregasPorFacturaController)
 router.post('/obtener-invoices-cancel', [validarToken, validarCampos], obtenerInvoicesCancel)
-router.get('/facturas-anular', [validarToken, validarCampos], listaFacturasAnular)
+router.post('/facturas-anular', [validarToken, validarCampos], listaFacturasAnular)
 router.get('/info-factura', [validarToken, validarCampos], infoFacturaController)
 router.post('/cancel-to-prosin', [validarToken, validarCampos], cancelToProsinController)
 router.post('/pedidos-facturados', [validarToken, validarCampos], pedidosFacturadosController)

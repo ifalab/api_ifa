@@ -733,8 +733,8 @@ const realizarCobroController = async (req, res) => {
 const comprobanteController = async (req, res) => {
     try {
         const id = req.query.id
-        const response = await cobroLayout(id)
-        console.log(response)
+        const response = await cobroLayout(id)        
+        console.log({response})
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
@@ -750,27 +750,27 @@ const comprobanteController = async (req, res) => {
             ...cabezera[0],
             Facturas
         }
-        // return res.json({comprobante})
+        
         //TODO TXT
         const formattedDate = formatDate(comprobante.DocDatePayments);
         const cardName = comprobante.CardName.replace(/\s+/g, ''); // Eliminar espacios del nombre
         const fileName = `${cardName}_${formattedDate}.txt`;
+        const finalDate = formattedDate.split(' ')
 
         let cpclContent = `
-! 0 200 200 1400 1
+              LABORATORIOS IFA S.A.
+------------------------------------------------
+Comprobante: #${comprobante.DocNumPayments}
+Fecha: ${finalDate[0]}
+Hora: ${comprobante.DocTime[0]}${comprobante.DocTime[1]}:${comprobante.DocTime[2]}${comprobante.DocTime[3]}
+Codigo Cliente: ${comprobante.CardCode}
+Cliente: ${comprobante.CardName}
 
-TEXT 4 0 30 30 LABORATORIOS IFA S.A.
+Modalidad de Pago: ${comprobante.Modality}
+------------------------------------------------
+Fecha        Numero           Total
+------------------------------------------------
 
-LINE 30 160 570 160 2
-
-TEXT 7 0 30 180 Comprobante: #${comprobante.DocNumPayments}
-TEXT 7 0 30 210 Fecha: ${formattedDate}
-TEXT 7 0 30 240 Cliente: ${comprobante.CardName}
-TEXT 7 0 30 270 Modalidad de Pago: ${comprobante.Modality}
-LINE 30 300 570 300 2
-
-TEXT 7 0 30 320 Fecha        Numero           Total
-LINE 30 350 570 350 2
 `;
 
         // Añadir las facturas
@@ -778,35 +778,34 @@ LINE 30 350 570 350 2
         comprobante.Facturas.forEach((factura) => {
             const { DocNumInvoice, DocDateInvoice, NumAtCard, SumAppliedCob } = factura;
             const formattedInvoiceDate = formattedDataInvoice(DocDateInvoice); // Asegúrate de que la función formatee bien las fechas
-            cpclContent += `TEXT 7 0 30 ${yPosition} ${formattedInvoiceDate}   ${NumAtCard.padEnd(6)}   ---->   bs ${parseFloat(SumAppliedCob).toFixed(2)}\n`;
+            cpclContent += `${formattedInvoiceDate}   ${NumAtCard.padEnd(6)}   ---->   bs ${parseFloat(SumAppliedCob).toFixed(2)}\n`;
             yPosition += 30;
         });
 
         // Línea divisoria y total
         cpclContent += `
-LINE 30 ${yPosition} 570 ${yPosition} 2
-TEXT 7 0 30 ${yPosition + 20} TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}
-TEXT 7 0 30 ${yPosition + 50} Glosa: ${comprobante.JrnlMemo}
+------------------------------------------------
+TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}
+Glosa: ${comprobante.JrnlMemo}
+------------------------------------------------
 
-BARCODE QR 200 ${yPosition + 100} M 2 U 6
-MA,${comprobante.Qr}
-ENDQR
 
-PRINT
+       Firma                    Sello
+
+-------------------      -----------------------
+
+
 `;
-        // Ruta donde se guardará el archivo
+
         const filePath = path.join(__dirname, 'comprobantes', fileName);
 
-        // Crear directorio si no existe
         const dir = path.dirname(filePath);
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
 
-        // Escribir el archivo .txt
         fs.writeFileSync(filePath, cpclContent);
 
-        // Enviar el archivo como respuesta al cliente
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         return res.sendFile(filePath);
         // return res.json({ ...comprobante })

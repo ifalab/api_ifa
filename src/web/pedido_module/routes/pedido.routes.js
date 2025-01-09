@@ -16,6 +16,7 @@ router.get('/sugerido-zona', [validarToken, validarCampos],sugeridosXZonaControl
 router.get('/sugerido-cliente', [validarToken, validarCampos],sugeridosXClienteController)
 router.get('/zonas-vendedor', [validarToken, validarCampos],findZonasXVendedorController)
 router.post('/crear-orden', [validarToken, validarCampos],crearOrderController)
+router.post('/crear-oferta', [validarToken, validarCampos],crearOrderController)
 router.get('/white-list', [validarToken, validarCampos],whiteListController)
 router.get('/pendientes-vendedor', [validarToken, validarCampos],pedidosPorVendedorPendientesController)
 router.get('/facturados-vendedor', [validarToken, validarCampos],pedidosPorVendedorFacturadosController)
