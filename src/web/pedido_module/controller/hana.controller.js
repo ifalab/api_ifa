@@ -159,7 +159,7 @@ const pedidoSugeridoXZona = async(zoneCode, cardCode)=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_PRD.ifa_lapp_pedido_sugerido_by_zona('${zoneCode}', '${cardCode}')`
+        const query = `CALL ${process.env.PRD}.ifa_lapp_pedido_sugerido_by_zona('${zoneCode}', '${cardCode}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {

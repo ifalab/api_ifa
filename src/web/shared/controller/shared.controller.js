@@ -1,7 +1,8 @@
 const { response } = require("express")
-const { findClientesByVendedor, 
+const { findClientesByVendedor,
     grabarLog,
-    listaEncuesta
+    listaEncuesta,
+    crearEncuesta
 } = require("./hana.controller")
 
 const findClientesByVendedorController = async (req, res) => {
@@ -30,9 +31,9 @@ const findClientesByVendedorController = async (req, res) => {
 
 const listaEncuestaController = async (req, res) => {
     try {
-        
+
         const response = await listaEncuesta()
-       
+
         return res.json({ response })
     } catch (error) {
         console.log({ error })
@@ -40,9 +41,9 @@ const listaEncuestaController = async (req, res) => {
     }
 }
 
-const crearEncuestaController = async(req,res)=>{
+const crearEncuestaController = async (req, res) => {
     try {
-        
+
         const {
             new_primeraPregunta,
             new_segundaPregunta,
@@ -55,7 +56,7 @@ const crearEncuestaController = async(req,res)=>{
             new_puntajeSegundaPregunta,
             new_puntajeTerceraPregunta,
         } = req.body
-        return res.json({new_primeraPregunta,
+        const response = await crearEncuesta(new_primeraPregunta,
             new_segundaPregunta,
             new_terceraPregunta,
             new_recomendaciones,
@@ -64,10 +65,11 @@ const crearEncuestaController = async(req,res)=>{
             new_id_sap,
             new_puntajePrimerPregunta,
             new_puntajeSegundaPregunta,
-            new_puntajeTerceraPregunta,})
+            new_puntajeTerceraPregunta,)
+        return res.json(...response)
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'error en el controlador'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
 

@@ -5,7 +5,6 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
-// router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
 router.get('/cliente-mora', [validarToken, validarCampos], clientesMoraController)
 router.get('/mora', [validarToken, validarCampos], moraController)
 router.get('/catalogo', [validarToken, validarCampos], catalogoController)

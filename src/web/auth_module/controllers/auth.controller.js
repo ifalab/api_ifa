@@ -272,6 +272,7 @@ const findUserByIdController = async (req, res) => {
             CREATED_AT: value.CREATED_AT,
             ETIQUETA: value.ETIQUETA,
             CODEMP: value.CODEMP,
+            PULL_RATING: value.PULL_RATING,
 
         }
         return res.json({ ...user })

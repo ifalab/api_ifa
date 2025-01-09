@@ -757,20 +757,19 @@ const comprobanteController = async (req, res) => {
         const fileName = `${cardName}_${formattedDate}.txt`;
         const finalDate = formattedDate.split(' ')
 
-        let cpclContent = `
-              LABORATORIOS IFA S.A.
-------------------------------------------------
+        let cpclContent = `LABORATORIOS IFA S.A.
+----------------------------------------
 Comprobante: #${comprobante.DocNumPayments}
 Fecha: ${finalDate[0]}
 Hora: ${comprobante.DocTime[0]}${comprobante.DocTime[1]}:${comprobante.DocTime[2]}${comprobante.DocTime[3]}
 Codigo Cliente: ${comprobante.CardCode}
 Cliente: ${comprobante.CardName}
-
+            
 Modalidad de Pago: ${comprobante.Modality}
-------------------------------------------------
+----------------------------------------
 Fecha        Numero           Total
-------------------------------------------------
-
+----------------------------------------
+  
 `;
 
         // Añadir las facturas
@@ -784,17 +783,17 @@ Fecha        Numero           Total
 
         // Línea divisoria y total
         cpclContent += `
-------------------------------------------------
+----------------------------------------
 TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}
-Glosa: ${comprobante.JrnlMemo}
-------------------------------------------------
-
-
-       Firma                    Sello
-
--------------------      -----------------------
-
-
+Glosa: ${comprobante.ClpName||''}
+----------------------------------------
+                        
+                                
+     Firma                Sello
+                            
+---------------       ---------------
+                                
+                    
 `;
 
         const filePath = path.join(__dirname, 'comprobantes', fileName);
