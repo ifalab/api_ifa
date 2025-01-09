@@ -335,6 +335,87 @@ const ventasPorZonasVendedorMesAnt = async (username, line, groupBy) => {
         }
     }
 }
+
+const marcarAsistencia = async (id_vendedor_sap, fecha, hora, mensaje) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_LAPP.LAPP_MARCAR_ASISTENCIA(${id_vendedor_sap},'${fecha}','${hora}', '${mensaje}')`;
+        console.log({query})
+        const response = await executeQuery(query);
+
+        return {response, query}
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error en marcar asistencia: ${err.message}`);
+    }
+}
+
+const getAsistenciasVendedor = async (id_vendedor_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_LAPP.LAPP_LISTA_ASISTENCIA(${id_vendedor_sap})`;
+        console.log({query})
+        const response = await executeQuery(query);
+
+        return {response, query}
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error en obtener asistencia: ${err.message}`);
+    }
+}
+
+const pruebaaaBatch = async (articulo, almacen, cantidad) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_PRD.IFA_VM_SELECTION_BATCH_FEFO_TEST('${articulo}','${almacen}', ${cantidad})`;
+        console.log({query})
+        const response = await executeQuery(query);
+
+        return response
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error en prueba batch: ${err.message}`);
+    }
+}
+
+const prueba2Batch = async (articulo, alm) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select a."ItemCode", b."NumInSale" , a."OnHand", a."WhsCode" from lab_ifa_prd.oitw a left join lab_ifa_prd.oitm b on a."ItemCode" = b."ItemCode" where a."ItemCode" ='${articulo}' and a."WhsCode" = '${alm}'`;
+        console.log({query})
+        const response = await executeQuery(query);
+
+        return response
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error en prueba batch: ${err.message}`);
+    }
+}
+
+const prueba3Batch = async (articulo, alm) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "ItemCode", "WhsCode", "BatchNum","ExpDate","Quantity" from lab_ifa_prd.oibt where "ItemCode" ='${articulo}' and "WhsCode" = '${alm}' order by "ExpDate" asc`;
+        console.log({query})
+        const response = await executeQuery(query);
+
+        return response
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error en prueba batch: ${err.message}`);
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -358,4 +439,9 @@ module.exports = {
     ventasHistoricoMasivos,
     ventasHistoricoInstituciones,
     ventasPorZonasVendedorMesAnt,
+    marcarAsistencia,
+    getAsistenciasVendedor,
+    pruebaaaBatch,
+    prueba2Batch,
+    prueba3Batch
 }

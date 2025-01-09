@@ -28,19 +28,23 @@ const facturacionController = async (req, res) => {
         let deliveryBody
         let finalDataEntrega
         // return {id}
-        if (!id || id == '') return res.status(400).json({ mensaje: 'debe haber un ID valido' })
+        if (!id || id == '') {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'error: debe haber un ID valido', '', "facturacion/facturar", process.env.PRD)
+
+            return res.status(400).json({ mensaje: 'debe haber un ID valido' })
+        }
         const solicitud = await solicitarId(id);
         console.log('1 solicitud')
         // console.log({ solicitud })
 
-        if (solicitud.length > 1) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'error: Existe más de una entrega', '', "facturacion/facturar", process.env.PRD)
+        if (solicitud.result.length > 1) {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Existe más de una entrega`, `${solicitud.query|| ''}`, "facturacion/facturar", process.env.PRD)
 
             return res.status(400).json({ mensaje: 'Existe más de una entrega' })
         }
-        else if (solicitud.length == 1) {
+        else if (solicitud.result.length == 1) {
             //return res.json({solicitud})
-            deliveryData = solicitud[0].DocEntry
+            deliveryData = solicitud.result[0].DocEntry
             deliveryBody = await obtenerEntregaDetalle(deliveryData)
             console.log('1 solicitud tiene mas de uno')
             // console.log({ solicitud, deliveryData })
@@ -54,13 +58,12 @@ const facturacionController = async (req, res) => {
             console.log({ data })
             // return res.json({data})
             if (!data) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: Hubo un error al facturar', '', "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: Hubo un error al facturar, data: undefined, linea 56', `https://srvhana:50000/b1s/v1/Orders(${id})`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Hubo un error al facturar' })
             }
             const { DocumentLines, ...restData } = data
             if (!DocumentLines) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'No existe los DocumentLines en la facturacio por ID', '', "facturacion/facturar", process.env.PRD)
-
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: No existe los DocumentLines en la facturacion por ID', `https://srvhana:50000/b1s/v1/Orders(${id})`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'No existe los DocumentLines en la facturacio por ID ' })
             }
 
@@ -139,8 +142,7 @@ const facturacionController = async (req, res) => {
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
             deliveryBody = await postEntrega(finalDataEntrega)
             if (deliveryBody.lang) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'error interno en la entrega de sap', '', "facturacion/facturar", process.env.PRD)
-
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno en la entrega de sap en postEntrega: ${deliveryBody.value|| ''}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'error interno en la entrega de sap', respuestaSapEntrega: deliveryBody, finalDataEntrega })
             }
             console.log('3 post entrega')
@@ -158,8 +160,7 @@ const facturacionController = async (req, res) => {
         } else {
             const delivery = deliveryBody.deliveryN44umber
             if (!delivery) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'error del sap, no se pudo crear la entrega', '', "facturacion/facturar", process.env.PRD)
-
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error del sap, no se pudo crear la entrega, no se encontro el deliveryNumber en la respuesta', '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'error del sap, no se pudo crear la entrega' })
             }
             deliveryData = delivery
@@ -176,7 +177,7 @@ const facturacionController = async (req, res) => {
         console.log({ deliveryData })
 
         if (responseData.lang) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Error interno de SAP", '', "facturacion/facturar", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno de SAP. ${responseData.value || ''}`, '', "facturacion/facturar", process.env.PRD)
 
             return res.status(400).json({ mensaje: 'error interno de sap' })
         }
@@ -239,7 +240,7 @@ const facturacionController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", responsePatchEntrega.errorMessage, '', "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar patchEntrega: ${responsePatchEntrega.errorMessage || 'linea 239'}, cuf: ${cuf||''}, nroFactura: ${nroFactura ||''}, formater: ${formater}`, '', "facturacion/facturar", process.env.PRD)
 
                 return res.status(400).json({ mensaje: 'Error al procesar la solicitud: patchEntrega' })
             }
@@ -247,7 +248,7 @@ const facturacionController = async (req, res) => {
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
             console.log({ responseHana })
             if (responseHana.message) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", responseHana.message, '', "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al entregaDetallerFactura: ${responseHana.message || "linea 251, variable responseHana"}, cuf: ${cuf||''}, nroFactura: ${nroFactura ||''}, formater: ${formater}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
             }
             const DocumentLinesHana = [];
@@ -290,7 +291,7 @@ const facturacionController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.value) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", invoiceResponse.value, '', "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el envio del invoice: ${invoiceResponse.value || ''}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
             }
             const response = {
@@ -321,8 +322,14 @@ const facturacionController = async (req, res) => {
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
-            if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
-            if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
+            if (dataProsin && dataProsin.estado != 200) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
+            }
+            if (dataProsin.mensaje != null){ 
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
+            }
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
             const cuf = dataProsin.datos.cuf
@@ -335,10 +342,13 @@ const facturacionController = async (req, res) => {
             const yearFomater = yearTime.split(' ')
             const year = yearFomater[0]
             console.log({ day, month, year })
-            if (year.length > 4) return res.status(400).json({ mensaje: 'error al formateo de la fecha' })
+            if (year.length > 4) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el formateo de la fecha: linea 350`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: 'error al formateo de la fecha' })
+            }
             const fechaFormater = year + month + day
             // return res.json({fechaFormater})
-            console.log({ deliveryData, cuf, nroFactura, fechaFormater, })
+            console.log({ deliveryData, cuf, nroFactura, fechaFormater })
             //TODO --------------------------------------------------------------  PATCH ENTREGA
             const responsePatchEntrega = await patchEntrega(deliveryData, {
                 U_B_cuf: `${cuf}`,
@@ -347,12 +357,15 @@ const facturacionController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage || ""}, U_B_cuf: ${cuf||''}, U_B_em_date: ${fechaFormater||''} ,NumAtCard: ${nroFactura||''}`, '', "facturacion/facturar", process.env.PRD)
+
                 return res.status(400).json({ mensaje: 'Error al procesar la solicitud: patchEntrega' })
             }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
             console.log({ responseHana })
             if (responseHana.message) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf||''}, fechaFormater: ${fechaFormater||''}, nroFactura: ${nroFactura||''}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
             }
             const DocumentLinesHana = [];
@@ -396,6 +409,7 @@ const facturacionController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.value) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.value || ""}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
             }
             const response = {
@@ -415,13 +429,10 @@ const facturacionController = async (req, res) => {
 
     } catch (error) {
         console.log({ error })
-        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({ usuario })
-        let mensaje = 'Error en el controlador Facturar'
-        if (error.message) {
-            mensaje = error.message
-        }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Facturar", mensaje, '', "facturacion/facturar", process.env.PRD)
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ user })
+        let mensaje = error.message??'Error en el controlador Facturar'
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${mensaje}, sapMessage: ${error?.message?.error || 'No definido'}`, '', "facturacion/facturar", process.env.PRD)
 
         return res.status(error.statusCode ?? 500).json({
             mensaje: 'Error en el controlador',
@@ -477,10 +488,11 @@ const facturacionStatusListController = async (req, res) => {
 const noteEntregaController = async (req, res) => {
     try {
         const delivery = req.query.delivery;
+        const user = req.usuarioAutorizado
         const response = await notaEntrega(delivery);
-
-        console.log({ notaEntregaResponse: response })
-        if (response.length == 0) {
+        console.log({ notaEntregaResponse: response.result })
+        if (response.result.length == 0) {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota entrega", `Error de SAP al crear la nota de entrega`, response.query, "facturacion/nota-entrega", process.env.PRD)
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de entrega' });
         }
         const detailsList = [];
@@ -503,9 +515,9 @@ const noteEntregaController = async (req, res) => {
             U_Zona,
             U_Comentario,
             ...restData
-        } = response[0];
+        } = response.result[0];
 
-        response.map((item) => {
+        response.result.map((item) => {
             const { ...restData } = item;
             detailsList.push({ ...restData });
         });
@@ -557,17 +569,28 @@ const noteEntregaController = async (req, res) => {
         pdf.create(html, options).toStream((err, stream) => {
             if (err) {
                 console.error('Error al generar el PDF:', err);
-                return res.status(500).json({ mensaje: 'Error al generar el PDF' });
+                let mensaje = err.message || 'Error al generar el PDF'
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", mensaje, response.query, "facturacion/nota-entrega", process.env.PRD)
+
+                return res.status(500).json({ mensaje });
             }
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", "Nota Creada con exito", response.query, "facturacion/nota-entrega", process.env.PRD)
 
             // Enviar el PDF en la respuesta
             res.setHeader('Content-Type', 'application/pdf');
             stream.pipe(res);
         });
     } catch (error) {
-
+        const user = req.usuarioAutorizado
         console.error('Error en el controlador:', error);
-        return res.status(500).json({ mensaje: 'Error en el controlador' });
+        console.log(error.message)
+        let mensaje = error.message || 'Error en el controlador: notaEntregaController'
+        if(mensaje.length >255){
+            mensaje= 'Error en el controlador: notaEntregaController'
+        }
+        const query = error.query || "No disponible"
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", mensaje, query, "facturacion/nota-entrega", process.env.PRD)
+        return res.status(500).json({ mensaje });
     }
 }
 
@@ -770,7 +793,7 @@ const cancelToProsinController = async (req, res) => {
         console.log({ user })
         if (responseProsin.data.mensaje) {
             const mess = responseProsin.data.mensaje.split('§')
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", mess[1], '', "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion: ${mess[1]|| ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
 
             return res.status(400).json({ mensaje: `${mess[1]}` })
         }
@@ -781,7 +804,7 @@ const cancelToProsinController = async (req, res) => {
         const reponseInvoice = await cancelInvoice(docEntry)
 
         if (reponseInvoice.value) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", reponseInvoice.value, `respose value: ${reponseInvoice.value||''}`, "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
 
             return res.status(400).json({ mensaje: `${reponseInvoice.value}, cuf: ${cuf}` })
         }
@@ -814,10 +837,7 @@ const cancelToProsinController = async (req, res) => {
 
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
-        let mensaje = 'Error en el controlador CancelToProsin'
-        if (error.message) {
-            mensaje = error.message
-        }
+        let mensaje = `Error en el controlador CancelToProsin ${error.message||''}`
         console.log({ statuscode: error.statusCode })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje, '', "facturacion/cancel-to-prosin", process.env.PRD)
 
