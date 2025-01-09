@@ -57,15 +57,27 @@ const findClientesByVendedor = async(id_vendedor)=>{
     }
 }
 
+const findClientesByFacturador = async(sucCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_clientes_by_vendedor(${sucCode})`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: clientes by vendedor');
+    }
+}
+
 const grabarLog = async(userCode, username, modulo, mensaje, querystr, endpoint, base )=>{
     try {
         if (!connection) {
             await connectHANA();
         }
         const escapedQuerystr = querystr.replace(/'/g, "''");
-        const escapedmensajestr = mensaje.replace(/'/g, "''");
-
-        const query = `CALL LAB_IFA_LAPP.LAPP_GRABAR_LOG('${userCode}','${username}','${modulo}', '${escapedmensajestr}','${escapedQuerystr}','${endpoint}','${base}')`
+        const query = `CALL LAB_IFA_LAPP.LAPP_GRABAR_LOG('${userCode}','${username}','${modulo}', '${mensaje}','${escapedQuerystr}','${endpoint}','${base}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -74,7 +86,52 @@ const grabarLog = async(userCode, username, modulo, mensaje, querystr, endpoint,
     }
 }
 
+const listaEncuesta = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_ENCUESTA`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: listaEncuesta');
+    }
+
+}
+
+const crearEncuesta = async(
+    new_primeraPregunta,
+    new_segundaPregunta,
+    new_terceraPregunta,
+    new_recomendaciones,
+    new_fullname,
+    new_rol_user,
+    new_id_sap,
+    new_puntajePrimerPregunta,
+    new_puntajeSegundaPregunta,
+    new_puntajeTerceraPregunta,
+
+)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAPP_CREAR_ENCUESTA('${new_primeraPregunta}','${new_segundaPregunta}','${new_terceraPregunta}','${new_recomendaciones}','${new_fullname}','${new_rol_user}',${new_id_sap},${new_puntajePrimerPregunta},${new_puntajeSegundaPregunta},${new_puntajeTerceraPregunta});`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: crearEncuesta');
+    }
+
+}
+
 module.exports = {
     findClientesByVendedor,
-    grabarLog
+    grabarLog,
+    findClientesByFacturador,
+    listaEncuesta,
+    crearEncuesta,
 }

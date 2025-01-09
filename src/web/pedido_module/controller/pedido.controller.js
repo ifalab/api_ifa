@@ -15,7 +15,7 @@ const { findClientePorVendedor,
     pedidosPorVendedorAnulados,
     pedidoLayout
 } = require("./hana.controller");
-const { postOrden } = require("../../../movil/ventas_module/controller/sld.controller");
+const { postOrden, postQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
 const QRCode = require('qrcode');
 const path = require('path');
@@ -27,13 +27,6 @@ const clientesVendedorController = async (req, res) => {
 
         const { name } = req.body;
         const response = await findClientesByVendedor(name);
-        // const clientesWitheList = await clientesMora()
-        // let listCardCode = []
-
-        // clientesWitheList.map((item) => {
-        //     listCardCode.push(item.CardCode)
-        // })
-        // return res.json({ response, clientesWitheList })
         let clientes = [];
         for (const item of response) {
             const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
@@ -46,6 +39,36 @@ const clientesVendedorController = async (req, res) => {
                 saldoDisponible,
             };
             clientes.push({ ...newData });
+        }
+
+        return res.json({ clientes });
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const clientesFacturadorController = async (req, res) => {
+    try {
+
+        const { sucCodeList } = req.body;
+        let clientes = [];
+
+        for (const code of sucCodeList) {
+            const response = await findClientesByVendedor(code);
+            for (const item of response) {
+                const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
+                const saldoDisponible = (+CreditLine) - (+AmountDue);
+                const newData = {
+                    ...restCliente,
+                    CreditLine,
+                    AmountDue,
+                    mora: HvMora,
+                    saldoDisponible,
+                };
+                clientes.push({ ...newData });
+            }
         }
 
         return res.json({ clientes });
@@ -222,6 +245,11 @@ const findZonasXVendedorController = async (req, res) => {
 const crearOrderController = async (req, res) => {
     const body = req.body
     try {
+
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        console.log(JSON.stringify(body, null, 2))
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+
         const ordenResponse = await postOrden(body)
         const usuario = req.usuarioAutorizado
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
@@ -247,6 +275,23 @@ const crearOrderController = async (req, res) => {
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `mensaje: ${mensaje||''}, body.CardCode: ${body.CardCode||''}, body.DocTotal: ${body.DocTotal||''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
 
         return res.status(500).json({ mensaje })
+    }
+}
+
+const crearOfertaVentaController = async (req, res) => {
+    const body = req.body
+    try {
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        console.log(JSON.stringify(body, null, 2))
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear oferta", `${mensaje}, ${body}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+        const response = await postQuotations(body)
+        return res.json({ response })
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
 
@@ -320,10 +365,10 @@ const pedidoLayoutController = async (req, res) => {
         const delivery = req.query.delivery;
         console.log({ delivery })
         const response = await pedidoLayout(delivery)
-        const user= req.usuarioAutorizado
-
+        const user = req.usuarioAutorizado
+        // return res.json({response})
         if (response.result.length == 0) {
-            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", 'Error de SAP al crear la nota de Pedido', response.query , "pedido/pedido-layout", process.env.PRD )
+            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", 'Error de SAP al crear la nota de Pedido', response.query, "pedido/pedido-layout", process.env.PRD)
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de Pedido' });
         }
         console.log({ response })
@@ -365,8 +410,11 @@ const pedidoLayoutController = async (req, res) => {
             time = timeMatch[0];
             console.log("Hora extraída:", time);
         }
-        time = `${DocTime[0] || 0}${DocTime[1] || 0}:${DocTime[2] || 0}${DocTime[3] || 0}`
-        console.log({time})
+        docTimeFormatted = `${DocTime}`
+        time = `${docTimeFormatted[0] || 0}${docTimeFormatted[1] || 0}:${docTimeFormatted[2] || 0}${docTimeFormatted[3] || 0}`
+        console.log({ time })
+        console.log({ doctime: docTimeFormatted[1] })
+        console.log({ doctime: docTimeFormatted })
         const data = {
             time,
             DocNum,
@@ -409,21 +457,21 @@ const pedidoLayoutController = async (req, res) => {
                 return res.status(500).json({ mensaje: 'Error al generar el PDF' });
             }
 
-            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `PDF generado con exito`, response.query , "pedido/pedido-layout", process.env.PRD )
+            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `PDF generado con exito`, response.query, "pedido/pedido-layout", process.env.PRD)
             // Enviar el PDF en la respuesta
             res.setHeader('Content-Type', 'application/pdf');
             stream.pipe(res);
         });
     } catch (error) {
         console.log({ error })
-        const user= req.usuarioAutorizado
-        let mensaje= error.message||'error en el controlador: pedidoLayoutController';
-        if(mensaje.length >5000){
-            mensaje= 'Error en el controlador: pedidoLayoutController'
+        const user = req.usuarioAutorizado
+        let mensaje = error.message || 'error en el controlador: pedidoLayoutController';
+        if (mensaje.length > 5000) {
+            mensaje = 'Error en el controlador: pedidoLayoutController'
         }
         const query = error.query || 'No disponible'
-        grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", mensaje, query , "pedido/pedido-layout", process.env.PRD )
-        
+        grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", mensaje, query, "pedido/pedido-layout", process.env.PRD)
+
         return res.status(500).json({ mensaje })
     }
 }
@@ -445,4 +493,6 @@ module.exports = {
     pedidosPorVendedorFacturadosController,
     pedidosPorVendedorAnuladosController,
     pedidoLayoutController,
+    crearOfertaVentaController,
+    clientesFacturadorController
 }

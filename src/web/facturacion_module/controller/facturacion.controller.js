@@ -15,6 +15,7 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
 const { spObtenerCUF } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
+const { response } = require('express');
 
 const facturacionController = async (req, res) => {
     let body = {}
@@ -595,10 +596,17 @@ const noteEntregaController = async (req, res) => {
 
 const listaFacturasAnular = async (req, res) => {
     try {
-        const sucursal = req.query.sucursal
-        console.log({ sucursal })
-        const listaFacturas = await facturasParaAnular(sucursal)
-        if (listaFacturas.message) return res.status(404).json({ mensaje: listaFacturas.message })
+
+        const { sucCodeList } = req.body
+        let listaFacturas = []
+        for (const sucursal of sucCodeList) {
+
+            const response = await facturasParaAnular(sucursal)
+            if (listaFacturas.message) return res.status(404).json({ mensaje: listaFacturas.message })
+            console.log({response})
+            listaFacturas.push(...response)
+        }
+
         return res.json({ listaFacturas })
     } catch (error) {
         console.error({ error })

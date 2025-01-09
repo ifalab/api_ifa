@@ -83,6 +83,50 @@ const postOrden = async (newOrderDate) => {
 
 };
 
+const postQuotations = async(newOrderDate)=>{
+
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const url = 'https://srvhana:50000/b1s/v1/Quotations';
+
+        // Configura los encabezados para incluir la cookie y el encabezado Prefer
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        console.log({newOrderDate})
+        // Realiza la solicitud POST a la API externa usando el agente y los encabezados
+        const response = await axios.post(url, newOrderDate, {
+            httpsAgent: agent,
+            headers: headers
+        });
+
+        // // Extrae el número del encabezado location
+        // const locationHeader = response.headers.location;
+        // const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        // const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+
+        // console.log('Nueva Orden: #', orderNumber)
+        // // Envía una respuesta exitosa con mensaje personalizado
+        return {
+            message: 'Orden grabada con éxito',
+            orderNumber: orderNumber,
+            status: 200,
+            // statusText: response.statusText
+        }
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        console.error('Error en la solicitud POST para Entrega:', error.response?.data || error.message);
+        return {
+            message: 'Hubo un problema en la solicitud',
+            status: 400,
+            errorMessage
+        }
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Controlador para manejar la solicitud POST de consulta de batch
 const postEntrega = async (responseJson) => {
@@ -320,5 +364,6 @@ module.exports = {
     findOneIncomingPayment,
     findOneByCardCodeIncomingPayment,
     createIncomingPayment,
-    cancelIncomingPayment
+    cancelIncomingPayment,
+    postQuotations
 }
