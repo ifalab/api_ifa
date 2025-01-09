@@ -6,6 +6,7 @@ const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
+const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -699,8 +700,12 @@ const realizarCobroController = async (req, res) => {
         const TransferAccount = body.TransferAccount
         const PaymentInvoices = body.PaymentInvoices
         let total = 0
-
-        if (!PaymentInvoices) return res.status(400).json({ mensaje: 'el PaymentInvoices es obligatorio' })
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({usuario})
+        if (!PaymentInvoices) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", 'Error: el PaymentInvoices es obligatorio', `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+            return res.status(400).json({ mensaje: 'el PaymentInvoices es obligatorio' })
+        }
 
         PaymentInvoices.map((item) => {
             const sum = item.SumApplied
@@ -708,25 +713,44 @@ const realizarCobroController = async (req, res) => {
         })
 
         if (TransferAccount || TransferAccount != null) {
-            if (TransferSum !== total) return res.status(400).json({ mensaje: 'el total es diferente al TransferSum' })
+            if (TransferSum !== total) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", 'Error: el total es diferente al TransferSum', `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+
+                return res.status(400).json({ mensaje: 'el total es diferente al TransferSum' })
+            }
         }
 
         if (CashAccount || CashAccount != null) {
-            if (CashSum !== total) return res.status(400).json({ mensaje: 'el total es diferente al CashSum' })
+            if (CashSum !== total) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", "Error: el total es diferente al CashSum", `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+
+                return res.status(400).json({ mensaje: 'el total es diferente al CashSum' })
+            }
         }
 
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
+            const mensaje= `Error del SAP`
             if (responseSap.errorMessage && responseSap.errorMessage.value) {
-                return res.status(400).json({ mensaje: `Error del SAP: ${responseSap.errorMessage.value}`, })
-            } else {
-                return res.status(400).json({ mensaje: `Error del SAP`, })
+                mensaje= `Error del SAP: ${responseSap.errorMessage.value}`
             }
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+            return res.status(400).json({ mensaje })
         }
+
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", "Cobranza realizada con exito", `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
         return res.json({ ...responseSap })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador' })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({usuario})
+        let mensaje = 'Error en el controlador: realizarCobroController'
+        if (error.message) {
+            mensaje = error.message
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, ``, "cobranza/realizar-cobro", process.env.PRD)
+
+        return res.status(500).json({ mensaje })
     }
 }
 
