@@ -10,6 +10,7 @@ async function spObtenerCUF(nroDocumento) {
         return result.recordset
     } catch (err) {
         console.error('Error en la consulta:', err);
+        return {message: `Error en la consulta spObtenerCUF`}
     }
 }
 

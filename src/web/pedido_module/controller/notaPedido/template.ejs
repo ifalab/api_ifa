@@ -13,7 +13,7 @@
             color: #333;
         }
 
-        h1, h2, h3 {
+        h1, h2, h3, h5 {
             text-align: center;
             color: #4d4c4c;
             margin: 10px 0;
@@ -115,7 +115,7 @@
 
 <body>
     <div class="content">
-        <h3 class="text-center">LABORATORIOS IFA</h3>
+        <h2 class="text-center">LABORATORIOS IFA</h2>
         <h5 class="text-center">NOTA DEL PEDIDO #<%= data.DocNum %>
         </h5>
         <h5 class="text-center">ALMACEN : <%= data.WhsCode %>
@@ -221,7 +221,7 @@
     </div>
 <footer class="footer">
     <p>LABORATORIOS IFA - Todos los derechos reservados</p>
-            <p>Documento generado automáticamente el <%= new Date().toLocaleDateString() %></p>
+    <p>Documento generado el <%= new Date().toLocaleDateString() %></p>
 </footer>
 
 </body>

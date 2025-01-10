@@ -3,7 +3,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -730,9 +730,9 @@ const realizarCobroController = async (req, res) => {
 
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
-            const mensaje= `Error del SAP`
+            let mensaje= `Error del SAP`
             if (responseSap.errorMessage && responseSap.errorMessage.value) {
-                mensaje= `Error del SAP: ${responseSap.errorMessage.value}`
+                mensaje= `Error del SAP ${responseSap.errorMessage.value || ''}`
             }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
             return res.status(400).json({ mensaje })
@@ -938,6 +938,132 @@ const comprobantePDFController = async (req, res) => {
     }
 }
 
+const getMounth = (month) => {
+    const meses = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", 
+        "septiembre", "octubre", "noviembre", "diciembre"
+      ];
+    return meses[month];
+}
+
+const resumenCobranzasController = async (req, res) => {
+    try {
+        const id_vendedor = req.query.id
+        const fecha = req.query.fecha
+        const newDate = new Date()
+        const date = newDate.getDate() + ' de '+ getMounth(newDate.getMonth())+ ' de '+newDate.getFullYear()
+        
+        const response = await resumenCobranzaLayout(id_vendedor, fecha)        
+        if(response.message){
+            return res.status(400).json({mensaje: `${response.message||'Error en resumenCobranzaLayout'}`})
+        }
+        if(response.length==0){
+            return res.status(400).json({mensaje: 'No hay cobranzas'})
+        }
+        // return res.json({response})
+        const Recibos = [];
+        const Efectivo = [];
+        const recibosEfec= [];
+        const Transferencia = [];
+        const recibosTrans= [];
+        const Cheque = [];
+        const recibosCheque =[];
+        const cabezera = [];
+        for (const line of response) {
+            const { ClpCode, ClpName, Modality, TotalDay, Date, ...result } = line
+            if (!cabezera.length) {
+                cabezera.push({ ClpCode, ClpName, Date })
+            }
+            if(Modality=='efectivo'){
+                if(!Efectivo.length){
+                    Efectivo.push({Modality, TotalDay})
+                }
+                recibosEfec.push({...result})
+            }else if(Modality=='transferencia'){
+                if(!Transferencia.length){
+                    Transferencia.push({Modality, TotalDay})
+                }
+                recibosTrans.push({...result})
+            }else{
+                if(!Cheque.length){
+                    Cheque.push({Modality, TotalDay})
+                }
+                recibosCheque.push({...result})
+            }
+        }
+        Efectivo[0] = {
+            ...Efectivo[0],
+            Recibos: recibosEfec
+        }
+        Transferencia[0] = {
+            ...Transferencia[0],
+            Recibos: recibosTrans
+        }
+        Cheque[0] = {
+            ...Cheque[0],
+            Recibos: recibosCheque
+        }
+        Recibos.push({...Efectivo[0]}); Recibos.push({...Transferencia[0]}); Recibos.push({...Cheque[0]}); 
+        const comprobante = {
+            ...cabezera[0],
+            Recibos
+        }
+        // return res.json({comprobante})
+        
+        const fileName = `${id_vendedor}_cierre_${fecha}.txt`;
+
+        let cpclContent = `
+              LABORATORIOS IFA S.A.
+                RESUMEN COBRANZAS
+
+Santa Cruz, ${date}
+Detalle Recibos
+`;
+//////
+for(let i=0; i<comprobante.Recibos.length; i++){
+    if(comprobante.Recibos[i].Recibos.length!=0){
+    if(i==0){
+        cpclContent += `------------------------------------------------
+EFECTIVO`
+    }else if(i==1){
+        cpclContent += `------------------------------------------------
+TRANSFERENCIAS`
+    }else {
+    cpclContent += `------------------------------------------------
+CHEQUES`
+    }
+
+    comprobante.Recibos[i].Recibos.forEach((recibo) => {
+        const { CardCode, CardName, DocTotal, NumAtCard } = recibo;
+        cpclContent += `
+    Cod: ${CardCode}   Nro:${NumAtCard}           ${parseFloat(DocTotal).toFixed(2)} Bs.
+    ${CardName}`;
+    });
+
+cpclContent += `
+                                ----------------
+                        TOTAL:      ${parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2)} Bs.
+`;
+    }
+}
+
+        const filePath = path.join(__dirname, 'resumen', fileName);
+
+        const dir = path.dirname(filePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        fs.writeFileSync(filePath, cpclContent);
+
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        return res.sendFile(filePath);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el comprobanteController' })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -968,4 +1094,5 @@ module.exports = {
     realizarCobroController,
     comprobanteController,
     comprobantePDFController,
+    resumenCobranzasController,
 }

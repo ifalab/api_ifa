@@ -1,0 +1,34 @@
+
+              LABORATORIOS IFA S.A.
+                RESUMEN COBRANZAS
+
+Santa Cruz, 10 de enero de 2025
+Detalle Recibos
+------------------------------------------------
+EFECTIVO
+    Cod: C002471   Nro:           500.00 Bs.
+    FARMACIA DIVINO MAESTRO
+    Cod: C004381   Nro:           400.00 Bs.
+    FARMACIA MILETH
+    Cod: C004705   Nro:           300.00 Bs.
+    FARMACIA PANOZO
+    Cod: C004558   Nro:           250.00 Bs.
+    FARMACIA NORITA
+    Cod: C005849   Nro:           246.47 Bs.
+    FARMACIA TU SALUD PRIMERO
+    Cod: C004853   Nro:           200.00 Bs.
+    FARMACIA PROGRESO
+                                ----------------
+                        TOTAL:      NaN Bs.
+------------------------------------------------
+TRANSFERENCIAS
+    Cod: C004898   Nro:           3913.33 Bs.
+    FARMACIA RAMIREZ
+    Cod: C002536   Nro:           3033.19 Bs.
+    FARMACIA EBED
+    Cod: C003440   Nro:           719.22 Bs.
+    FARMACIA HELAMAN
+    Cod: C002471   Nro:           250.00 Bs.
+    FARMACIA DIVINO MAESTRO
+                                ----------------
+                        TOTAL:      NaN Bs.
