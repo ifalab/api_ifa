@@ -25,7 +25,8 @@ const {
     marcarAsistencia,
     getAsistenciasVendedor,
     pruebaaaBatch, prueba2Batch, prueba3Batch,
-    listaAlmacenes
+    listaAlmacenes,
+    listaAsistenciaDia
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -677,13 +678,13 @@ const marcarAsistenciaController = async (req, res) => {
     try {
         console.log(req.body)
         const { ID_VENDEDOR_SAP, FECHA, HORA, MENSAJE, LATITUD, LONGITUD } = req.body
-        if(LATITUD=='' || LONGITUD==''){
-            return res.status(400).json({ mensaje:'No hay latitud/longitud, active la ubicacion GPS de su dispositivo o intente nuevamente'})
+        if (LATITUD == '' || LONGITUD == '') {
+            return res.status(400).json({ mensaje: 'No hay latitud/longitud, active la ubicacion GPS de su dispositivo o intente nuevamente' })
         }
         const usuario = req.usuarioAutorizado
         const asistencia = await marcarAsistencia(ID_VENDEDOR_SAP, FECHA, HORA, MENSAJE, LATITUD, LONGITUD)
         console.log(asistencia.response)
-        
+
 
         if (asistencia.response.lang) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", `${asistencia.response.value || 'Error en la solicitud marcarAsistencia'}`, asistencia.query, "venta/marcar-asistencia", process.env.PRD)
@@ -729,6 +730,18 @@ const getAsistenciasVendedorController = async (req, res) => {
     }
 }
 
+const listaAsistenciaDiaController = async (req, res) => {
+    try {
+        const {fecha,id_sap}=req.body
+        const {response} = await listaAsistenciaDia(fecha,id_sap)
+
+        return res.json(response) 
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'error en el controlador'})
+    }
+}
+
 const pruebaBatchController = async (req, res) => {
     try {
         const { articulo, almacen, cantidad } = req.body;
@@ -745,10 +758,10 @@ const pruebaBatchController = async (req, res) => {
     }
 }
 
-const listaAlmacenesController = async (req,res)=>{
+const listaAlmacenesController = async (req, res) => {
     try {
-        
-        const {listSuc} = req.body
+
+        const { listSuc } = req.body
         let listAlmacenes = []
         for (const element of listSuc) {
             const response = await listaAlmacenes(element)
@@ -756,8 +769,8 @@ const listaAlmacenesController = async (req,res)=>{
         }
         return res.json(listAlmacenes)
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'error en el controlador no definido'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador no definido' })
     }
 }
 
@@ -788,5 +801,6 @@ module.exports = {
     marcarAsistenciaController,
     getAsistenciasVendedorController,
     pruebaBatchController,
-    listaAlmacenesController
+    listaAlmacenesController,
+    listaAsistenciaDiaController
 };

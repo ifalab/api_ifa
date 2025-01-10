@@ -368,6 +368,22 @@ const getAsistenciasVendedor = async (id_vendedor_sap) => {
     }
 }
 
+const listaAsistenciaDia = async (fecha,id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_LAPP.LAPP_ASISTENCIA_DIA('${fecha}',${id})`;
+        console.log({query})
+        const response = await executeQuery(query);
+
+        return {response, query}
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error en obtener listaAsistenciaDia: ${err.message}`);
+    }
+}
+
 const pruebaaaBatch = async (articulo, almacen, cantidad) => {
     try {
         if (!connection) {
@@ -459,5 +475,6 @@ module.exports = {
     pruebaaaBatch,
     prueba2Batch,
     prueba3Batch,
-    listaAlmacenes
+    listaAlmacenes,
+    listaAsistenciaDia,
 }

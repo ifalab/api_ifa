@@ -1011,7 +1011,7 @@ const facturacionEntregaController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.value) {
-                return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
+                return res.status(400).json({ mensaje: `error Sap .${invoiceResponse.value||''}` })
             }
             const response = {
                 status: invoiceResponse.status || {},
@@ -1161,7 +1161,7 @@ const facturacionEntregaController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.value) {
-                return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
+                return res.status(400).json({ mensaje: `error sap invoice ${invoiceResponse.value||''}` })
             }
             const response = {
                 status: invoiceResponse.status || {},
@@ -1181,7 +1181,7 @@ const facturacionEntregaController = async (req, res) => {
             mensaje: 'Error en el controlador facturacionEntregaController',
             sapMessage: `${error?.message?.error || 'No definido'}`,
             error: {
-                message: error.message,
+                mensaje: error.message,
                 stack: error.stack,
                 statusCode: error.statusCode || 500,
             },
