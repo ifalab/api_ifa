@@ -318,7 +318,7 @@ const cobranzaPorZonaMesAnt = async (username) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_ANT"(${username})`
+        const query = `CALL "${process.env.DBSAPPRD}"."LAPP_COBRANZA_ZONA_ANT"(${username})`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -334,7 +334,7 @@ const clientePorVendedor = async (nombre) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL LAB_IFA_PRD.IFA_LAPP_SALDO_DEUDOR_CLI_BY_VEND('${nombre}')`
+        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_CLI_BY_VEND('${nombre}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -350,7 +350,7 @@ const cobranzaSaldoDeudor = async (nombre, codigo) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL LAB_IFA_PRD.IFA_LAPP_SALDO_DEUDOR_BY_VEND_OR_CLI('${nombre}','${codigo}')`
+        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_BY_VEND_OR_CLI('${nombre}','${codigo}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -366,7 +366,7 @@ const clientesInstitucionesSaldoDeudor = async () => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from LAB_IFA_PRD.ifa_dm_clientes where "GroupName" = 'INSTITUCIONES'`
+        const query = `select * from ${process.env.DBSAPPRD}.ifa_dm_clientes where "GroupName" = 'INSTITUCIONES'`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -382,7 +382,7 @@ const saldoDeudorInstituciones = async (cardCode) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL LAB_IFA_PRD.IFA_LAPP_SALDO_DEUDOR_BY_INST('${cardCode}')`
+        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_BY_INST('${cardCode}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -398,7 +398,7 @@ const cobroLayout = async (id) => {
             await connectHANA();
         }
         // const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
-        const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
+        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
