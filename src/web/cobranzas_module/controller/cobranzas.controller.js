@@ -956,10 +956,11 @@ const resumenCobranzasController = async (req, res) => {
         if(response.message){
             return res.status(400).json({mensaje: `${response.message||'Error en resumenCobranzaLayout'}`})
         }
-        if(response.length==0){
-            return res.status(400).json({mensaje: 'No hay cobranzas'})
-        }
+        
+        console.log(Intl.NumberFormat('de-DE').format(79000.50))
         // return res.json({response})
+        let cpclContent=''
+        if(response.length!=0){
         const Recibos = [];
         const Efectivo = [];
         const recibosEfec= [];
@@ -1008,14 +1009,19 @@ const resumenCobranzasController = async (req, res) => {
             Recibos
         }
         // return res.json({comprobante})
+        console.log(comprobante.Date)
         
-        const fileName = `${id_vendedor}_cierre_${fecha}.txt`;
+        const fechaObj = new Date(comprobante.Date);
 
-        let cpclContent = `
+        // Usar Intl.DateTimeFormat para formatear la fecha en español
+        const opciones = { day: 'numeric', month: 'long', year: 'numeric' };
+        const formatoFecha = new Intl.DateTimeFormat('es-ES', opciones).format(fechaObj);
+
+        cpclContent = `
               LABORATORIOS IFA S.A.
                 RESUMEN COBRANZAS
 
-Santa Cruz, ${date}
+Santa Cruz, ${formatoFecha}
 Detalle Recibos
 `;
 //////
@@ -1035,17 +1041,27 @@ CHEQUES`
     comprobante.Recibos[i].Recibos.forEach((recibo) => {
         const { CardCode, CardName, DocTotal, NumAtCard } = recibo;
         cpclContent += `
-    Cod: ${CardCode}   Nro:${NumAtCard}           ${parseFloat(DocTotal).toFixed(2)} Bs.
-    ${CardName}`;
+    Cod: ${CardCode}              --->  ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.
+    ${CardName}
+    Nro: ${NumAtCard}
+    --------------------------------------------`;
     });
 
 cpclContent += `
-                                ----------------
-                        TOTAL:      ${parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2)} Bs.
+                        TOTAL:      ${Intl.NumberFormat('en-US').format(parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2))} Bs.
 `;
     }
 }
+        }else{
+            cpclContent = `
+            LABORATORIOS IFA S.A.
+              RESUMEN COBRANZAS
+              
+No hay Cobranzas
+`
+        }
 
+        const fileName = `${id_vendedor}_cierre_${fecha}.txt`;
         const filePath = path.join(__dirname, 'resumen', fileName);
 
         const dir = path.dirname(filePath);
