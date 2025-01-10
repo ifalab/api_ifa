@@ -284,7 +284,7 @@ const cobranzaMasivosMesAnteriorController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaIfavetMesAnteriorController',
+            mensaje: 'problemas en cobranzaMasivosMesAnteriorController',
             error
         })
     }
@@ -306,7 +306,7 @@ const cobranzaInstitucionesMesAnteriorController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaIfavetMesAnteriorController',
+            mensaje: 'problemas en cobranzaInstitucionesMesAnteriorController',
             error
         })
     }
@@ -744,10 +744,7 @@ const realizarCobroController = async (req, res) => {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({usuario})
-        let mensaje = 'Error en el controlador: realizarCobroController'
-        if (error.message) {
-            mensaje = error.message
-        }
+        let mensaje = `Error en el controlador realizarCobroController ${error.message||''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, ``, "cobranza/realizar-cobro", process.env.PRD)
 
         return res.status(500).json({ mensaje })
@@ -958,6 +955,13 @@ const resumenCobranzasController = async (req, res) => {
         }
         
         console.log(Intl.NumberFormat('de-DE').format(79000.50))
+        let {Modality}=response
+        if(!Modality){
+            Modality =response
+        }else{
+            return res.json({Modality})
+        }
+        return res.json({Modality})
         // return res.json({response})
         let cpclContent=''
         if(response.length!=0){
@@ -1020,11 +1024,9 @@ const resumenCobranzasController = async (req, res) => {
         cpclContent = `
               LABORATORIOS IFA S.A.
                 RESUMEN COBRANZAS
-
 Santa Cruz, ${formatoFecha}
-Detalle Recibos
 `;
-//////
+
 for(let i=0; i<comprobante.Recibos.length; i++){
     if(comprobante.Recibos[i].Recibos.length!=0){
     if(i==0){
@@ -1041,14 +1043,14 @@ CHEQUES`
     comprobante.Recibos[i].Recibos.forEach((recibo) => {
         const { CardCode, CardName, DocTotal, NumAtCard } = recibo;
         cpclContent += `
-    Cod: ${CardCode}              --->  ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.
+    Cod: ${CardCode}                   ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.
     ${CardName}
     Nro: ${NumAtCard}
     --------------------------------------------`;
     });
 
 cpclContent += `
-                        TOTAL:      ${Intl.NumberFormat('en-US').format(parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2))} Bs.
+                        TOTAL:     ${Intl.NumberFormat('en-US').format(parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2))} Bs.
 `;
     }
 }

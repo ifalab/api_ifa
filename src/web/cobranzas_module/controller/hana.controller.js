@@ -413,6 +413,7 @@ const resumenCobranzaLayout = async (id_vendedor, fecha) => {
         if (!connection) {
             await connectHANA();
         }
+        // const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_CIERRE_DIA_LAYOUT(${id_vendedor},'${fecha}')`;
         const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_CIERRE_DIA_LAYOUT(${id_vendedor},'${fecha}')`;
         console.log({ query })
         const result = await executeQuery(query)

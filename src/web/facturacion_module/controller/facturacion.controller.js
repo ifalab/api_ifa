@@ -66,15 +66,19 @@ const facturacionController = async (req, res) => {
             console.log('2 facturacion ')
             console.log({ facturacion})
             // return res.json({data})
+            if (facturacion.lang) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar: ${facturacion.value || ''}`, ``, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `Hubo un error al facturar: ${facturacion.value || ''}` })
+            }
             if (!facturacion.data) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar: ${facturacion || ''}`, ``, "facturacion/facturar", process.env.PRD)
-                return res.status(400).json({ mensaje: `Error: Hubo un error al facturar: ${facturacion || ''}` })
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar`, ``, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `Hubo un error al facturar`, facturacion })
             }
             const data= facturacion.data
             const { DocumentLines, ...restData } = data
             if (!DocumentLines) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: No existe los DocumentLines en la facturacion por ID', ``, "facturacion/facturar", process.env.PRD)
-                return res.status(400).json({ mensaje: 'No existe los DocumentLines en la facturacio por ID ' })
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: No existen los DocumentLines en la facturacion por ID', ``, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: 'No existen los DocumentLines en la facturacion por ID ' })
             }
 
             let batchNumbers = []
@@ -188,7 +192,7 @@ const facturacionController = async (req, res) => {
         console.log({ deliveryBody })
 
         let { responseData } = deliveryBody
-        if (deliveryBody) {
+        if (!responseData) {
             responseData = deliveryBody
         } else {
             const delivery = deliveryBody.deliveryN44umber
@@ -203,7 +207,7 @@ const facturacionController = async (req, res) => {
 
         console.log('6 responseData de delivery body')
         console.log({ responseData })
-        if (responseData.deliveryN44umber) {
+        if (responseData.deliveryN44umber) { ///
             deliveryData = responseData.deliveryN44umber
         }
         console.log('7 deliveryData')
@@ -215,7 +219,7 @@ const facturacionController = async (req, res) => {
         }
         const detalle = [];
         const cabezera = [];
-        if (responseData.responseData) {
+        if (responseData.responseData) { ///
             responseData = responseData.responseData
         }
 
@@ -759,7 +763,7 @@ const obtenerEntregasPorFacturaController = async (req, res) => {
         const id = req.body.id
         console.log(id)
         const response = await obtenerEntregasPorFactura(id)
-        if (response.lang) return res.status(400).json({ message: response.value })
+        if (response.lang) return res.status(400).json({ mensaje: response.value })
 
         return res.json({ response })
     } catch (error) {
@@ -777,7 +781,7 @@ const obtenerInvoicesCancel = async (req, res) => {
         const response = await cancelInvoice(id)
         // const response = await cancelDeliveryNotes(id)
         if (response.lang)
-            return res.status(400).json({ message: response.value })
+            return res.status(400).json({ mensaje: response.value })
 
         return res.json({ response })
     } catch (error) {
@@ -1011,7 +1015,7 @@ const facturacionEntregaController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.value) {
-                return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
+                return res.status(400).json({ mensaje: `${invoiceResponse.value}` })
             }
             const response = {
                 status: invoiceResponse.status || {},
@@ -1161,7 +1165,7 @@ const facturacionEntregaController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.value) {
-                return res.status(400).json({ messageSap: `${invoiceResponse.value}` })
+                return res.status(400).json({ mensaje: `${invoiceResponse.value}` })
             }
             const response = {
                 status: invoiceResponse.status || {},
