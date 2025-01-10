@@ -26,7 +26,8 @@ const {
     marcarAsistenciaController,
     getAsistenciasVendedorController,
     pruebaBatchController,
-    listaAlmacenesController
+    listaAlmacenesController,
+    listaAsistenciaDiaController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -59,6 +60,7 @@ router.get('/ventas-zona', [validarToken, validarCampos], ventasVendedorPorZona)
 router.get('/ventas-zona-mes-ant', [validarToken, validarCampos],vendedorPorZonaMesAntController)
 router.post('/marcar-asistencia', [validarToken, validarCampos],marcarAsistenciaController)
 router.get('/asistencias-vendedor', [validarToken, validarCampos],getAsistenciasVendedorController)
+router.post('/asistencia-dia', [validarToken, validarCampos],listaAsistenciaDiaController)
 router.post('/prueba', [validarToken, validarCampos],pruebaBatchController)
 
 
