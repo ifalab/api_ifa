@@ -118,7 +118,7 @@ const crearEncuesta = async(
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAPP_CREAR_ENCUESTA('${new_primeraPregunta}','${new_segundaPregunta}','${new_terceraPregunta}','${new_recomendaciones}','${new_fullname}','${new_rol_user}',${new_id_sap},${new_puntajePrimerPregunta},${new_puntajeSegundaPregunta},${new_puntajeTerceraPregunta});`
+        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_ENCUESTA('${new_primeraPregunta}','${new_segundaPregunta}','${new_terceraPregunta}','${new_recomendaciones}','${new_fullname}','${new_rol_user}',${new_id_sap},${new_puntajePrimerPregunta},${new_puntajeSegundaPregunta},${new_puntajeTerceraPregunta});`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {

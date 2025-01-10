@@ -25,7 +25,8 @@ const {
     facturacionController,
     marcarAsistenciaController,
     getAsistenciasVendedorController,
-    pruebaBatchController
+    pruebaBatchController,
+    listaAlmacenesController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -62,5 +63,6 @@ router.post('/prueba', [validarToken, validarCampos],pruebaBatchController)
 
 
 router.post('/usuario', [validarToken, validarCampos], ventasUsuarioController)
+router.post('/lista-almacenes', [validarToken, validarCampos], listaAlmacenesController)
 
 module.exports = router

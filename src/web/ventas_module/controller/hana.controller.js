@@ -336,12 +336,12 @@ const ventasPorZonasVendedorMesAnt = async (username, line, groupBy) => {
     }
 }
 
-const marcarAsistencia = async (id_vendedor_sap, fecha, hora, mensaje) => {
+const marcarAsistencia = async (id_vendedor_sap, fecha, hora, mensaje,lat, lon) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_LAPP.LAPP_MARCAR_ASISTENCIA(${id_vendedor_sap},'${fecha}','${hora}', '${mensaje}')`;
+        const query = `call LAB_IFA_LAPP.LAPP_MARCAR_ASISTENCIA(${id_vendedor_sap},'${fecha}','${hora}', '${mensaje}','${lat}','${lon}')`;
         console.log({query})
         const response = await executeQuery(query);
 
@@ -416,6 +416,21 @@ const prueba3Batch = async (articulo, alm) => {
     }
 }
 
+const listaAlmacenes = async(sucCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_ALMACENES_POR_SUCURSAL(${sucCode})`;
+        console.log({query})
+        const response = await executeQuery(query);
+        return response
+    } catch (error) {
+        console.log({ err })
+        throw new Error(`Error en prueba batch: ${err.message}`);
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -443,5 +458,6 @@ module.exports = {
     getAsistenciasVendedor,
     pruebaaaBatch,
     prueba2Batch,
-    prueba3Batch
+    prueba3Batch,
+    listaAlmacenes
 }

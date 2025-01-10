@@ -24,7 +24,8 @@ const {
     ventasPorZonasVendedorMesAnt,
     marcarAsistencia,
     getAsistenciasVendedor,
-    pruebaaaBatch, prueba2Batch, prueba3Batch
+    pruebaaaBatch, prueba2Batch, prueba3Batch,
+    listaAlmacenes
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -675,13 +676,18 @@ const facturacionController = async (req, res) => {
 const marcarAsistenciaController = async (req, res) => {
     try {
         console.log(req.body)
-        const {ID_VENDEDOR_SAP, FECHA, HORA, MENSAJE} = req.body
-        const usuario= req.usuarioAutorizado
-        const asistencia = await marcarAsistencia(ID_VENDEDOR_SAP, FECHA, HORA, MENSAJE)
+        const { ID_VENDEDOR_SAP, FECHA, HORA, MENSAJE, LATITUD, LONGITUD } = req.body
+        if(LATITUD=='' || LONGITUD==''){
+            return res.status(400).json({ mensaje:'No hay latitud/longitud, active la ubicacion GPS de su dispositivo o intente nuevamente'})
+        }
+        const usuario = req.usuarioAutorizado
+        const asistencia = await marcarAsistencia(ID_VENDEDOR_SAP, FECHA, HORA, MENSAJE, LATITUD, LONGITUD)
         console.log(asistencia.response)
-        if (asistencia.response.lang){
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", `${asistencia.response.value||'Error en la solicitud marcarAsistencia'}`, asistencia.query, "venta/marcar-asistencia", process.env.PRD)
-            return res.status(400).json({ mensaje: asistencia.response.value||'Error en la solicitud marcarAsistencia' })
+        
+
+        if (asistencia.response.lang) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", `${asistencia.response.value || 'Error en la solicitud marcarAsistencia'}`, asistencia.query, "venta/marcar-asistencia", process.env.PRD)
+            return res.status(400).json({ mensaje: asistencia.response.value || 'Error en la solicitud marcarAsistencia' })
         }
         console.log(asistencia.query)
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", "Marcado con exito", asistencia.query, "venta/marcar-asistencia", process.env.PRD)
@@ -689,9 +695,9 @@ const marcarAsistenciaController = async (req, res) => {
         return res.json(asistencia.response == 1 ? true : false)
     } catch (error) {
         console.log({ error })
-        const usuario= req.usuarioAutorizado
-        let mensaje = error.message ||'error en el controlador:marcarAsistenciaController'
-        const query= error.query || "No disponible"
+        const usuario = req.usuarioAutorizado
+        let mensaje = error.message || 'error en el controlador:marcarAsistenciaController'
+        const query = error.query || "No disponible"
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta marcar aistencia", mensaje, query, "venta/marcar-asistencia", process.env.PRD)
         return res.status(500).json({ mensaje })
     }
@@ -702,22 +708,22 @@ const getAsistenciasVendedorController = async (req, res) => {
         // console.log(req.query)
         const id_vendedor_sap = req.query.id
         // console.log(id_vendedor_sap)
-        const usuario= req.usuarioAutorizado
+        const usuario = req.usuarioAutorizado
         const asistencias = await getAsistenciasVendedor(id_vendedor_sap)
         console.log(asistencias.response)
-        if (asistencias.response.lang){
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", `${asistencias.response.value||'Error en getAsistenciasVendedor'}`, asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
+        if (asistencias.response.lang) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", `${asistencias.response.value || 'Error en getAsistenciasVendedor'}`, asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
             return res.status(400).json({ mensaje: asistencias.response.value })
         }
         // console.log(asistencias.query)
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", "Datos obtenidos con exito", asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
 
-        return res.json({asistencias: asistencias.response})
+        return res.json({ asistencias: asistencias.response })
     } catch (error) {
         console.log({ error })
-        const usuario= req.usuarioAutorizado
-        let mensaje = error.message ||'error en el controlador:getAsistenciasVendedorController'
-        const query= error.query || "No disponible"
+        const usuario = req.usuarioAutorizado
+        let mensaje = error.message || 'error en el controlador:getAsistenciasVendedorController'
+        const query = error.query || "No disponible"
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", mensaje, query, "venta/asistencias-vendedor", process.env.PRD)
         return res.status(500).json({ mensaje })
     }
@@ -729,13 +735,29 @@ const pruebaBatchController = async (req, res) => {
         const response = await pruebaaaBatch(articulo, almacen, cantidad)
         const todosDatos = await prueba2Batch(articulo, almacen);
         const tablaOIBT = await prueba3Batch(articulo, almacen)
-        console.log({response})
+        console.log({ response })
         return res.json({ response, tablaOIBT, todosDatos })
 
     } catch (error) {
         console.log('error en pruebaBatchController')
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error al procesar la solicitud: pruebaBatchController' })
+    }
+}
+
+const listaAlmacenesController = async (req,res)=>{
+    try {
+        
+        const {listSuc} = req.body
+        let listAlmacenes = []
+        for (const element of listSuc) {
+            const response = await listaAlmacenes(element)
+            listAlmacenes.push(...response)
+        }
+        return res.json(listAlmacenes)
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'error en el controlador no definido'})
     }
 }
 
@@ -765,5 +787,6 @@ module.exports = {
     facturacionController,
     marcarAsistenciaController,
     getAsistenciasVendedorController,
-    pruebaBatchController
+    pruebaBatchController,
+    listaAlmacenesController
 };
