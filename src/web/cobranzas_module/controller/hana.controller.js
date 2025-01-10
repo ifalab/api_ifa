@@ -408,6 +408,21 @@ const cobroLayout = async (id) => {
         return { message: 'Error al procesar la solicitud: IFA_LAPP_VEN_COBRO_LAYOUT' }
     }
 }
+const resumenCobranzaLayout = async (id_vendedor, fecha) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_CIERRE_DIA_LAYOUT(${id_vendedor},'${fecha}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en cobroLayout:', error.message);
+        return { message: 'Error al procesar la solicitud: IFA_LAPP_VEN_COBRO_LAYOUT' }
+    }
+}
 
 module.exports = {
     cobranzaGeneral,
@@ -437,4 +452,5 @@ module.exports = {
     clientesInstitucionesSaldoDeudor,
     saldoDeudorInstituciones,
     cobroLayout,
+    resumenCobranzaLayout
 }

@@ -32,7 +32,7 @@ const executeQuery = async (query) => {
         connection.exec(query, (err, result) => {
             if (err) {
                 console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
+                reject(new Error(`error en la consulta ${err.message || ''}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
@@ -55,7 +55,7 @@ const lotesArticuloAlmacenCantidad = async (articulo, almacen, lote) => {
 
     } catch (error) {
         console.error('Error en lotesArticuloAlmacenCantidad:', error.message);
-        return { message: 'Error al procesar la solicitud: lotesArticuloAlmacenCantidad' }
+        return { message: `Error en lotesArticuloAlmacenCantidad: ${error.message || ''}` }
     }
 }
 
@@ -70,8 +70,8 @@ const obtenerEntregaDetalle = async (id) => {
         return result
 
     } catch (error) {
-        console.error('Error en obtenerEntregaDetalle:', error.message);
-        return { message: 'Error al procesar la solicitud: obtenerEntregaDetalle' }
+        console.error('Error en obtenerEntregaDetalle:', error.message || '');
+        return { message: `Error en obtenerEntregaDetalle: ${error.message || ''}`}
     }
 }
 
@@ -119,8 +119,8 @@ const obtenerEntregasPorFactura = async (id) => {
         return result
 
     } catch (error) {
-        console.error('Error en obtenerEntregasPorFactura:', error.message);
-        return { message: 'Error al procesar la solicitud: obtenerEntregasPorFactura' }
+        console.error('Error en obtenerEntregasPorFactura:', error.message || '');
+        return { message: `${error.message || 'Error al procesar la solicitud: obtenerEntregasPorFactura'}` }
     }
 }
 

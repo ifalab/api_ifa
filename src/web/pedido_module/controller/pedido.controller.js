@@ -13,7 +13,8 @@ const { findClientePorVendedor,
     pedidosPorVendedorPendientes,
     pedidosPorVendedorFacturados,
     pedidosPorVendedorAnulados,
-    pedidoLayout
+    pedidoLayout,
+    pedidosPorVendedorHoy
 } = require("./hana.controller");
 const { postOrden, postQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -209,9 +210,9 @@ const sugeridosXClienteController = async (req, res, next) => {
 
         const sugeridos = await pedidoSugeridoXCliente(cardCode)
         console.log({ sugeridos })
-        const user = req.usuarioAutorizado
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", sugeridos.query, "pedido/sugerido-cliente", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", `${sugeridos.query|| ''}`, "pedido/sugerido-cliente", process.env.PRD)
 
         return res.json({ sugeridos: sugeridos.sugeridos })
     } catch (error) {
@@ -251,13 +252,13 @@ const crearOrderController = async (req, res) => {
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
 
         const ordenResponse = await postOrden(body)
-        const usuario = req.usuarioAutorizado
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         console.log(JSON.stringify(ordenResponse, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         if (ordenResponse.status == 400) {
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden, mensaje: ${ordenResponse.errorMessage.value || ''}, body.CardCode: ${body.CardCode||''}, body.DocTotal: ${body.DocTotal||''}}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
-            return res.status(400).json({ mensaje: `error al crear la orden "postOrden" ${ordenResponse.errorMessage.value||''}` })
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ mensaje: ordenResponse.errorMessage.value || '' })
         }
 
         console.log({ usuario })
@@ -268,11 +269,8 @@ const crearOrderController = async (req, res) => {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
-        let mensaje = 'Error en el controlador: crearOrderController'
-        if (error.message) {
-            mensaje = error.message
-        }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `mensaje: ${mensaje||''}, body.CardCode: ${body.CardCode||''}, body.DocTotal: ${body.DocTotal||''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+        const mensaje = `Error en el controlador crearOrderController: ${ error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${mensaje||''}`, '', "pedido/crear-orden", process.env.PRD)
 
         return res.status(500).json({ mensaje })
     }
@@ -365,10 +363,10 @@ const pedidoLayoutController = async (req, res) => {
         const delivery = req.query.delivery;
         console.log({ delivery })
         const response = await pedidoLayout(delivery)
-        const user = req.usuarioAutorizado
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         // return res.json({response})
         if (response.result.length == 0) {
-            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", 'Error de SAP al crear la nota de Pedido', response.query, "pedido/pedido-layout", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", 'Error de SAP al crear la nota de Pedido', `${response.query || ''}`, "pedido/pedido-layout", process.env.PRD)
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de Pedido' });
         }
         console.log({ response })
@@ -453,28 +451,44 @@ const pedidoLayoutController = async (req, res) => {
         pdf.create(html, options).toStream((err, stream) => {
             if (err) {
                 console.error('Error al generar el PDF:', err);
-                grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `Error al generar el PDF. ${err.message||''}`, response.query , "pedido/pedido-layout", process.env.PRD )
+                grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `Error al generar el PDF. ${err.message||''}`, `${response.query || ''}` , "pedido/pedido-layout", process.env.PRD )
                 return res.status(500).json({ mensaje: 'Error al generar el PDF' });
             }
 
-            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `PDF generado con exito`, response.query, "pedido/pedido-layout", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `PDF generado con exito`, `${response.query || ''}`, "pedido/pedido-layout", process.env.PRD)
             // Enviar el PDF en la respuesta
             res.setHeader('Content-Type', 'application/pdf');
             stream.pipe(res);
         });
     } catch (error) {
         console.log({ error })
-        const user = req.usuarioAutorizado
-        let mensaje = error.message || 'error en el controlador: pedidoLayoutController';
-        if (mensaje.length > 5000) {
-            mensaje = 'Error en el controlador: pedidoLayoutController'
-        }
-        const query = error.query || 'No disponible'
-        grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", mensaje, query, "pedido/pedido-layout", process.env.PRD)
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const query = error.query || ''
+        let mensaje = `Error en el controlador pedidoLayoutController: ${error.message || ''}`;
+        if (mensaje.length > 255) {
+            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", 'Error en el controlador: pedidoLayoutController', query, "pedido/pedido-layout", process.env.PRD)
+        }else
+            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", mensaje, query, "pedido/pedido-layout", process.env.PRD)
 
         return res.status(500).json({ mensaje })
     }
 }
+
+const pedidosPorVendedorHoyController = async (req, res) => {
+    try {
+        const id_vendedor = req.query.id
+        const fecha = req.query.fecha
+        console.log(id_vendedor)
+        const pedidos = await pedidosPorVendedorHoy(id_vendedor, fecha)
+        if (pedidos.lang)
+            return res.status(400).json({ message: pedidos.value })
+        return res.json({ pedidos })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador:pedidosPorVendedorHoyController' })
+    }
+}
+
 
 module.exports = {
     clientesVendedorController,
@@ -494,5 +508,6 @@ module.exports = {
     pedidosPorVendedorAnuladosController,
     pedidoLayoutController,
     crearOfertaVentaController,
-    clientesFacturadorController
+    clientesFacturadorController,
+    pedidosPorVendedorHoyController
 }

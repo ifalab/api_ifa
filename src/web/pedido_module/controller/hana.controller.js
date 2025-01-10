@@ -254,6 +254,19 @@ const pedidoLayout = async (delivery) => {
         throw new Error(`Error en pedido layout ${error.message}`);
     }
 }
+const pedidosPorVendedorHoy = async(id_vendedor, fecha)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_PRD.ifa_lapp_ven_obtener_pedidos_por_vendedor_hoy(${id_vendedor}, '${fecha}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: pedidosPorVendedorHoy');
+    }
+}
 
 module.exports = {
     findClientePorVendedor,
@@ -270,5 +283,6 @@ module.exports = {
     pedidosPorVendedorPendientes,
     pedidosPorVendedorFacturados,
     pedidosPorVendedorAnulados,
-    pedidoLayout
+    pedidoLayout,
+    pedidosPorVendedorHoy
 }
