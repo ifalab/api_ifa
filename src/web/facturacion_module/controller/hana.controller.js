@@ -71,7 +71,7 @@ const obtenerEntregaDetalle = async (id) => {
 
     } catch (error) {
         console.error('Error en obtenerEntregaDetalle:', error.message || '');
-        return { message: `Error en obtenerEntregaDetalle: ${error.message || ''}`}
+        return { message: `Error en obtenerEntregaDetalle: ${error.message || ''}` }
     }
 }
 
@@ -84,7 +84,7 @@ const solicitarId = async (id) => {
         const query = `CALL ${process.env.PRD}.IFA_SOLICITUD_ID(${id})`;
         console.log({ query })
         const result = await executeQuery(query)
-        return {result, query}
+        return { result, query }
 
     } catch (error) {
         console.error('Error en solicitarId:', error.message);
@@ -100,11 +100,11 @@ const notaEntrega = async (delivery) => {
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_ENTREGA_LAYOUT(${delivery})`;
         console.log({ query })
         const result = await executeQuery(query)
-        return {result, query}
+        return { result, query }
 
     } catch (error) {
         console.error('Error en notaEntrega:', error.message);
-        throw new Error(`Error al procesar notaEntrega: ${error.message||''}`)
+        throw new Error(`Error al procesar notaEntrega: ${error.message || ''}`)
     }
 }
 
@@ -178,6 +178,7 @@ const pedidosFacturados = async (SucCode) => {
             await connectHANA();
         }
         const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
+        // const query = `CALL lab_ifa_prd.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -204,6 +205,21 @@ const obtenerEntregas = async (id_sucursal) => {
     }
 }
 
+const facturasPedidoCadenas = async (id_sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_cadenas(${id_sucursal})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en facturasPedidoCadenas:', error.message);
+        return { message: 'Error al procesar la solicitud: facturasPedidoCadenas' }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -215,4 +231,5 @@ module.exports = {
     facturaPedidoDB,
     pedidosFacturados,
     obtenerEntregas,
+    facturasPedidoCadenas,
 }

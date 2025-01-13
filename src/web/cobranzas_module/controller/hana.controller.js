@@ -318,7 +318,7 @@ const cobranzaPorZonaMesAnt = async (username) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "${process.env.DBSAPPRD}"."LAPP_COBRANZA_ZONA_ANT"(${username})`
+        const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_ANT"(${username})`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {

@@ -36,6 +36,7 @@ app.use('/v1/web/rendiciones', require('./web/rendiciones_module/routes/rendicio
 app.use('/v1/web/facturacion', require('./web/facturacion_module/router/facturacion.routes'));
 app.use('/v1/web/pedido', require('./web/pedido_module/routes/pedido.routes'));
 app.use('/v1/web/shared', require('./web/shared/routes/shared.routes'));
+app.use('/v1/web/datos-maestros', require('./web/datos_maestros_module/routers/datos_maestros.routes'));
 
 //TODO VERSION MOVIL --------------------------------------------------------------------------------------
 app.use('/v1/movil/ventas', require('./movil/ventas_module/routes/ventas.routes'))
