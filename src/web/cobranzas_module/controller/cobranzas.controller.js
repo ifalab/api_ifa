@@ -3,7 +3,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -284,7 +284,7 @@ const cobranzaMasivosMesAnteriorController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaIfavetMesAnteriorController',
+            mensaje: 'problemas en cobranzaMasivosMesAnteriorController',
             error
         })
     }
@@ -306,7 +306,7 @@ const cobranzaInstitucionesMesAnteriorController = async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({
-            mensaje: 'problemas en cobranzaIfavetMesAnteriorController',
+            mensaje: 'problemas en cobranzaInstitucionesMesAnteriorController',
             error
         })
     }
@@ -744,10 +744,7 @@ const realizarCobroController = async (req, res) => {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({usuario})
-        let mensaje = 'Error en el controlador: realizarCobroController'
-        if (error.message) {
-            mensaje = error.message
-        }
+        let mensaje = `Error en el controlador realizarCobroController ${error.message||''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, ``, "cobranza/realizar-cobro", process.env.PRD)
 
         return res.status(500).json({ mensaje })
@@ -777,7 +774,7 @@ const comprobanteController = async (req, res) => {
         
         //TODO TXT
         const formattedDate = formatDate(comprobante.DocDatePayments);
-        const cardName = comprobante.CardName.replace(/\s+/g, ''); // Eliminar espacios del nombre
+        const cardName = comprobante.CardName.replace(/["\s]+/g, '');// Eliminar espacios del nombre y la doble comilla
         const fileName = `${cardName}_${formattedDate}.txt`;
         const finalDate = formattedDate.split(' ')
 
@@ -830,8 +827,17 @@ Glosa: ${comprobante.ClpName||''}
         fs.writeFileSync(filePath, cpclContent);
 
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        return res.sendFile(filePath);
-        // return res.json({ ...comprobante })
+        const ress= res.sendFile(filePath)
+        res.on('finish', () => {
+            if (fs.existsSync(filePath)) {
+              fs.unlink(filePath, (err) => {
+                if (err) {
+                  console.error('Error deleting file:', err);
+                }
+              });
+            }
+          });
+        return ress
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el comprobanteController' })
@@ -858,7 +864,7 @@ const comprobantePDFController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await cobroLayout(id)
-        console.log(response)
+        console.log({response})
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
@@ -1020,11 +1026,9 @@ const resumenCobranzasController = async (req, res) => {
         cpclContent = `
               LABORATORIOS IFA S.A.
                 RESUMEN COBRANZAS
-
 Santa Cruz, ${formatoFecha}
-Detalle Recibos
 `;
-//////
+
 for(let i=0; i<comprobante.Recibos.length; i++){
     if(comprobante.Recibos[i].Recibos.length!=0){
     if(i==0){
@@ -1041,14 +1045,14 @@ CHEQUES`
     comprobante.Recibos[i].Recibos.forEach((recibo) => {
         const { CardCode, CardName, DocTotal, NumAtCard } = recibo;
         cpclContent += `
-    Cod: ${CardCode}              --->  ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.
+    Cod: ${CardCode}                   ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.
     ${CardName}
     Nro: ${NumAtCard}
     --------------------------------------------`;
     });
 
 cpclContent += `
-                        TOTAL:      ${Intl.NumberFormat('en-US').format(parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2))} Bs.
+                        TOTAL:     ${Intl.NumberFormat('en-US').format(parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2))} Bs.
 `;
     }
 }
@@ -1072,10 +1076,58 @@ No hay Cobranzas
         fs.writeFileSync(filePath, cpclContent);
 
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        return res.sendFile(filePath);
+        const ress= res.sendFile(filePath)
+        res.on('finish', () => {
+            if (fs.existsSync(filePath)) {
+              fs.unlink(filePath, (err) => {
+                if (err) {
+                  console.error('Error deleting file:', err);
+                }
+              });
+            }
+          });
+        return ress;
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el comprobanteController' })
+    }
+}
+
+const cobrosRealizadosController = async (req, res) => {
+    try {
+        const id = req.query.idVendedor;
+        console.log({id})
+        const cobros = await cobrosRealizados(id)
+        return res.json({ cobros })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el controlador cobrosRealizadosController'
+        })
+    }
+}
+
+const clientesPorSucursalController = async (req, res) => {
+    try {
+        const {idSucursales} = req.body;
+        console.log({idSucursales})
+        const clientes =[]
+        for(const id_suc of idSucursales){
+            const clientessucursal = await clientesPorSucursal(id_suc)
+            console.log({ clientessucursal })
+            if(clientessucursal.statusCode != 200){
+                return res.status(clientessucursal.statusCode).json({ mensaje: clientessucursal.message || 'Error en clientesPorSucursal' })
+            }
+            clientes.push(...clientessucursal.data)
+        }
+        
+        return res.json({ response: clientes})
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message ||'Error en el controlador clientesPorVendedorController'
+        return res.status(500).json({
+            mensaje
+        })
     }
 }
 
@@ -1110,4 +1162,6 @@ module.exports = {
     comprobanteController,
     comprobantePDFController,
     resumenCobranzasController,
+    cobrosRealizadosController,
+    clientesPorSucursalController
 }

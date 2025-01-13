@@ -259,7 +259,7 @@ const pedidosPorVendedorHoy = async(id_vendedor, fecha)=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_PRD.ifa_lapp_ven_obtener_pedidos_por_vendedor_hoy(${id_vendedor}, '${fecha}')`
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_por_vendedor_hoy(${id_vendedor}, '${fecha}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {

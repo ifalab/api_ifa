@@ -228,7 +228,7 @@ const sugeridosXClienteController = async (req, res, next) => {
         // Registrar el error en los logs
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedidos sugeridos", mensaje, query, "pedido/sugerido-cliente", process.env.PRD)
 
-        return res.status(500).json(mensaje)
+        return res.status(500).json({mensaje})
     }
 }
 
@@ -321,7 +321,7 @@ const pedidosPorVendedorPendientesController = async (req, res) => {
 
         const pedidos = await pedidosPorVendedorPendientes(id)
         if (pedidos.lang)
-            return res.status(400).json({ message: pedidos.value })
+            return res.status(400).json({ mensaje: pedidos.value })
         return res.json({ pedidos })
     } catch (error) {
         console.log({ error })
@@ -336,7 +336,7 @@ const pedidosPorVendedorFacturadosController = async (req, res) => {
 
         const pedidos = await pedidosPorVendedorFacturados(id)
         if (pedidos.lang)
-            return res.status(400).json({ message: pedidos.value })
+            return res.status(400).json({ mensaje: pedidos.value })
         return res.json({ pedidos })
     } catch (error) {
         console.log({ error })
@@ -350,7 +350,7 @@ const pedidosPorVendedorAnuladosController = async (req, res) => {
         console.log(id)
         const pedidos = await pedidosPorVendedorAnulados(id)
         if (pedidos.lang)
-            return res.status(400).json({ message: pedidos.value })
+            return res.status(400).json({ mensaje: pedidos.value })
         return res.json({ pedidos })
     } catch (error) {
         console.log({ error })
@@ -480,8 +480,7 @@ const pedidosPorVendedorHoyController = async (req, res) => {
         const fecha = req.query.fecha
         console.log(id_vendedor)
         const pedidos = await pedidosPorVendedorHoy(id_vendedor, fecha)
-        if (pedidos.lang)
-            return res.status(400).json({ message: pedidos.value })
+
         return res.json({ pedidos })
     } catch (error) {
         console.log({ error })

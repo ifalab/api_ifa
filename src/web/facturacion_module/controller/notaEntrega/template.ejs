@@ -10,18 +10,54 @@
             font-family: "Courier New", Courier, monospace;
             font-size: 12px;
             padding: 20px;
-            line-height: 0.5;
         }
 
         .qr-code {
             width: 100px;
-            height: 100px;
+            height: 110px;
         }
 
-        .table td,
-        .table th {
-            vertical-align: middle;
+        .justified {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start; 
+        }
+
+        .justified div {
+            display:inline-block; 
+        }
+        
+        .cabecera {
+            line-height: 0.5px;
+            margin-right: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 5px;
             text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #ffffff;
         }
 
         .footer-text {
@@ -59,21 +95,16 @@
 
 <body>
     <div class="content">
-        <h3 class="text-center">LABORATORIOS IFA</h3>
-        <h5 class="text-center">NOTA DE ENTREGA #<%= data.DocNum %>
-        </h5>
-        <h5 class="text-center">ALMACEN : <%= data.WhsCode %>
-        </h5>
-        <h5 class="text-center"><%= data.WhsName %>
-        </h5>
+        <h2 class="text-center">LABORATORIOS IFA</h2>
+        <h6 class="text-center">NOTA DE ENTREGA #<%= data.DocNum %>
+        </h6>
+        <h6 class="text-center">ALMACEN : <%= data.WhsCode %>
+        </h6>
+        <h6 class="text-center"><%= data.WhsName %>
+        </h6>
         <hr>
-        <div class="d-flex justify-content-between">
-
-            <div class="text-end">
-                <img class="qr-code" src="<%= qrCode %>" alt="QR Code">
-            </div>
-
-            <div class="">
+        <div class="justified">
+            <div class="cabecera">
                 <p><strong>Usuario:</strong>
                     <%= data.USER_CODE %>
                 </p>
@@ -98,6 +129,9 @@
                 <p><strong>Cliente:</strong>
                     <%= data.CardCode %> - <%= data.CardName %>
                 </p>
+            </div>
+            <div class="text-end">
+                <img class="qr-code" src="<%= qrCode %>" alt="QR Code">
             </div>
         </div>
         <hr>
