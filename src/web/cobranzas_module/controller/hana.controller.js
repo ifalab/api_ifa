@@ -33,7 +33,7 @@ const executeQuery = async (query) => {
         connection.exec(query, (err, result) => {
             if (err) {
                 console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
+                reject(new Error(`error en la consulta: ${err.message}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
@@ -397,8 +397,8 @@ const cobroLayout = async (id) => {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
-        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
+        // const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_VEN_COBRO_LAYOUT(${id})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -422,6 +422,68 @@ const resumenCobranzaLayout = async (id_vendedor, fecha) => {
     } catch (error) {
         console.error('Error en cobroLayout:', error.message);
         return { message: 'Error al procesar la solicitud: IFA_LAPP_VEN_COBRO_LAYOUT' }
+    }
+}
+
+const cobrosRealizados = async (id_vendedor) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_COBROS_POR_VENDEDOR(${id_vendedor})`;
+        const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_COBROS_POR_VENDEDOR(${id_vendedor})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en cobrosRealizados:', error.message);
+        return { message: 'Error al procesar la solicitud: cobrosRealizados' }
+    }
+}
+
+const clientesPorVendedor= async (id_vendedor) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `CALL ${process.env.PRD}.ifa_lapp_clientes_por_vendedor(${id_vendedor})`;
+        const query = `CALL LAB_IFA_PRD.ifa_lapp_clientes_por_vendedor(${id_vendedor})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        console.log({result})
+        return {
+            statusCode: 200,
+            data: result
+        }
+    } catch (error) {
+        console.error('Error en clientesPorVendedor:', error.message);
+        return { 
+            statusCode: 400,
+            message: `Error al procesar clientesPorVendedor: ${error.message || ''}` 
+        }
+    }
+}
+
+const clientesPorSucursal= async (id_sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `CALL ${process.env.PRD}.ifa_lapp_clientes_por_surcursal(${id_sucursal})`;
+        const query = `CALL LAB_IFA_PRD.ifa_lapp_clientes_por_surcursal(${id_sucursal})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result
+        }
+    } catch (error) {
+        console.error('Error en clientesPorSucursal:', error.message);
+        return { 
+            statusCode: 400,
+            message: `Error al procesar clientesPorSucursal: ${error.message || ''}` 
+        }
     }
 }
 
@@ -453,5 +515,8 @@ module.exports = {
     clientesInstitucionesSaldoDeudor,
     saldoDeudorInstituciones,
     cobroLayout,
-    resumenCobranzaLayout
+    resumenCobranzaLayout,
+    cobrosRealizados,
+    clientesPorVendedor,
+    clientesPorSucursal
 }

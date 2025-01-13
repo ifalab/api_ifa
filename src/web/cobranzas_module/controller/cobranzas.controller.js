@@ -3,7 +3,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -774,7 +774,7 @@ const comprobanteController = async (req, res) => {
         
         //TODO TXT
         const formattedDate = formatDate(comprobante.DocDatePayments);
-        const cardName = comprobante.CardName.replace(/\s+/g, ''); // Eliminar espacios del nombre
+        const cardName = comprobante.CardName.replace(/["\s]+/g, '');// Eliminar espacios del nombre y la doble comilla
         const fileName = `${cardName}_${formattedDate}.txt`;
         const finalDate = formattedDate.split(' ')
 
@@ -827,8 +827,17 @@ Glosa: ${comprobante.ClpName||''}
         fs.writeFileSync(filePath, cpclContent);
 
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        return res.sendFile(filePath);
-        // return res.json({ ...comprobante })
+        const ress= res.sendFile(filePath)
+        res.on('finish', () => {
+            if (fs.existsSync(filePath)) {
+              fs.unlink(filePath, (err) => {
+                if (err) {
+                  console.error('Error deleting file:', err);
+                }
+              });
+            }
+          });
+        return ress
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el comprobanteController' })
@@ -855,7 +864,7 @@ const comprobantePDFController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await cobroLayout(id)
-        console.log(response)
+        console.log({response})
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
@@ -955,13 +964,6 @@ const resumenCobranzasController = async (req, res) => {
         }
         
         console.log(Intl.NumberFormat('de-DE').format(79000.50))
-        let {Modality}=response
-        if(!Modality){
-            Modality =response
-        }else{
-            return res.json({Modality})
-        }
-        return res.json({Modality})
         // return res.json({response})
         let cpclContent=''
         if(response.length!=0){
@@ -1074,10 +1076,58 @@ No hay Cobranzas
         fs.writeFileSync(filePath, cpclContent);
 
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        return res.sendFile(filePath);
+        const ress= res.sendFile(filePath)
+        res.on('finish', () => {
+            if (fs.existsSync(filePath)) {
+              fs.unlink(filePath, (err) => {
+                if (err) {
+                  console.error('Error deleting file:', err);
+                }
+              });
+            }
+          });
+        return ress;
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el comprobanteController' })
+    }
+}
+
+const cobrosRealizadosController = async (req, res) => {
+    try {
+        const id = req.query.idVendedor;
+        console.log({id})
+        const cobros = await cobrosRealizados(id)
+        return res.json({ cobros })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el controlador cobrosRealizadosController'
+        })
+    }
+}
+
+const clientesPorSucursalController = async (req, res) => {
+    try {
+        const {idSucursales} = req.body;
+        console.log({idSucursales})
+        const clientes =[]
+        for(const id_suc of idSucursales){
+            const clientessucursal = await clientesPorSucursal(id_suc)
+            console.log({ clientessucursal })
+            if(clientessucursal.statusCode != 200){
+                return res.status(clientessucursal.statusCode).json({ mensaje: clientessucursal.message || 'Error en clientesPorSucursal' })
+            }
+            clientes.push(...clientessucursal.data)
+        }
+        
+        return res.json({ response: clientes})
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message ||'Error en el controlador clientesPorVendedorController'
+        return res.status(500).json({
+            mensaje
+        })
     }
 }
 
@@ -1112,4 +1162,6 @@ module.exports = {
     comprobanteController,
     comprobantePDFController,
     resumenCobranzasController,
+    cobrosRealizadosController,
+    clientesPorSucursalController
 }
