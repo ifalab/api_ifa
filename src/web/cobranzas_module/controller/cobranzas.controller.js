@@ -3,7 +3,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -680,6 +680,28 @@ const cobranzaFacturaPorClienteController = async (req, res) => {
     }
 }
 
+const cobranzaFacturaPorCliDespController = async (req, res) => {
+    try {
+        const codigo = req.query.codigo
+        if (!codigo) return res.status(400).json({ mensaje: 'no hay el codigo del cliente' })
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const response = await cobranzaSaldoDeudorDespachador(codigo)
+
+        if(response.statusCode !=200){
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Despachador Facturas del cliente", `${response.message||'Error en cobranzaSaldoDeudorDespachador'}`, `IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE`, "cobranza/facturas-cliente-desp", process.env.PRD)
+            return res.status(400).json({ mensaje: `${response.message||'Error en cobranzaSaldoDeudorDespachador'}` })
+        }
+        return res.json({ response: response.data })
+
+    } catch (error) {
+        console.log({ error })
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Despachador Facturas del cliente", `Error en controller cobranzaFacturaPorCliDespController${error.message||''}`, `IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE`, "cobranza/facturas-cliente-desp", process.env.PRD)
+
+        return res.status(500).json({ mensaje: `Error en controller cobranzaFacturaPorCliDespController${error.message||''}` })
+    }
+}
+
 const clientesInstitucionesSaldoDeudorController = async (req, res) => {
     try {
         const response = await clientesInstitucionesSaldoDeudor()
@@ -771,6 +793,7 @@ const comprobanteController = async (req, res) => {
         const id = req.query.id
         const response = await cobroLayout(id)        
         console.log({response})
+        // return res.json({response})
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
@@ -794,17 +817,17 @@ const comprobanteController = async (req, res) => {
         const finalDate = formattedDate.split(' ')
 
         let cpclContent = `LABORATORIOS IFA S.A.
-----------------------------------------
+-----------------------------------------
 Comprobante: #${comprobante.DocNumPayments}
 Fecha: ${finalDate[0]}
 Hora: ${comprobante.DocTime[0]}${comprobante.DocTime[1]}:${comprobante.DocTime[2]}${comprobante.DocTime[3]}
 Codigo Cliente: ${comprobante.CardCode}
 Cliente: ${comprobante.CardName}
             
-Modalidad de Pago: ${comprobante.Modality}
-----------------------------------------
+Modalidad de Pago: ${comprobante.Modality.charAt(0).toUpperCase()+comprobante.Modality.slice(1)}
+-----------------------------------------
 Fecha        Numero           Total
-----------------------------------------
+-----------------------------------------
   
 `;
 
@@ -819,18 +842,18 @@ Fecha        Numero           Total
 
         // Línea divisoria y total
         cpclContent += `
-----------------------------------------
+-----------------------------------------
 TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}
-Glosa: ${comprobante.ClpName||''}
-----------------------------------------
+Glosa: ${comprobante.JrnlMemo||''}
+-----------------------------------------
                         
                                 
-     Firma                Sello
+     Firma                 Sello
                             
 ---------------       ---------------
                                 
                     
-`;
+`; //ClpName
 
         const filePath = path.join(__dirname, 'comprobantes', fileName);
 
@@ -883,9 +906,9 @@ const comprobantePDFController = async (req, res) => {
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
-            const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, ...result } = line
+            const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, Modality, ...result } = line
             if (!cabezera.length) {
-                cabezera.push({ ...result })
+                cabezera.push({ ...result, Modality: Modality.charAt(0).toUpperCase()+Modality.slice(1) })
             }
             Facturas.push({
                 DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob
@@ -970,11 +993,16 @@ const resumenCobranzasController = async (req, res) => {
     try {
         const id_vendedor = req.query.id
         const fecha = req.query.fecha
-        const newDate = new Date()
-        const date = newDate.getDate() + ' de '+ getMounth(newDate.getMonth())+ ' de '+newDate.getFullYear()
+        const mes = Number(fecha[4]+fecha[5])-1
+        console.log({mes})
+        const fechaFormated = fecha[6]+fecha[7]+' de '+getMounth(mes)+' de '+fecha[0]+fecha[1]+fecha[2]+fecha[3]
+        console.log({fechaFormated})
         
-        const response = await resumenCobranzaLayout(id_vendedor, fecha)        
+        const response = await resumenCobranzaLayout(id_vendedor, fecha)       
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+ 
         if(response.message){
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cierre Dia", `${response.message||'Error en resumenCobranzaLayout'}`, `IFA_LAPP_VEN_CIERRE_DIA_LAYOUT`, "cobranza/resumen", process.env.PRD)
             return res.status(400).json({mensaje: `${response.message||'Error en resumenCobranzaLayout'}`})
         }
         
@@ -1041,7 +1069,7 @@ const resumenCobranzasController = async (req, res) => {
         cpclContent = `
               LABORATORIOS IFA S.A.
                 RESUMEN COBRANZAS
-Santa Cruz, ${formatoFecha}
+Fecha: ${formatoFecha}
 `;
 
 for(let i=0; i<comprobante.Recibos.length; i++){
@@ -1075,8 +1103,8 @@ cpclContent += `
             cpclContent = `
             LABORATORIOS IFA S.A.
               RESUMEN COBRANZAS
-              
-No hay Cobranzas
+Fecha: ${fechaFormated}
+No hay Cobros de Hoy
 `
         }
 
@@ -1101,10 +1129,14 @@ No hay Cobranzas
               });
             }
           });
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cierre Dia", `Cierre hecho con exito`, `IFA_LAPP_VEN_CIERRE_DIA_LAYOUT`, "cobranza/resumen", process.env.PRD)
         return ress;
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el comprobanteController' })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje= `Error en el resumenCobranzasController: ${error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cierre Dia", mensaje , ``, "cobranza/resumen", process.env.PRD)
+        return res.status(500).json({ mensaje })
     }
 }
 
@@ -1113,11 +1145,40 @@ const cobrosRealizadosController = async (req, res) => {
         const id = req.query.idVendedor;
         console.log({id})
         const cobros = await cobrosRealizados(id)
-        return res.json({ cobros })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if(cobros.statusCode!=200){
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cobros Realizados", `${cobros.message||'Error cobrosRealizados'}`, ``, "cobranza/cobros-realizados", process.env.PRD)
+            return res.status(500).json({
+                mensaje: `${cobros.message||'Error cobrosRealizados'}`
+            })
+        }
+        console.log({cobros: cobros.data.length})
+        let cobrosFinal = []
+        let cobro
+        let Detalle = []
+        let currentDocNum = 0
+        for(const factura of cobros.data){
+            const {DocNumInvoice, DocDateInvoice,NumAtCard,SumAppliedCob, DocNumPayments, ...rest} = factura;
+            if(DocNumPayments != currentDocNum){
+                currentDocNum = DocNumPayments;
+                Detalle = [{DocNumInvoice, DocDateInvoice,NumAtCard,SumAppliedCob}]
+                cobro = {DocNumPayments, ...rest, Detalle }
+                cobrosFinal.push(cobro)
+            }else{
+                Detalle.push({DocNumInvoice, DocDateInvoice,NumAtCard,SumAppliedCob})
+                cobrosFinal.find((fila) => fila.DocNumPayments == DocNumPayments).Detalle = Detalle
+            }
+        }
+        console.log({cobrosfinal: cobrosFinal.length})
+
+        return res.json({ cobros: cobrosFinal })
     } catch (error) {
         console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje = `Error en el controlador cobrosRealizadosController: ${error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cobros Realizados", mensaje, ``, "cobranza/cobros-realizados", process.env.PRD)
         return res.status(500).json({
-            mensaje: 'Error en el controlador cobrosRealizadosController'
+            mensaje
         })
     }
 }
@@ -1179,5 +1240,6 @@ module.exports = {
     resumenCobranzasController,
     cobrosRealizadosController,
     clientesPorSucursalController,
+    cobranzaFacturaPorCliDespController,
     cobranzaClientePorVendedorIDController
 }
