@@ -361,6 +361,13 @@ const facturacionController = async (req, res) => {
             } else {
                 dataToProsin = bodyFinalFactura
             }
+
+            if (dataToProsin.tipo_identificacion == null || 
+                (dataToProsin.tipo_identificacion != 1 && dataToProsin.tipo_identificacion != 5)) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${dataToProsin.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataProsin, bodyFinalFactura })
+            }
+            
             const responseProsin = await facturacionProsin(dataToProsin)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
@@ -507,7 +514,7 @@ const facturacionStatusController = async (req, res) => {
 
 const facturacionStatusListController = async (req, res) => {
     try {
-        
+
         const { listWhsCode } = req.body
         let data = []
         for (const iterator of listWhsCode) {

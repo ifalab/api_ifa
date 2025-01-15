@@ -345,6 +345,22 @@ const clientePorVendedor = async (nombre) => {
     }
 }
 
+const clientePorVendedorId = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_CLI_BY_VEND(${id})`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `no se pudo traer los datos`
+        }
+    }
+}
+
 const cobranzaSaldoDeudor = async (nombre, codigo) => {
     try {
         if (!connection) {
@@ -518,5 +534,6 @@ module.exports = {
     resumenCobranzaLayout,
     cobrosRealizados,
     clientesPorVendedor,
-    clientesPorSucursal
+    clientesPorSucursal,
+    clientePorVendedorId
 }

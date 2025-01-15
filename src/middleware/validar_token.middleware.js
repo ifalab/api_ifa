@@ -25,7 +25,7 @@ const validarToken = async (req, res, next) => {
         next()
     } catch (error) {
         return res.status(401).json({
-            mensaje: 'token invalido o manipulado'
+            mensaje: 'token invalido o manipulado, intente iniciar sesion nuevamente'
         })
     }
 
