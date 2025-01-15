@@ -33,7 +33,7 @@ const executeQuery = async (query) => {
         connection.exec(query, (err, result) => {
             if (err) {
                 console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
+                reject(new Error(`${err.message || 'Error en la consulta'}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
@@ -510,6 +510,91 @@ const findAllRoles = async()=>{
     }
 }
 
+const getDmUsers = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_USUARIOS`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en getDmUsers')
+    }
+}
+
+const getAllAlmacenes = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_ALMACENES`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en getAllAlmacenes')
+    }
+}
+const getAlmacenesByUser = async (id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_almacenes_auth_por_usuario(${id_sap})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en getAlmacenesByUser')
+    }
+}
+const addAlmacenUsuario = async (id_sap, cod_alm) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_agregar_almacen_auth_por_usuario(${id_sap},'${cod_alm}');`
+
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result,
+            query: query
+        }
+    } catch (error) {
+        console.log({ error })
+        return {
+            statusCode: 400,
+            message: `Error en addAlmacenUsuario: ${error.message || ''}`,
+            query: 'ifa_dm_agregar_almacen_auth_por_usuario'
+        }
+    }
+}
+
+const deleteAlmacenUsuario = async (id_sap, cod_alm) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_eliminar_almacen_auth_por_usuario(${id_sap},'${cod_alm}');`
+
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result,
+            query: query
+        }
+    } catch (error) {
+        console.log({ error })
+        return {
+            statusCode: 400,
+            message: `Error en deleteAlmacenUsuario: ${error.message || ''}`,
+            query: 'ifa_dm_eliminar_almacen_auth_por_usuario'
+        }
+    }
+}
 
 module.exports = {
     loginUser,
@@ -537,5 +622,9 @@ module.exports = {
     deleteOneRolUser,
     findAllRoles,
     userVendedor,
-
+    getDmUsers,
+    getAllAlmacenes,
+    getAlmacenesByUser,
+    addAlmacenUsuario,
+    deleteAlmacenUsuario
 }
