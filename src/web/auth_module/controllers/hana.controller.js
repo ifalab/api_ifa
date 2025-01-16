@@ -596,6 +596,92 @@ const deleteAlmacenUsuario = async (id_sap, cod_alm) => {
     }
 }
 
+const getDespachadores = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_despachadores`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getDespachadores: ${error.message || ''}`)
+    }
+}
+
+const getRutasLibresPorDespachador = async (id_vendedor_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_rutas_libres_por_despachador(${id_vendedor_sap})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getRutasLibresPorDespachador: ${error.message || ''}`)
+    }
+}
+
+const getRutasAsignadasPorDespachador = async (id_vendedor_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_rutas_asignadas_por_despachador(${id_vendedor_sap})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en getRutasAsignadasPorDespachador')
+    }
+}
+const addRutasDespachadores = async (id_vendedor_sap, id_ruta) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_agregar_rutas_a_despachadores(${id_vendedor_sap},${id_ruta});`
+
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result,
+            query: query
+        }
+    } catch (error) {
+        console.log({ error })
+        return {
+            statusCode: 400,
+            message: `Error en addRutasDespachadores: ${error.message || ''}`,
+            query: 'ifa_dm_agregar_rutas_a_despachadores'
+        }
+    }
+}
+const deleteRutasDespachadores = async (id_vendedor_sap, id_ruta) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_eliminar_rutas_a_despachadores(${id_vendedor_sap},${id_ruta});`
+
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result,
+            query: query
+        }
+    } catch (error) {
+        console.log({ error })
+        return {
+            statusCode: 400,
+            message: `Error en deleteRutasDespachadores: ${error.message || ''}`,
+            query: 'ifa_dm_eliminar_rutas_a_despachadores'
+        }
+    }
+}
+
 module.exports = {
     loginUser,
     createUser,
@@ -626,5 +712,10 @@ module.exports = {
     getAllAlmacenes,
     getAlmacenesByUser,
     addAlmacenUsuario,
-    deleteAlmacenUsuario
+    deleteAlmacenUsuario,
+    getRutasLibresPorDespachador,
+    getRutasAsignadasPorDespachador,
+    addRutasDespachadores,
+    getDespachadores,
+    deleteRutasDespachadores
 }

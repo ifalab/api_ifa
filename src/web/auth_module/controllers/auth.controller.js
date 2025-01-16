@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { generarToken } = require("../../../helpers/generar_token.helper");
 const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles, userVendedor, 
-        getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario
+        getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario, 
+        addRutasDespachadores, getRutasLibresPorDespachador, getRutasAsignadasPorDespachador, getDespachadores, deleteRutasDespachadores
     } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
@@ -701,6 +702,106 @@ const deleteAlmacenUsuarioController = async (req, res) => {
     }
 }
 
+const getDespachadoresController = async (req, res) => {
+    try {
+        const despachadores = await getDespachadores()
+        return res.json({ despachadores })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `error en controller getDespachadoresController: ${error.message || ''}`
+        })
+    }
+}
+
+const getDespachadorPorIdController = async (req, res) => {
+    try {
+        const id_vendedor= req.query.id
+        const despachadores = await getDespachadores()
+        const despachador = despachadores.find((us) => us.SlpCode == id_vendedor)
+        return res.json({ ...despachador })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `error en controller getDespachadorPorIdController: ${error.message || ''}`
+        })
+    }
+}
+const getRutasLibresPorDespachadorController = async (req, res) => {
+    try {
+        const id_vendedor= req.query.id
+        const rutas = await getRutasLibresPorDespachador(id_vendedor)
+        return res.json({ rutas })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `error en controller getRutasLibresPorDespachadorController: ${error.message || ''}`
+        })
+    }
+}
+const getRutasAsignadasPorDespachadorController = async (req, res) => {
+    try {
+        const id_vendedor= req.query.id
+        const rutas = await getRutasAsignadasPorDespachador(id_vendedor)
+        return res.json({ rutas })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: "error en getRutasAsignadasPorDespachadorController controller"
+        })
+    }
+}
+const addRutasDespachadoresController = async (req, res) => {
+    try {
+        const { idVendedor, idRuta }= req.body
+        console.log({idVendedor, idRuta})
+        const response = await addRutasDespachadores(idVendedor, idRuta)
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if(response.statusCode!= 200){
+            const mensaje = response.message ? (response.message.length >255? 'Error en addRutasDespachadores': response.message):'Error en addRutasDespachadores'
+           
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador",mensaje, `${response.query||''}`, "auth/add-ruta-despachador", process.env.PRD)
+            return res.status(400).json({mensaje: `${response.message || mensaje}`})
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador", `Respuesta al añadir ruta: ${response.data}`, `${response.query||''}`, "auth/add-ruta-despachador", process.env.PRD)
+        return res.json(response.data )
+    } catch (error) {
+        console.log({ error })
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje= `Error en addRutasDespachadoresController controller: ${error.message||''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador", mensaje, ``, "auth/add-ruta-despachador", process.env.PRD)
+
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+const deleteRutasDespachadoresController = async (req, res) => {
+    try {
+        const { idVendedor, idRuta }= req.body
+        console.log({idVendedor, idRuta})
+        const response = await deleteRutasDespachadores(idVendedor, idRuta)
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if(response.statusCode!= 200){
+            const mensaje = response.message ? (response.message.length >255? 'Error en deleteRutasDespachadores': response.message):'Error en deleteRutasDespachadores'
+           
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador",mensaje, `${response.query||''}`, "auth/delete-ruta-despachador", process.env.PRD)
+            return res.status(400).json({mensaje: `${response.message || mensaje}`})
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador", `Respuesta al eliminar ruta: ${response.data}`, `${response.query||''}`, "auth/delete-ruta-despachador", process.env.PRD)
+        return res.json(response.data )
+    } catch (error) {
+        console.log({ error })
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje= `Error en deleteRutasDespachadoresController controller: ${error.message||''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador", mensaje, ``, "auth/delete-ruta-despachador", process.env.PRD)
+
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 module.exports = {
     authLoginPost,
     createUserController,
@@ -728,5 +829,11 @@ module.exports = {
     getDmUserByIdController,
     getAlmacenesByUserController,
     addAlmacenUsuarioController,
-    deleteAlmacenUsuarioController
+    deleteAlmacenUsuarioController,
+    addRutasDespachadoresController,
+    getRutasLibresPorDespachadorController,
+    getRutasAsignadasPorDespachadorController,
+    getDespachadoresController,
+    deleteRutasDespachadoresController,
+    getDespachadorPorIdController
 }
