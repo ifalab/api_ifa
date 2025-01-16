@@ -14,7 +14,7 @@ const { facturacionById, facturacionPedido } = require("../service/apiFacturacio
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
-const { spObtenerCUF } = require('./sql_genesis.controller');
+const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
 
@@ -362,12 +362,12 @@ const facturacionController = async (req, res) => {
                 dataToProsin = bodyFinalFactura
             }
 
-            if (dataToProsin.tipo_identificacion == null || 
+            if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion != 1 && dataToProsin.tipo_identificacion != 5)) {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${dataToProsin.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
-                return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataProsin, bodyFinalFactura })
+                return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataToProsin, bodyFinalFactura })
             }
-            
+
             const responseProsin = await facturacionProsin(dataToProsin)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
@@ -829,22 +829,34 @@ const cancelToProsinController = async (req, res) => {
 
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        const responseProsin = await anulacionFacturacion({
-            sucursal,
-            punto,
-            cuf,
-            descripcion,
-            motivoAnulacion,
-            tipoDocumento,
-            usuario,
-            mediaPagina,
-        })
-        if (responseProsin.data.mensaje) {
-            const mess = responseProsin.data.mensaje.split('§')
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion: ${mess[1] || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
-
-            return res.status(400).json({ mensaje: `${mess[1] || 'Error en anulacionFacturacion'}` })
+        if (!cuf || cuf == '') {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
         }
+        const estadoFacturaResponse = await spEstadoFactura(cuf)
+        const { estado } = estadoFacturaResponse[0]
+        
+        if (estado) {
+            const responseProsin = await anulacionFacturacion({
+                sucursal,
+                punto,
+                cuf,
+                descripcion,
+                motivoAnulacion,
+                tipoDocumento,
+                usuario,
+                mediaPagina,
+            })
+
+
+            if (responseProsin.data.mensaje) {
+                const mess = responseProsin.data.mensaje.split('§')
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+
+                return res.status(400).json({ mensaje: `${mess[1] || 'Error en anulacionFacturacion'}` })
+            }
+        }
+
         if (!docEntry) {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Debe venir el doc entry`, '', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Debe venir el doc entry` })
@@ -1092,7 +1104,11 @@ const facturacionEntregaController = async (req, res) => {
             } else {
                 body = bodyFinalFactura
             }
-
+            if (body.tipo_identificacion == null ||
+                (body.tipo_identificacion != 1 && body.tipo_identificacion != 5)) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${body.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${body.tipo_identificacion || 'No definido'} `, bodyFinalFactura })
+            }
             const responseProsin = await facturacionProsin(body)
             //return res.json({ bodyFinalFactura, responseProsin, deliveryData })
             console.log({ responseProsin })

@@ -3,7 +3,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -684,21 +684,21 @@ const cobranzaFacturaPorCliDespController = async (req, res) => {
     try {
         const codigo = req.query.codigo
         if (!codigo) return res.status(400).json({ mensaje: 'no hay el codigo del cliente' })
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await cobranzaSaldoDeudorDespachador(codigo)
-
-        if(response.statusCode !=200){
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Despachador Facturas del cliente", `${response.message||'Error en cobranzaSaldoDeudorDespachador'}`, `IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE`, "cobranza/facturas-cliente-desp", process.env.PRD)
-            return res.status(400).json({ mensaje: `${response.message||'Error en cobranzaSaldoDeudorDespachador'}` })
+        console.log({response})
+        if (response.statusCode != 200) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Despachador Facturas del cliente", `${response.message || 'Error en cobranzaSaldoDeudorDespachador'}`, `IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE`, "cobranza/facturas-cliente-desp", process.env.PRD)
+            return res.status(400).json({ mensaje: `${response.message || 'Error en cobranzaSaldoDeudorDespachador'}` })
         }
         return res.json({ response: response.data })
 
     } catch (error) {
         console.log({ error })
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Despachador Facturas del cliente", `Error en controller cobranzaFacturaPorCliDespController${error.message||''}`, `IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE`, "cobranza/facturas-cliente-desp", process.env.PRD)
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Despachador Facturas del cliente", `Error en controller cobranzaFacturaPorCliDespController${error.message || ''}`, `IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE`, "cobranza/facturas-cliente-desp", process.env.PRD)
 
-        return res.status(500).json({ mensaje: `Error en controller cobranzaFacturaPorCliDespController${error.message||''}` })
+        return res.status(500).json({ mensaje: `Error en controller cobranzaFacturaPorCliDespController${error.message || ''}` })
     }
 }
 
@@ -737,8 +737,8 @@ const realizarCobroController = async (req, res) => {
         const TransferAccount = body.TransferAccount
         const PaymentInvoices = body.PaymentInvoices
         let total = 0
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({usuario})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ usuario,body })
         if (!PaymentInvoices) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", 'Error: el PaymentInvoices es obligatorio', `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
             return res.status(400).json({ mensaje: 'el PaymentInvoices es obligatorio' })
@@ -767,9 +767,9 @@ const realizarCobroController = async (req, res) => {
 
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
-            let mensaje= `Error del SAP`
+            let mensaje = `Error del SAP`
             if (responseSap.errorMessage && responseSap.errorMessage.value) {
-                mensaje= `Error del SAP ${responseSap.errorMessage.value || ''}`
+                mensaje = `Error del SAP ${responseSap.errorMessage.value || ''}`
             }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
             return res.status(400).json({ mensaje })
@@ -780,8 +780,8 @@ const realizarCobroController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({usuario})
-        let mensaje = `Error en el controlador realizarCobroController ${error.message||''}`
+        console.log({ usuario })
+        let mensaje = `Error en el controlador realizarCobroController ${error.message || ''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, ``, "cobranza/realizar-cobro", process.env.PRD)
 
         return res.status(500).json({ mensaje })
@@ -791,69 +791,67 @@ const realizarCobroController = async (req, res) => {
 const comprobanteController = async (req, res) => {
     try {
         const id = req.query.id
-        const response = await cobroLayout(id)        
-        console.log({response})
+        const response = await cobroLayout(id)
+        console.log({ response })
         // return res.json({response})
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
-            const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, ...result } = line
+            const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, TotalDue, ...result } = line
             if (!cabezera.length) {
                 cabezera.push({ ...result })
             }
             Facturas.push({
-                DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob
+                DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, TotalDue
             })
         }
         const comprobante = {
             ...cabezera[0],
             Facturas
         }
-        
+        // return res.json({ comprobante })
         //TODO TXT
         const formattedDate = formatDate(comprobante.DocDatePayments);
         const cardName = comprobante.CardName.replace(/["\s]+/g, '');// Eliminar espacios del nombre y la doble comilla
         const fileName = `${cardName}_${formattedDate}.txt`;
         const finalDate = formattedDate.split(' ')
 
-        let cpclContent = `LABORATORIOS IFA S.A.
------------------------------------------
-Comprobante: #${comprobante.DocNumPayments}
-Fecha: ${finalDate[0]}
-Hora: ${comprobante.DocTime[0]}${comprobante.DocTime[1]}:${comprobante.DocTime[2]}${comprobante.DocTime[3]}
-Codigo Cliente: ${comprobante.CardCode}
-Cliente: ${comprobante.CardName}
-            
-Modalidad de Pago: ${comprobante.Modality.charAt(0).toUpperCase()+comprobante.Modality.slice(1)}
------------------------------------------
-Fecha        Numero           Total
------------------------------------------
-  
+        let cpclContent = `
+TEXT 4 0 30 30 LABORATORIOS IFA S.A.\r\n
+LINE 30 80 570 80 2\r\n
+TEXT 7 0 30 100 Comprobante: #${comprobante.DocNumPayments}\r\n
+TEXT 7 0 30 120 Fecha: ${finalDate[0]}\r\n
+TEXT 7 0 30 140 Hora: ${comprobante.DocTime[0]}${comprobante.DocTime[1]}:${comprobante.DocTime[2]}${comprobante.DocTime[3]}\r\n
+TEXT 7 0 30 160 Codigo Cliente: ${comprobante.CardCode}\r\n
+TEXT 7 0 30 180 Cliente: ${comprobante.CardName}\r\n
+TEXT 7 0 30 200 Modalidad de Pago: ${comprobante.Modality.charAt(0).toUpperCase() + comprobante.Modality.slice(1)}\r\n
+TEXT 7 0 30 250 Fecha        Numero           Total\r\n
+LINE 30 270 570 270 2\r\n
 `;
 
         // Añadir las facturas
-        let yPosition = 360;
+        let yPosition = 280;
         comprobante.Facturas.forEach((factura) => {
-            const { DocNumInvoice, DocDateInvoice, NumAtCard, SumAppliedCob } = factura;
-            const formattedInvoiceDate = formattedDataInvoice(DocDateInvoice); // Asegúrate de que la función formatee bien las fechas
-            cpclContent += `${formattedInvoiceDate}   ${NumAtCard.padEnd(6)}   ---->   bs ${parseFloat(SumAppliedCob).toFixed(2)}\n`;
-            yPosition += 30;
+            const { DocNumInvoice, DocDateInvoice, NumAtCard, SumAppliedCob, TotalDue } = factura;
+            console.log({ DocDateInvoice })
+            const formattedInvoiceDate = formattedDataInvoice(DocDateInvoice);
+            cpclContent += `TEXT 7 0 30 ${yPosition} ${formattedInvoiceDate}   ${NumAtCard.padEnd(6)}   ---->   bs ${parseFloat(SumAppliedCob).toFixed(2)}\r\n` + `TEXT 7 0 30 ${yPosition + 30} Saldo Factura: ${parseFloat(TotalDue).toFixed(2)} bs\r\n`
+            yPosition += 60;
         });
 
         // Línea divisoria y total
         cpclContent += `
------------------------------------------
-TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}
-Glosa: ${comprobante.JrnlMemo||''}
------------------------------------------
-                        
-                                
-     Firma                 Sello
-                            
----------------       ---------------
-                                
-                    
-`; //ClpName
+LINE 30 ${yPosition} 570 ${yPosition} 2
+TEXT 7 0 30 ${yPosition + 20} TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}\r\n
+TEXT 7 0 30 ${yPosition + 40} Glosa: ${comprobante.JrnlMemo || ''}\r\n
+LINE 30 ${yPosition + 60} 570 ${yPosition + 60} 2
+TEXT 7 0 30 ${yPosition + 80} Saldo Cliente: ${comprobante.Balance || ''} bs\r\n
+TEXT 7 0 30 ${yPosition + 100} Firma                  Sello\r\n
+LINE 30 ${yPosition + 250} 200 ${yPosition + 250} 2
+LINE 350 ${yPosition + 250} 520 ${yPosition + 250} 2
+FORM\r\n
+PRINT\r\n                 
+`;
 
         const filePath = path.join(__dirname, 'comprobantes', fileName);
 
@@ -865,16 +863,16 @@ Glosa: ${comprobante.JrnlMemo||''}
         fs.writeFileSync(filePath, cpclContent);
 
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        const ress= res.sendFile(filePath)
+        const ress = res.sendFile(filePath)
         res.on('finish', () => {
             if (fs.existsSync(filePath)) {
-              fs.unlink(filePath, (err) => {
-                if (err) {
-                  console.error('Error deleting file:', err);
-                }
-              });
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error('Error deleting file:', err);
+                    }
+                });
             }
-          });
+        });
         return ress
     } catch (error) {
         console.log({ error })
@@ -894,6 +892,7 @@ const formatDate = (dateString) => {
 };
 
 const formattedDataInvoice = (invoiceData) => {
+    console.log({ invoiceData })
     const data = invoiceData.split(' ')
     return data[0]
 }
@@ -902,13 +901,13 @@ const comprobantePDFController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await cobroLayout(id)
-        console.log({response})
+        console.log({ response })
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
             const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, Modality, ...result } = line
             if (!cabezera.length) {
-                cabezera.push({ ...result, Modality: Modality.charAt(0).toUpperCase()+Modality.slice(1) })
+                cabezera.push({ ...result, Modality: Modality.charAt(0).toUpperCase() + Modality.slice(1) })
             }
             Facturas.push({
                 DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob
@@ -966,7 +965,7 @@ const comprobantePDFController = async (req, res) => {
         // fs.writeFileSync('sent_to_client.pdf', pdfBuffer); // Enviado
 
         // Configurar encabezados y enviar
-        const fileName = `${comprobante.CardName}_${new Date()}.pdf`.replace(' ','').trim()
+        const fileName = `${comprobante.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
         // return res.json({fileName})
         res.set({
             'Content-Type': 'application/pdf',
@@ -983,131 +982,140 @@ const comprobantePDFController = async (req, res) => {
 
 const getMounth = (month) => {
     const meses = [
-        "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", 
+        "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
         "septiembre", "octubre", "noviembre", "diciembre"
-      ];
+    ];
     return meses[month];
 }
 
 const resumenCobranzasController = async (req, res) => {
     try {
         const id_vendedor = req.query.id
-        const fecha = req.query.fecha
-        const mes = Number(fecha[4]+fecha[5])-1
-        console.log({mes})
-        const fechaFormated = fecha[6]+fecha[7]+' de '+getMounth(mes)+' de '+fecha[0]+fecha[1]+fecha[2]+fecha[3]
-        console.log({fechaFormated})
-        
-        const response = await resumenCobranzaLayout(id_vendedor, fecha)       
+        // const fecha = req.query.fecha
+        const fecha = '20250113'
+        const mes = Number(fecha[4] + fecha[5]) - 1
+        console.log({ mes })
+        const fechaFormated = fecha[6] + fecha[7] + ' de ' + getMounth(mes) + ' de ' + fecha[0] + fecha[1] + fecha[2] + fecha[3]
+        console.log({ fechaFormated })
+
+        const response = await resumenCobranzaLayout(id_vendedor, fecha)
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
- 
-        if(response.message){
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cierre Dia", `${response.message||'Error en resumenCobranzaLayout'}`, `IFA_LAPP_VEN_CIERRE_DIA_LAYOUT`, "cobranza/resumen", process.env.PRD)
-            return res.status(400).json({mensaje: `${response.message||'Error en resumenCobranzaLayout'}`})
+
+        if (response.message) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cierre Dia", `${response.message || 'Error en resumenCobranzaLayout'}`, `IFA_LAPP_VEN_CIERRE_DIA_LAYOUT`, "cobranza/resumen", process.env.PRD)
+            return res.status(400).json({ mensaje: `${response.message || 'Error en resumenCobranzaLayout'}` })
         }
-        
+
         console.log(Intl.NumberFormat('de-DE').format(79000.50))
         // return res.json({response})
-        let cpclContent=''
-        if(response.length!=0){
-        const Recibos = [];
-        const Efectivo = [];
-        const recibosEfec= [];
-        const Transferencia = [];
-        const recibosTrans= [];
-        const Cheque = [];
-        const recibosCheque =[];
-        const cabezera = [];
-        for (const line of response) {
-            const { ClpCode, ClpName, Modality, TotalDay, Date, ...result } = line
-            if (!cabezera.length) {
-                cabezera.push({ ClpCode, ClpName, Date })
+        let cpclContent = ''
+        if (response.length != 0) {
+            const Recibos = [];
+            const Efectivo = [];
+            const recibosEfec = [];
+            const Transferencia = [];
+            const recibosTrans = [];
+            const Cheque = [];
+            const recibosCheque = [];
+            const cabezera = [];
+            for (const line of response) {
+                const { ClpCode, ClpName, Modality, TotalDay, Date, ...result } = line
+                if (!cabezera.length) {
+                    cabezera.push({ ClpCode, ClpName, Date })
+                }
+                if (Modality == 'efectivo') {
+                    if (!Efectivo.length) {
+                        Efectivo.push({ Modality, TotalDay })
+                    }
+                    recibosEfec.push({ ...result })
+                } else if (Modality == 'transferencia') {
+                    if (!Transferencia.length) {
+                        Transferencia.push({ Modality, TotalDay })
+                    }
+                    recibosTrans.push({ ...result })
+                } else {
+                    if (!Cheque.length) {
+                        Cheque.push({ Modality, TotalDay })
+                    }
+                    recibosCheque.push({ ...result })
+                }
             }
-            if(Modality=='efectivo'){
-                if(!Efectivo.length){
-                    Efectivo.push({Modality, TotalDay})
-                }
-                recibosEfec.push({...result})
-            }else if(Modality=='transferencia'){
-                if(!Transferencia.length){
-                    Transferencia.push({Modality, TotalDay})
-                }
-                recibosTrans.push({...result})
-            }else{
-                if(!Cheque.length){
-                    Cheque.push({Modality, TotalDay})
-                }
-                recibosCheque.push({...result})
+            Efectivo[0] = {
+                ...Efectivo[0],
+                Recibos: recibosEfec
             }
-        }
-        Efectivo[0] = {
-            ...Efectivo[0],
-            Recibos: recibosEfec
-        }
-        Transferencia[0] = {
-            ...Transferencia[0],
-            Recibos: recibosTrans
-        }
-        Cheque[0] = {
-            ...Cheque[0],
-            Recibos: recibosCheque
-        }
-        Recibos.push({...Efectivo[0]}); Recibos.push({...Transferencia[0]}); Recibos.push({...Cheque[0]}); 
-        const comprobante = {
-            ...cabezera[0],
-            Recibos
-        }
-        // return res.json({comprobante})
-        console.log(comprobante.Date)
-        
-        const fechaObj = new Date(comprobante.Date);
+            Transferencia[0] = {
+                ...Transferencia[0],
+                Recibos: recibosTrans
+            }
+            Cheque[0] = {
+                ...Cheque[0],
+                Recibos: recibosCheque
+            }
+            Recibos.push({ ...Efectivo[0] }); Recibos.push({ ...Transferencia[0] }); Recibos.push({ ...Cheque[0] });
+            const comprobante = {
+                ...cabezera[0],
+                Recibos
+            }
+            // return res.json({comprobante})
+            console.log(comprobante.Date)
 
-        // Usar Intl.DateTimeFormat para formatear la fecha en español
-        const opciones = { day: 'numeric', month: 'long', year: 'numeric' };
-        const formatoFecha = new Intl.DateTimeFormat('es-ES', opciones).format(fechaObj);
+            const fechaObj = new Date(comprobante.Date);
 
-        cpclContent = `
-              LABORATORIOS IFA S.A.
-                RESUMEN COBRANZAS
-Fecha: ${formatoFecha}
-`;
+            // Usar Intl.DateTimeFormat para formatear la fecha en español
+            const opciones = { day: 'numeric', month: 'long', year: 'numeric' };
+            const formatoFecha = new Intl.DateTimeFormat('es-ES', opciones).format(fechaObj);
 
-for(let i=0; i<comprobante.Recibos.length; i++){
-    if(comprobante.Recibos[i].Recibos.length!=0){
-    if(i==0){
-        cpclContent += `------------------------------------------------
-EFECTIVO`
-    }else if(i==1){
-        cpclContent += `------------------------------------------------
-TRANSFERENCIAS`
-    }else {
-    cpclContent += `------------------------------------------------
-CHEQUES`
-    }
-
-    comprobante.Recibos[i].Recibos.forEach((recibo) => {
-        const { CardCode, CardName, DocTotal, NumAtCard } = recibo;
-        cpclContent += `
-    Cod: ${CardCode}                   ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.
-    ${CardName}
-    Nro: ${NumAtCard}
-    --------------------------------------------`;
-    });
-
-cpclContent += `
-                        TOTAL:     ${Intl.NumberFormat('en-US').format(parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2))} Bs.
-`;
-    }
-}
-        }else{
             cpclContent = `
-            LABORATORIOS IFA S.A.
-              RESUMEN COBRANZAS
-Fecha: ${fechaFormated}
-No hay Cobros de Hoy
+TEXT 4 0 30 30 LABORATORIOS IFA S.A.\r\n
+TEXT 4 0 30 90 RESUMEN DE COBRANZA\r\n
+LINE 30 170 570 170 2\r\n
+TEXT 7 0 30 190 Fecha: ${formatoFecha}\r\n
+`;
+
+            let yPosition = 210;
+
+            for (let i = 0; i < comprobante.Recibos.length; i++) {
+                if (comprobante.Recibos[i].Recibos.length != 0) {
+                    if (i == 0) {
+                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} EFECTIVO\r\n`
+                    } else if (i == 1) {
+                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} TRANSFERENCIAS\r\n`
+                    } else {
+                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} CHEQUES\r\n`
+                    }
+
+                    comprobante.Recibos[i].Recibos.forEach((recibo) => {
+                        const { CardCode, CardName, DocTotal, NumAtCard } = recibo;
+                        cpclContent += `
+TEXT 7 0 60 ${yPosition + 50} Cod: ${CardCode}                   ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.\r\n
+TEXT 7 0 60 ${yPosition + 70} ${CardName}\r\n
+TEXT 7 0 60 ${yPosition + 90} Nro: ${NumAtCard}\r\n
+LINE 60 ${yPosition + 110} 570 ${yPosition + 110} 2\r\n`;
+                        yPosition += 80
+                    });
+                    yPosition += 50
+                    cpclContent += `
+TEXT 7 0 60 ${yPosition} TOTAL:                  ${Intl.NumberFormat('en-US').format(parseFloat(comprobante.Recibos[i].TotalDay).toFixed(2))} Bs.\r\n
+`;
+
+                }
+                yPosition += 20
+            }
+        } else {
+            cpclContent = `
+TEXT 4 0 30 30 LABORATORIOS IFA S.A.\r\n
+TEXT 4 0 30 60 RESUMEN DE COBRANZA\r\n
+TEXT 7 0 30 190 Fecha: ${fechaFormated}\r\n
+TEXT 7 0 30 210 No hay Cobros de Hoy\r\n
+
 `
         }
 
+        cpclContent += `
+FORM \r\n
+PRINT\r\n
+`
         const fileName = `${id_vendedor}_cierre_${fecha}.txt`;
         const filePath = path.join(__dirname, 'resumen', fileName);
 
@@ -1119,23 +1127,23 @@ No hay Cobros de Hoy
         fs.writeFileSync(filePath, cpclContent);
 
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        const ress= res.sendFile(filePath)
+        const ress = res.sendFile(filePath)
         res.on('finish', () => {
             if (fs.existsSync(filePath)) {
-              fs.unlink(filePath, (err) => {
-                if (err) {
-                  console.error('Error deleting file:', err);
-                }
-              });
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error('Error deleting file:', err);
+                    }
+                });
             }
-          });
+        });
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cierre Dia", `Cierre hecho con exito`, `IFA_LAPP_VEN_CIERRE_DIA_LAYOUT`, "cobranza/resumen", process.env.PRD)
         return ress;
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const mensaje= `Error en el resumenCobranzasController: ${error.message || ''}`
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cierre Dia", mensaje , ``, "cobranza/resumen", process.env.PRD)
+        const mensaje = `Error en el resumenCobranzasController: ${error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cierre Dia", mensaje, ``, "cobranza/resumen", process.env.PRD)
         return res.status(500).json({ mensaje })
     }
 }
@@ -1143,33 +1151,33 @@ No hay Cobros de Hoy
 const cobrosRealizadosController = async (req, res) => {
     try {
         const id = req.query.idVendedor;
-        console.log({id})
+        console.log({ id })
         const cobros = await cobrosRealizados(id)
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        if(cobros.statusCode!=200){
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cobros Realizados", `${cobros.message||'Error cobrosRealizados'}`, ``, "cobranza/cobros-realizados", process.env.PRD)
+        if (cobros.statusCode != 200) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Cobros Realizados", `${cobros.message || 'Error cobrosRealizados'}`, ``, "cobranza/cobros-realizados", process.env.PRD)
             return res.status(500).json({
-                mensaje: `${cobros.message||'Error cobrosRealizados'}`
+                mensaje: `${cobros.message || 'Error cobrosRealizados'}`
             })
         }
-        console.log({cobros: cobros.data.length})
+        console.log({ cobros: cobros.data.length })
         let cobrosFinal = []
         let cobro
         let Detalle = []
         let currentDocNum = 0
-        for(const factura of cobros.data){
-            const {DocNumInvoice, DocDateInvoice,NumAtCard,SumAppliedCob, DocNumPayments, ...rest} = factura;
-            if(DocNumPayments != currentDocNum){
+        for (const factura of cobros.data) {
+            const { DocNumInvoice, DocDateInvoice, NumAtCard, SumAppliedCob, DocNumPayments, ...rest } = factura;
+            if (DocNumPayments != currentDocNum) {
                 currentDocNum = DocNumPayments;
-                Detalle = [{DocNumInvoice, DocDateInvoice,NumAtCard,SumAppliedCob}]
-                cobro = {DocNumPayments, ...rest, Detalle }
+                Detalle = [{ DocNumInvoice, DocDateInvoice, NumAtCard, SumAppliedCob }]
+                cobro = { DocNumPayments, ...rest, Detalle }
                 cobrosFinal.push(cobro)
-            }else{
-                Detalle.push({DocNumInvoice, DocDateInvoice,NumAtCard,SumAppliedCob})
+            } else {
+                Detalle.push({ DocNumInvoice, DocDateInvoice, NumAtCard, SumAppliedCob })
                 cobrosFinal.find((fila) => fila.DocNumPayments == DocNumPayments).Detalle = Detalle
             }
         }
-        console.log({cobrosfinal: cobrosFinal.length})
+        console.log({ cobrosfinal: cobrosFinal.length })
 
         return res.json({ cobros: cobrosFinal })
     } catch (error) {
@@ -1185,22 +1193,38 @@ const cobrosRealizadosController = async (req, res) => {
 
 const clientesPorSucursalController = async (req, res) => {
     try {
-        const {idSucursales} = req.body;
-        console.log({idSucursales})
-        const clientes =[]
-        for(const id_suc of idSucursales){
+        const { idSucursales } = req.body;
+        console.log({ idSucursales })
+        const clientes = []
+        for (const id_suc of idSucursales) {
             const clientessucursal = await clientesPorSucursal(id_suc)
             console.log({ clientessucursal })
-            if(clientessucursal.statusCode != 200){
+            if (clientessucursal.statusCode != 200) {
                 return res.status(clientessucursal.statusCode).json({ mensaje: clientessucursal.message || 'Error en clientesPorSucursal' })
             }
             clientes.push(...clientessucursal.data)
         }
-        
-        return res.json({ response: clientes})
+
+        return res.json({ response: clientes })
     } catch (error) {
         console.log({ error })
-        const mensaje = error.message ||'Error en el controlador clientesPorVendedorController'
+        const mensaje = error.message || 'Error en el controlador clientesPorVendedorController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const clientesPorDespachadorController = async (req, res) => {
+    try {
+        const idSap = req.query.idSap
+        console.log({ idSap })
+        const clientesDespachador = await clientesPorDespachador(idSap)
+        console.log({ clientesDespachador })
+        return res.json({ response:clientesDespachador.data })
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador clientesPorVendedorController'
         return res.status(500).json({
             mensaje
         })
@@ -1241,5 +1265,6 @@ module.exports = {
     cobrosRealizadosController,
     clientesPorSucursalController,
     cobranzaFacturaPorCliDespController,
-    cobranzaClientePorVendedorIDController
+    cobranzaClientePorVendedorIDController,
+    clientesPorDespachadorController
 }

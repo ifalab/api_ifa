@@ -350,7 +350,7 @@ const clientePorVendedorId = async (id) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_CLI_BY_VEND(${id})`
+        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_COB_CLIENTES_CON_SALDO_DEUDOR_POR_VENDEDOR(${id})`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -360,30 +360,13 @@ const clientePorVendedorId = async (id) => {
         }
     }
 }
-
-const clientePorVendedorId = async (id) => {
-    try {
-        if (!connection) {
-            await connectHANA()
-        }
-        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_CLI_BY_VEND(${id})`
-        console.log({ query })
-        return await executeQuery(query)
-    } catch (error) {
-        console.log({ error })
-        return {
-            error: `no se pudo traer los datos`
-        }
-    }
-}
-
 const cobranzaSaldoDeudor = async (nombre, codigo) => {
     try {
         if (!connection) {
             await connectHANA()
         }        
         // const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_BY_VEND_OR_CLI('${nombre}','${codigo}')`
-        const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE('${nombre}','${codigo}')`
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE(   '${codigo}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -472,7 +455,6 @@ const resumenCobranzaLayout = async (id_vendedor, fecha) => {
         console.log({ query })
         const result = await executeQuery(query)
         return result
-
     } catch (error) {
         console.error('Error en cobroLayout:', error.message);
         return { 
@@ -547,6 +529,28 @@ const clientesPorSucursal= async (id_sucursal) => {
     }
 }
 
+const clientesPorDespachador= async (id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_clientes_por_despachador(${id_sap})`;
+        // const query = `CALL LAB_IFA_PRD.ifa_lapp_clientes_por_despachador(${id_sap})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result
+        }
+    } catch (error) {
+        console.error('Error en clientesPorDespachador:', error.message);
+        return { 
+            statusCode: 400,
+            message: `Error al procesar clientesPorDespachador: ${error.message || ''}` 
+        }
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -580,5 +584,6 @@ module.exports = {
     clientesPorVendedor,
     clientesPorSucursal,
     cobranzaSaldoDeudorDespachador,
-    clientePorVendedorId
+    clientePorVendedorId,
+    clientesPorDespachador
 }

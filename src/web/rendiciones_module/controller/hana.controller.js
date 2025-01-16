@@ -80,7 +80,7 @@ const findCajasEmpleado = async (codEmp) => {
             await connectHANA();
         }
         console.log('findCajasEmpleado EXECUTE')
-        const query = `CALL ${process.env.DBSAPPRD}.IFA_CAJAS_X_EMPLEADO('${codEmp}')`
+        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_RW_CAJAS_X_EMPLEADO('${codEmp}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
