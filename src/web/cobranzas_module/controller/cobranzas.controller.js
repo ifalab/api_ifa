@@ -903,15 +903,16 @@ const comprobantePDFController = async (req, res) => {
         const id = req.query.id
         const response = await cobroLayout(id)
         console.log({response})
+        // return res.json({response})
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
-            const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, Modality, ...result } = line
+            const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, Modality, TotalDue, Balance, ...result } = line
             if (!cabezera.length) {
-                cabezera.push({ ...result, Modality: Modality.charAt(0).toUpperCase()+Modality.slice(1) })
+                cabezera.push({ ...result, Modality: Modality.charAt(0).toUpperCase()+Modality.slice(1), Balance: parseFloat(Balance).toFixed(2) })
             }
             Facturas.push({
-                DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob
+                DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, TotalDue
             })
         }
         let comprobante = {
@@ -921,14 +922,16 @@ const comprobantePDFController = async (req, res) => {
         const formattedDate = formattedDataInvoice(comprobante.DocDatePayments)
         comprobante = {
             ...comprobante,
-            DocDatePayments: formattedDate
+            DocDatePayments: formattedDate,
+            DocTotal: parseFloat(comprobante.DocTotal).toFixed(2)
         }
         const facturasItem = []
         comprobante.Facturas.map((item) => {
             const newData = {
                 ...item,
                 SumAppliedCob: parseFloat(item.SumAppliedCob).toFixed(2),
-                DocDateInvoice: formattedDataInvoice(item.DocDateInvoice)
+                DocDateInvoice: formattedDataInvoice(item.DocDateInvoice),
+                TotalDue: parseFloat(item.TotalDue).toFixed(2),
             }
             facturasItem.push(newData)
         })
