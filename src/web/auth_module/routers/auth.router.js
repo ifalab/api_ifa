@@ -1,5 +1,12 @@
 const { Router } = require('express')
-const { authLoginPost, createUserController, findAllUserController, findUserByIdController, updateUserController, desactiveUserController, findDimensionController, authLoginV2, findAllDimensionUnoByUserController, findAllDimensionDosByUserController, findAllDimensionTresByUserController, activeUserController, roleByUserController, addRoleUserController, deleteAllRoleController, deleteOneRoleController, updateRolesByUserController, findAllRolesController, createUsertxt, userVendedorController, userInsertVendedorController } = require('../controllers/auth.controller')
+const { authLoginPost, createUserController, findAllUserController, findUserByIdController, updateUserController, desactiveUserController, findDimensionController, authLoginV2, findAllDimensionUnoByUserController, findAllDimensionDosByUserController, findAllDimensionTresByUserController, activeUserController, roleByUserController, addRoleUserController, deleteAllRoleController, deleteOneRoleController, updateRolesByUserController, findAllRolesController, createUsertxt, userVendedorController, userInsertVendedorController,
+    getDmUsersController,
+    getAllAlmacenesController,
+    getDmUserByIdController,
+    getAlmacenesByUserController,
+    addAlmacenUsuarioController,
+    deleteAlmacenUsuarioController
+ } = require('../controllers/auth.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 
@@ -23,6 +30,11 @@ router.delete('/delete-all-role-user/:id',[validarToken, validarCampos],deleteAl
 router.post('/delete-one-role-user',[validarToken, validarCampos],deleteOneRoleController)
 router.patch('/update-role-user',[validarToken, validarCampos],updateRolesByUserController)
 router.get('/find-all-rol',[validarToken, validarCampos],findAllRolesController)
-
+router.get('/get-users',[validarToken, validarCampos],getDmUsersController)
+router.get('/get-almacenes',[validarToken, validarCampos],getAllAlmacenesController)
+router.get('/get-user-by-id',[validarToken, validarCampos],getDmUserByIdController)
+router.get('/get-almacenes-by-user',[validarToken, validarCampos],getAlmacenesByUserController)
+router.post('/add-almacen-user',[validarToken, validarCampos],addAlmacenUsuarioController)
+router.post('/delete-almacen-user',[validarToken, validarCampos], deleteAlmacenUsuarioController)
 
 module.exports = router

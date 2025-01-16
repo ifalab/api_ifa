@@ -3,7 +3,10 @@ const bcrypt = require('bcryptjs')
 const fs = require('fs');
 const path = require('path');
 const { generarToken } = require("../../../helpers/generar_token.helper");
-const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles, userVendedor } = require("./hana.controller")
+const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles, userVendedor, 
+        getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario
+    } = require("./hana.controller")
+const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const authLoginPost = async (req, res) => {
     try {
@@ -228,6 +231,7 @@ const findAllUserController = async (req, res) => {
     try {
 
         const result = await findAllUser()
+        // return res.json({result})
         let listUser = []
         result.map((value) => {
             const user = {
@@ -595,6 +599,108 @@ const userInsertVendedorController = async(req,res)=>{
     }
 }
 
+const getDmUsersController = async (req, res) => {
+    try {
+        const users = await getDmUsers()
+        return res.json({ users })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: "error en getDmUsersController controller"
+        })
+    }
+}
+
+const getAllAlmacenesController = async (req, res) => {
+    try {
+        const almacenes = await getAllAlmacenes()
+        return res.json({ almacenes })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: "error en getAllAlmacenesController controller"
+        })
+    }
+}
+
+const getDmUserByIdController = async (req, res) => {
+    try {
+        const id= req.query.id
+        const users = await getDmUsers()
+        const user = users.find((us) => us.UserID == id)
+        return res.json({ ...user })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: "error en getDmUsersController controller"
+        })
+    }
+}
+const getAlmacenesByUserController = async (req, res) => {
+    try {
+        const id= req.query.id
+        const almacenes = await getAlmacenesByUser(id)
+        return res.json({ almacenes })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: "error en getAlmacenesByUserController controller"
+        })
+    }
+}
+
+const addAlmacenUsuarioController = async (req, res) => {
+    try {
+        const { idUser, codAlmacen }= req.body
+        console.log({idUser, codAlmacen})
+        const almacenes = await addAlmacenUsuario(idUser, codAlmacen)
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if(almacenes.statusCode!= 200){
+            const mensaje = almacenes.message ? (almacenes.message.length >255? 'Error en addAlmacenUsuario': almacenes.message):'Error en addAlmacenUsuario'
+           
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario",mensaje, `${almacenes.query||''}`, "auth/add-almacen-user", process.env.PRD)
+            return res.status(400).json({mensaje: `${almacenes.message || mensaje}`})
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", `Respuesta al añadir almacen: ${almacenes.data}`, `${almacenes.query||''}`, "auth/add-almacen-user", process.env.PRD)
+        return res.json(almacenes.data )
+    } catch (error) {
+        console.log({ error })
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje= `Error en addAlmacenUsuarioController controller: ${error.message||''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, ``, "auth/add-almacen-user", process.env.PRD)
+
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const deleteAlmacenUsuarioController = async (req, res) => {
+    try {
+        const { idUser, codAlmacen }= req.body
+        console.log({idUser, codAlmacen})
+        const almacenes = await deleteAlmacenUsuario(idUser.toString(), codAlmacen)
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if(almacenes.statusCode!= 200){
+            const mensaje = almacenes.message ? (almacenes.message.length >255? 'Error en deleteAlmacenUsuario': almacenes.message):'Error en deleteAlmacenUsuario'
+           
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario",mensaje, `${almacenes.query||''}`, "auth/delete-almacen-user", process.env.PRD)
+            return res.status(400).json({mensaje})
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar Almacen a usuario", `Respuesta al añadir almacen: ${almacenes.data}`, `${almacenes.query||''}`, "auth/delete-almacen-user", process.env.PRD)
+        return res.json(almacenes.data )
+    } catch (error) {
+        console.log({ error })
+        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje= `Error en deleteAlmacenUsuarioController controller: ${error.message||''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar Almacen a usuario", mensaje, ``, "auth/delete-almacen-user", process.env.PRD)
+
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 module.exports = {
     authLoginPost,
     createUserController,
@@ -616,5 +722,11 @@ module.exports = {
     findAllRolesController,
     createUsertxt,
     userVendedorController,
-    userInsertVendedorController
+    userInsertVendedorController,
+    getDmUsersController,
+    getAllAlmacenesController,
+    getDmUserByIdController,
+    getAlmacenesByUserController,
+    addAlmacenUsuarioController,
+    deleteAlmacenUsuarioController
 }

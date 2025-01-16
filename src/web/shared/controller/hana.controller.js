@@ -77,7 +77,8 @@ const grabarLog = async(userCode, username, modulo, mensaje, querystr, endpoint,
             await connectHANA();
         }
         const escapedQuerystr = querystr.replace(/'/g, "''");
-        const query = `CALL LAB_IFA_LAPP.LAPP_GRABAR_LOG('${userCode}','${username}','${modulo}', '${mensaje}','${escapedQuerystr}','${endpoint}','${base}')`
+        const escapedMensaje = mensaje.replace(/'/g, "''");
+        const query = `CALL LAB_IFA_LAPP.LAPP_GRABAR_LOG('${userCode}','${username}','${modulo}', '${escapedMensaje}','${escapedQuerystr}','${endpoint}','${base}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
