@@ -706,9 +706,7 @@ const marcarAsistenciaController = async (req, res) => {
 
 const getAsistenciasVendedorController = async (req, res) => {
     try {
-        // console.log(req.query)
         const id_vendedor_sap = req.query.id
-        // console.log(id_vendedor_sap)
         const usuario = req.usuarioAutorizado
         const asistencias = await getAsistenciasVendedor(id_vendedor_sap)
         console.log(asistencias.response)

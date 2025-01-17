@@ -366,7 +366,24 @@ const cobranzaSaldoDeudor = async (nombre, codigo) => {
             await connectHANA()
         }        
         // const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_BY_VEND_OR_CLI('${nombre}','${codigo}')`
-        const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE(   '${codigo}')`
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE('${codigo}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `no se pudo traer los datos`
+        }
+    }
+}
+
+const cobranzaSaldoAlContadoDeudor = async (nombre, codigo) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }        
+        // const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_BY_VEND_OR_CLI('${nombre}','${codigo}')`
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE_CONTADO('${codigo}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -382,7 +399,7 @@ const cobranzaSaldoDeudorDespachador = async (codigo) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE('','${codigo}')`
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE('${codigo}')`
         console.log({ query })
         const result= await executeQuery(query)
         return{
@@ -512,8 +529,8 @@ const clientesPorSucursal= async (id_sucursal) => {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `CALL ${process.env.PRD}.ifa_lapp_clientes_por_surcursal(${id_sucursal})`;
-        const query = `CALL LAB_IFA_PRD.ifa_lapp_clientes_por_surcursal(${id_sucursal})`;
+        const query = `CALL ${process.env.PRD}.ifa_lapp_clientes_por_surcursal(${id_sucursal})`;
+        // const query = `CALL LAB_IFA_PRD.ifa_lapp_clientes_por_surcursal(${id_sucursal})`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -585,5 +602,6 @@ module.exports = {
     clientesPorSucursal,
     cobranzaSaldoDeudorDespachador,
     clientePorVendedorId,
-    clientesPorDespachador
+    clientesPorDespachador,
+    cobranzaSaldoAlContadoDeudor
 }

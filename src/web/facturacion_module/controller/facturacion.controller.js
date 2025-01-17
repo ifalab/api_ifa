@@ -852,18 +852,17 @@ const cancelToProsinController = async (req, res) => {
             if (responseProsin.data.mensaje) {
                 const mess = responseProsin.data.mensaje.split('§')
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
-
                 return res.status(400).json({ mensaje: `${mess[1] || 'Error en anulacionFacturacion'}` })
             }
         }
 
         if (!docEntry) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Debe venir el doc entry`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Debe venir el doc entry CUF(${cuf})`, '', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Debe venir el doc entry` })
         }
         const reponseInvoice = await cancelInvoice(docEntry)
         if (reponseInvoice.value) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, '', "facturacion/cancel-to-prosin", process.env.PRD)
 
             return res.status(400).json({ mensaje: `Error en cancel invoice: ${reponseInvoice.value || ''}` })
         }
@@ -874,7 +873,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `No hay entregas de la factura` })
         }
         if (responseEntregas.message) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, '', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}` })
         }
 
