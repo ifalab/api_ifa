@@ -483,8 +483,8 @@ const facturacionController = async (req, res) => {
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el controlador Facturar. ${error.message || ''}`, '', "facturacion/facturar", process.env.PRD)
 
         return res.status(error.statusCode ?? 500).json({
-            mensaje: `Error en el controlador. ${error?.message?.error || 'No definido'}`,
-            sapMessage: `${error?.message?.error || 'No definido'}`,
+            mensaje: `Error en el controlador. ${error?.message || 'No definido'}`,
+            sapMessage: `${error?.message || 'No definido'}`,
             error: {
                 message: error.message ?? '',
                 stack: error.stack,
