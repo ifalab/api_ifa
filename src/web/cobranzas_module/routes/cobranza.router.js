@@ -1,5 +1,7 @@
 const { Router } = require('express')
-const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController, cobranzasPorZonasController, cobranzaHistoricoNacionalController, cobranzaHistoricoNormalesController, cobranzaHistoricoCadenasController, cobranzaHistoricoIfavetController, cobranzaHistoricoInstitucionesController, cobranzaHistoricoMasivosController, cobranzasPorZonasMesAntController, cobranzaClientePorVendedorController, cobranzaFacturaPorClienteController, clientesInstitucionesSaldoDeudorController, saldoDeudorInstitucionesController, realizarCobroController, comprobanteController, comprobantePDFController, resumenCobranzasController, cobrosRealizadosController, clientesPorSucursalController, cobranzaFacturaPorCliDespController, cobranzaClientePorVendedorIDController, clientesPorDespachadorController, cobranzaFacturaPorClienteDespachadorController } = require('../controller/cobranzas.controller')
+const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController, cobranzasPorZonasController, cobranzaHistoricoNacionalController, cobranzaHistoricoNormalesController, cobranzaHistoricoCadenasController, cobranzaHistoricoIfavetController, cobranzaHistoricoInstitucionesController, cobranzaHistoricoMasivosController, cobranzasPorZonasMesAntController, cobranzaClientePorVendedorController, cobranzaFacturaPorClienteController, clientesInstitucionesSaldoDeudorController, saldoDeudorInstitucionesController, realizarCobroController, comprobanteController, comprobantePDFController, resumenCobranzasController, cobrosRealizadosController, clientesPorSucursalController, cobranzaFacturaPorCliDespController, cobranzaClientePorVendedorIDController, clientesPorDespachadorController, cobranzaFacturaPorClienteDespachadorController,
+    detalleFacturaController
+ } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -44,6 +46,7 @@ router.get('/resumen',[validarToken, validarCampos],resumenCobranzasController)
 router.get('/cobros-realizados',[validarToken, validarCampos],cobrosRealizadosController)
 router.post('/clientes-sucursal',[validarToken, validarCampos],clientesPorSucursalController)
 router.get('/clientes-despachador',[validarToken, validarCampos],clientesPorDespachadorController)
+router.get('/detalle-factura',[validarToken, validarCampos],detalleFacturaController)
 
 
 module.exports = router
