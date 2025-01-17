@@ -488,6 +488,17 @@ const pedidosPorVendedorHoyController = async (req, res) => {
     }
 }
 
+const pedidoCadenaController = async(req,res)=>{
+    try {
+        const body = req.body
+        
+        return res.json({body})
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'error en el controlador'})
+    }
+}
+
 
 module.exports = {
     clientesVendedorController,
@@ -508,5 +519,6 @@ module.exports = {
     pedidoLayoutController,
     crearOfertaVentaController,
     clientesFacturadorController,
-    pedidosPorVendedorHoyController
+    pedidosPorVendedorHoyController,
+    pedidoCadenaController
 }

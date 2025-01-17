@@ -9,27 +9,53 @@
         body {
             font-family: "Courier New", Courier, monospace;
             font-size: 12px;
-            padding: 20px;
+            padding: 10px;
+            margin: 0;
         }
 
         .qr-code {
             width: 100px;
-            height: 110px;
+            height: 100px;
         }
 
-        .justified {
+        .header-container {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start; 
+            align-items: flex-start;
+            margin-bottom: 10px;
         }
 
-        .justified div {
-            display:inline-block; 
+        .header-left {
+            width: 50%;
+            text-align: left;
         }
-        
-        .cabecera {
-            line-height: 0.5px;
-            margin-right: 20px;
+
+        .header-right {
+            width: 50%;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0px;
+            margin-bottom: 5px;
+        }
+
+        .title-container {
+            flex-grow: 1;
+            text-align: center;
+            padding: 0px;
+            margin-bottom: 5px;
+        }
+
+        .qr-container {
+            width: 100px;
+            text-align: right;
         }
 
         table {
@@ -38,18 +64,46 @@
             margin-bottom: 20px;
         }
 
-        table, th, td {
+        table,
+        th,
+        td {
             border: 1px solid #ddd;
         }
 
-        th, td {
+        th,
+        td {
             padding: 5px;
             text-align: center;
+            padding: 3px;
+        }
+
+        .header-container,
+        .header-top,
+        .table {
+            margin-bottom: 5px !important;
+            /* Reduce espacio entre secciones */
+        }
+
+        .header-left p,
+        .header-right p {
+            margin: 2px 0 !important;
+            /* Reduce separación entre párrafos */
         }
 
         th {
             background-color: #f4f4f4;
             font-weight: bold;
+            padding: 3px;
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 10%;
+            /* Ajusta el porcentaje según el tamaño que desees */
+            min-width: 100px;
+            /* Para evitar que se encoja demasiado */
+            text-align: left;
+            /* Alineación opcional */
         }
 
         tbody tr:nth-child(odd) {
@@ -61,17 +115,17 @@
         }
 
         .footer-text {
-            margin-top: 20px;
+            margin-top: 15px;
+            padding: 0px;
             text-align: right;
             font-style: italic;
         }
 
         .footer-signatures {
-            margin-top: 60px;
-            /* Más espacio arriba del pie de página */
+            margin-top: 55px;
+            /* margin: 0 5px; */
             display: flex;
             justify-content: space-around;
-            /* Alineación horizontal */
             text-align: center;
         }
 
@@ -80,31 +134,33 @@
             width: 20%;
             border-top: 1px solid black;
             margin: 0 5px;
-        }
-
-        .content {
-            margin: 20px 10px;
-            /* Evita que el contenido quede pegado al borde */
-        }
-
-        .total-row {
-            font-weight: bold;
+            margin-top: 30px
         }
     </style>
 </head>
 
 <body>
     <div class="content">
-        <h2 class="text-center">LABORATORIOS IFA</h2>
-        <h6 class="text-center">NOTA DE ENTREGA #<%= data.DocNum %>
-        </h6>
-        <h6 class="text-center">ALMACEN : <%= data.WhsCode %>
-        </h6>
-        <h6 class="text-center"><%= data.WhsName %>
-        </h6>
+        <div class="header-top">
+            <div class="title-container">
+                <h6 class="text-center">LABORATORIOS IFA</h6>
+                <h6 class="text-center">NOTA DE ENTREGA #<%= data.DocNum %>
+                </h6>
+                <h6 class="text-center">ALMACEN : <%= data.WhsCode %>
+                </h6>
+                <h6 class="text-center">
+                    <%= data.WhsName %>
+                </h6>
+            </div>
+            <div class="qr-container">
+                <img class="qr-code" src="<%= qrCode %>" alt="QR Code">
+            </div>
+        </div>
         <hr>
-        <div class="justified">
-            <div class="cabecera">
+
+        <div class="header-container">
+
+            <div class="header-left">
                 <p><strong>Usuario:</strong>
                     <%= data.USER_CODE %>
                 </p>
@@ -117,6 +173,8 @@
                 <p><strong>Hora:</strong>
                     <%= data.time %>
                 </p>
+            </div>
+            <div class="header-right">
                 <p><strong>Teléfono:</strong>
                     <%= data.Phone1 %>
                 </p>
@@ -130,11 +188,9 @@
                     <%= data.CardCode %> - <%= data.CardName %>
                 </p>
             </div>
-            <div class="text-end">
-                <img class="qr-code" src="<%= qrCode %>" alt="QR Code">
-            </div>
         </div>
         <hr>
+
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
@@ -150,8 +206,7 @@
             <tbody>
                 <% let totalGeneral=0; %>
                     <% data.detailsList.forEach(item=> {
-                        totalGeneral += parseFloat(item.LineTotal); // Acumular el total
-                        %>
+                        totalGeneral += parseFloat(item.LineTotal); %>
                         <tr>
                             <td>
                                 <%= item.ItemCode %>
@@ -178,36 +233,37 @@
                         <% }); %>
             </tbody>
             <tfoot>
-                <tr class="total-row">
+                <!-- <tr class="total-row">
                     <td colspan="6" class="text-end">Total General:</td>
                     <td>
                         <%= totalGeneral.toFixed(2) %> BOB
                     </td>
-                </tr>
+                </tr> -->
             </tfoot>
         </table>
+
         <div class="footer-text">
-            <!-- <p><strong>Empleado:</strong> MEDLING ARDAYA JENNIFER</p> -->
+            <tr class="total-row">
+                <td colspan="6" class="text-end"><strong>Total General:</strong></td>
+                <td>
+                    <%= totalGeneral.toFixed(2) %> BOB
+                </td>
+            </tr>
+            <!-- <p><strong></strong></p> -->
             <p><strong>Condición de pago:</strong>
                 <%= data.PymntGroup %>
             </p>
-            <!-- <p><strong>Glosa:</strong> solicitado por correo ent. hoy en el trans de la tarde basado en pedidos de cliente 240006460.</p> -->
-            <!-- <p><strong>Total en texto:</strong> Eleven Thousand Four Hundred Ninety-Five And 39/100 Bolivianos</p> -->
         </div>
+
         <div class="footer-signatures">
-            <div style="margin-top: 10rem;">Creado por ></div>
+            <div style="margin-top: 2rem;">Creado por <%= data.U_NAME %>
+            </div>
             <div>Preparado por <%= data.U_N %>
             </div>
             <div>Revisado por <%= data.U_N %>
             </div>
             <div>Recibí conforme <%= data.U_N %>
             </div>
-        </div>
-        <div style="
-        margin-left: 6rem;
-        margin-top: 0.5rem;
-        ">
-            <%= data.U_NAME %>
         </div>
     </div>
 </body>

@@ -268,6 +268,8 @@ const pedidosPorVendedorHoy = async(id_vendedor, fecha)=>{
     }
 }
 
+
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,

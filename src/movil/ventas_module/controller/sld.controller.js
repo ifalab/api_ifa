@@ -103,13 +103,6 @@ const postQuotations = async(newOrderDate)=>{
             headers: headers
         });
 
-        // // Extrae el número del encabezado location
-        // const locationHeader = response.headers.location;
-        // const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
-        // const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
-
-        // console.log('Nueva Orden: #', orderNumber)
-        // // Envía una respuesta exitosa con mensaje personalizado
         return {
             message: 'Orden grabada con éxito',
             orderNumber: orderNumber,

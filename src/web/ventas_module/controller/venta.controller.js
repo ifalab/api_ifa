@@ -732,8 +732,14 @@ const listaAsistenciaDiaController = async (req, res) => {
     try {
         const {fecha,id_sap}=req.body
         const {response} = await listaAsistenciaDia(fecha,id_sap)
+        const filteredResponse = Object.values(response.reduce((acc, item) => {
+            if (!acc[item.MENSAJE]) {
+                acc[item.MENSAJE] = item; 
+            }
+            return acc;
+        }, {}));
 
-        return res.json(response) 
+        return res.json(filteredResponse);
     } catch (error) {
         console.log({error})
         return res.status(500).json({mensaje:'error en el controlador'})

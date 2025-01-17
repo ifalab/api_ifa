@@ -4,6 +4,7 @@ const QRCode = require('qrcode');
 const path = require('path');
 const pdfMake = require('pdfmake/build/pdfmake');
 const pdfFonts = require('pdfmake/build/vfs_fonts');
+const puppeteer = require('puppeteer');
 const PdfPrinter = require('pdfmake');
 const fs = require('fs');
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -601,33 +602,40 @@ const noteEntregaController = async (req, res) => {
             U_Comentario,
             detailsList,
         };
+         //! Generar QR Code
+         const qrCode = await QRCode.toDataURL(data.BarCode.toString());
 
-        //! EJS
-        const filePath = path.join(__dirname, `nota_entrega_${data.DocNum}.pdf`);
-        // Generar el QR Code
-        const qrCode = await QRCode.toDataURL(data.BarCode.toString());
-
-        // Renderizar la plantilla EJS a HTML
-        const html = await ejs.renderFile(path.join(__dirname, 'notaEntrega', 'template.ejs'), { data, qrCode });
-
-        // Configuración para html-pdf
-        const options = { format: 'A4', orientation: 'portrait' };
-
-        // Generar el PDF
-        pdf.create(html, options).toStream((err, stream) => {
-            if (err) {
-                console.error('Error al generar el PDF:', err);
-                let mensaje = err.message || 'Error al generar el PDF'
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", mensaje, response.query, "facturacion/nota-entrega", process.env.PRD)
-
-                return res.status(500).json({ mensaje });
-            }
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", "Nota Creada con exito", response.query, "facturacion/nota-entrega", process.env.PRD)
-
-            // Enviar el PDF en la respuesta
-            res.setHeader('Content-Type', 'application/pdf');
-            stream.pipe(res);
-        });
+         //! Renderizar la plantilla EJS a HTML
+         const htmlTemplate = path.join(__dirname, 'notaEntrega', 'template.ejs');
+         const htmlContent = await ejs.renderFile(htmlTemplate, { data, qrCode });
+ 
+         //! Generar el PDF con Puppeteer
+         const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+         const page = await browser.newPage();
+ 
+         await page.setContent(htmlContent, { waitUntil: 'load' });
+         const pdfBuffer = await page.pdf({
+             format: 'A4',
+             printBackground: true
+         });
+ 
+         await browser.close();
+ 
+         //! Definir nombre del archivo
+         const fileName = `nota_entrega_${data.DocNum}.pdf`;
+ 
+         //! Registrar en el log
+         grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", 
+                   "Nota Creada con éxito", response.query, "facturacion/nota-entrega", process.env.PRD);
+ 
+         //! Enviar el PDF como respuesta
+         res.set({
+             'Content-Type': 'application/pdf',
+             'Content-Disposition': `inline; filename="${fileName}"`,
+             'Content-Length': pdfBuffer.length
+         });
+ 
+         return res.end(pdfBuffer);
     } catch (error) {
         const user = req.usuarioAutorizado
         console.error('Error en el controlador:', error);
@@ -826,7 +834,7 @@ const cancelToProsinController = async (req, res) => {
             mediaPagina,
             docEntry
         } = req.body
-
+        let responseProsin = {}
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
         if (!cuf || cuf == '') {
@@ -837,7 +845,7 @@ const cancelToProsinController = async (req, res) => {
         const { estado } = estadoFacturaResponse[0]
         
         if (estado) {
-            const responseProsin = await anulacionFacturacion({
+            responseProsin = await anulacionFacturacion({
                 sucursal,
                 punto,
                 cuf,

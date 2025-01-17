@@ -862,12 +862,12 @@ LINE 30 ${yPosition} 570 ${yPosition} 2
 TEXT 7 0 30 ${yPosition + 20} TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}\r\n
 TEXT 7 0 30 ${yPosition + 40} Glosa: ${comprobante.JrnlMemo || ''}\r\n
 LINE 30 ${yPosition + 60} 570 ${yPosition + 60} 2
-TEXT 7 0 30 ${yPosition + 80} Saldo Cliente: ${comprobante.Balance || ''} bs\r\n
+TEXT 7 0 30 ${yPosition + 80} Saldo Cliente: ${parseFloat(comprobante.Balance).toFixed(2) || ''} bs\r\n
 TEXT 7 0 30 ${yPosition + 100} Firma                  Sello\r\n
 LINE 30 ${yPosition + 250} 200 ${yPosition + 250} 2
 LINE 350 ${yPosition + 250} 520 ${yPosition + 250} 2
 FORM\r\n
-PRINT\r\n                 
+PRINT\r\n
 `;
 
         const filePath = path.join(__dirname, 'comprobantes', fileName);
@@ -966,7 +966,7 @@ const comprobantePDFController = async (req, res) => {
             staticBaseUrl: process.env.STATIC_BASE_URL,
         });
 
-        // Generar el PDF con Puppeteer
+     
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
 
@@ -975,18 +975,12 @@ const comprobantePDFController = async (req, res) => {
             format: 'A4',
             printBackground: true
         });
-        // fs.writeFileSync('debug.pdf', pdfBuffer);
+      
         await browser.close();
-
-        // Guardar para depuración
-        // const fs = require('fs');
         console.log('PDF Buffer Size:', pdfBuffer.length);
-        // fs.writeFileSync('debug.pdf', pdfBuffer); // Original
-        // fs.writeFileSync('sent_to_client.pdf', pdfBuffer); // Enviado
-
-        // Configurar encabezados y enviar
+        
         const fileName = `${comprobante.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
-        // return res.json({fileName})
+
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,
@@ -1011,8 +1005,8 @@ const getMounth = (month) => {
 const resumenCobranzasController = async (req, res) => {
     try {
         const id_vendedor = req.query.id
-        // const fecha = req.query.fecha
-        const fecha = '20250113'
+        const fecha = req.query.fecha
+        // const fecha = '20250113'
         const mes = Number(fecha[4] + fecha[5]) - 1
         console.log({ mes })
         const fechaFormated = fecha[6] + fecha[7] + ' de ' + getMounth(mes) + ' de ' + fecha[0] + fecha[1] + fecha[2] + fecha[3]

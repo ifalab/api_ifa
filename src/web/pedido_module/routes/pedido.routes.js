@@ -2,7 +2,8 @@ const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const { clientesVendedorController, clientesMoraController, moraController, catalogoController, descuentoArticuloController, listaPreciosOficilaController, descuentoCondicionController, sugeridosXZonaController, sugeridosXClienteController, findZonasXVendedorController, crearOrderController, whiteListController, pedidosPorVendedorPendientesController, pedidosPorVendedorFacturadosController, pedidosPorVendedorAnuladosController, pedidoLayoutController,
-    pedidosPorVendedorHoyController } = require('../controller/pedido.controller')
+    pedidosPorVendedorHoyController, 
+    pedidoCadenaController} = require('../controller/pedido.controller')
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
@@ -23,5 +24,6 @@ router.get('/facturados-vendedor', [validarToken, validarCampos],pedidosPorVende
 router.get('/anulados-vendedor', [validarToken, validarCampos],pedidosPorVendedorAnuladosController)
 router.get('/pedido-layout', [validarToken, validarCampos],pedidoLayoutController)
 router.get('/hoy-vendedor', [validarToken, validarCampos],pedidosPorVendedorHoyController)
+router.post('/crear-oferta-venta', [validarToken, validarCampos],pedidoCadenaController)
 
 module.exports = router
