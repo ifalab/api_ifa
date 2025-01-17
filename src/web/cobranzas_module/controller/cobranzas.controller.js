@@ -3,7 +3,9 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
-const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor } = require("./hana.controller")
+const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
+    detalleFactura
+ } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -651,11 +653,10 @@ const cobranzaClientePorVendedorController = async (req, res) => {
 const cobranzaClientePorVendedorIDController = async (req, res) => {
     try {
         const id = req.query.id
-        // console.log({nombre})
+        // console.log({id})
         if (!id) return res.status(400).json({ mensaje: 'no hay el id del vendedor' })
-        // return res.json({nombre})
-        const response = await clientePorVendedorId(id)
-        return res.json({ response })
+        const response = await clientesPorVendedor(id)
+        return res.json({ response:response.data })
 
     } catch (error) {
         console.log({ error })
@@ -1094,9 +1095,9 @@ TEXT 7 0 30 190 Fecha: ${formatoFecha}\r\n
                     if (i == 0) {
                         cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} EFECTIVO\r\n`
                     } else if (i == 1) {
-                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} TRANSFERENCIAS\r\n`
+                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} TRANSFERENCIA\r\n`
                     } else {
-                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} CHEQUES\r\n`
+                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} CHEQUE\r\n`
                     }
 
                     comprobante.Recibos[i].Recibos.forEach((recibo) => {
@@ -1105,7 +1106,7 @@ TEXT 7 0 30 190 Fecha: ${formatoFecha}\r\n
 TEXT 7 0 60 ${yPosition + 50} Cod: ${CardCode}                   ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.\r\n
 TEXT 7 0 60 ${yPosition + 70} ${CardName}\r\n
 TEXT 7 0 60 ${yPosition + 90} Nro: ${NumAtCard}\r\n
-LINE 60 ${yPosition + 110} 570 ${yPosition + 110} 2\r\n`;
+LINE 60 ${yPosition + 110} 570 ${yPosition + 110} 1\r\n`;
                         yPosition += 80
                     });
                     yPosition += 50
@@ -1245,6 +1246,47 @@ const clientesPorDespachadorController = async (req, res) => {
     }
 }
 
+const detalleFacturaController = async (req, res) => {
+    try {
+        const docEntry = req.query.id
+        console.log({ docEntry })
+        const response = await detalleFactura(docEntry)
+        console.log({ response })
+        if(response.statusCode!=200){
+            res.status(400).json({mensaje: `${response.message || 'Error en detalleFactura'}`})
+        }
+        // return res.json(response.data )
+        let Detalle = []
+        let cabecera =[]
+        response.data.forEach((item) =>{
+            const {ItemCode,Dscription, Quantity, PriceAfDi, ...rest} = item;
+            if(cabecera.length==0){
+                cabecera.push({
+                    ...rest
+                })
+            }
+            Detalle.push(
+                {
+                    ItemCode,Description:Dscription, Quantity, PriceAfDi
+                }
+            )
+
+        })
+        const factura = {
+            ...cabecera[0],
+            Detalle
+        }
+        return res.json({...factura})
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `Error en el controlador detalleFacturaController: ${error.message} || ''`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -1281,5 +1323,6 @@ module.exports = {
     cobranzaFacturaPorCliDespController,
     cobranzaClientePorVendedorIDController,
     clientesPorDespachadorController,
-    cobranzaFacturaPorClienteDespachadorController
+    cobranzaFacturaPorClienteDespachadorController,
+    detalleFacturaController
 }

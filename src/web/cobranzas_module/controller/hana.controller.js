@@ -568,6 +568,27 @@ const clientesPorDespachador= async (id_sap) => {
     }
 }
 
+const detalleFactura= async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_VENTAS_DETALLE_POR_ID(${docEntry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result
+        }
+    } catch (error) {
+        console.error('Error en detalleFactura:', error.message);
+        return { 
+            statusCode: 400,
+            message: `Error al procesar detalleFactura: ${error.message || ''}` 
+        }
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -603,5 +624,6 @@ module.exports = {
     cobranzaSaldoDeudorDespachador,
     clientePorVendedorId,
     clientesPorDespachador,
-    cobranzaSaldoAlContadoDeudor
+    cobranzaSaldoAlContadoDeudor,
+    detalleFactura
 }
