@@ -5,7 +5,13 @@ const { authLoginPost, createUserController, findAllUserController, findUserById
     getDmUserByIdController,
     getAlmacenesByUserController,
     addAlmacenUsuarioController,
-    deleteAlmacenUsuarioController
+    deleteAlmacenUsuarioController,
+    getRutasLibresPorDespachadorController,
+    addRutasDespachadoresController,
+    getRutasAsignadasPorDespachadorController,
+    getDespachadoresController,
+    deleteRutasDespachadoresController,
+    getDespachadorPorIdController
  } = require('../controllers/auth.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -36,5 +42,11 @@ router.get('/get-user-by-id',[validarToken, validarCampos],getDmUserByIdControll
 router.get('/get-almacenes-by-user',[validarToken, validarCampos],getAlmacenesByUserController)
 router.post('/add-almacen-user',[validarToken, validarCampos],addAlmacenUsuarioController)
 router.post('/delete-almacen-user',[validarToken, validarCampos], deleteAlmacenUsuarioController)
+router.get('/get-rutas-libres-despachador',[validarToken, validarCampos],getRutasLibresPorDespachadorController)
+router.get('/get-rutas-por-despachador',[validarToken, validarCampos],getRutasAsignadasPorDespachadorController)
+router.post('/add-ruta-despachador',[validarToken, validarCampos],addRutasDespachadoresController)
+router.post('/delete-ruta-despachador',[validarToken, validarCampos],deleteRutasDespachadoresController)
+router.get('/get-despachadores',[validarToken, validarCampos],getDespachadoresController)
+router.get('/get-despachador-por-id',[validarToken, validarCampos],getDespachadorPorIdController)
 
 module.exports = router
