@@ -1219,7 +1219,7 @@ const clientesPorSucursalController = async (req, res) => {
             clientes.push(...clientessucursal.data)
         }
 
-        return res.json({ response: clientes })
+        return res.json({ clientes: clientes })
     } catch (error) {
         console.log({ error })
         const mensaje = error.message || 'Error en el controlador clientesPorVendedorController'
