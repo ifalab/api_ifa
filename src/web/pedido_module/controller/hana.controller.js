@@ -112,7 +112,7 @@ const findDescuentosArticulosCatalogo = async () => {
     }
 }
 
-const moraCliente = async(cardCode)=>{
+const moraCliente = async (cardCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -126,7 +126,7 @@ const moraCliente = async(cardCode)=>{
     }
 }
 
-const clientesMora = async()=>{
+const clientesMora = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -140,7 +140,7 @@ const clientesMora = async()=>{
     }
 }
 
-const listaPrecioOficial = async(cardCode)=>{
+const listaPrecioOficial = async (cardCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -154,7 +154,7 @@ const listaPrecioOficial = async(cardCode)=>{
     }
 }
 
-const pedidoSugeridoXZona = async(zoneCode, cardCode)=>{
+const pedidoSugeridoXZona = async (zoneCode, cardCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -168,7 +168,7 @@ const pedidoSugeridoXZona = async(zoneCode, cardCode)=>{
     }
 }
 
-const pedidoSugeridoXCliente = async(cardCode)=>{
+const pedidoSugeridoXCliente = async (cardCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -176,15 +176,15 @@ const pedidoSugeridoXCliente = async(cardCode)=>{
         const query = `CALL ${process.env.PRD}.ifa_lapp_pedido_sugerido_by_cliente('${cardCode}')`
         console.log({ query })
         const sugeridos = await executeQuery(query)
-        console.log({sugeridos})
-        return {sugeridos, query}
+        console.log({ sugeridos })
+        return { sugeridos, query }
     } catch (error) {
         // console.log({ error })
         throw new Error(error.message);
     }
 }
 
-const findZonasXVendedor = async(id_vendedor_sap)=>{
+const findZonasXVendedor = async (id_vendedor_sap) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -198,7 +198,7 @@ const findZonasXVendedor = async(id_vendedor_sap)=>{
     }
 }
 
-const pedidosPorVendedorPendientes = async(id)=>{
+const pedidosPorVendedorPendientes = async (id) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -212,7 +212,7 @@ const pedidosPorVendedorPendientes = async(id)=>{
     }
 }
 
-const pedidosPorVendedorFacturados = async(id)=>{
+const pedidosPorVendedorFacturados = async (id) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -226,7 +226,7 @@ const pedidosPorVendedorFacturados = async(id)=>{
     }
 }
 
-const pedidosPorVendedorAnulados = async(id)=>{
+const pedidosPorVendedorAnulados = async (id) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -248,13 +248,13 @@ const pedidoLayout = async (delivery) => {
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_PEDIDO_LAYOUT(${delivery})`;
         console.log({ query })
         const result = await executeQuery(query)
-        return {result, query}
+        return { result, query }
     } catch (error) {
         console.error('Error en pedido layout:', error.message);
         throw new Error(`Error en pedido layout ${error.message}`);
     }
 }
-const pedidosPorVendedorHoy = async(id_vendedor, fecha)=>{
+const pedidosPorVendedorHoy = async (id_vendedor, fecha) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -268,11 +268,21 @@ const pedidosPorVendedorHoy = async(id_vendedor, fecha)=>{
     }
 }
 
-const listaPrecioCadenas = async()=>{
-
+const listaPrecioCadenas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "ListCode", "ListName" from ${process.env.PRD}.ifa_dm_listas_de_precios`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({error})
+        throw new Error('Error al procesar la solicitud: listaPrecioCadenas');
+    }
 }
 
-const precioArticuloCadena = async(nroLista, itemArticulo)=>{
+const precioArticuloCadena = async (nroLista, itemArticulo) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -304,4 +314,5 @@ module.exports = {
     pedidoLayout,
     pedidosPorVendedorHoy,
     precioArticuloCadena,
+    listaPrecioCadenas,
 }

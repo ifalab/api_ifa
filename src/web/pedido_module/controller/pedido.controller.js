@@ -15,7 +15,8 @@ const { findClientePorVendedor,
     pedidosPorVendedorAnulados,
     pedidoLayout,
     pedidosPorVendedorHoy,
-    precioArticuloCadena
+    precioArticuloCadena,
+    listaPrecioCadenas
 } = require("./hana.controller");
 const { postOrden, postQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -213,7 +214,7 @@ const sugeridosXClienteController = async (req, res, next) => {
         console.log({ sugeridos })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", `${sugeridos.query|| ''}`, "pedido/sugerido-cliente", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", `${sugeridos.query || ''}`, "pedido/sugerido-cliente", process.env.PRD)
 
         return res.json({ sugeridos: sugeridos.sugeridos })
     } catch (error) {
@@ -229,7 +230,7 @@ const sugeridosXClienteController = async (req, res, next) => {
         // Registrar el error en los logs
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedidos sugeridos", mensaje, query, "pedido/sugerido-cliente", process.env.PRD)
 
-        return res.status(500).json({mensaje})
+        return res.status(500).json({ mensaje })
     }
 }
 
@@ -270,8 +271,8 @@ const crearOrderController = async (req, res) => {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
-        const mensaje = `Error en el controlador crearOrderController: ${ error.message || ''}`
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${mensaje||''}`, '', "pedido/crear-orden", process.env.PRD)
+        const mensaje = `Error en el controlador crearOrderController: ${error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${mensaje || ''}`, '', "pedido/crear-orden", process.env.PRD)
 
         return res.status(500).json({ mensaje })
     }
@@ -452,7 +453,7 @@ const pedidoLayoutController = async (req, res) => {
         pdf.create(html, options).toStream((err, stream) => {
             if (err) {
                 console.error('Error al generar el PDF:', err);
-                grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `Error al generar el PDF. ${err.message||''}`, `${response.query || ''}` , "pedido/pedido-layout", process.env.PRD )
+                grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `Error al generar el PDF. ${err.message || ''}`, `${response.query || ''}`, "pedido/pedido-layout", process.env.PRD)
                 return res.status(500).json({ mensaje: 'Error al generar el PDF' });
             }
 
@@ -468,7 +469,7 @@ const pedidoLayoutController = async (req, res) => {
         let mensaje = `Error en el controlador pedidoLayoutController: ${error.message || ''}`;
         if (mensaje.length > 255) {
             grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", 'Error en el controlador: pedidoLayoutController', query, "pedido/pedido-layout", process.env.PRD)
-        }else
+        } else
             grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", mensaje, query, "pedido/pedido-layout", process.env.PRD)
 
         return res.status(500).json({ mensaje })
@@ -489,14 +490,14 @@ const pedidosPorVendedorHoyController = async (req, res) => {
     }
 }
 
-const pedidoCadenaController = async(req,res)=>{
+const pedidoCadenaController = async (req, res) => {
     try {
         const body = req.body
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
 
-        body.Series= 343;
-        let num =0
-        body.DocumentLines.forEach((line)=>{
+        body.Series = 343;
+        let num = 0
+        body.DocumentLines.forEach((line) => {
             line.LineNum = num
             line.AccountCode = "4110101";
             line.TaxCode = "IVA";
@@ -504,55 +505,67 @@ const pedidoCadenaController = async(req,res)=>{
             num++;
         })
         // return res.json({body})
-        
-        let sumaDetalle= 0
-        body.DocumentLines.forEach((line) =>{
-            sumaDetalle +=line.GrossTotal
+
+        let sumaDetalle = 0
+        body.DocumentLines.forEach((line) => {
+            sumaDetalle += line.GrossTotal
         })
-        if(body.DocTotal != sumaDetalle){
-            const mensaje='El Total no es igual a la suma del detalle'
-            grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas",mensaje , '', "pedido/crear-oferta-venta", process.env.PRD)
-            return res.status(400).json({mensaje})
+        if (body.DocTotal != sumaDetalle) {
+            const mensaje = 'El Total no es igual a la suma del detalle'
+            grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
+            return res.status(400).json({ mensaje })
         }
 
         const response = await postQuotations(body)
-        if(response.status !=200){
-            let mensaje= `${response.message || 'Error en postQuotations'}`
-            if(response.errorMessage.value){
+        if (response.status != 200) {
+            let mensaje = `${response.message || 'Error en postQuotations'}`
+            if (response.errorMessage.value) {
                 mensaje += `: ${response.errorMessage.value}`
-            }else if(response.errorMessage){
+            } else if (response.errorMessage) {
                 mensaje += `: ${response.errorMessage}`
             }
             grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
-            
-            return res.status(400).json({mensaje})
+
+            return res.status(400).json({ mensaje })
         }
 
         grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", `Orden creada con exito`, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
-        return res.json({ mensaje: response.message })    
+        return res.json({ mensaje: response.message })
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         let mensaje = `Error en controlador pedidoCadenaController ${error.message || ''}`
-        if(mensaje.length >255) mensaje = 'Error en controlador pedidoCadenaController'
+        if (mensaje.length > 255) mensaje = 'Error en controlador pedidoCadenaController'
         grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
-        return res.status(500).json({mensaje})
+        return res.status(500).json({ mensaje })
     }
 }
 
-const precioArticuloCadenaController = async(req,res)=>{
+const precioArticuloCadenaController = async (req, res) => {
     try {
         const nroLista = req.query.nroLista
         const itemArticulo = req.query.itemArticulo
-        const response = await precioArticuloCadena(nroLista,itemArticulo)
-        return res.json({response})
+        const response = await precioArticuloCadena(nroLista, itemArticulo)
+        return res.json({ response })
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         let mensaje = `Error en controlador pedidoCadenaController ${error.message || ''}`
-        if(mensaje.length >255) mensaje = 'Error en controlador pedidoCadenaController'
+        if (mensaje.length > 255) mensaje = 'Error en controlador pedidoCadenaController'
         grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
-        return res.status(500).json({mensaje})
+        return res.status(500).json({ mensaje })
+    }
+}
+
+const listaPrecioCadenasController = async (req, res) => {
+    try {
+       const listaPrecio = await listaPrecioCadenas()
+       return res.json(listaPrecio)
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({
+            mensaje:'error al traer la lista precios'
+        })
     }
 }
 
@@ -578,5 +591,6 @@ module.exports = {
     pedidosPorVendedorHoyController,
     pedidoCadenaController,
     precioArticuloCadenaController,
+    listaPrecioCadenasController
 
 }

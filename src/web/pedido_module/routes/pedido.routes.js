@@ -4,7 +4,8 @@ const { validarCampos } = require('../../../middleware/validar_campos.middleware
 const { clientesVendedorController, clientesMoraController, moraController, catalogoController, descuentoArticuloController, listaPreciosOficilaController, descuentoCondicionController, sugeridosXZonaController, sugeridosXClienteController, findZonasXVendedorController, crearOrderController, whiteListController, pedidosPorVendedorPendientesController, pedidosPorVendedorFacturadosController, pedidosPorVendedorAnuladosController, pedidoLayoutController,
     pedidosPorVendedorHoyController, 
     pedidoCadenaController,
-    precioArticuloCadenaController} = require('../controller/pedido.controller')
+    precioArticuloCadenaController,
+    listaPrecioCadenasController} = require('../controller/pedido.controller')
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
@@ -27,5 +28,6 @@ router.get('/pedido-layout', [validarToken, validarCampos],pedidoLayoutControlle
 router.get('/hoy-vendedor', [validarToken, validarCampos],pedidosPorVendedorHoyController)
 router.post('/crear-oferta-venta', [validarToken, validarCampos],pedidoCadenaController)
 router.get('/precio-articulo-cadena', [validarToken, validarCampos],precioArticuloCadenaController)
+router.get('/lista-precio-cadenas',[validarToken,validarCampos],listaPrecioCadenasController)
 
 module.exports = router
