@@ -1,4 +1,5 @@
-const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos } = require("./hana.controller")
+const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos, 
+    getListaPreciosOficiales, setPrecioItem } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -121,9 +122,38 @@ const dmTipoDocumentosController = async (req, res) => {
     }
 }
 
+const getListaPreciosOficialesController = async (req, res) => {
+    try {
+        const lista = await getListaPreciosOficiales()
+        if(lista.status!=200){
+            return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosOficiales'}`})
+        }
+        return res.json({precios: lista.data})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosOficialesControlle: ${error.message || ''}` })
+    }
+}
+
+const setPrecioItemController = async (req, res) => {
+    try {
+        const {itemCode, precio} = req.body
+        const lista = await setPrecioItem(itemCode, precio)
+        if(lista.status!=200){
+            return res.status(400).json({mensaje: `${lista.message || 'Error en setPrecioItem'}`})
+        }
+        return res.json(lista.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador setPrecioItemController: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
     dmUpdateClienteController,
-    dmTipoDocumentosController
+    dmTipoDocumentosController,
+    getListaPreciosOficialesController,
+    setPrecioItemController
 }

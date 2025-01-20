@@ -101,8 +101,50 @@ const dmTiposDocumentos = async () => {
     }
 }
 
+const getListaPreciosOficiales = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes_tipo_documentos`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result}
+    } catch (error) {
+        console.error('Error en getListaPreciosOficiales:', error);
+        return {
+            status:400,
+            message: `Error en getListaPreciosOficiales: ${error.message || ''}`
+        }
+    }
+}
+
+const setPrecioItem = async (itemCode, precio) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes_tipo_documentos`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result}
+    } catch (error) {
+        console.error('Error en setPrecioItem:', error);
+        return {
+            status:400,
+            message: `Error en setPrecioItem: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
     dmTiposDocumentos,
+    getListaPreciosOficiales,
+    setPrecioItem
 }
