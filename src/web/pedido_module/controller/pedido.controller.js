@@ -14,7 +14,8 @@ const { findClientePorVendedor,
     pedidosPorVendedorFacturados,
     pedidosPorVendedorAnulados,
     pedidoLayout,
-    pedidosPorVendedorHoy
+    pedidosPorVendedorHoy,
+    precioArticuloCadena
 } = require("./hana.controller");
 const { postOrden, postQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -491,8 +492,20 @@ const pedidosPorVendedorHoyController = async (req, res) => {
 const pedidoCadenaController = async(req,res)=>{
     try {
         const body = req.body
-        
+
         return res.json({body})
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'error en el controlador'})
+    }
+}
+
+const precioArticuloCadenaController = async(req,res)=>{
+    try {
+        const nroLista = req.query.nroLista
+        const itemArticulo = req.query.itemArticulo
+        const response = await precioArticuloCadena(nroLista,itemArticulo)
+        return res.json({response})
     } catch (error) {
         console.log({error})
         return res.status(500).json({mensaje:'error en el controlador'})
@@ -520,5 +533,7 @@ module.exports = {
     crearOfertaVentaController,
     clientesFacturadorController,
     pedidosPorVendedorHoyController,
-    pedidoCadenaController
+    pedidoCadenaController,
+    precioArticuloCadenaController,
+
 }

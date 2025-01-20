@@ -891,8 +891,9 @@ const cancelToProsinController = async (req, res) => {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             console.log({ responseDeliveryNotes })
             if (responseDeliveryNotes.status == 400) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelDeliveryNotes: ${responseDeliveryNotes.data || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
-                return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes: ${responseDeliveryNotes.value || ''}` })
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+                console.log({responseDeliveryNotes})
+                return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}` })
             }
 
             listResponseDelivery.push(responseDeliveryNotes)

@@ -268,7 +268,23 @@ const pedidosPorVendedorHoy = async(id_vendedor, fecha)=>{
     }
 }
 
+const listaPrecioCadenas = async()=>{
 
+}
+
+const precioArticuloCadena = async(nroLista, itemArticulo)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_precio_por_articulo_y_lista(${nroLista}, ${itemArticulo})`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: precioArticuloCadena');
+    }
+}
 
 module.exports = {
     findClientePorVendedor,
@@ -286,5 +302,6 @@ module.exports = {
     pedidosPorVendedorFacturados,
     pedidosPorVendedorAnulados,
     pedidoLayout,
-    pedidosPorVendedorHoy
+    pedidosPorVendedorHoy,
+    precioArticuloCadena,
 }

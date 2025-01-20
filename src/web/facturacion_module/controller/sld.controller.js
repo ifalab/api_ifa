@@ -191,7 +191,7 @@ const cancelDeliveryNotes = async (id) => {
     } catch (error) {
         console.log("Error sld controller ", { error })
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
-        return { data: errorMessage, status: 400, }
+        return { errorMessage, status: 400, }
     }
 }
 
