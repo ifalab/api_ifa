@@ -284,9 +284,9 @@ const facturacionController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar patchEntrega: ${responsePatchEntrega.errorMessage || 'linea 239'}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, '', "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar patchEntrega: ${responsePatchEntrega.errorMessage.value || 'linea 280'}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, '', "facturacion/facturar", process.env.PRD)
 
-                return res.status(400).json({ mensaje: `Error al procesar la solicitud: patchEntrega ${errorMessage}` })
+                return res.status(400).json({ mensaje: `Error al procesar la solicitud: patchEntrega ${responsePatchEntrega.errorMessage.value}` })
             }
             //TODO ------------------------------------------------------------ ENTREGA DETALLER TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
@@ -408,9 +408,8 @@ const facturacionController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage || ""}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || ''} ,NumAtCard: ${nroFactura || ''}`, '', "facturacion/facturar", process.env.PRD)
-
-                return res.status(400).json({ mensaje: `error en la solicitud patch entrega${errorMessage || ''}` })
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || ""}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || ''} ,NumAtCard: ${nroFactura || ''}`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error en la solicitud patch entrega${responsePatchEntrega.errorMessage.value || ''}` })
             }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)

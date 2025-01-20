@@ -492,11 +492,51 @@ const pedidosPorVendedorHoyController = async (req, res) => {
 const pedidoCadenaController = async(req,res)=>{
     try {
         const body = req.body
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
 
-        return res.json({body})
+        body.Series= 343;
+        let num =0
+        body.DocumentLines.forEach((line)=>{
+            line.LineNum = num
+            line.AccountCode = "4110101";
+            line.TaxCode = "IVA";
+            line.U_DESCLINEA = 0;
+            num++;
+        })
+        // return res.json({body})
+        
+        let sumaDetalle= 0
+        body.DocumentLines.forEach((line) =>{
+            sumaDetalle +=line.GrossTotal
+        })
+        if(body.DocTotal != sumaDetalle){
+            const mensaje='El Total no es igual a la suma del detalle'
+            grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas",mensaje , '', "pedido/crear-oferta-venta", process.env.PRD)
+            return res.status(400).json({mensaje})
+        }
+
+        const response = await postQuotations(body)
+        if(response.status !=200){
+            let mensaje= `${response.message || 'Error en postQuotations'}`
+            if(response.errorMessage.value){
+                mensaje += `: ${response.errorMessage.value}`
+            }else if(response.errorMessage){
+                mensaje += `: ${response.errorMessage}`
+            }
+            grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
+            
+            return res.status(400).json({mensaje})
+        }
+
+        grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", `Orden creada con exito`, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
+        return res.json({ mensaje: response.message })    
     } catch (error) {
         console.log({error})
-        return res.status(500).json({mensaje:'error en el controlador'})
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        let mensaje = `Error en controlador pedidoCadenaController ${error.message || ''}`
+        if(mensaje.length >255) mensaje = 'Error en controlador pedidoCadenaController'
+        grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
+        return res.status(500).json({mensaje})
     }
 }
 
@@ -508,10 +548,13 @@ const precioArticuloCadenaController = async(req,res)=>{
         return res.json({response})
     } catch (error) {
         console.log({error})
-        return res.status(500).json({mensaje:'error en el controlador'})
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        let mensaje = `Error en controlador pedidoCadenaController ${error.message || ''}`
+        if(mensaje.length >255) mensaje = 'Error en controlador pedidoCadenaController'
+        grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
+        return res.status(500).json({mensaje})
     }
 }
-
 
 module.exports = {
     clientesVendedorController,

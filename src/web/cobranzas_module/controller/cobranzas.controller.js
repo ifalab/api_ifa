@@ -747,7 +747,6 @@ const saldoDeudorInstitucionesController = async (req, res) => {
 
 const realizarCobroController = async (req, res) => {
     try {
-
         const body = req.body
         const CashSum = body.CashSum
         const CashAccount = body.CashAccount
@@ -782,7 +781,7 @@ const realizarCobroController = async (req, res) => {
                 return res.status(400).json({ mensaje: 'el total es diferente al CashSum' })
             }
         }
-
+        body.DocDate = null
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
             let mensaje = `Error del SAP`
@@ -843,7 +842,7 @@ TEXT 7 0 30 140 Hora: ${comprobante.DocTime[0]}${comprobante.DocTime[1]}:${compr
 TEXT 7 0 30 160 Codigo Cliente: ${comprobante.CardCode}\r\n
 TEXT 7 0 30 180 Cliente: ${comprobante.CardName}\r\n
 TEXT 7 0 30 200 Modalidad de Pago: ${comprobante.Modality.charAt(0).toUpperCase() + comprobante.Modality.slice(1)}\r\n
-TEXT 7 0 30 250 Fecha        Numero           Total\r\n
+TEXT 7 0 30 250 Fecha        Nro.Fact          Total\r\n
 LINE 30 270 570 270 2\r\n
 `;
 
@@ -859,7 +858,7 @@ LINE 30 270 570 270 2\r\n
 
         // Línea divisoria y total
         cpclContent += `
-LINE 30 ${yPosition} 570 ${yPosition} 2
+LINE 30 ${yPosition} 570 ${yPosition} 1
 TEXT 7 0 30 ${yPosition + 20} TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}\r\n
 TEXT 7 0 30 ${yPosition + 40} Glosa: ${comprobante.JrnlMemo || ''}\r\n
 LINE 30 ${yPosition + 60} 570 ${yPosition + 60} 2
@@ -1093,11 +1092,11 @@ TEXT 7 0 30 190 Fecha: ${formatoFecha}\r\n
             for (let i = 0; i < comprobante.Recibos.length; i++) {
                 if (comprobante.Recibos[i].Recibos.length != 0) {
                     if (i == 0) {
-                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} EFECTIVO\r\n`
+                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 1\r\n` + `TEXT 7 0 30 ${yPosition + 30} EFECTIVO\r\n`
                     } else if (i == 1) {
-                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} TRANSFERENCIA\r\n`
+                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 1\r\n` + `TEXT 7 0 30 ${yPosition + 30} TRANSFERENCIA\r\n`
                     } else {
-                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 2\r\n` + `TEXT 7 0 30 ${yPosition + 30} CHEQUE\r\n`
+                        cpclContent += `LINE 30 ${yPosition} 570 ${yPosition} 1\r\n` + `TEXT 7 0 30 ${yPosition + 30} CHEQUE\r\n`
                     }
 
                     comprobante.Recibos[i].Recibos.forEach((recibo) => {
@@ -1105,7 +1104,7 @@ TEXT 7 0 30 190 Fecha: ${formatoFecha}\r\n
                         cpclContent += `
 TEXT 7 0 60 ${yPosition + 50} Cod: ${CardCode}                   ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.\r\n
 TEXT 7 0 60 ${yPosition + 70} ${CardName}\r\n
-TEXT 7 0 60 ${yPosition + 90} Nro: ${NumAtCard}\r\n
+TEXT 7 0 60 ${yPosition + 90} Nros Fact: ${NumAtCard}\r\n
 LINE 60 ${yPosition + 110} 570 ${yPosition + 110} 1\r\n`;
                         yPosition += 80
                     });

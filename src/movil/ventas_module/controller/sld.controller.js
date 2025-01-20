@@ -105,7 +105,7 @@ const postQuotations = async(newOrderDate)=>{
 
         return {
             message: 'Orden grabada con éxito',
-            orderNumber: orderNumber,
+            // orderNumber: orderNumber,
             status: 200,
             // statusText: response.statusText
         }
