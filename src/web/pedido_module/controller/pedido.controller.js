@@ -259,7 +259,7 @@ const crearOrderController = async (req, res) => {
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
-            return res.status(400).json({ mensaje: ordenResponse.errorMessage.value || '' })
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.message || ''}` })
         }
 
         console.log({ usuario })
@@ -273,7 +273,7 @@ const crearOrderController = async (req, res) => {
         const mensaje = `Error en el controlador crearOrderController: ${ error.message || ''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${mensaje||''}`, '', "pedido/crear-orden", process.env.PRD)
 
-        return res.status(500).json({ mensaje })
+        return res.status(500).json({ message })
     }
 }
 
