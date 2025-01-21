@@ -106,7 +106,8 @@ const getListaPreciosOficiales = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes_tipo_documentos`;
+        //Cambiaar
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_listas_de_precios`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -121,12 +122,13 @@ const getListaPreciosOficiales = async () => {
     }
 }
 
-const setPrecioItem = async (itemCode, precio) => {
+const setPrecioItem = async (itemCode, precio, fecha) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes_tipo_documentos`;
+        ///Faltaa
+        const query = `call ${process.env.PRD}...('${itemCode}', ${precio}, '${fecha})`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -141,10 +143,84 @@ const setPrecioItem = async (itemCode, precio) => {
     }
 }
 
+const getSucursales = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_sucursales where "SucCode">99`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result}
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en getSucursales:', error.message);
+        return {
+            status:400,
+            message: `Error en getSucursales: ${error.message || ''}`
+        }
+    }
+}
+
+const getAreasPorSucursal = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_PRD.ifa_dm_areas where "SucCode"='${sucCode}'`;
+        // const query = `select * from ${process.env.PRD}.ifa_dm_areas where "SucCode"='${sucCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result}
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en getAreasPorSucursal:', error.message);
+        return {
+            status:400,
+            message: `Error en getAreasPorSucursal: ${error.message || ''}`
+        }
+    }
+}
+
+const getZonasPorArea = async (areaCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        let query;
+        if(areaCode==0){
+            query = `select * from ${process.env.PRD}.ifa_dm_zonas`;
+        }else{
+            query = `select * from ${process.env.PRD}.ifa_dm_zonas where "AreaCode"=${areaCode}`;
+        }
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result}
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en getZonasPorArea:', error.message);
+        return {
+            status:400,
+            message: `Error en getZonasPorArea: ${error.message || ''}`
+        }
+    }
+}
+
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
     dmTiposDocumentos,
     getListaPreciosOficiales,
-    setPrecioItem
+    setPrecioItem,
+    getSucursales,
+    getAreasPorSucursal,
+    getZonasPorArea
 }

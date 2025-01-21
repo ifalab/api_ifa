@@ -802,6 +802,21 @@ const deleteRutasDespachadoresController = async (req, res) => {
     }
 }
 
+const getAlmacenesLibresController = async (req, res) => {
+    try {
+        const id = req.query.id;
+        const almacenesTodos = await getAllAlmacenes()
+        const almacenesUser = await getAlmacenesByUser(id)
+        const almacenes = almacenesTodos.filter(o=> almacenesUser.findIndex(user => user.WhsCode==o.WhsCode )<0)
+        return res.json({ almacenes })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: "error en getAllAlmacenesController controller"
+        })
+    }
+}
+
 module.exports = {
     authLoginPost,
     createUserController,
@@ -835,5 +850,6 @@ module.exports = {
     getRutasAsignadasPorDespachadorController,
     getDespachadoresController,
     deleteRutasDespachadoresController,
-    getDespachadorPorIdController
+    getDespachadorPorIdController,
+    getAlmacenesLibresController
 }

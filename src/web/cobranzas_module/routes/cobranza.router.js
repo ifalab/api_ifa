@@ -36,7 +36,7 @@ router.get('/clientes-vendedor-id',[validarToken, validarCampos], cobranzaClient
 router.get('/facturas-cliente',[validarToken, validarCampos], cobranzaFacturaPorClienteController)
 router.get('/facturas-cliente-despachador',[validarToken, validarCampos],cobranzaFacturaPorClienteDespachadorController)
 // router.get('/facturas-cliente-despachador',[validarToken, validarCampos],cobranzaFacturaPorClienteDespachadorController)
-router.get('/facturas-cliente-desp',[validarToken, validarCampos], cobranzaFacturaPorClienteDespachadorController)
+router.get('/facturas-cliente-desp',[validarToken, validarCampos], cobranzaFacturaPorCliDespController)
 
 router.get('/cliente-instituciones',[validarToken, validarCampos], clientesInstitucionesSaldoDeudorController)
 router.get('/saldo-deudor-instituciones',[validarToken, validarCampos], saldoDeudorInstitucionesController)
