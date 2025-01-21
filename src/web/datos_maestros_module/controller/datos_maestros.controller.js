@@ -139,12 +139,18 @@ const getListaPreciosOficialesController = async (req, res) => {
 
 const setPrecioItemController = async (req, res) => {
     try {
-        const {itemCode, precio} = req.body
-        const lista = await setPrecioItem(itemCode, precio)
-        if(lista.status!=200){
-            return res.status(400).json({mensaje: `${lista.message || 'Error en setPrecioItem'}`})
+        const body = req.body
+        console.log({body})
+        return res.json({body})
+        let lista;
+        for(i=0; i<body.length; i++){
+            const response = await setPrecioItem(body[i].itemCode, body[i].precio, body[i].fecha)
+            if(response.status!=200){
+                return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioItem'}`})
+            }
+            lista.push(response.data)
         }
-        return res.json(lista.data)
+        return res.json(lista)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador setPrecioItemController: ${error.message || ''}` })

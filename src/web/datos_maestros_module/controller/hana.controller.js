@@ -107,7 +107,7 @@ const getListaPreciosOficiales = async () => {
             await connectHANA();
         }
         //Cambiaar
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes_tipo_documentos`;
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_listas_de_precios`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -122,13 +122,13 @@ const getListaPreciosOficiales = async () => {
     }
 }
 
-const setPrecioItem = async (itemCode, precio) => {
+const setPrecioItem = async (itemCode, precio, fecha) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         ///Faltaa
-        const query = `call ${process.env.PRD}...('${itemCode}', ${precio})`;
+        const query = `call ${process.env.PRD}...('${itemCode}', ${precio}, '${fecha})`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
