@@ -655,8 +655,8 @@ const cobranzaClientePorVendedorIDController = async (req, res) => {
         const id = req.query.id
         // console.log({id})
         if (!id) return res.status(400).json({ mensaje: 'no hay el id del vendedor' })
-        const response = await clientesPorVendedor(id)
-        return res.json({ response:response.data })
+        const clientes = await clientesPorVendedor(id)
+        return res.json({ clientes:clientes.data })
 
     } catch (error) {
         console.log({ error })
@@ -722,8 +722,8 @@ const cobranzaFacturaPorCliDespController = async (req, res) => {
 
 const clientesInstitucionesSaldoDeudorController = async (req, res) => {
     try {
-        const response = await clientesInstitucionesSaldoDeudor()
-        return res.json({ response })
+        const clientes = await clientesInstitucionesSaldoDeudor()
+        return res.json({ clientes })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({
@@ -861,11 +861,12 @@ LINE 30 270 570 270 2\r\n
 LINE 30 ${yPosition} 570 ${yPosition} 1
 TEXT 7 0 30 ${yPosition + 20} TOTAL:                      bs ${parseFloat(comprobante.DocTotal).toFixed(2)}\r\n
 TEXT 7 0 30 ${yPosition + 40} Glosa: ${comprobante.JrnlMemo || ''}\r\n
-LINE 30 ${yPosition + 60} 570 ${yPosition + 60} 2
-TEXT 7 0 30 ${yPosition + 80} Saldo Cliente: ${parseFloat(comprobante.Balance).toFixed(2) || ''} bs\r\n
-TEXT 7 0 30 ${yPosition + 100} Firma                  Sello\r\n
-LINE 30 ${yPosition + 250} 200 ${yPosition + 250} 2
-LINE 350 ${yPosition + 250} 520 ${yPosition + 250} 2
+TEXT 7 0 30 ${yPosition + 60} Vendedor: ${comprobante.ClpName || ''}\r\n
+LINE 30 ${yPosition + 80} 570 ${yPosition + 80} 2
+TEXT 7 0 30 ${yPosition + 100} Saldo Cliente: ${parseFloat(comprobante.Balance).toFixed(2) || ''} bs\r\n
+TEXT 7 0 30 ${yPosition + 120} Firma                  Sello\r\n
+LINE 30 ${yPosition + 270} 200 ${yPosition + 270} 2
+LINE 350 ${yPosition + 270} 520 ${yPosition + 270} 2
 FORM\r\n
 PRINT\r\n
 `;
@@ -1235,7 +1236,7 @@ const clientesPorDespachadorController = async (req, res) => {
         console.log({ idSap })
         const clientesDespachador = await clientesPorDespachador(idSap)
         console.log({ clientesDespachador })
-        return res.json({ response:clientesDespachador.data })
+        return res.json({ clientes:clientesDespachador.data })
     } catch (error) {
         console.log({ error })
         const mensaje = error.message || 'Error en el controlador clientesPorVendedorController'
