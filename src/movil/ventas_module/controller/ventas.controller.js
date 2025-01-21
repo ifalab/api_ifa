@@ -1,5 +1,5 @@
 const { response, json } = require("express");
-const { getLotes, getDocDueDate, getUsuarios, descuentosPorArticulo, descuentosPorCondicion, descuentosPorLinea } = require("./hana.controller");
+const { getLotes, getDocDueDate, getUsuarios, descuentosPorArticulo, descuentosPorCondicion, descuentosPorLinea, ofertaPrecioPorItemCode } = require("./hana.controller");
 const { postOrden, postEntrega, postInvoice, findOneInvoice, updateInvoice, findAllIncomingPayment, findOneIncomingPayment, findOneByCardCodeIncomingPayment, createIncomingPayment, cancelIncomingPayment } = require("./sld.controller");
 const fs = require('fs');
 const path = require('path');
@@ -378,6 +378,8 @@ const descuentosPorLineaController = async (req, res) => {
         return res.status(500), json({ mensaje: 'error en descuentosPorArticuloController' })
     }
 }
+
+
 
 module.exports = {
     getUsuariosController,

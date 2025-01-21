@@ -4,19 +4,17 @@ const https = require('https');
 // Crear una instancia personalizada de axios
 const httpClient = axios.create({
     baseURL: process.env.API_NEST || 'https://api.example.com nest',
-    timeout: 60000, // Tiempo de espera en milisegundos
+    timeout: 60000,
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
         authorization: `${process.env.TOKEN_NEST}`
     },
     httpsAgent: new https.Agent({
-        rejectUnauthorized: false, // Permite certificados no verificados
+        rejectUnauthorized: false, 
     }),
 });
 
-
-// Interceptor para agregar un token de autenticación si es necesario
 httpClient.interceptors.request.use(
     (config) => {
 

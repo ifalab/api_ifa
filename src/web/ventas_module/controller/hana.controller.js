@@ -447,6 +447,34 @@ const listaAlmacenes = async(sucCode)=>{
     }
 }
 
+const ofertaPrecioPorItemCode = async(nroLista,itemCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.DBSAPPRD}.ifa_lapp_ven_precio_por_articulo_y_lista(${nroLista},'${itemCode}')`
+        console.log({query})
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({error})
+        throw new Error('Error en la consulta: ', error)
+    }
+}
+
+const descripcionArticulo = async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "ItemName" from ${process.env.PRD}.oitm where "ItemCode" = '${itemCode}'`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en descripcionArticulo')
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -477,4 +505,6 @@ module.exports = {
     prueba3Batch,
     listaAlmacenes,
     listaAsistenciaDia,
+    ofertaPrecioPorItemCode,
+    descripcionArticulo,
 }

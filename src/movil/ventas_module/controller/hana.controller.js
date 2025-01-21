@@ -191,6 +191,9 @@ const descuentosPorLinea = async () => {
         throw new Error('Error en la consulta: ', error)
     }
 }
+
+
+
 module.exports = {
     getDocDueDate,
     getUsuarios,
@@ -200,5 +203,6 @@ module.exports = {
     descuentosPorArticulo,
     descuentosPorCondicion,
     descuentosPorLinea,
+    
 }
 

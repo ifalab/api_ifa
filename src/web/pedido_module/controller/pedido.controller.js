@@ -504,8 +504,7 @@ const pedidoCadenaController = async (req, res) => {
             line.U_DESCLINEA = 0;
             num++;
         })
-        // return res.json({body})
-
+        console.log({body})
         let sumaDetalle = 0
         body.DocumentLines.forEach((line) => {
             sumaDetalle += line.GrossTotal
@@ -515,7 +514,7 @@ const pedidoCadenaController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
             return res.status(400).json({ mensaje })
         }
-
+        
         const response = await postQuotations(body)
         if (response.status != 200) {
             let mensaje = `${response.message || 'Error en postQuotations'}`
