@@ -763,22 +763,23 @@ const realizarCobroController = async (req, res) => {
 
         PaymentInvoices.map((item) => {
             const sum = item.SumApplied
+            console.log({sum})
             total += +sum
         })
-
+        total = Number(total.toFixed(2))
         if (TransferAccount || TransferAccount != null) {
             if (TransferSum !== total) {
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", 'Error: el total es diferente al TransferSum', `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `el total es diferente al TransferSum, total: ${total ||'no definido'} , TransferSum: ${TransferSum  ||'no definido'} `, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
 
-                return res.status(400).json({ mensaje: 'el total es diferente al TransferSum' })
+                return res.status(400).json({ mensaje: `el total es diferente al TransferSum, total: ${total ||'no definido'} , TransferSum: ${TransferSum  ||'no definido'} ` })
             }
         }
 
         if (CashAccount || CashAccount != null) {
             if (CashSum !== total) {
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", "Error: el total es diferente al CashSum", `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `el total es diferente al CashSum, total: ${total ||'no definido'} , CashSum: ${CashSum  ||'no definido'} `, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
 
-                return res.status(400).json({ mensaje: 'el total es diferente al CashSum' })
+                return res.status(400).json({ mensaje: `el total es diferente al CashSum, total: ${total ||'no definido'} , CashSum: ${CashSum  ||'no definido'} ` })
             }
         }
         body.DocDate = null

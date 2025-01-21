@@ -5,6 +5,7 @@ const { obtenerEntregaDetalle } = require("./hana.controller")
 const agent = new https.Agent({ rejectUnauthorized: false })
 
 let session = null
+const REQUEST_TIMEOUT = 65000; 
 
 const connectSLD = async () => {
     try {
@@ -14,7 +15,10 @@ const connectSLD = async () => {
             UserName: process.env.USERSAP,
             Password: process.env.PASSSAP
         }
-        const response = await axios.post(url, data, { httpsAgent: agent });
+        const response = await axios.post(url, data, { 
+            httpsAgent: agent,
+            timeout: REQUEST_TIMEOUT
+         });
         session = response.data;
 
         return response.data;
@@ -44,7 +48,8 @@ const postEntrega = async (responseJson) => {
         const url = 'https://srvhana:50000/b1s/v1/DeliveryNotes';
         const sapResponse = await axios.post(url, responseJson, {
             httpsAgent: agent,
-            headers: headers
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
         });
 
         const locationHeader = sapResponse.headers.location;
@@ -81,7 +86,8 @@ const patchEntrega = async (delivery, responseJson) => {
         const url = `https://srvhana:50000/b1s/v1/DeliveryNotes(${delivery})`
         const sapResponse = await axios.patch(url, responseJson, {
             httpsAgent: agent,
-            headers: headers
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
         });
 
         return {
@@ -113,7 +119,8 @@ const postInvoice = async (body) => {
         const url = 'https://srvhana:50000/b1s/v1/Invoices';
         const sapResponse = await axios.post(url, body, {
             httpsAgent: agent,
-            headers: headers
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
         });
         const locationHeader = sapResponse.headers.location;
         const invoiceID = locationHeader.match(/\((\d+)\)$/);
@@ -121,7 +128,7 @@ const postInvoice = async (body) => {
         return { sapResponse, idInvoice }
     } catch (error) {
         console.log({ error })
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        const errorMessage = error.response?.data?.error?.message + ' Invoice' || error.message + ' Invoice' || 'Error desconocido en la solicitud POST';
         return errorMessage
     }
 }
@@ -139,7 +146,8 @@ const facturacionByIdSld = async (id) => {
         const url = `https://srvhana:50000/b1s/v1/Orders(${id})`
         const sapResponse = await axios.get(url, {
             httpsAgent: agent,
-            headers: headers
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
         });
         return { data: sapResponse.data }
     } catch (error) {
@@ -161,7 +169,8 @@ const cancelInvoice = async (id) => {
         const url = `https://srvhana:50000/b1s/v1/Invoices(${id})/Cancel`
         const sapResponse = await axios.post(url, {}, {
             httpsAgent: agent,
-            headers: headers
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
         });
         console.log(sapResponse)
         return { data: sapResponse.data }
@@ -184,7 +193,8 @@ const cancelDeliveryNotes = async (id) => {
         const url = `https://srvhana:50000/b1s/v1/DeliveryNotes(${id})/Cancel`
         const sapResponse = await axios.post(url, {}, {
             httpsAgent: agent,
-            headers: headers
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
         });
         console.log(sapResponse)
         return { data: sapResponse.data, status: 200 }

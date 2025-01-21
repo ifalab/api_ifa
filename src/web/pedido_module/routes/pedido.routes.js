@@ -29,5 +29,4 @@ router.get('/hoy-vendedor', [validarToken, validarCampos],pedidosPorVendedorHoyC
 router.post('/crear-oferta-venta', [validarToken, validarCampos],pedidoCadenaController)
 router.get('/precio-articulo-cadena', [validarToken, validarCampos],precioArticuloCadenaController)
 router.get('/lista-precio-cadenas',[validarToken,validarCampos],listaPrecioCadenasController)
-
 module.exports = router

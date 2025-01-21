@@ -26,7 +26,9 @@ const {
     getAsistenciasVendedor,
     pruebaaaBatch, prueba2Batch, prueba3Batch,
     listaAlmacenes,
-    listaAsistenciaDia
+    listaAsistenciaDia,
+    ofertaPrecioPorItemCode,
+    descripcionArticulo
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -778,6 +780,34 @@ const listaAlmacenesController = async (req, res) => {
     }
 }
 
+const ofertaPrecioItemCodeController = async(req,res)=>{
+    try {
+        const nroLista = req.query.nroLista
+        const itemCode = req.query.itemCode
+        const response = await ofertaPrecioPorItemCode(nroLista,itemCode)
+        if(response.length==0){
+            return res.status(400).json({mensaje:'no hay el articulo'})
+        }
+        const precio = response[0]
+        return res.json(precio)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador : ofertaPrecioItemCode' })
+    }
+}
+
+const descripcionArticuloController = async (req, res) => {
+    try {
+        const itemCode  = req.query.itemCode
+        const response = await descripcionArticulo(itemCode)
+        if (response.length == 0) return res.status(404).json({ mensaje: 'El articulo no fue encontrado' })
+        return res.json({ ItemName: response[0].ItemName })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -806,5 +836,7 @@ module.exports = {
     getAsistenciasVendedorController,
     pruebaBatchController,
     listaAlmacenesController,
-    listaAsistenciaDiaController
+    listaAsistenciaDiaController,
+    ofertaPrecioItemCodeController,
+    descripcionArticuloController
 };

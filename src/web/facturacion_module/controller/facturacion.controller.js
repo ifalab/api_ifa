@@ -32,7 +32,6 @@ const facturacionController = async (req, res) => {
         // return {id}
         if (!id || id == '') {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'error: debe haber un ID valido', '', "facturacion/facturar", process.env.PRD)
-
             return res.status(400).json({ mensaje: 'debe haber un ID valido' })
         }
         const solicitud = await solicitarId(id);
@@ -373,9 +372,14 @@ const facturacionController = async (req, res) => {
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
-            if (dataProsin && dataProsin.statusCode != 200) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.message || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '/api/sfl/FacturaCompraVenta', "facturacion/facturar", process.env.PRD)
-                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.message || ''}`, dataProsin, bodyFinalFactura })
+            console.log({dataProsin})
+            if (dataProsin && dataProsin.estado != 200) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
+            }
+            if (dataProsin.mensaje != null) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
             }
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
@@ -476,10 +480,9 @@ const facturacionController = async (req, res) => {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el controlador Facturar. ${error.message || ''}`, '', "facturacion/facturar", process.env.PRD)
-
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch facturacion facturar. ${error.message || ''}`, "facturacion/facturar", process.env.PRD)
         return res.status(error.statusCode ?? 500).json({
-            mensaje: `Error en el controlador. ${error?.message || 'No definido'}`,
+            mensaje: `Error en el controlador Catch. ${error?.message || 'No definido'}`,
             sapMessage: `${error?.message || 'No definido'}`,
             error: {
                 message: error.message ?? '',
@@ -597,40 +600,40 @@ const noteEntregaController = async (req, res) => {
             U_Comentario,
             detailsList,
         };
-         //! Generar QR Code
-         const qrCode = await QRCode.toDataURL(data.BarCode.toString());
+        //! Generar QR Code
+        const qrCode = await QRCode.toDataURL(data.BarCode.toString());
 
-         //! Renderizar la plantilla EJS a HTML
-         const htmlTemplate = path.join(__dirname, 'notaEntrega', 'template.ejs');
-         const htmlContent = await ejs.renderFile(htmlTemplate, { data, qrCode });
- 
-         //! Generar el PDF con Puppeteer
-         const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
-         const page = await browser.newPage();
- 
-         await page.setContent(htmlContent, { waitUntil: 'load' });
-         const pdfBuffer = await page.pdf({
-             format: 'A4',
-             printBackground: true
-         });
- 
-         await browser.close();
- 
-         //! Definir nombre del archivo
-         const fileName = `nota_entrega_${data.DocNum}.pdf`;
- 
-         //! Registrar en el log
-         grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", 
-                   "Nota Creada con éxito", response.query, "facturacion/nota-entrega", process.env.PRD);
- 
-         //! Enviar el PDF como respuesta
-         res.set({
-             'Content-Type': 'application/pdf',
-             'Content-Disposition': `inline; filename="${fileName}"`,
-             'Content-Length': pdfBuffer.length
-         });
- 
-         return res.end(pdfBuffer);
+        //! Renderizar la plantilla EJS a HTML
+        const htmlTemplate = path.join(__dirname, 'notaEntrega', 'template.ejs');
+        const htmlContent = await ejs.renderFile(htmlTemplate, { data, qrCode });
+
+        //! Generar el PDF con Puppeteer
+        const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+        const page = await browser.newPage();
+
+        await page.setContent(htmlContent, { waitUntil: 'load' });
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true
+        });
+
+        await browser.close();
+
+        //! Definir nombre del archivo
+        const fileName = `nota_entrega_${data.DocNum}.pdf`;
+
+        //! Registrar en el log
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
+            "Nota Creada con éxito", response.query, "facturacion/nota-entrega", process.env.PRD);
+
+        //! Enviar el PDF como respuesta
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${fileName}"`,
+            'Content-Length': pdfBuffer.length
+        });
+
+        return res.end(pdfBuffer);
     } catch (error) {
         const user = req.usuarioAutorizado
         console.error('Error en el controlador:', error);
@@ -842,7 +845,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
         }
         const { estado } = estadoFacturaResponse[0]
-        
+
         if (estado) {
             responseProsin = await anulacionFacturacion({
                 sucursal,
