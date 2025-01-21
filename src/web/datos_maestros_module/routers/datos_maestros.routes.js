@@ -2,8 +2,10 @@ const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteController, dmTipoDocumentosController,
-    getListaPreciosOficialesController, setPrecioItemController
+    getListaPreciosOficialesController, setPrecioItemController, 
+    getSucursalesController, getAreasPorSucursalController, getZonasPorAreaController
  } = require('../controller/datos_maestros.controller')
+const { getSucursales } = require('../controller/hana.controller')
 const router = Router()
 
 router.get('/clientes', [validarToken, validarCampos], dmClientesController)
@@ -12,5 +14,8 @@ router.patch('/actualizar-cliente', [validarToken, validarCampos], dmUpdateClien
 router.get('/tipo-documentos', [validarToken, validarCampos], dmTipoDocumentosController)
 router.get('/precios-oficiales', [validarToken, validarCampos], getListaPreciosOficialesController)
 router.post('/set-precio-item', [validarToken, validarCampos], setPrecioItemController)
+router.get('/sucursales', [validarToken, validarCampos], getSucursalesController)
+router.get('/areas-por-sucursal', [validarToken, validarCampos], getAreasPorSucursalController)
+router.get('/zonas-por-area', [validarToken, validarCampos], getZonasPorAreaController)
 
 module.exports = router
