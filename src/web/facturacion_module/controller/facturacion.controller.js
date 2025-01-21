@@ -292,7 +292,7 @@ const facturacionController = async (req, res) => {
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
             console.log({ responseHana })
             if (responseHana.message) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al entregaDetallerFactura: ${responseHana.message || "linea 251"}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, '', "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al entregaDetallerFactura: ${responseHana.message || "linea 292"}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
             }
             const DocumentLinesHana = [];
@@ -373,13 +373,9 @@ const facturacionController = async (req, res) => {
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
-            if (dataProsin && dataProsin.estado != 200) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
-                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
-            }
-            if (dataProsin.mensaje != null) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
-                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
+            if (dataProsin && dataProsin.statusCode != 200) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.message || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '/api/sfl/FacturaCompraVenta', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.message || ''}`, dataProsin, bodyFinalFactura })
             }
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
@@ -841,6 +837,10 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
         }
         const estadoFacturaResponse = await spEstadoFactura(cuf)
+        if(estadoFacturaResponse.message){
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
+        }
         const { estado } = estadoFacturaResponse[0]
         
         if (estado) {
@@ -869,18 +869,18 @@ const cancelToProsinController = async (req, res) => {
         }
         const reponseInvoice = await cancelInvoice(docEntry)
         if (reponseInvoice.value) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, 'https://srvhana:50000/b1s/v1/Invoices(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
 
             return res.status(400).json({ mensaje: `Error en cancel invoice: ${reponseInvoice.value || ''}` })
         }
 
         const responseEntregas = await obtenerEntregasPorFactura(docEntry)
         if (responseEntregas.length == 0) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `No hay entregas de la factura`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `No hay entregas de la factura`, 'CALL ifa_lapp_ven_obtener_entregas_por_factura(id)', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `No hay entregas de la factura` })
         }
         if (responseEntregas.message) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, 'CALL ifa_lapp_ven_obtener_entregas_por_factura(id)', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}` })
         }
 
@@ -890,7 +890,7 @@ const cancelToProsinController = async (req, res) => {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             console.log({ responseDeliveryNotes })
             if (responseDeliveryNotes.status == 400) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
                 console.log({responseDeliveryNotes})
                 return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}` })
             }
@@ -914,7 +914,7 @@ const cancelToProsinController = async (req, res) => {
         console.log({ usuario })
         let mensaje = `Error en el controlador CancelToProsin: ${error.message || ''}`
         console.log({ statuscode: error.statusCode })
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje, '', "facturacion/cancel-to-prosin", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje, 'Catch de CancelToProsin', "facturacion/cancel-to-prosin", process.env.PRD)
 
         return res.status(error.statusCode ?? 500).json({ mensaje })
     }
@@ -1120,7 +1120,9 @@ const facturacionEntregaController = async (req, res) => {
             //return res.json({ bodyFinalFactura, responseProsin, deliveryData })
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
-            if (dataProsin && dataProsin.estado != 200) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
+            if (dataProsin && dataProsin.estado != 200){ 
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.message || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '/api/sfl/FacturaCompraVenta', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })}
             if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura

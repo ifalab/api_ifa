@@ -15,14 +15,14 @@ const apiFacturacionProsin = {
             console.log({error})
             if (error.response) {
                 // Error específico de la API
-                throw {
+                return {
                     statusCode: error.response.status,
                     message: error.response.data || 'Error en la solicitud facturacionProsin POST',
                 };
             }
 
             // Otros errores (como errores de red)
-            throw {
+            return {
                 statusCode: 500,
                 message: error.message || 'Error desconocido en la solicitud facturacionProsin POST',
             };

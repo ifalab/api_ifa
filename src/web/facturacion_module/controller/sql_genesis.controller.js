@@ -10,7 +10,7 @@ async function spObtenerCUF(nroDocumento) {
         return result.recordset
     } catch (err) {
         console.error('Error en la consulta:', err);
-        return {message: `Error en la consulta spObtenerCUF`}
+        return {message: `Error en la consulta spObtenerCUF. ${err.message || ''}`}
     }
 }
 
@@ -24,7 +24,7 @@ async function spEstadoFactura(cuf) {
         return result.recordset
     } catch (err) {
         console.error('Error en la consulta:', err);
-        return {message: `Error en la consulta spEstadoFactura`}
+        return {message: `Error en la consulta spEstadoFactura: ${err.message}`}
     }
 }
 
