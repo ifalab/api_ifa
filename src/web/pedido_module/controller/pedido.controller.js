@@ -494,28 +494,34 @@ const pedidoCadenaController = async (req, res) => {
     try {
         const body = req.body
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-
         body.Series = 343;
         let num = 0
         body.DocumentLines.forEach((line) => {
             line.LineNum = num
+            line.GrossPrice = Number(line.GrossPrice.toFixed(2))
+            line.GrossTotal = Number(line.GrossTotal.toFixed(2))
             line.AccountCode = "4110101";
             line.TaxCode = "IVA";
-            line.U_DESCLINEA = 0;
+            const totalNoDiscount = line.GrossPrice * line.Quantity
+            const descLinea = Number((totalNoDiscount) - line.GrossTotal)
+            console.log({ totalNoDiscount })
+            line.U_DESCLINEA = Number(descLinea.toFixed(2));
             num++;
         })
-        console.log({body})
+        console.log({ body })
         let sumaDetalle = 0
         body.DocumentLines.forEach((line) => {
-            sumaDetalle += line.GrossTotal
+            sumaDetalle += Number(line.GrossTotal.toFixed(2))
         })
-        
+        body.DocTotal = Number(body.DocTotal.toFixed(2))
+        console.log({ body: JSON.stringify(body, 2) })
+        sumaDetalle = Number(sumaDetalle.toFixed(2))
         if (body.DocTotal != sumaDetalle) {
             const mensaje = 'El Total no es igual a la suma del detalle'
-            grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje + ` DocTotal: ${body.DocTotal || 0}, SumDetalle: ${sumaDetalle}`, '', "pedido/crear-oferta-venta", process.env.PRD)
             return res.status(400).json({ mensaje })
         }
-        
+
         const response = await postQuotations(body)
         if (response.status != 200) {
             let mensaje = `${response.message || 'Error en postQuotations'}`
@@ -558,12 +564,12 @@ const precioArticuloCadenaController = async (req, res) => {
 
 const listaPrecioCadenasController = async (req, res) => {
     try {
-       const listaPrecio = await listaPrecioCadenas()
-       return res.json(listaPrecio)
+        const listaPrecio = await listaPrecioCadenas()
+        return res.json(listaPrecio)
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         return res.status(500).json({
-            mensaje:'error al traer la lista precios'
+            mensaje: 'error al traer la lista precios'
         })
     }
 }

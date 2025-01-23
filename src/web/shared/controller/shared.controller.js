@@ -31,9 +31,7 @@ const findClientesByVendedorController = async (req, res) => {
 
 const listaEncuestaController = async (req, res) => {
     try {
-
         const response = await listaEncuesta()
-
         return res.json({ response })
     } catch (error) {
         console.log({ error })
