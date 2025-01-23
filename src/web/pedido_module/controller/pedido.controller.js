@@ -509,6 +509,7 @@ const pedidoCadenaController = async (req, res) => {
         body.DocumentLines.forEach((line) => {
             sumaDetalle += line.GrossTotal
         })
+        
         if (body.DocTotal != sumaDetalle) {
             const mensaje = 'El Total no es igual a la suma del detalle'
             grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
@@ -524,11 +525,10 @@ const pedidoCadenaController = async (req, res) => {
                 mensaje += `: ${response.errorMessage}`
             }
             grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
-
             return res.status(400).json({ mensaje })
         }
 
-        grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", `Orden creada con exito`, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", `Oferta de Venta creada con exito`, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
         return res.json({ mensaje: response.message })
     } catch (error) {
         console.log({ error })

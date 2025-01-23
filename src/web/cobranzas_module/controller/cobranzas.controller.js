@@ -5,7 +5,7 @@ const QRCode = require('qrcode');
 const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
     detalleFactura
- } = require("./hana.controller")
+} = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -656,7 +656,7 @@ const cobranzaClientePorVendedorIDController = async (req, res) => {
         // console.log({id})
         if (!id) return res.status(400).json({ mensaje: 'no hay el id del vendedor' })
         const clientes = await clientesPorVendedor(id)
-        return res.json({ clientes:clientes.data })
+        return res.json({ clientes: clientes.data })
 
     } catch (error) {
         console.log({ error })
@@ -704,7 +704,7 @@ const cobranzaFacturaPorCliDespController = async (req, res) => {
         if (!codigo) return res.status(400).json({ mensaje: 'no hay el codigo del cliente' })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await cobranzaSaldoDeudorDespachador(codigo)
-        console.log({response})
+        console.log({ response })
         if (response.statusCode != 200) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Despachador Facturas del cliente", `${response.message || 'Error en cobranzaSaldoDeudorDespachador'}`, `IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE`, "cobranza/facturas-cliente-desp", process.env.PRD)
             return res.status(400).json({ mensaje: `${response.message || 'Error en cobranzaSaldoDeudorDespachador'}` })
@@ -748,14 +748,14 @@ const saldoDeudorInstitucionesController = async (req, res) => {
 const realizarCobroController = async (req, res) => {
     try {
         const body = req.body
-        const CashSum = body.CashSum
+        let CashSum = body.CashSum
         const CashAccount = body.CashAccount
-        const TransferSum = body.TransferSum
+        let TransferSum = body.TransferSum
         const TransferAccount = body.TransferAccount
         const PaymentInvoices = body.PaymentInvoices
         let total = 0
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({ usuario,body })
+        console.log({ usuario, body })
         if (!PaymentInvoices) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", 'Error: el PaymentInvoices es obligatorio', `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
             return res.status(400).json({ mensaje: 'el PaymentInvoices es obligatorio' })
@@ -763,26 +763,28 @@ const realizarCobroController = async (req, res) => {
 
         PaymentInvoices.map((item) => {
             const sum = item.SumApplied
-            console.log({sum})
+            console.log({ sum })
             total += +sum
         })
         total = Number(total.toFixed(2))
+        TransferSum = Number(TransferSum.toFixed(2))
         if (TransferAccount || TransferAccount != null) {
             if (TransferSum !== total) {
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `el total es diferente al TransferSum, total: ${total ||'no definido'} , TransferSum: ${TransferSum  ||'no definido'} `, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `el total es diferente al TransferSum, total: ${total || 'no definido'} , TransferSum: ${TransferSum || 'no definido'} `, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
 
-                return res.status(400).json({ mensaje: `el total es diferente al TransferSum, total: ${total ||'no definido'} , TransferSum: ${TransferSum  ||'no definido'} ` })
+                return res.status(400).json({ mensaje: `el total es diferente al TransferSum, total: ${total || 'no definido'} , TransferSum: ${TransferSum || 'no definido'} ` })
             }
         }
-
+        CashSum = Number(CashSum.toFixed(2))
         if (CashAccount || CashAccount != null) {
             if (CashSum !== total) {
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `el total es diferente al CashSum, total: ${total ||'no definido'} , CashSum: ${CashSum  ||'no definido'} `, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
-
-                return res.status(400).json({ mensaje: `el total es diferente al CashSum, total: ${total ||'no definido'} , CashSum: ${CashSum  ||'no definido'} ` })
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `el total es diferente al CashSum, total: ${total || 'no definido'} , CashSum: ${CashSum || 'no definido'} `, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+                return res.status(400).json({ mensaje: `el total es diferente al CashSum, total: ${total || 'no definido'} , CashSum: ${CashSum || 'no definido'} ` })
             }
         }
         body.DocDate = null
+        body.CashSum = Number(CashSum.toFixed(2))
+        body.TransferSum = Number(TransferSum.toFixed(2))
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
             let mensaje = `Error del SAP`
@@ -920,14 +922,14 @@ const comprobantePDFController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await cobroLayout(id)
-        console.log({response})
+        console.log({ response })
         // return res.json({response})
         const Facturas = [];
         const cabezera = [];
         for (const line of response) {
             const { DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, Modality, TotalDue, Balance, ...result } = line
             if (!cabezera.length) {
-                cabezera.push({ ...result, Modality: Modality.charAt(0).toUpperCase()+Modality.slice(1), Balance: parseFloat(Balance).toFixed(2) })
+                cabezera.push({ ...result, Modality: Modality.charAt(0).toUpperCase() + Modality.slice(1), Balance: parseFloat(Balance).toFixed(2) })
             }
             Facturas.push({
                 DocNumInvoice, DocDateInvoice, NumAtCard, PymntGroup, SumAppliedCob, TotalDue
@@ -968,7 +970,7 @@ const comprobantePDFController = async (req, res) => {
             staticBaseUrl: process.env.STATIC_BASE_URL,
         });
 
-     
+
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
 
@@ -977,10 +979,10 @@ const comprobantePDFController = async (req, res) => {
             format: 'A4',
             printBackground: true
         });
-      
+
         await browser.close();
         console.log('PDF Buffer Size:', pdfBuffer.length);
-        
+
         const fileName = `${comprobante.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
 
         res.set({
@@ -1237,7 +1239,7 @@ const clientesPorDespachadorController = async (req, res) => {
         console.log({ idSap })
         const clientesDespachador = await clientesPorDespachador(idSap)
         console.log({ clientesDespachador })
-        return res.json({ clientes:clientesDespachador.data })
+        return res.json({ clientes: clientesDespachador.data })
     } catch (error) {
         console.log({ error })
         const mensaje = error.message || 'Error en el controlador clientesPorVendedorController'
@@ -1253,22 +1255,22 @@ const detalleFacturaController = async (req, res) => {
         console.log({ docEntry })
         const response = await detalleFactura(docEntry)
         console.log({ response })
-        if(response.statusCode!=200){
-            res.status(400).json({mensaje: `${response.message || 'Error en detalleFactura'}`})
+        if (response.statusCode != 200) {
+            res.status(400).json({ mensaje: `${response.message || 'Error en detalleFactura'}` })
         }
         // return res.json(response.data )
         let Detalle = []
-        let cabecera =[]
-        response.data.forEach((item) =>{
-            const {ItemCode,Dscription, Quantity, PriceAfDi, ...rest} = item;
-            if(cabecera.length==0){
+        let cabecera = []
+        response.data.forEach((item) => {
+            const { ItemCode, Dscription, Quantity, PriceAfDi, ...rest } = item;
+            if (cabecera.length == 0) {
                 cabecera.push({
                     ...rest
                 })
             }
             Detalle.push(
                 {
-                    ItemCode,Description:Dscription, Quantity, PriceAfDi
+                    ItemCode, Description: Dscription, Quantity, PriceAfDi
                 }
             )
 
@@ -1277,7 +1279,7 @@ const detalleFacturaController = async (req, res) => {
             ...cabecera[0],
             Detalle
         }
-        return res.json({...factura})
+        return res.json({ ...factura })
     } catch (error) {
         console.log({ error })
         const mensaje = `Error en el controlador detalleFacturaController: ${error.message} || ''`

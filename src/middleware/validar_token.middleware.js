@@ -7,7 +7,6 @@ const validarToken = async (req, res, next) => {
         return res.status(401).json({
             mensaje: 'Usuario no autorizado, se requiere un token en el header (token)'
         })
-
     }
     try {
         const { UserCode } = jwt.verify(token, process.env.SECRETORPRIVATEKEY)

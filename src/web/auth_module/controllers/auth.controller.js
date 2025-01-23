@@ -3,10 +3,10 @@ const bcrypt = require('bcryptjs')
 const fs = require('fs');
 const path = require('path');
 const { generarToken } = require("../../../helpers/generar_token.helper");
-const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles, userVendedor, 
-        getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario, 
-        addRutasDespachadores, getRutasLibresPorDespachador, getRutasAsignadasPorDespachador, getDespachadores, deleteRutasDespachadores
-    } = require("./hana.controller")
+const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles, userVendedor,
+    getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario,
+    addRutasDespachadores, getRutasLibresPorDespachador, getRutasAsignadasPorDespachador, getDespachadores, deleteRutasDespachadores
+} = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const authLoginPost = async (req, res) => {
@@ -572,31 +572,31 @@ const findAllRolesController = async (req, res) => {
 }
 
 //! eliminar:
-const userVendedorController=async(req,res)=>{
+const userVendedorController = async (req, res) => {
     try {
         const response = await userVendedor()
-        return res.json({response})
+        return res.json({ response })
     } catch (error) {
         console.log(error)
-        return res.status(500).json({error})
+        return res.status(500).json({ error })
     }
 }
 
 //! eliminar 
-const userInsertVendedorController = async(req,res)=>{
+const userInsertVendedorController = async (req, res) => {
     try {
-        const {response} = req.body
+        const { response } = req.body
         let list = []
         await Promise.all(response.map(async (id) => {
             const idUser = id.ID
-            console.log({idUser})
-            const insert = await addRolUser(idUser,12)
+            console.log({ idUser })
+            const insert = await addRolUser(idUser, 12)
             list.push(insert)
         }))
-        return res.json({list})
+        return res.json({ list })
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({error})
+        console.log({ error })
+        return res.status(500).json({ error })
     }
 }
 
@@ -626,7 +626,7 @@ const getAllAlmacenesController = async (req, res) => {
 
 const getDmUserByIdController = async (req, res) => {
     try {
-        const id= req.query.id
+        const id = req.query.id
         const users = await getDmUsers()
         const user = users.find((us) => us.UserID == id)
         return res.json({ ...user })
@@ -639,7 +639,7 @@ const getDmUserByIdController = async (req, res) => {
 }
 const getAlmacenesByUserController = async (req, res) => {
     try {
-        const id= req.query.id
+        const id = req.query.id
         const almacenes = await getAlmacenesByUser(id)
         return res.json({ almacenes })
     } catch (error) {
@@ -652,22 +652,22 @@ const getAlmacenesByUserController = async (req, res) => {
 
 const addAlmacenUsuarioController = async (req, res) => {
     try {
-        const { idUser, codAlmacen }= req.body
-        console.log({idUser, codAlmacen})
+        const { idUser, codAlmacen } = req.body
+        console.log({ idUser, codAlmacen })
         const almacenes = await addAlmacenUsuario(idUser, codAlmacen)
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        if(almacenes.statusCode!= 200){
-            const mensaje = almacenes.message ? (almacenes.message.length >255? 'Error en addAlmacenUsuario': almacenes.message):'Error en addAlmacenUsuario'
-           
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario",mensaje, `${almacenes.query||''}`, "auth/add-almacen-user", process.env.PRD)
-            return res.status(400).json({mensaje: `${almacenes.message || mensaje}`})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if (almacenes.statusCode != 200) {
+            const mensaje = almacenes.message ? (almacenes.message.length > 255 ? 'Error en addAlmacenUsuario' : almacenes.message) : 'Error en addAlmacenUsuario'
+
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, `${almacenes.query || ''}`, "auth/add-almacen-user", process.env.PRD)
+            return res.status(400).json({ mensaje: `${almacenes.message || mensaje}` })
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", `Respuesta al añadir almacen: ${almacenes.data}`, `${almacenes.query||''}`, "auth/add-almacen-user", process.env.PRD)
-        return res.json(almacenes.data )
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", `Respuesta al añadir almacen: ${almacenes.data}`, `${almacenes.query || ''}`, "auth/add-almacen-user", process.env.PRD)
+        return res.json(almacenes.data)
     } catch (error) {
         console.log({ error })
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const mensaje= `Error en addAlmacenUsuarioController controller: ${error.message||''}`
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje = `Error en addAlmacenUsuarioController controller: ${error.message || ''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, ``, "auth/add-almacen-user", process.env.PRD)
 
         return res.status(500).json({
@@ -678,22 +678,22 @@ const addAlmacenUsuarioController = async (req, res) => {
 
 const deleteAlmacenUsuarioController = async (req, res) => {
     try {
-        const { idUser, codAlmacen }= req.body
-        console.log({idUser, codAlmacen})
+        const { idUser, codAlmacen } = req.body
+        console.log({ idUser, codAlmacen })
         const almacenes = await deleteAlmacenUsuario(idUser.toString(), codAlmacen)
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        if(almacenes.statusCode!= 200){
-            const mensaje = almacenes.message ? (almacenes.message.length >255? 'Error en deleteAlmacenUsuario': almacenes.message):'Error en deleteAlmacenUsuario'
-           
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario",mensaje, `${almacenes.query||''}`, "auth/delete-almacen-user", process.env.PRD)
-            return res.status(400).json({mensaje})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if (almacenes.statusCode != 200) {
+            const mensaje = almacenes.message ? (almacenes.message.length > 255 ? 'Error en deleteAlmacenUsuario' : almacenes.message) : 'Error en deleteAlmacenUsuario'
+
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, `${almacenes.query || ''}`, "auth/delete-almacen-user", process.env.PRD)
+            return res.status(400).json({ mensaje })
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar Almacen a usuario", `Respuesta al añadir almacen: ${almacenes.data}`, `${almacenes.query||''}`, "auth/delete-almacen-user", process.env.PRD)
-        return res.json(almacenes.data )
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar Almacen a usuario", `Respuesta al añadir almacen: ${almacenes.data}`, `${almacenes.query || ''}`, "auth/delete-almacen-user", process.env.PRD)
+        return res.json(almacenes.data)
     } catch (error) {
         console.log({ error })
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const mensaje= `Error en deleteAlmacenUsuarioController controller: ${error.message||''}`
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje = `Error en deleteAlmacenUsuarioController controller: ${error.message || ''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar Almacen a usuario", mensaje, ``, "auth/delete-almacen-user", process.env.PRD)
 
         return res.status(500).json({
@@ -716,7 +716,7 @@ const getDespachadoresController = async (req, res) => {
 
 const getDespachadorPorIdController = async (req, res) => {
     try {
-        const id_vendedor= req.query.id
+        const id_vendedor = req.query.id
         const despachadores = await getDespachadores()
         const despachador = despachadores.find((us) => us.SlpCode == id_vendedor)
         return res.json({ ...despachador })
@@ -729,7 +729,7 @@ const getDespachadorPorIdController = async (req, res) => {
 }
 const getRutasLibresPorDespachadorController = async (req, res) => {
     try {
-        const id_vendedor= req.query.id
+        const id_vendedor = req.query.id
         const rutas = await getRutasLibresPorDespachador(id_vendedor)
         return res.json({ rutas })
     } catch (error) {
@@ -741,7 +741,7 @@ const getRutasLibresPorDespachadorController = async (req, res) => {
 }
 const getRutasAsignadasPorDespachadorController = async (req, res) => {
     try {
-        const id_vendedor= req.query.id
+        const id_vendedor = req.query.id
         const rutas = await getRutasAsignadasPorDespachador(id_vendedor)
         return res.json({ rutas })
     } catch (error) {
@@ -753,22 +753,22 @@ const getRutasAsignadasPorDespachadorController = async (req, res) => {
 }
 const addRutasDespachadoresController = async (req, res) => {
     try {
-        const { idVendedor, idRuta }= req.body
-        console.log({idVendedor, idRuta})
+        const { idVendedor, idRuta } = req.body
+        console.log({ idVendedor, idRuta })
         const response = await addRutasDespachadores(idVendedor, idRuta)
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        if(response.statusCode!= 200){
-            const mensaje = response.message ? (response.message.length >255? 'Error en addRutasDespachadores': response.message):'Error en addRutasDespachadores'
-           
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador",mensaje, `${response.query||''}`, "auth/add-ruta-despachador", process.env.PRD)
-            return res.status(400).json({mensaje: `${response.message || mensaje}`})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if (response.statusCode != 200) {
+            const mensaje = response.message ? (response.message.length > 255 ? 'Error en addRutasDespachadores' : response.message) : 'Error en addRutasDespachadores'
+
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador", mensaje, `${response.query || ''}`, "auth/add-ruta-despachador", process.env.PRD)
+            return res.status(400).json({ mensaje: `${response.message || mensaje}` })
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador", `Respuesta al añadir ruta: ${response.data}`, `${response.query||''}`, "auth/add-ruta-despachador", process.env.PRD)
-        return res.json(response.data )
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador", `Respuesta al añadir ruta: ${response.data}`, `${response.query || ''}`, "auth/add-ruta-despachador", process.env.PRD)
+        return res.json(response.data)
     } catch (error) {
         console.log({ error })
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const mensaje= `Error en addRutasDespachadoresController controller: ${error.message||''}`
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje = `Error en addRutasDespachadoresController controller: ${error.message || ''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador", mensaje, ``, "auth/add-ruta-despachador", process.env.PRD)
 
         return res.status(500).json({
@@ -778,22 +778,22 @@ const addRutasDespachadoresController = async (req, res) => {
 }
 const deleteRutasDespachadoresController = async (req, res) => {
     try {
-        const { idVendedor, idRuta }= req.body
-        console.log({idVendedor, idRuta})
+        const { idVendedor, idRuta } = req.body
+        console.log({ idVendedor, idRuta })
         const response = await deleteRutasDespachadores(idVendedor, idRuta)
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        if(response.statusCode!= 200){
-            const mensaje = response.message ? (response.message.length >255? 'Error en deleteRutasDespachadores': response.message):'Error en deleteRutasDespachadores'
-           
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador",mensaje, `${response.query||''}`, "auth/delete-ruta-despachador", process.env.PRD)
-            return res.status(400).json({mensaje: `${response.message || mensaje}`})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if (response.statusCode != 200) {
+            const mensaje = response.message ? (response.message.length > 255 ? 'Error en deleteRutasDespachadores' : response.message) : 'Error en deleteRutasDespachadores'
+
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador", mensaje, `${response.query || ''}`, "auth/delete-ruta-despachador", process.env.PRD)
+            return res.status(400).json({ mensaje: `${response.message || mensaje}` })
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador", `Respuesta al eliminar ruta: ${response.data}`, `${response.query||''}`, "auth/delete-ruta-despachador", process.env.PRD)
-        return res.json(response.data )
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador", `Respuesta al eliminar ruta: ${response.data}`, `${response.query || ''}`, "auth/delete-ruta-despachador", process.env.PRD)
+        return res.json(response.data)
     } catch (error) {
         console.log({ error })
-        const usuario= req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const mensaje= `Error en deleteRutasDespachadoresController controller: ${error.message||''}`
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje = `Error en deleteRutasDespachadoresController controller: ${error.message || ''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador", mensaje, ``, "auth/delete-ruta-despachador", process.env.PRD)
 
         return res.status(500).json({
@@ -807,13 +807,38 @@ const getAlmacenesLibresController = async (req, res) => {
         const id = req.query.id;
         const almacenesTodos = await getAllAlmacenes()
         const almacenesUser = await getAlmacenesByUser(id)
-        const almacenes = almacenesTodos.filter(o=> almacenesUser.findIndex(user => user.WhsCode==o.WhsCode )<0)
+        const almacenes = almacenesTodos.filter(o => almacenesUser.findIndex(user => user.WhsCode == o.WhsCode) < 0)
         return res.json({ almacenes })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({
             mensaje: "error en getAllAlmacenesController controller"
         })
+    }
+}
+
+const validarTokenController = async (req, res) => {
+    try {
+        const token = req.query.token
+        if (!token || token == '') {
+            return res.status(401).json({
+                mensaje: 'Usuario no autorizado, se requiere un token en el header (token)'
+            })
+        }
+        const { UserCode } = jwt.verify(token, process.env.SECRETORPRIVATEKEY)
+        console.log({ UserCode })
+        const response = await findUserByUsercode(UserCode)
+        const user = response[0]
+        console.log({ user })
+        if (user == undefined || !user || user == null) {
+            return res.status(404).json({
+                mensaje: 'Usuario no encontrado'
+            })
+        }
+        if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
+        return res.status(200).json({ mensaje: 'Autorizado', validate: true })
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'error en el controlador de validacion del token' })
     }
 }
 
@@ -851,5 +876,6 @@ module.exports = {
     getDespachadoresController,
     deleteRutasDespachadoresController,
     getDespachadorPorIdController,
-    getAlmacenesLibresController
+    getAlmacenesLibresController,
+    validarTokenController
 }

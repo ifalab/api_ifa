@@ -78,7 +78,6 @@ const patchEntrega = async (delivery, responseJson) => {
     try {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
-
         const headers = {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
@@ -97,7 +96,7 @@ const patchEntrega = async (delivery, responseJson) => {
 
     } catch (error) {
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
-        console.error('Error en la solicitud PATCH para Entrega:', error.response?.data || error.message);
+        console.error('Error en la solicitud PATCH para Entrega. ', error.response?.data || error.message ||'');
         return {
             errorMessage,
             status: 400,

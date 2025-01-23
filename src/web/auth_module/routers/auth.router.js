@@ -12,13 +12,15 @@ const { authLoginPost, createUserController, findAllUserController, findUserById
     getDespachadoresController,
     deleteRutasDespachadoresController,
     getDespachadorPorIdController,
-    getAlmacenesLibresController
+    getAlmacenesLibresController,
+    validarTokenController
  } = require('../controllers/auth.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 
 const router = Router()
 
+router.get('/validar-token',validarTokenController)
 router.post('/login', authLoginPost)
 router.post('/login-v2', authLoginV2)
 router.post('/create-user',[validarToken, validarCampos], createUserController)

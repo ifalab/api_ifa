@@ -408,8 +408,8 @@ const facturacionController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || ""}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || ''} ,NumAtCard: ${nroFactura || ''}`, '', "facturacion/facturar", process.env.PRD)
-                return res.status(400).json({ mensaje: `error en la solicitud patch entrega${responsePatchEntrega.errorMessage.value || ''}` })
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || "No definido"}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || 'No definido'} ,NumAtCard: ${nroFactura || 'No definido'}, delivery: ${deliveryData||'No definido'}`, '', "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}` })
             }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
