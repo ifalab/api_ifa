@@ -130,10 +130,13 @@ const getListaPreciosOficialesController = async (req, res) => {
         if(lista.status!=200){
             return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosOficiales'}`})
         }
+        lista.data.forEach(element => {
+            element.CreateDate = element.CreateDate.split(' ')[0]
+        });
         return res.json({precios: lista.data})
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosOficialesControlle: ${error.message || ''}` })
+        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosOficialesController: ${error.message || ''}` })
     }
 }
 
@@ -141,18 +144,23 @@ const setPrecioItemController = async (req, res) => {
     try {
         const body = req.body
         console.log({body})
-        return res.json({body})
-        let lista;
-        for(i=0; i<body.length; i++){
-            const response = await setPrecioItem(body[i].itemCode, body[i].precio, body[i].fecha)
+        // return res.json({body})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        let lista=[];
+        for(const line of body.items){
+            const response = await setPrecioItem(line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
             if(response.status!=200){
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error: ${response.message || 'setPrecioItem()'} `, ``, "datos-maestros/set-precio-item", process.env.PRD)
                 return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioItem'}`})
             }
             lista.push(response.data)
         }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Precios oficiales grabados con exito`, ``, "datos-maestros/set-precio-item", process.env.PRD)
         return res.json(lista)
     } catch (error) {
         console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error en el controlador setPrecioItemController: ${error.message || ''} `, `catch del controller`, "datos-maestros/set-precio-item", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en el controlador setPrecioItemController: ${error.message || ''}` })
     }
 }
