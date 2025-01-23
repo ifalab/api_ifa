@@ -238,6 +238,22 @@ const facturasAnuladas = async (SucCode) => {
     }
 }
 
+const pedidosPorEntrega = async (DeliveryNum) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_por_entregas(DeliveryNum)(${DeliveryNum})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en facturasAnuladas:', error.message);
+        return { message: `Error al procesar la solicitud: pedidosPorEntrega. ${error.message || ''}` }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -250,5 +266,6 @@ module.exports = {
     pedidosFacturados,
     obtenerEntregas,
     facturasPedidoCadenas,
-    facturasAnuladas
+    facturasAnuladas,
+    pedidosPorEntrega
 }

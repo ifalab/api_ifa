@@ -13,7 +13,7 @@ const { grabarLog } = require("../../shared/controller/hana.controller");
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas, 
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
     facturasAnuladas } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
@@ -150,8 +150,8 @@ const facturacionController = async (req, res) => {
             } = newData;
 
             const finalData = {
-                DocDate,
-                DocDueDate,
+                // DocDate,
+                // DocDueDate,
                 CardCode,
                 U_NIT,
                 U_RAZSOC,
@@ -263,6 +263,7 @@ const facturacionController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}`, '', "facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
         }
+
         if (responseGenesis.length != 0) {
 
             const dataGenesis = responseGenesis[0]
@@ -409,7 +410,7 @@ const facturacionController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || "No definido"}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || 'No definido'} ,NumAtCard: ${nroFactura || 'No definido'}, delivery: ${deliveryData||'No definido'}`, '', "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || "No definido"}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || 'No definido'} ,NumAtCard: ${nroFactura || 'No definido'}, delivery: ${deliveryData || 'No definido'}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}` })
             }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
@@ -845,8 +846,10 @@ const cancelToProsinController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
         }
-        const { estado } = estadoFacturaResponse[0]
-
+        let { estado } = estadoFacturaResponse[0]
+        //! ELIMINAR: ------------------------------------------------------------------------------
+        // estado = false
+        //!  ------------------------------------------------------------------------------
         if (estado) {
             responseProsin = await anulacionFacturacion({
                 sucursal,
@@ -889,7 +892,6 @@ const cancelToProsinController = async (req, res) => {
         }
 
         let listResponseDelivery = []
-
         for (const iterator of responseEntregas) {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             console.log({ responseDeliveryNotes })
@@ -901,6 +903,9 @@ const cancelToProsinController = async (req, res) => {
 
             listResponseDelivery.push(responseDeliveryNotes)
         }
+
+        console.log(JSON.stringify(listResponseDelivery, null, 2))
+        // cancel order
 
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", "Anulado con exito", '', "facturacion/cancel-to-prosin", process.env.PRD)
 
@@ -1259,15 +1264,15 @@ const facturasAnuladasController = async (req, res) => {
         console.log({ SucCodes })
         for (const sucCode of SucCodes) {
             const facturas = await facturasAnuladas(sucCode)
-            if(facturas.message){
-                return res.status(400).json({mensaje: `${facturas.message || 'Error en facturasAnuladas()'}. sucCode: ${sucCode|| ''}`})
+            if (facturas.message) {
+                return res.status(400).json({ mensaje: `${facturas.message || 'Error en facturasAnuladas()'}. sucCode: ${sucCode || ''}` })
             }
             facturados = facturados.concat(facturas)
         }
         return res.json({ facturados })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador facturasAnuladasController. ${error.message||''}` })
+        return res.status(500).json({ mensaje: `Error en el controlador facturasAnuladasController. ${error.message || ''}` })
     }
 }
 
