@@ -767,24 +767,27 @@ const realizarCobroController = async (req, res) => {
             total += +sum
         })
         total = Number(total.toFixed(2))
-        TransferSum = Number(TransferSum.toFixed(2))
+        
         if (TransferAccount || TransferAccount != null) {
+            TransferSum = Number(TransferSum.toFixed(2))
+            body.TransferSum = Number(TransferSum.toFixed(2))
             if (TransferSum !== total) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `el total es diferente al TransferSum, total: ${total || 'no definido'} , TransferSum: ${TransferSum || 'no definido'} `, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
 
                 return res.status(400).json({ mensaje: `el total es diferente al TransferSum, total: ${total || 'no definido'} , TransferSum: ${TransferSum || 'no definido'} ` })
             }
         }
-        CashSum = Number(CashSum.toFixed(2))
+
         if (CashAccount || CashAccount != null) {
+            CashSum = Number(CashSum.toFixed(2))
+            body.CashSum = Number(CashSum.toFixed(2))
             if (CashSum !== total) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `el total es diferente al CashSum, total: ${total || 'no definido'} , CashSum: ${CashSum || 'no definido'} `, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
                 return res.status(400).json({ mensaje: `el total es diferente al CashSum, total: ${total || 'no definido'} , CashSum: ${CashSum || 'no definido'} ` })
             }
         }
+
         body.DocDate = null
-        body.CashSum = Number(CashSum.toFixed(2))
-        body.TransferSum = Number(TransferSum.toFixed(2))
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
             let mensaje = `Error del SAP`
