@@ -16,7 +16,8 @@ const { findClientePorVendedor,
     pedidoLayout,
     pedidosPorVendedorHoy,
     precioArticuloCadena,
-    listaPrecioCadenas
+    listaPrecioCadenas,
+    clientesPorSucursal
 } = require("./hana.controller");
 const { postOrden, postQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -574,6 +575,40 @@ const listaPrecioCadenasController = async (req, res) => {
     }
 }
 
+const clientesSucursalController = async (req, res) => {
+    try {
+        const { idSucursales } = req.body;
+        let clientes = [];
+        let response=[];
+        for (const id_suc of idSucursales) {
+            const clientessucursal = await clientesPorSucursal(id_suc)
+            console.log({ clientessucursal })
+            if (clientessucursal.statusCode != 200) {
+                return res.status(clientessucursal.statusCode).json({ mensaje: clientessucursal.message || 'Error en clientesPorSucursal' })
+            }
+            response.push(...clientessucursal.data)
+        }
+        for (const item of response) {
+            const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
+            const saldoDisponible = (+CreditLine) - (+AmountDue);
+            const newData = {
+                ...restCliente,
+                CreditLine,
+                AmountDue,
+                mora: HvMora,
+                saldoDisponible,
+            };
+            clientes.push({ ...newData });
+        }
+
+        return res.json({ clientes });
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -596,6 +631,6 @@ module.exports = {
     pedidosPorVendedorHoyController,
     pedidoCadenaController,
     precioArticuloCadenaController,
-    listaPrecioCadenasController
-
+    listaPrecioCadenasController,
+    clientesSucursalController
 }

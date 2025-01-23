@@ -1,4 +1,4 @@
-
+const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const fs = require('fs');
 const jwt = require('jsonwebtoken')
@@ -839,6 +839,7 @@ const validarTokenController = async (req, res) => {
         if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
         return res.status(200).json({ mensaje: 'Autorizado', validate: true })
     } catch (error) {
+        console.error({error})
         return res.status(500).json({ mensaje: 'error en el controlador de validacion del token' })
     }
 }

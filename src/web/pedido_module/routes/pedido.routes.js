@@ -5,7 +5,8 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     pedidosPorVendedorHoyController, 
     pedidoCadenaController,
     precioArticuloCadenaController,
-    listaPrecioCadenasController} = require('../controller/pedido.controller')
+    listaPrecioCadenasController,
+    clientesSucursalController} = require('../controller/pedido.controller')
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
@@ -29,4 +30,6 @@ router.get('/hoy-vendedor', [validarToken, validarCampos],pedidosPorVendedorHoyC
 router.post('/crear-oferta-venta', [validarToken, validarCampos],pedidoCadenaController)
 router.get('/precio-articulo-cadena', [validarToken, validarCampos],precioArticuloCadenaController)
 router.get('/lista-precio-cadenas',[validarToken,validarCampos],listaPrecioCadenasController)
+router.post('/clientes-sucursal', [validarToken, validarCampos], clientesSucursalController)
+
 module.exports = router

@@ -212,6 +212,27 @@ const getZonasPorArea = async (areaCode) => {
     }
 }
 
+const getListaPreciosCadenas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        //Cambiar query
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_precios_oficial`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result}
+    } catch (error) {
+        console.error('Error en getListaPreciosCadenas:', error);
+        return {
+            status:400,
+            message: `Error en getListaPreciosCadenas: ${error.message || ''}`
+        }
+    }
+}
+
 
 module.exports = {
     dmClientes,
@@ -221,5 +242,6 @@ module.exports = {
     setPrecioItem,
     getSucursales,
     getAreasPorSucursal,
-    getZonasPorArea
+    getZonasPorArea,
+    getListaPreciosCadenas
 }
