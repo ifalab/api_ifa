@@ -1,7 +1,12 @@
 const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { facturacionController, facturacionStatusController, noteEntregaController, obtenerCuf, obtenerEntregasPorFacturaController, obtenerInvoicesCancel, listaFacturasAnular, infoFacturaController, cancelToProsinController, pedidosFacturadosController, obtenerEntregasController, obtenerEntregaDetalleController, facturacionEntregaController, facturacionStatusListController, facturasPedidoCadenasController } = require('../controller/facturacion.controller')
+const { facturacionController, facturacionStatusController, noteEntregaController, obtenerCuf, 
+    obtenerEntregasPorFacturaController, obtenerInvoicesCancel, listaFacturasAnular, infoFacturaController, 
+    cancelToProsinController, pedidosFacturadosController, obtenerEntregasController, obtenerEntregaDetalleController, 
+    facturacionEntregaController, facturacionStatusListController, facturasPedidoCadenasController,
+    facturasAnuladasController
+ } = require('../controller/facturacion.controller')
 const router = Router()
 
 router.post('/facturar', [validarToken, validarCampos], facturacionController)
@@ -21,5 +26,6 @@ router.post('/facturar-entrega', [validarToken, validarCampos], facturacionEntre
 router.post('/facturas-pedido-cadena',[validarToken,validarCampos],facturasPedidoCadenasController)
 
 router.post('/facturar-oferta-venta',[validarToken,validarCampos])
+router.post('/facturas-anuladas', [validarToken, validarCampos], facturasAnuladasController)
 
 module.exports = router

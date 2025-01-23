@@ -662,7 +662,7 @@ const addAlmacenUsuarioController = async (req, res) => {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, `${almacenes.query || ''}`, "auth/add-almacen-user", process.env.PRD)
             return res.status(400).json({ mensaje: `${almacenes.message || mensaje}` })
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", `Respuesta al añadir almacen: ${almacenes.data}`, `${almacenes.query || ''}`, "auth/add-almacen-user", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", `Exito. Respuesta al añadir almacen: ${almacenes.data}`, `${almacenes.query || ''}`, "auth/add-almacen-user", process.env.PRD)
         return res.json(almacenes.data)
     } catch (error) {
         console.log({ error })

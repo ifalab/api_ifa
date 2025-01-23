@@ -220,6 +220,24 @@ const facturasPedidoCadenas = async (id_sucursal) => {
     }
 }
 
+const facturasAnuladas = async (SucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        //Cambiar query
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
+        // const query = `SELECT * FROM ${process.env.PRD}.IFA_INFO_FACTURACION`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en facturasAnuladas:', error.message);
+        return { message: `Error al procesar la solicitud: facturasAnuladas. ${error.message || ''}` }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -232,4 +250,5 @@ module.exports = {
     pedidosFacturados,
     obtenerEntregas,
     facturasPedidoCadenas,
+    facturasAnuladas
 }

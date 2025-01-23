@@ -13,7 +13,8 @@ const { grabarLog } = require("../../shared/controller/hana.controller");
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
-const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas } = require("./hana.controller")
+const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas, 
+    facturasAnuladas } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -1250,6 +1251,26 @@ const facturasPedidoCadenasController = async (req, res) => {
     }
 }
 
+const facturasAnuladasController = async (req, res) => {
+    try {
+        const { SucCodes } = req.body
+        if (SucCodes.length == 0) return res.status(400).json({ mensaje: 'el SucCodes es obligatorio y debe tener un item o mas' })
+        let facturados = []
+        console.log({ SucCodes })
+        for (const sucCode of SucCodes) {
+            const facturas = await facturasAnuladas(sucCode)
+            if(facturas.message){
+                return res.status(400).json({mensaje: `${facturas.message || 'Error en facturasAnuladas()'}. sucCode: ${sucCode|| ''}`})
+            }
+            facturados = facturados.concat(facturas)
+        }
+        return res.json({ facturados })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador facturasAnuladasController. ${error.message||''}` })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -1265,5 +1286,6 @@ module.exports = {
     facturacionEntregaController,
     facturacionStatusListController,
     obtenerEntregaDetalleController,
-    facturasPedidoCadenasController
+    facturasPedidoCadenasController,
+    facturasAnuladasController
 }
