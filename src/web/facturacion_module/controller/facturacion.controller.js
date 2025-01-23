@@ -372,7 +372,7 @@ const facturacionController = async (req, res) => {
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
-            console.log({dataProsin})
+            console.log({ dataProsin })
             if (dataProsin && dataProsin.estado != 200) {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
@@ -840,7 +840,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
         }
         const estadoFacturaResponse = await spEstadoFactura(cuf)
-        if(estadoFacturaResponse.message){
+        if (estadoFacturaResponse.message) {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
         }
@@ -894,7 +894,7 @@ const cancelToProsinController = async (req, res) => {
             console.log({ responseDeliveryNotes })
             if (responseDeliveryNotes.status == 400) {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
-                console.log({responseDeliveryNotes})
+                console.log({ responseDeliveryNotes })
                 return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}` })
             }
 
@@ -1123,10 +1123,11 @@ const facturacionEntregaController = async (req, res) => {
             //return res.json({ bodyFinalFactura, responseProsin, deliveryData })
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
-            if (dataProsin && dataProsin.estado != 200){ 
+            if (dataProsin && dataProsin.estado != 200) {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.message || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '/api/sfl/FacturaCompraVenta', "facturacion/facturar", process.env.PRD)
-                return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })}
-            if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: dataProsin.mensaje, dataProsin, bodyFinalFactura })
+                return res.status(400).json({ mensaje: `Error de Prosin. ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
+            }
+            if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: `Error de Prosin. ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
             const cuf = dataProsin.datos.cuf
