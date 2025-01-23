@@ -215,6 +215,22 @@ const getZonasPorAreaController = async (req, res) => {
     }
 }
 
+const getListaPreciosCadenasController = async (req, res) => {
+    try {
+        const lista = await getListaPreciosOficiales()
+        if(lista.status!=200){
+            return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosOficiales'}`})
+        }
+        lista.data.forEach(element => {
+            element.CreateDate = element.CreateDate.split(' ')[0]
+        });
+        return res.json({precios: lista.data})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosOficialesController: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -224,5 +240,6 @@ module.exports = {
     setPrecioItemController,
     getSucursalesController,
     getAreasPorSucursalController,
-    getZonasPorAreaController
+    getZonasPorAreaController,
+    getListaPreciosCadenasController
 }

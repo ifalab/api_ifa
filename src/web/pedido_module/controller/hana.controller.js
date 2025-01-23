@@ -296,6 +296,26 @@ const precioArticuloCadena = async (nroLista, itemArticulo) => {
     }
 }
 
+const clientesPorSucursal= async (id_sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_clientes_por_surcursal(${id_sucursal})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result
+        }
+    } catch (error) {
+        console.error('Error en clientesPorSucursal:', error.message);
+        return { 
+            statusCode: 400,
+            message: `Error al procesar clientesPorSucursal: ${error.message || ''}` 
+        }
+    }
+}
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -315,4 +335,5 @@ module.exports = {
     pedidosPorVendedorHoy,
     precioArticuloCadena,
     listaPrecioCadenas,
+    clientesPorSucursal
 }
