@@ -300,9 +300,9 @@ const crearOfertaVentaController = async (req, res) => {
     const body = req.body
     try {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        console.log(JSON.stringify(body, null, 2))
-        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        // console.log(JSON.stringify(body, null, 2))
+        // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear oferta", `${mensaje}, ${body}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
         const response = await postQuotations(body)
         return res.json({ response })
@@ -390,8 +390,6 @@ const pedidoLayoutController = async (req, res) => {
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de Pedido' });
         }
         console.log({ response })
-
-        // return res.json({ response })
 
         const detailsList = [];
         const {
