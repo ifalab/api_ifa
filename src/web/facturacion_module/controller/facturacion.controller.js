@@ -8,7 +8,6 @@ const puppeteer = require('puppeteer');
 const PdfPrinter = require('pdfmake');
 const fs = require('fs');
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
-const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
@@ -19,6 +18,7 @@ const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliv
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
+const { grabarLog } = require('../../shared/controller/hana.controller');
 
 const facturacionController = async (req, res) => {
     let body = {}
@@ -863,38 +863,38 @@ const cancelToProsinController = async (req, res) => {
         let endTime = Date.now();
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        if (!cuf || cuf == '') {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
-        }
-        const estadoFacturaResponse = await spEstadoFactura(cuf)
-        if (estadoFacturaResponse.message) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
-            return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
-        }
-        let { estado } = estadoFacturaResponse[0]
-        //! ELIMINAR: ------------------------------------------------------------------------------
-        // estado = false
-        //!  ------------------------------------------------------------------------------
-        if (estado) {
-            responseProsin = await anulacionFacturacion({
-                sucursal,
-                punto,
-                cuf,
-                descripcion,
-                motivoAnulacion,
-                tipoDocumento,
-                usuario,
-                mediaPagina,
-            })
+        // if (!cuf || cuf == '') {
+        //     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+        //     return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
+        // }
+        // const estadoFacturaResponse = await spEstadoFactura(cuf)
+        // if (estadoFacturaResponse.message) {
+        //     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+        //     return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
+        // }
+        // let { estado } = estadoFacturaResponse[0]
+        // //! ELIMINAR: ------------------------------------------------------------------------------
+        // // estado = false
+        // //!  ------------------------------------------------------------------------------
+        // if (estado) {
+        //     responseProsin = await anulacionFacturacion({
+        //         sucursal,
+        //         punto,
+        //         cuf,
+        //         descripcion,
+        //         motivoAnulacion,
+        //         tipoDocumento,
+        //         usuario,
+        //         mediaPagina,
+        //     }, user)
 
-            if (responseProsin.data.mensaje) {
-                const mess = responseProsin.data.mensaje.split('§')
-                endTime = Date.now();
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
-                return res.status(400).json({ mensaje: `${mess[1] || 'Error en anulacionFacturacion'}` })
-            }
-        }
+        //     if (responseProsin.data.mensaje) {
+        //         const mess = responseProsin.data.mensaje.split('§')
+        //         endTime = Date.now();
+        //         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+        //         return res.status(400).json({ mensaje: `${mess[1] || 'Error en anulacionFacturacion'}` })
+        //     }
+        // }
 
         if (!docEntry) {
             endTime = Date.now();
@@ -943,22 +943,24 @@ const cancelToProsinController = async (req, res) => {
                 return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}` })
             }
 
-            const auxResponsePedido = await pedidosPorEntrega(iterator.BaseEntry)
-            console.log({auxResponsePedido})
-            responsePedidosPorEntrega.push(auxResponsePedido)
-            let responseCancelOrder =[]
-            for(const pedido of auxResponsePedido){
-                const auxResponseCancelOrder = await cancelOrder(pedido.BaseEntry)
-                if (auxResponseCancelOrder.status == 400) {
-                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelOrder: ${auxResponseCancelOrder.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
-                    console.log({ auxResponseCancelOrder })
-                    return res.status(400).json({ mensaje: `Error en cancelOrder: ${auxResponseCancelOrder.errorMessage.value || ''}` })
+            if(anulacionOrden){
+                const auxResponsePedido = await pedidosPorEntrega(iterator.BaseEntry)
+                console.log({auxResponsePedido})
+                responsePedidosPorEntrega.push(auxResponsePedido)
+                let responseCancelOrder =[]
+                for(const pedido of auxResponsePedido){
+                    const auxResponseCancelOrder = await cancelOrder(pedido.BaseEntry)
+                    if (auxResponseCancelOrder.status == 400) {
+                        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelOrder: ${auxResponseCancelOrder.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
+                        console.log({ auxResponseCancelOrder })
+                        return res.status(400).json({ mensaje: `Error en cancelOrder: ${auxResponseCancelOrder.errorMessage.value || ''}` })
+                    }
+                    responseCancelOrder.push(auxResponseCancelOrder)
                 }
-                responseCancelOrder.push(auxResponseCancelOrder)
+                listCancelOrders.push(responseCancelOrder)
             }
 
             listResponseDelivery.push(responseDeliveryNotes)
-            listCancelOrders.push(responseCancelOrder)
         }
         console.log(JSON.stringify(listResponseDelivery, null, 2))
 

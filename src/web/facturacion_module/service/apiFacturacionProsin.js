@@ -1,7 +1,8 @@
 const httpClientProsin = require('../../service/httpClientProsin');
+const { grabarLog } = require('../../shared/controller/hana.controller');
 
 const apiFacturacionProsin = {
-    async facturacionProsin(body) {
+    async facturacionProsin(body, user) {
         const startTime = Date.now();
         let endTime = Date.now();
         try {
@@ -33,7 +34,7 @@ const apiFacturacionProsin = {
             };
         }
     },
-    async anulacionFacturacion(body) {
+    async anulacionFacturacion(body, user) {
         const startTime = Date.now();
         let endTime = Date.now();
         try {
