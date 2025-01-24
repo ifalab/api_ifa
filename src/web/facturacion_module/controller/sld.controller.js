@@ -124,11 +124,15 @@ const postInvoice = async (body) => {
         const locationHeader = sapResponse.headers.location;
         const invoiceID = locationHeader.match(/\((\d+)\)$/);
         const idInvoice = invoiceID ? invoiceID[1] : 'Desconocido';
-        return { sapResponse, idInvoice }
+        return { status: 200,
+            sapResponse,
+            idInvoice }
     } catch (error) {
         console.log({ error })
-        const errorMessage = error.response?.data?.error?.message + ' Invoice' || error.message + ' Invoice' || 'Error desconocido en la solicitud POST';
-        return errorMessage
+        const errorMessage = error.response?.data?.error?.message|| error.message|| 'Error desconocido en la solicitud POST';
+        return {
+            status: 400,
+            errorMessage}
     }
 }
 

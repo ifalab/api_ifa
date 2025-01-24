@@ -121,12 +121,11 @@ const getListaPreciosOficiales = async () => {
     }
 }
 
-const setPrecioItem = async (itemCode, precio, id_vend_sap, glosa) => {
+const setPrecioOficial = async (itemCode, precio, id_vend_sap, glosa) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        ///Faltaa
         const query = `call ${process.env.PRD}.ifa_dm_agregar_precio_oficial('${itemCode}',${precio},${id_vend_sap},'${glosa}');`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -134,10 +133,10 @@ const setPrecioItem = async (itemCode, precio, id_vend_sap, glosa) => {
             status: 200,
             data: result}
     } catch (error) {
-        console.error('Error en setPrecioItem:', error);
+        console.error('Error en setPrecioOficial:', error);
         return {
             status:400,
-            message: `Error en setPrecioItem: ${error.message || ''}`
+            message: `Error en setPrecioOficial: ${error.message || ''}`
         }
     }
 }
@@ -211,6 +210,31 @@ const getZonasPorArea = async (areaCode) => {
         }
     }
 }
+const getZonasPorSucursal = async (code) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        let query;
+        if(code==0){
+            query = `select * from ${process.env.PRD}.ifa_dm_zonas`;
+        }else{
+            query = `select * from ${process.env.PRD}.ifa_dm_zonas where "SucCode"=${code}`;
+        }
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result}
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en getZonasPorArea:', error.message);
+        return {
+            status:400,
+            message: `Error en getZonasPorArea: ${error.message || ''}`
+        }
+    }
+}
 
 const getListaPreciosCadenas = async () => {
     try {
@@ -233,15 +257,38 @@ const getListaPreciosCadenas = async () => {
     }
 }
 
+const setPrecioCadena = async (itemCode, precio, id_vend_sap, glosa) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        ///Faltaa
+        const query = `call ${process.env.PRD}.ifa_dm_agregar_precio_oficial('${itemCode}',${precio},${id_vend_sap},'${glosa}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result}
+    } catch (error) {
+        console.error('Error en setPrecioItem:', error);
+        return {
+            status:400,
+            message: `Error en setPrecioItem: ${error.message || ''}`
+        }
+    }
+}
+
 
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
     dmTiposDocumentos,
     getListaPreciosOficiales,
-    setPrecioItem,
+    setPrecioOficial,
     getSucursales,
     getAreasPorSucursal,
     getZonasPorArea,
-    getListaPreciosCadenas
+    getListaPreciosCadenas,
+    setPrecioCadena,
+    getZonasPorSucursal
 }
