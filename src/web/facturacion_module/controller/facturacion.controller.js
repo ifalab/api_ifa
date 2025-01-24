@@ -909,7 +909,7 @@ const cancelToProsinController = async (req, res) => {
             const now = new Date();
             const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
             const fileNameJson = path.join(outputDir, `reponseInvoiceAnulacion_${timestamp}.json`);
-            fs.writeFileSync(fileNameJson, JSON.stringify(reponseInvoice, null, 2), 'utf8');
+            fs.writeFileSync(fileNameJson, JSON.stringify(docEntry, null, 2), 'utf8');
             console.log(`Objeto reponseInvoice guardado en ${fileNameJson}`);
 
             endTime = Date.now();
@@ -962,7 +962,8 @@ const cancelToProsinController = async (req, res) => {
         console.log({ usuario })
         let mensaje = `Error en el controlador CancelToProsin: ${error.message || ''}`
         console.log({ statuscode: error.statusCode })
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje, 'Catch de CancelToProsin', "facturacion/cancel-to-prosin", process.env.PRD)
+        const endTime = Date.now();
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje + `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, 'Catch de CancelToProsin', "facturacion/cancel-to-prosin", process.env.PRD)
 
         return res.status(error.statusCode ?? 500).json({ mensaje })
     }
