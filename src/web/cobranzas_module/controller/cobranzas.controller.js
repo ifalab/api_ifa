@@ -1109,7 +1109,7 @@ TEXT 7 0 30 190 Fecha: ${formatoFecha}\r\n
                     comprobante.Recibos[i].Recibos.forEach((recibo) => {
                         const { CardCode, CardName, DocTotal, NumAtCard } = recibo;
                         cpclContent += `
-TEXT 7 0 60 ${yPosition + 50} Cod: ${CardCode}                   ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.\r\n
+TEXT 7 0 60 ${yPosition + 50} Cod: ${CardCode}                 ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.\r\n
 TEXT 7 0 60 ${yPosition + 70} ${CardName}\r\n
 TEXT 7 0 60 ${yPosition + 90} Nros Fact: ${NumAtCard}\r\n
 LINE 60 ${yPosition + 110} 570 ${yPosition + 110} 1\r\n`;
