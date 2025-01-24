@@ -22,7 +22,9 @@ const { response } = require('express');
 
 const facturacionController = async (req, res) => {
     let body = {}
+    const startTime = Date.now();
     try {
+        let endTime = Date.now();
         const { id } = req.body
         const user = req.usuarioAutorizado
         const id_sap = user.ID_SAP
@@ -32,19 +34,21 @@ const facturacionController = async (req, res) => {
         let finalDataEntrega
         // return {id}
         if (!id || id == '') {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'error: debe haber un ID valido', '', "facturacion/facturar", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'error: debe haber un ID valido', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: 'debe haber un ID valido' })
         }
         const solicitud = await solicitarId(id);
         console.log('1 solicitud')
 
         if (solicitud.message) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${solicitud.message || 'Error en solicitarId'}`, ``, "facturacion/facturar", process.env.PRD)
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${solicitud.message || 'Error en solicitarId'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: `${solicitud.message || 'Error en solicitarId'}` })
         }
 
         if (solicitud.result.length > 1) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Existe más de una entrega`, `${solicitud.query || ''}`, "facturacion/facturar", process.env.PRD)
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Existe más de una entrega`, `${solicitud.query || ''}. [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
 
             return res.status(400).json({ mensaje: 'Existe más de una entrega' })
         }
@@ -55,7 +59,8 @@ const facturacionController = async (req, res) => {
             console.log('1 solicitud tiene mas de uno')
             // console.log({ solicitud, deliveryData })
             if (deliveryBody.message) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${deliveryBody.message || 'Error en obtenerEntregaDetalle'}`, ``, "facturacion/facturar", process.env.PRD)
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${deliveryBody.message || 'Error en obtenerEntregaDetalle'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `${deliveryBody.message || ''}` })
             }
         }
@@ -68,17 +73,20 @@ const facturacionController = async (req, res) => {
             console.log({ facturacion })
             // return res.json({data})
             if (facturacion.lang) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar: ${facturacion.value || ''}`, ``, "facturacion/facturar", process.env.PRD)
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar: ${facturacion.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `Hubo un error al facturar: ${facturacion.value || ''}` })
             }
             if (!facturacion.data) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar`, ``, "facturacion/facturar", process.env.PRD)
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `Hubo un error al facturar`, facturacion })
             }
             const data = facturacion.data
             const { DocumentLines, ...restData } = data
             if (!DocumentLines) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: No existen los DocumentLines en la facturacion por ID', ``, "facturacion/facturar", process.env.PRD)
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: No existen los DocumentLines en la facturacion por ID', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'No existen los DocumentLines en la facturacion por ID ' })
             }
 
@@ -91,7 +99,8 @@ const facturacionController = async (req, res) => {
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
                 console.log({ batch: batchData })
                 if (batchData.message) {
-                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, ``, "facturacion/facturar", process.env.PRD)
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                     return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
                 }
                 if (batchData && batchData.length !== 0) {
@@ -177,10 +186,10 @@ const facturacionController = async (req, res) => {
 
                 // Generar el nombre del archivo con el timestamp
                 const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
-                // fs.writeFileSync(fileNameJson, JSON.stringify(finalDataEntrega, null, 2), 'utf8');
+                fs.writeFileSync(fileNameJson, JSON.stringify(finalDataEntrega, null, 2), 'utf8');
                 console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
-
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno en la entrega de sap en postEntrega: ${deliveryBody.value || ''}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno en la entrega de sap en postEntrega: ${deliveryBody.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error interno en la entrega de sap. ${deliveryBody.value || ''}`, respuestaSapEntrega: deliveryBody, finalDataEntrega })
             }
             console.log('3 post entrega')
@@ -198,7 +207,8 @@ const facturacionController = async (req, res) => {
         } else {
             const delivery = deliveryBody.deliveryN44umber
             if (!delivery) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error del sap, no se pudo crear la entrega, no se encontro el deliveryNumber en la respuesta', '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error del sap, no se pudo crear la entrega, no se encontro el deliveryNumber en la respuesta', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'error del sap, no se pudo crear la entrega, falta delivery linea 164 en el controlador de la factura' })
             }
             deliveryData = delivery
@@ -215,7 +225,8 @@ const facturacionController = async (req, res) => {
         console.log({ deliveryData })
 
         if (responseData.lang) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno de SAP. ${responseData.value || ''}`, '', "facturacion/facturar", process.env.PRD)
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno de SAP. ${responseData.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: `Error interno de sap. ${responseData.value || ''}` })
         }
         const detalle = [];
@@ -260,7 +271,8 @@ const facturacionController = async (req, res) => {
         // return res.json({bodyFinalFactura})
         const responseGenesis = await spObtenerCUF(deliveryData)
         if (responseGenesis.message) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}`, '', "facturacion/facturar", process.env.PRD)
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
         }
 
@@ -285,15 +297,16 @@ const facturacionController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar patchEntrega: ${responsePatchEntrega.errorMessage.value || 'linea 280'}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, '', "facturacion/facturar", process.env.PRD)
-
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar patchEntrega: ${responsePatchEntrega.errorMessage.value || 'linea 280'}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `Error al procesar la solicitud: patchEntrega ${responsePatchEntrega.errorMessage.value}` })
             }
             //TODO ------------------------------------------------------------ ENTREGA DETALLER TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
             console.log({ responseHana })
             if (responseHana.message) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al entregaDetallerFactura: ${responseHana.message || "linea 292"}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al entregaDetallerFactura: ${responseHana.message || "linea 292"}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
             }
             const DocumentLinesHana = [];
@@ -336,7 +349,8 @@ const facturacionController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.value) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el envio del invoice: ${invoiceResponse.value || ''}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el envio del invoice: ${invoiceResponse.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: ` error del sap ${invoiceResponse.value || ''}` })
             }
             const response = {
@@ -347,12 +361,13 @@ const facturacionController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", '', "facturacion/facturar", process.env.PRD)
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
 
             return res.json({ ...response, cuf })
 
         } else {
+            endTime = Date.now()
             let dataToProsin = {}
             const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
             if (direccion == null || direccion == undefined) {
@@ -366,7 +381,8 @@ const facturacionController = async (req, res) => {
 
             if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion != 1 && dataToProsin.tipo_identificacion != 5)) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${dataToProsin.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${dataToProsin.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataToProsin, bodyFinalFactura })
             }
 
@@ -376,11 +392,13 @@ const facturacionController = async (req, res) => {
             const { data: dataProsin } = responseProsin
             console.log({ dataProsin })
             if (dataProsin && dataProsin.estado != 200) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
             }
             if (dataProsin.mensaje != null) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
             }
             const fecha = dataProsin.fecha
@@ -396,7 +414,8 @@ const facturacionController = async (req, res) => {
             const year = yearFomater[0]
             console.log({ day, month, year })
             if (year.length > 4) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el formateo de la fecha: linea 360`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el formateo de la fecha: linea 360`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'error al formateo de la fecha' })
             }
             const fechaFormater = year + month + day
@@ -410,14 +429,16 @@ const facturacionController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || "No definido"}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || 'No definido'} ,NumAtCard: ${nroFactura || 'No definido'}, delivery: ${deliveryData || 'No definido'}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || "No definido"}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || 'No definido'} ,NumAtCard: ${nroFactura || 'No definido'}, delivery: ${deliveryData || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}` })
             }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
             console.log({ responseHana })
             if (responseHana.message) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf || ''}, fechaFormater: ${fechaFormater || ''}, nroFactura: ${nroFactura || ''}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf || ''}, fechaFormater: ${fechaFormater || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}` })
             }
             const DocumentLinesHana = [];
@@ -461,7 +482,8 @@ const facturacionController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.value) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.value || ""}`, '', "facturacion/facturar", process.env.PRD)
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.value || ''}` })
             }
             const response = {
@@ -472,8 +494,8 @@ const facturacionController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", '', "facturacion/facturar", process.env.PRD)
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             return res.json({ ...response, cuf })
 
         }
@@ -482,7 +504,8 @@ const facturacionController = async (req, res) => {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch facturacion facturar. ${error.message || ''}`, "facturacion/facturar", process.env.PRD)
+        const endTime = Date.now()
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch facturacion facturar. ${error.message || ''}, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
         return res.status(error.statusCode ?? 500).json({
             mensaje: `Error en el controlador Catch. ${error?.message || 'No definido'}`,
             sapMessage: `${error?.message || 'No definido'}`,
@@ -822,6 +845,7 @@ const infoFacturaController = async (req, res) => {
 }
 
 const cancelToProsinController = async (req, res) => {
+    const startTime = Date.now();
     try {
         const {
             sucursal,
@@ -835,6 +859,7 @@ const cancelToProsinController = async (req, res) => {
             docEntry
         } = req.body
         let responseProsin = {}
+        let endTime = Date.now();
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
         if (!cuf || cuf == '') {
@@ -862,32 +887,45 @@ const cancelToProsinController = async (req, res) => {
                 mediaPagina,
             })
 
-
             if (responseProsin.data.mensaje) {
                 const mess = responseProsin.data.mensaje.split('§')
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
                 return res.status(400).json({ mensaje: `${mess[1] || 'Error en anulacionFacturacion'}` })
             }
         }
 
         if (!docEntry) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Debe venir el doc entry CUF(${cuf})`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Debe venir el doc entry CUF(${cuf})`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Debe venir el doc entry` })
         }
         const reponseInvoice = await cancelInvoice(docEntry)
         if (reponseInvoice.value) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, 'https://srvhana:50000/b1s/v1/Invoices(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
+            const outputDir = path.join(__dirname, 'outputsAnulacion');
+            if (!fs.existsSync(outputDir)) {
+                fs.mkdirSync(outputDir);
+            }
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+            const fileNameJson = path.join(outputDir, `reponseInvoiceAnulacion_${timestamp}.json`);
+            fs.writeFileSync(fileNameJson, JSON.stringify(docEntry, null, 2), 'utf8');
+            console.log(`Objeto reponseInvoice guardado en ${fileNameJson}`);
 
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, `https://srvhana:50000/b1s/v1/Invoices(id)/Cancel, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en cancel invoice: ${reponseInvoice.value || ''}` })
         }
 
         const responseEntregas = await obtenerEntregasPorFactura(docEntry)
         if (responseEntregas.length == 0) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `No hay entregas de la factura`, 'CALL ifa_lapp_ven_obtener_entregas_por_factura(id)', "facturacion/cancel-to-prosin", process.env.PRD)
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `No hay entregas de la factura`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id), [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `No hay entregas de la factura` })
         }
         if (responseEntregas.message) {
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, 'CALL ifa_lapp_ven_obtener_entregas_por_factura(id)', "facturacion/cancel-to-prosin", process.env.PRD)
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id) [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}` })
         }
 
@@ -898,7 +936,8 @@ const cancelToProsinController = async (req, res) => {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             console.log({ responseDeliveryNotes })
             if (responseDeliveryNotes.status == 400) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}`, `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
                 console.log({ responseDeliveryNotes })
                 return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}` })
             }
@@ -921,8 +960,9 @@ const cancelToProsinController = async (req, res) => {
             listCancelOrders.push(responseCancelOrder)
         }
         console.log(JSON.stringify(listResponseDelivery, null, 2))
-        
-        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", "Anulado con exito", '', "facturacion/cancel-to-prosin", process.env.PRD)
+        // cancel order
+        endTime = Date.now();
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", "Anulado con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
 
         return res.json({
             responseProsin: { ...responseProsin, cuf },
@@ -940,7 +980,8 @@ const cancelToProsinController = async (req, res) => {
         console.log({ usuario })
         let mensaje = `Error en el controlador CancelToProsin: ${error.message || ''}`
         console.log({ statuscode: error.statusCode })
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje, 'Catch de CancelToProsin', "facturacion/cancel-to-prosin", process.env.PRD)
+        const endTime = Date.now();
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje + `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, 'Catch de CancelToProsin', "facturacion/cancel-to-prosin", process.env.PRD)
 
         return res.status(error.statusCode ?? 500).json({ mensaje })
     }
