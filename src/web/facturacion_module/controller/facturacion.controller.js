@@ -14,8 +14,8 @@ const { entregaDetallerFactura } = require("../../inventarios/controller/hana.co
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
-    facturasAnuladas } = require("./hana.controller")
-const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega } = require("./sld.controller");
+    facturasAnuladas, pedidosPorEntrega } = require("./hana.controller")
+const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
@@ -931,6 +931,8 @@ const cancelToProsinController = async (req, res) => {
         }
 
         let listResponseDelivery = []
+        let listCancelOrders=[]
+        let responsePedidosPorEntrega=[]
         for (const iterator of responseEntregas) {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             console.log({ responseDeliveryNotes })
@@ -941,9 +943,23 @@ const cancelToProsinController = async (req, res) => {
                 return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}` })
             }
 
-            listResponseDelivery.push(responseDeliveryNotes)
-        }
+            const auxResponsePedido = await pedidosPorEntrega(iterator.BaseEntry)
+            console.log({auxResponsePedido})
+            responsePedidosPorEntrega.push(auxResponsePedido)
+            let responseCancelOrder =[]
+            for(const pedido of auxResponsePedido){
+                const auxResponseCancelOrder = await cancelOrder(pedido.BaseEntry)
+                if (auxResponseCancelOrder.status == 400) {
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelOrder: ${auxResponseCancelOrder.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
+                    console.log({ auxResponseCancelOrder })
+                    return res.status(400).json({ mensaje: `Error en cancelOrder: ${auxResponseCancelOrder.errorMessage.value || ''}` })
+                }
+                responseCancelOrder.push(auxResponseCancelOrder)
+            }
 
+            listResponseDelivery.push(responseDeliveryNotes)
+            listCancelOrders.push(responseCancelOrder)
+        }
         console.log(JSON.stringify(listResponseDelivery, null, 2))
         endTime = Date.now();
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", "Anulado con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
@@ -953,6 +969,8 @@ const cancelToProsinController = async (req, res) => {
             reponseInvoice,
             responseEntregas,
             listResponseDelivery,
+            responsePedidosPorEntrega,
+            listCancelOrders
         })
 
     } catch (error) {
