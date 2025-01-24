@@ -249,7 +249,7 @@ const pedidosPorEntrega = async (DeliveryNum) => {
         return result
 
     } catch (error) {
-        console.error('Error en facturasAnuladas:', error.message);
+        console.error('Error en pedidosPorEntrega:', error.message);
         return { message: `Error al procesar la solicitud: pedidosPorEntrega. ${error.message || ''}` }
     }
 }

@@ -506,8 +506,8 @@ const clientesPorVendedor= async (id_vendedor) => {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `CALL ${process.env.PRD}.ifa_lapp_clientes_por_vendedor(${id_vendedor})`;
-        const query = `CALL LAB_IFA_PRD.ifa_lapp_clientes_por_vendedor(${id_vendedor})`;
+        const query = `CALL ${process.env.PRD}.ifa_lapp_clientes_por_vendedor(${id_vendedor})`;
+        // const query = `CALL LAB_IFA_PRD.ifa_lapp_clientes_por_vendedor(${id_vendedor})`;
         console.log({ query })
         const result = await executeQuery(query)
         console.log({result})

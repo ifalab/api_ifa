@@ -1,5 +1,6 @@
 const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos, 
-    getListaPreciosOficiales, setPrecioItem, getSucursales, getAreasPorSucursal, getZonasPorArea } = require("./hana.controller")
+    getListaPreciosOficiales, setPrecioOficial, getSucursales, getAreasPorSucursal, 
+    getZonasPorArea, getListaPreciosCadenas, setPrecioCadena, getZonasPorSucursal } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -140,7 +141,7 @@ const getListaPreciosOficialesController = async (req, res) => {
     }
 }
 
-const setPrecioItemController = async (req, res) => {
+const setPrecioOficialController = async (req, res) => {
     try {
         const body = req.body
         console.log({body})
@@ -148,10 +149,10 @@ const setPrecioItemController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         let lista=[];
         for(const line of body.items){
-            const response = await setPrecioItem(line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
+            const response = await setPrecioOficial(line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
             if(response.status!=200){
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error: ${response.message || 'setPrecioItem()'} `, ``, "datos-maestros/set-precio-item", process.env.PRD)
-                return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioItem'}`})
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error: ${response.message || 'setPrecioOficial()'} `, `call ifa_dm_agregar_precio_oficial()`, "datos-maestros/set-precio-item", process.env.PRD)
+                return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioOficial'}`})
             }
             lista.push(response.data)
         }
@@ -160,8 +161,8 @@ const setPrecioItemController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error en el controlador setPrecioItemController: ${error.message || ''} `, `catch del controller`, "datos-maestros/set-precio-item", process.env.PRD)
-        return res.status(500).json({ mensaje: `Error en el controlador setPrecioItemController: ${error.message || ''}` })
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error en el controlador setPrecioOficialController: ${error.message || ''} `, `catch del controller`, "datos-maestros/set-precio-item", process.env.PRD)
+        return res.status(500).json({ mensaje: `Error en el controlador setPrecioOficialController: ${error.message || ''}` })
     }
 }
 
@@ -217,9 +218,11 @@ const getZonasPorAreaController = async (req, res) => {
 
 const getListaPreciosCadenasController = async (req, res) => {
     try {
-        const lista = await getListaPreciosOficiales()
+        const listCode = req.query.listCode
+        console.log(listCode)
+        const lista = await getListaPreciosCadenas()
         if(lista.status!=200){
-            return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosOficiales'}`})
+            return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosCadenas'}`})
         }
         lista.data.forEach(element => {
             element.CreateDate = element.CreateDate.split(' ')[0]
@@ -227,7 +230,46 @@ const getListaPreciosCadenasController = async (req, res) => {
         return res.json({precios: lista.data})
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosOficialesController: ${error.message || ''}` })
+        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosCadenasController: ${error.message || ''}` })
+    }
+}
+
+const setPrecioCadenaController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({body})
+        // return res.json({body})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        let lista=[];
+        for(const line of body.items){
+            const response = await setPrecioCadena(line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
+            if(response.status!=200){
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Error: ${response.message || 'setPrecioCadena()'} `, ``, "datos-maestros/set-precio-cadena", process.env.PRD)
+                return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioCadena'}`})
+            }
+            lista.push(response.data)
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Precios oficiales grabados con exito`, ``, "datos-maestros/set-precio-cadena", process.env.PRD)
+        return res.json(lista)
+    } catch (error) {
+        console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Error en el controlador setPrecioCadenaController: ${error.message || ''} `, `catch del controller`, "datos-maestros/set-precio-cadena", process.env.PRD)
+        return res.status(500).json({ mensaje: `Error en el controlador setPrecioCadenaController: ${error.message || ''}` })
+    }
+}
+
+const getZonasPorSucursalController = async (req, res) => {
+    try {
+        const areaCode = req.query.code
+        const zonas = await getZonasPorSucursal(areaCode)
+        if(zonas.status!=200){
+            return res.status(400).json({mensaje: `${zonas.message || 'Error en getZonasPorSucursal'}`})
+        }
+        return res.json({zonas:zonas.data})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getZonasPorSucursalController: ${error.message || ''}` })
     }
 }
 
@@ -237,9 +279,11 @@ module.exports = {
     dmUpdateClienteController,
     dmTipoDocumentosController,
     getListaPreciosOficialesController,
-    setPrecioItemController,
+    setPrecioOficialController,
     getSucursalesController,
     getAreasPorSucursalController,
     getZonasPorAreaController,
-    getListaPreciosCadenasController
+    getListaPreciosCadenasController,
+    setPrecioCadenaController,
+    getZonasPorSucursalController
 }
