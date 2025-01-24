@@ -204,6 +204,30 @@ const cancelDeliveryNotes = async (id) => {
     }
 }
 
+const cancelOrder = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/Orders(${id})/Cancel`
+        const sapResponse = await axios.post(url, {}, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        console.log(sapResponse)
+        return { data: sapResponse.data, status: 200 }
+    } catch (error) {
+        console.log("Error sld controller cancelOrder", { error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        return { errorMessage, status: 400, }
+    }
+}
+
 module.exports = {
     postEntrega,
     postInvoice,
@@ -211,4 +235,5 @@ module.exports = {
     facturacionByIdSld,
     cancelInvoice,
     cancelDeliveryNotes,
+    cancelOrder
 }

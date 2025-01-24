@@ -243,7 +243,7 @@ const pedidosPorEntrega = async (DeliveryNum) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_por_entregas(DeliveryNum)(${DeliveryNum})`;
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_por_entregas(${DeliveryNum})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result

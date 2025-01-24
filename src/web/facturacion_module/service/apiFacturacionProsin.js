@@ -14,14 +14,14 @@ const apiFacturacionProsin = {
             console.log({ error })
             if (error.response) {
                 // Error específico de la API
-                return {
+                throw {
                     statusCode: error.response.status,
                     message: error.response.data + '. _currentUrl: https://lab2.laboratoriosifa.com:96/api/sfl/FacturaCompraVenta' || 'Error en la solicitud facturacionProsin POST',
                 };
             }
 
             // Otros errores (como errores de red)
-            return {
+            throw {
                 statusCode: 500,
                 message: error.message + '. _currentUrl: https://lab2.laboratoriosifa.com:96/api/sfl/FacturaCompraVenta' || 'Error desconocido en la solicitud facturacionProsin POST',
             };
