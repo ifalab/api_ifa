@@ -386,7 +386,7 @@ const facturacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataToProsin, bodyFinalFactura })
             }
 
-            const responseProsin = await facturacionProsin(dataToProsin)
+            const responseProsin = await facturacionProsin(dataToProsin,user)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
@@ -856,7 +856,8 @@ const cancelToProsinController = async (req, res) => {
             tipoDocumento,
             usuario,
             mediaPagina,
-            docEntry
+            docEntry,
+            anulacionOrden,
         } = req.body
         let responseProsin = {}
         let endTime = Date.now();
@@ -944,7 +945,6 @@ const cancelToProsinController = async (req, res) => {
         }
 
         console.log(JSON.stringify(listResponseDelivery, null, 2))
-        // cancel order
         endTime = Date.now();
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", "Anulado con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
 
@@ -1165,7 +1165,7 @@ const facturacionEntregaController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${body.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${body.tipo_identificacion || 'No definido'} `, bodyFinalFactura })
             }
-            const responseProsin = await facturacionProsin(body)
+            const responseProsin = await facturacionProsin(body,user)
             //return res.json({ bodyFinalFactura, responseProsin, deliveryData })
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin

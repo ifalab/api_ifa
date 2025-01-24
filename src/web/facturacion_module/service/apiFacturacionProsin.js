@@ -2,16 +2,22 @@ const httpClientProsin = require('../../service/httpClientProsin');
 
 const apiFacturacionProsin = {
     async facturacionProsin(body) {
+        const startTime = Date.now();
+        let endTime = Date.now();
         try {
 
             const response = await httpClientProsin.post('/api/sfl/FacturaCompraVenta', body);
-            // return response;
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturacion tiempo de respuesta con exito", 'tiempo de espera: '+`[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturacion", process.env.PRD)
+            console.log({response})
             return {
                 statusCode: response.status,
                 data: response.data,
             };
         } catch (error) {
             console.log({ error })
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturacion tiempo de respuesta con error", 'tiempo de espera: '+`[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturacion", process.env.PRD)
             if (error.response) {
                 // Error específico de la API
                 return {
@@ -28,10 +34,14 @@ const apiFacturacionProsin = {
         }
     },
     async anulacionFacturacion(body) {
+        const startTime = Date.now();
+        let endTime = Date.now();
         try {
             console.log({ body })
             const response = await httpClientProsin.post('/api/sfl/AnulacionDocumento', { ...body });
-            // return response;
+            console.log({response})
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anulacion tiempo de respuesta con exito", 'tiempo de espera: '+`[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/anulacion", process.env.PRD)
             return {
                 statusCode: response.status,
                 data: response.data,
@@ -39,6 +49,8 @@ const apiFacturacionProsin = {
         } catch (error) {
             // Maneja los errores y propaga el error al controlador
             console.log({ error })
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anulacion tiempo de respuesta con error", 'tiempo de espera: '+`[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/anulacion", process.env.PRD)
             if (error.response) {
                 // Error específico de la API
                 throw {

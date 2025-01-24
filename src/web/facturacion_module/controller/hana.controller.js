@@ -129,7 +129,7 @@ const facturasParaAnular = async (sucursal) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_factura(${sucursal})`;
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_FACTURAS_PARA_ANULAR_POR_SUCURSAL(${sucursal})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
