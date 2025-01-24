@@ -249,13 +249,30 @@ const findZonasXVendedorController = async (req, res) => {
 const crearOrderController = async (req, res) => {
     const body = req.body
     try {
-
-        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        console.log(JSON.stringify(body, null, 2))
-        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-
-        const ordenResponse = await postOrden(body)
+        const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        // console.log(JSON.stringify(body, null, 2))
+        // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        const docLine = body.DocumentLines
+        let alprazolamContains = false
+        let otherContains = false
+        docLine.map((item) => {
+            if (item.ItemCode == alprazolamCode) {
+                alprazolamContains = true
+            } else {
+                otherContains = true
+            }
+        })
+        // return
+        if (alprazolamContains && otherContains) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
+        }
+        console.log(JSON.stringify({ docLine, alprazolamContains, otherContains }, null, 2))
+        // return
+        const ordenResponse = await postOrden(body)
+        
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         console.log(JSON.stringify(ordenResponse, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
@@ -272,8 +289,8 @@ const crearOrderController = async (req, res) => {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
-        const mensaje = `Error en el controlador crearOrderController: ${error.message || ''}`
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${mensaje || ''}`, '', "pedido/crear-orden", process.env.PRD)
+        const message = `Error en el controlador crearOrderController: ${error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${message || ''}`, '', "pedido/crear-orden", process.env.PRD)
 
         return res.status(500).json({ message })
     }
@@ -579,7 +596,7 @@ const clientesSucursalController = async (req, res) => {
     try {
         const { idSucursales } = req.body;
         let clientes = [];
-        let response=[];
+        let response = [];
         for (const id_suc of idSucursales) {
             const clientessucursal = await clientesPorSucursal(id_suc)
             console.log({ clientessucursal })
