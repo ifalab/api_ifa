@@ -226,8 +226,8 @@ const facturasAnuladas = async (SucCode) => {
             await connectHANA();
         }
         //Cambiar query
-        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
-        // const query = `SELECT * FROM ${process.env.PRD}.IFA_INFO_FACTURACION`;
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_FACTURAS_ANULADAS_POR_SUCURSAL(${SucCode})`;
+
         console.log({ query })
         const result = await executeQuery(query)
         return result

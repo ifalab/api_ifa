@@ -829,12 +829,12 @@ const detalleOfertaController = async (req, res) => {
         const cardCode  = req.query.cardCode?? ''
         const sucCode = req.query.sucCode
         const response = await detalleOferta(sucCode, cardCode)
-        if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en obtenerOfertas' })
+        if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en detalleOferta' })
         const {data}= response
         return res.json(data)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en listaOfertasController ${error.message || ''}` })
+        return res.status(500).json({ mensaje: `Error en detalleOfertaController ${error.message || ''}` })
     }
 }
 
