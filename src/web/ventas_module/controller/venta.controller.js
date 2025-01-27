@@ -818,6 +818,11 @@ const listaOfertasController = async (req, res) => {
         const response = await obtenerOfertas(sucCode, cardCode)
         if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en obtenerOfertas' })
         const {data}= response
+        data.forEach((element)=>{
+            element.DocDate = element.DocDate.split(' ')[0]
+            element.DocTime = element.DocTime.slice(0,2)+':'+element.DocTime.slice(2)
+        })
+
         return res.json(data)
     } catch (error) {
         console.log({ error })
