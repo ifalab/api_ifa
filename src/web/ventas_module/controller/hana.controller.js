@@ -475,6 +475,43 @@ const descripcionArticulo = async (itemCode) => {
     }
 }
 
+const obtenerOfertas = async (sucCode, codCliente) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_ofertas(${sucCode}, '${codCliente}')`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {status: 400,
+            message: `Error en obtenerOfertas: ${error.message || ''}`
+        }
+    }
+}
+
+const detalleOferta = async (sucCode, codCliente) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        //Change query
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_ofertas(${sucCode}, '${codCliente}')`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {status: 400,
+            message: `Error en detalleOferta: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -507,4 +544,6 @@ module.exports = {
     listaAsistenciaDia,
     ofertaPrecioPorItemCode,
     descripcionArticulo,
+    obtenerOfertas,
+    detalleOferta
 }
