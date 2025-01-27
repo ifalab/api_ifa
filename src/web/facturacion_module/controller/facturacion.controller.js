@@ -387,6 +387,12 @@ const facturacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataToProsin, bodyFinalFactura })
             }
 
+            if (dataToProsin.correo == null || dataToProsin.correo == '') {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `error no hay datos en CORREO codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
+            }
+
             const responseProsin = await facturacionProsin(dataToProsin, user)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
@@ -1187,10 +1193,16 @@ const facturacionEntregaController = async (req, res) => {
             } else {
                 body = bodyFinalFactura
             }
+
             if (body.tipo_identificacion == null ||
                 (body.tipo_identificacion != 1 && body.tipo_identificacion != 5)) {
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${body.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${body.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${body.tipo_identificacion || 'No definido'} `, bodyFinalFactura })
+            }
+
+            if (body.correo == null || body.correo == '') {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `error no hay datos en CORREO codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `No hay datos en CORREO del cliente`, bodyFinalFactura })
             }
             const responseProsin = await facturacionProsin(body, user)
             //return res.json({ bodyFinalFactura, responseProsin, deliveryData })
