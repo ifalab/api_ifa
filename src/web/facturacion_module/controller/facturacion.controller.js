@@ -1341,16 +1341,16 @@ const facturasAnuladasController = async (req, res) => {
     try {
         const { SucCodes } = req.body
         if (SucCodes.length == 0) return res.status(400).json({ mensaje: 'el SucCodes es obligatorio y debe tener un item o mas' })
-        let facturados = []
+        let listaFacturas = []
         console.log({ SucCodes })
         for (const sucCode of SucCodes) {
             const facturas = await facturasAnuladas(sucCode)
             if (facturas.message) {
                 return res.status(400).json({ mensaje: `${facturas.message || 'Error en facturasAnuladas()'}. sucCode: ${sucCode || ''}` })
             }
-            facturados = facturados.concat(facturas)
+            listaFacturas = listaFacturas.concat(facturas)
         }
-        return res.json({ facturados })
+        return res.json({ listaFacturas })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador facturasAnuladasController. ${error.message || ''}` })
