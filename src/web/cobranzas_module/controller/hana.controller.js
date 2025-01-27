@@ -588,6 +588,40 @@ const detalleFactura= async (docEntry) => {
         }
     }
 }
+const cobranzaNormalesPorSucursal = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA1A_FILBY_DIMA_NORMALES(${sucCode})`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {status: 400,
+            message: `Error en cobranzaNormalesPorSucursal: ${error.message || ''}`
+        }
+    }
+}
+const cobranzaPorSucursalYTipo = async (sucCode, tipo) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call "LAB_IFA_LAPP".LAPP_COB_COBRANZA_ZONA_POR_SUCURSAL_Y_TIPO(${sucCode}, '${tipo}')`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {status: 400,
+            message: `Error en cobranzaPorSucursalYTipo: ${error.message || ''}`
+        }
+    }
+}
 
 module.exports = {
     cobranzaGeneral,
@@ -625,5 +659,7 @@ module.exports = {
     clientePorVendedorId,
     clientesPorDespachador,
     cobranzaSaldoAlContadoDeudor,
-    detalleFactura
+    detalleFactura,
+    cobranzaNormalesPorSucursal,
+    cobranzaPorSucursalYTipo
 }

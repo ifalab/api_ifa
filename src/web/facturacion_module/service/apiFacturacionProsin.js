@@ -23,7 +23,7 @@ const apiFacturacionProsin = {
                 // Error específico de la API
                 throw {
                     statusCode: error.response.status,
-                    message: error.response.data + '. _currentUrl: https://lab2.laboratoriosifa.com:96/api/sfl/FacturaCompraVenta' || 'Error en la solicitud facturacionProsin POST',
+                    message: error.response.statusText + '. _currentUrl: https://lab2.laboratoriosifa.com:96/api/sfl/FacturaCompraVenta' || 'Error en la solicitud facturacionProsin POST',
                 };
             }
 

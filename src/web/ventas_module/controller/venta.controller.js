@@ -832,9 +832,8 @@ const listaOfertasController = async (req, res) => {
 
 const detalleOfertaController = async (req, res) => {
     try {
-        const cardCode  = req.query.cardCode?? ''
-        const sucCode = req.query.sucCode
-        const response = await detalleOferta(sucCode, cardCode)
+        const id  = req.query.id
+        const response = await detalleOferta(id)
         if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en detalleOferta' })
         const {data}= response
         return res.json(data)

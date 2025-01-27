@@ -4,7 +4,7 @@ const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
-    detalleFactura
+    detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo
 } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -1292,6 +1292,79 @@ const detalleFacturaController = async (req, res) => {
     }
 }
 
+const cobranzaPorSucursalesYTiposController = async (req, res) => {
+    try {
+        const {sucCodes, tipos} = req.body
+        console.log({ sucCodes })
+        let listResponse=[];
+        let totalCobranza = 0
+        for(const sucCode of sucCodes){
+            const porTipo=[]
+            for(const tipo of tipos){
+                const cobranza = await cobranzaPorSucursalYTipo(sucCode, tipo)
+                console.log({ cobranza })
+                if(cobranza.status == 400){
+                    return res.status(400).json(`${cobranza.message || 'Error en cobranzaPorSucursalYTipo'}`)
+                }
+                const cobranzaName=[]
+                cobranza.data.forEach((dta)=> {
+                    cobranzaName.push({
+                        Sucursal:dta.SucName,
+                        Zonas:dta.ZoneName,
+                        Tipo: dta.GroupName,
+                        Cobranzas: dta.Collection
+                    })
+                    totalCobranza += Number(dta.Collection)
+                })
+                porTipo.push(...cobranzaName)
+                console.log({porTipo})
+            }
+            listResponse.push(porTipo)
+        }
+        console.log({listResponse})
+        return res.json({ listResponse, totalCobranza})
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `Error en el controlador cobranzaPorSucursalesYTiposController: ${error.message || ''}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const cobranzaPorSucursalYTiposController = async (req, res) => {
+    try {
+        const {sucCode, tipos} = req.body
+        let listResponse=[];
+        let totalCobranza = 0
+        for(const tipo of tipos){
+            const cobranza = await cobranzaPorSucursalYTipo(sucCode, tipo)
+            console.log({ cobranza })
+            if(cobranza.status == 400){
+                return res.status(400).json(`${cobranza.message || 'Error en cobranzaPorSucursalYTipo'}`)
+            }
+            const cobranzaName=[]
+            cobranza.data.forEach((dta)=> {
+                cobranzaName.push({
+                    Sucursal:dta.SucName,
+                    Zonas:dta.ZoneName,
+                    Tipo: dta.GroupName,
+                    Cobranzas: dta.Collection
+                })
+                totalCobranza += Number(dta.Collection)
+            })
+            listResponse.push(...cobranzaName)
+        }
+        console.log({listResponse})
+        return res.json({ listResponse, totalCobranza})
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `Error en el controlador cobranzaPorSucursalYTiposController: ${error.message || ''}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
 
 module.exports = {
     cobranzaGeneralController,
@@ -1330,5 +1403,7 @@ module.exports = {
     cobranzaClientePorVendedorIDController,
     clientesPorDespachadorController,
     cobranzaFacturaPorClienteDespachadorController,
-    detalleFacturaController
+    detalleFacturaController,
+    cobranzaPorSucursalesYTiposController,
+    cobranzaPorSucursalYTiposController
 }
