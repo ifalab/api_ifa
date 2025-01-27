@@ -30,7 +30,8 @@ const {
     ofertaPrecioPorItemCode,
     descripcionArticulo,
     obtenerOfertas,
-    detalleOferta
+    detalleOferta,
+    unidadMedida
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -734,19 +735,19 @@ const getAsistenciasVendedorController = async (req, res) => {
 
 const listaAsistenciaDiaController = async (req, res) => {
     try {
-        const {fecha,id_sap}=req.body
-        const {response} = await listaAsistenciaDia(fecha,id_sap)
+        const { fecha, id_sap } = req.body
+        const { response } = await listaAsistenciaDia(fecha, id_sap)
         const filteredResponse = Object.values(response.reduce((acc, item) => {
             if (!acc[item.MENSAJE]) {
-                acc[item.MENSAJE] = item; 
+                acc[item.MENSAJE] = item;
             }
             return acc;
         }, {}));
 
         return res.json(filteredResponse);
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'error en el controlador'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
 
@@ -782,13 +783,13 @@ const listaAlmacenesController = async (req, res) => {
     }
 }
 
-const ofertaPrecioItemCodeController = async(req,res)=>{
+const ofertaPrecioItemCodeController = async (req, res) => {
     try {
         const nroLista = req.query.nroLista
         const itemCode = req.query.itemCode
-        const response = await ofertaPrecioPorItemCode(nroLista,itemCode)
-        if(response.length==0){
-            return res.status(400).json({mensaje:'no hay el articulo'})
+        const response = await ofertaPrecioPorItemCode(nroLista, itemCode)
+        if (response.length == 0) {
+            return res.status(400).json({ mensaje: 'no hay el articulo' })
         }
         const precio = response[0]
         return res.json(precio)
@@ -800,7 +801,7 @@ const ofertaPrecioItemCodeController = async(req,res)=>{
 
 const descripcionArticuloController = async (req, res) => {
     try {
-        const itemCode  = req.query.itemCode
+        const itemCode = req.query.itemCode
         const response = await descripcionArticulo(itemCode)
         if (response.length == 0) return res.status(404).json({ mensaje: 'El articulo no fue encontrado' })
         return res.json({ ItemName: response[0].ItemName })
@@ -838,6 +839,19 @@ const detalleOfertaController = async (req, res) => {
     }
 }
 
+const unidadMedidaController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const response = await unidadMedida(itemCode)
+        console.log({ response })
+        if (response.length == 0) return res.status(404).json({ mensaje: 'La unidad de medida no fue encontrado' })
+        return res.json({ SalUnitMsr: response[0].SalUnitMsr })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -870,5 +884,6 @@ module.exports = {
     ofertaPrecioItemCodeController,
     descripcionArticuloController,
     listaOfertasController,
-    detalleOfertaController
+    detalleOfertaController,
+    unidadMedidaController,
 };
