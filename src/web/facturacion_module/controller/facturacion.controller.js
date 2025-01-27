@@ -13,7 +13,8 @@ const { entregaDetallerFactura } = require("../../inventarios/controller/hana.co
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
-    facturasAnuladas, pedidosPorEntrega } = require("./hana.controller")
+    facturasAnuladas, pedidosPorEntrega,
+    entregasSinFacturas } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -386,7 +387,7 @@ const facturacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataToProsin, bodyFinalFactura })
             }
 
-            const responseProsin = await facturacionProsin(dataToProsin,user)
+            const responseProsin = await facturacionProsin(dataToProsin, user)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
@@ -931,8 +932,8 @@ const cancelToProsinController = async (req, res) => {
         }
 
         let listResponseDelivery = []
-        let listCancelOrders=[]
-        let responsePedidosPorEntrega=[]
+        let listCancelOrders = []
+        let responsePedidosPorEntrega = []
         for (const iterator of responseEntregas) {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             // console.log({ responseDeliveryNotes })
@@ -943,13 +944,13 @@ const cancelToProsinController = async (req, res) => {
                 return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}` })
             }
             console.log('Inicio de anulacion de ordenes---------------------------------------------------------------')
-            if(anulacionOrden){
+            if (anulacionOrden) {
                 console.log('se esta ejecutando anulacion de ordenes')
                 const auxResponsePedido = await pedidosPorEntrega(iterator.BaseEntry)
                 // console.log({auxResponsePedido})
                 responsePedidosPorEntrega.push(auxResponsePedido)
-                let responseCancelOrder =[]
-                for(const pedido of auxResponsePedido){
+                let responseCancelOrder = []
+                for (const pedido of auxResponsePedido) {
                     const auxResponseCancelOrder = await cancelOrder(pedido.BaseEntry)
                     console.log('se esta ejecutando cancelOrder')
                     if (auxResponseCancelOrder.status == 400) {
@@ -1191,7 +1192,7 @@ const facturacionEntregaController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${body.tipo_identificacion || 'No definido'} codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${body.tipo_identificacion || 'No definido'} `, bodyFinalFactura })
             }
-            const responseProsin = await facturacionProsin(body,user)
+            const responseProsin = await facturacionProsin(body, user)
             //return res.json({ bodyFinalFactura, responseProsin, deliveryData })
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
@@ -1344,6 +1345,21 @@ const facturasAnuladasController = async (req, res) => {
     }
 }
 
+const entregasSinFacturasController = async (req, res) => {
+    try {
+        const { listSucCode } = req.body
+        let listEntregas = []
+        for (const element of listSucCode) {
+            const response = await entregasSinFacturas(element)
+            listEntregas.push(...response)
+        }
+        return res.json(listEntregas)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -1360,5 +1376,6 @@ module.exports = {
     facturacionStatusListController,
     obtenerEntregaDetalleController,
     facturasPedidoCadenasController,
-    facturasAnuladasController
+    facturasAnuladasController,
+    entregasSinFacturasController
 }

@@ -254,6 +254,22 @@ const pedidosPorEntrega = async (DeliveryNum) => {
     }
 }
 
+const entregasSinFacturas = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGAS_SIN_FACTURA(${sucCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en entregasSinFacturas:', error.message);
+        return { message: `Error al procesar la solicitud: entregasSinFacturas. ${error.message || ''}` }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -267,5 +283,6 @@ module.exports = {
     obtenerEntregas,
     facturasPedidoCadenas,
     facturasAnuladas,
-    pedidosPorEntrega
+    pedidosPorEntrega,
+    entregasSinFacturas
 }

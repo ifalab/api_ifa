@@ -29,7 +29,8 @@ const {
     listaAlmacenesController,
     listaAsistenciaDiaController,
     ofertaPrecioItemCodeController,
-    descripcionArticuloController
+    descripcionArticuloController,
+    unidadMedidaController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -70,5 +71,6 @@ router.post('/usuario', [validarToken, validarCampos], ventasUsuarioController)
 router.post('/lista-almacenes', [validarToken, validarCampos], listaAlmacenesController)
 router.get('/oferta-precio-itemcode', [validarToken, validarCampos], ofertaPrecioItemCodeController)
 router.get('/oferta-descripcion-articulo', [validarToken, validarCampos],descripcionArticuloController)
+router.get('/oferta-unidad-medida', [validarToken, validarCampos],unidadMedidaController)
 
 module.exports = router

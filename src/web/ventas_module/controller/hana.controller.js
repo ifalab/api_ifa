@@ -336,16 +336,16 @@ const ventasPorZonasVendedorMesAnt = async (username, line, groupBy) => {
     }
 }
 
-const marcarAsistencia = async (id_vendedor_sap, fecha, hora, mensaje,lat, lon) => {
+const marcarAsistencia = async (id_vendedor_sap, fecha, hora, mensaje, lat, lon) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         const query = `call LAB_IFA_LAPP.LAPP_MARCAR_ASISTENCIA(${id_vendedor_sap},'${fecha}','${hora}', '${mensaje}','${lat}','${lon}')`;
-        console.log({query})
+        console.log({ query })
         const response = await executeQuery(query);
 
-        return {response, query}
+        return { response, query }
     } catch (err) {
         console.log({ err })
         throw new Error(`Error en marcar asistencia: ${err.message}`);
@@ -358,26 +358,26 @@ const getAsistenciasVendedor = async (id_vendedor_sap) => {
             await connectHANA();
         }
         const query = `call LAB_IFA_LAPP.LAPP_LISTA_ASISTENCIA(${id_vendedor_sap})`;
-        console.log({query})
+        console.log({ query })
         const response = await executeQuery(query);
 
-        return {response, query}
+        return { response, query }
     } catch (err) {
         console.log({ err })
         throw new Error(`Error en obtener asistencia: ${err.message}`);
     }
 }
 
-const listaAsistenciaDia = async (fecha,id) => {
+const listaAsistenciaDia = async (fecha, id) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         const query = `call LAB_IFA_LAPP.LAPP_ASISTENCIA_DIA('${fecha}',${id})`;
-        console.log({query})
+        console.log({ query })
         const response = await executeQuery(query);
 
-        return {response, query}
+        return { response, query }
     } catch (err) {
         console.log({ err })
         throw new Error(`Error en obtener listaAsistenciaDia: ${err.message}`);
@@ -390,7 +390,7 @@ const pruebaaaBatch = async (articulo, almacen, cantidad) => {
             await connectHANA();
         }
         const query = `call LAB_IFA_PRD.IFA_VM_SELECTION_BATCH_FEFO_TEST('${articulo}','${almacen}', ${cantidad})`;
-        console.log({query})
+        console.log({ query })
         const response = await executeQuery(query);
 
         return response
@@ -406,7 +406,7 @@ const prueba2Batch = async (articulo, alm) => {
             await connectHANA();
         }
         const query = `select a."ItemCode", b."NumInSale" , a."OnHand", a."WhsCode" from lab_ifa_prd.oitw a left join lab_ifa_prd.oitm b on a."ItemCode" = b."ItemCode" where a."ItemCode" ='${articulo}' and a."WhsCode" = '${alm}'`;
-        console.log({query})
+        console.log({ query })
         const response = await executeQuery(query);
 
         return response
@@ -422,7 +422,7 @@ const prueba3Batch = async (articulo, alm) => {
             await connectHANA();
         }
         const query = `select "ItemCode", "WhsCode", "BatchNum","ExpDate","Quantity" from lab_ifa_prd.oibt where "ItemCode" ='${articulo}' and "WhsCode" = '${alm}' order by "ExpDate" asc`;
-        console.log({query})
+        console.log({ query })
         const response = await executeQuery(query);
 
         return response
@@ -432,13 +432,13 @@ const prueba3Batch = async (articulo, alm) => {
     }
 }
 
-const listaAlmacenes = async(sucCode)=>{
+const listaAlmacenes = async (sucCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_ALMACENES_POR_SUCURSAL(${sucCode})`;
-        console.log({query})
+        console.log({ query })
         const response = await executeQuery(query);
         return response
     } catch (error) {
@@ -447,16 +447,16 @@ const listaAlmacenes = async(sucCode)=>{
     }
 }
 
-const ofertaPrecioPorItemCode = async(nroLista,itemCode)=>{
+const ofertaPrecioPorItemCode = async (nroLista, itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         const query = `call ${process.env.DBSAPPRD}.ifa_lapp_ven_precio_por_articulo_y_lista(${nroLista},'${itemCode}')`
-        console.log({query})
+        console.log({ query })
         return await executeQuery(query)
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         throw new Error('Error en la consulta: ', error)
     }
 }
@@ -467,6 +467,20 @@ const descripcionArticulo = async (itemCode) => {
             await connectHANA()
         }
         const query = `select "ItemName" from ${process.env.PRD}.oitm where "ItemCode" = '${itemCode}'`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en descripcionArticulo')
+    }
+}
+
+const unidadMedida = async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "SalUnitMsr" from ${process.env.PRD}.oitm where "ItemCode"='${itemCode}'`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -507,4 +521,5 @@ module.exports = {
     listaAsistenciaDia,
     ofertaPrecioPorItemCode,
     descripcionArticulo,
+    unidadMedida
 }
