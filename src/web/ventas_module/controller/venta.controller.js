@@ -29,6 +29,8 @@ const {
     listaAsistenciaDia,
     ofertaPrecioPorItemCode,
     descripcionArticulo,
+    obtenerOfertas,
+    detalleOferta,
     unidadMedida
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
@@ -809,6 +811,34 @@ const descripcionArticuloController = async (req, res) => {
     }
 }
 
+const listaOfertasController = async (req, res) => {
+    try {
+        const cardCode  = req.query.cardCode?? ''
+        const sucCode = req.query.sucCode
+        const response = await obtenerOfertas(sucCode, cardCode)
+        if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en obtenerOfertas' })
+        const {data}= response
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en listaOfertasController ${error.message || ''}` })
+    }
+}
+
+const detalleOfertaController = async (req, res) => {
+    try {
+        const cardCode  = req.query.cardCode?? ''
+        const sucCode = req.query.sucCode
+        const response = await detalleOferta(sucCode, cardCode)
+        if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en obtenerOfertas' })
+        const {data}= response
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en listaOfertasController ${error.message || ''}` })
+    }
+}
+
 const unidadMedidaController = async (req, res) => {
     try {
         const itemCode = req.query.itemCode
@@ -853,5 +883,7 @@ module.exports = {
     listaAsistenciaDiaController,
     ofertaPrecioItemCodeController,
     descripcionArticuloController,
+    listaOfertasController,
+    detalleOfertaController,
     unidadMedidaController,
 };
