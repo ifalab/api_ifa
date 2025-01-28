@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, postHabilitacionController, inventarioValoradoController, descripcionArticuloController, fechaVenLoteController, stockDisponibleController, habilitacionDiccionarioController, stockDisponibleIfavetController, facturasClienteLoteItemCodeController,
-    detalleVentasController
+    detalleVentasController, devolucionCompletaController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -17,5 +17,6 @@ router.get('/stock-disponible', [validarToken, validarCampos], stockDisponibleCo
 router.get('/stock-disponible-ifavet', [validarToken, validarCampos], stockDisponibleIfavetController)
 router.get('/facturas-cliente-lote-itemcode', [validarToken, validarCampos], facturasClienteLoteItemCodeController)
 router.get('/detalle-ventas', [validarToken, validarCampos], detalleVentasController)
+router.post('/devolucion-completa', [validarToken, validarCampos], devolucionCompletaController)
 
 module.exports = router

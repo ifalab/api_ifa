@@ -3,6 +3,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet, 
     facturasClienteLoteItemCode, detalleVentas } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
+const {postInvoice}= require("../../facturacion_module/controller/sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -418,6 +419,29 @@ const detalleVentasController = async(req,res)=>{
     try {
         const id = req.query.id
         const response = await detalleVentas(id)
+        console.log({response})
+        let cabecera=[]
+        let detalle=[]
+        response.forEach((value)=>{
+            const {DocEntry, DocNum, DocDate, ...rest} = value
+            if(cabecera.length==0){
+                cabecera.push({DocEntry, DocNum, DocDate})
+            }
+            detalle.push(rest)
+        })
+        const venta = {...cabecera[0], detalle}
+        return res.json(venta)
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:`error en el controlador detalleVentasController. ${error.message ||''}`})
+    }
+}
+
+const devolucionCompletaController = async(req,res)=>{
+    try {
+        const body = req.body
+        const response = await postInvoice(body)
+        console.log({response})
         return res.json(response)
     } catch (error) {
         console.log({error})
@@ -437,5 +461,6 @@ module.exports = {
     habilitacionDiccionarioController,
     stockDisponibleIfavetController,
     facturasClienteLoteItemCodeController,
-    detalleVentasController
+    detalleVentasController,
+    devolucionCompletaController
 }
