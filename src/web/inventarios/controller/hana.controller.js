@@ -78,7 +78,7 @@ const inventarioHabilitacion = async (docentry) => {
             await connectHANA()
         }
         const query = `CALL "${process.env.PRD}".IFA_LAPP_INV_HABILITACION('${docentry}')`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -131,7 +131,7 @@ const fechaVencLote = async (lote) => {
     }
 }
 
-const stockDisponible = async()=>{
+const stockDisponible = async () => {
     try {
         if (!connection) {
             await connectHANA()
@@ -145,7 +145,7 @@ const stockDisponible = async()=>{
     }
 }
 
-const stockDisponibleIfavet = async()=>{
+const stockDisponibleIfavet = async () => {
     try {
         if (!connection) {
             await connectHANA()
@@ -175,22 +175,37 @@ const inventarioHabilitacionDict = async (cod) => {
     }
 }
 
-const entregaDetallerFactura= async (docentry, cuf,nrofactura, fecha) => {
+const entregaDetallerFactura = async (docentry, cuf, nrofactura, fecha) => {
     try {
-        
+
         if (!connection) {
             await connectHANA();
         }
 
         const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE_TOFACTURAR(${docentry},'${cuf}',${nrofactura},'${fecha}')`;
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
 
     } catch (error) {
         console.error('Error en entregaDetallerFactura:', error.message);
-        return { message: 'Error al procesar la solicitud: entregaDetallerFactura',error }
+        return { message: 'Error al procesar la solicitud: entregaDetallerFactura', error }
     }
+}
+
+const facturasClienteLoteItemCode = async (itemcode, cardCode, batchNum) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFA_FAC_FACTURAS_X_CLIENTE_LOTE_ARTICULO('${itemcode}','${cardCode}',${batchNum})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+    }
+
 }
 module.exports = {
     clientesPorDimensionUno,
@@ -202,5 +217,6 @@ module.exports = {
     stockDisponible,
     inventarioHabilitacionDict,
     entregaDetallerFactura,
-    stockDisponibleIfavet
+    stockDisponibleIfavet,
+    facturasClienteLoteItemCode
 }

@@ -1,5 +1,5 @@
 const { json } = require("express")
-const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet } = require("./hana.controller")
+const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet, facturasClienteLoteItemCode } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
@@ -399,6 +399,20 @@ const stockDisponibleIfavetController = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
+
+const facturasClienteLoteItemCodeController = async(req,res)=>{
+    try {
+        const itemCode = req.query.itemCode
+        const cardCode = req.query.cardCode
+        const batchNum = req.query.batchNum
+        const response = await facturasClienteLoteItemCode(itemCode,cardCode,batchNum)
+        return res.json(response)
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'error en el controlador'})
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -409,5 +423,6 @@ module.exports = {
     fechaVenLoteController,
     stockDisponibleController,
     habilitacionDiccionarioController,
-    stockDisponibleIfavetController
+    stockDisponibleIfavetController,
+    facturasClienteLoteItemCodeController
 }

@@ -5,7 +5,7 @@ async function spObtenerCUF(nroDocumento) {
         const pool = await poolGenesisPromise;
         console.log({pool})
         console.log({nroDocumento:+nroDocumento})
-        const result = await pool.request().query(`exec spObtenerCUF ${+nroDocumento}`);
+        const result = await pool.request().query(`exec spObtenerCUF ${nroDocumento}`);
         console.log('Resultados:', result.recordset);
         return result.recordset
     } catch (err) {

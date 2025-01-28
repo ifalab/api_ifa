@@ -1013,7 +1013,7 @@ const resumenCobranzasController = async (req, res) => {
     try {
         const id_vendedor = req.query.id
         const fecha = req.query.fecha
-        // const fecha = '20250113'
+        // const fecha = '20250127'
         const mes = Number(fecha[4] + fecha[5]) - 1
         console.log({ mes })
         const fechaFormated = fecha[6] + fecha[7] + ' de ' + getMounth(mes) + ' de ' + fecha[0] + fecha[1] + fecha[2] + fecha[3]

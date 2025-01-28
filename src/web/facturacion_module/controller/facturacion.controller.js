@@ -593,6 +593,7 @@ const noteEntregaController = async (req, res) => {
             Address2,
             U_Zona,
             U_Comentario,
+            Comments,
             ...restData
         } = response.result[0];
 
@@ -630,8 +631,10 @@ const noteEntregaController = async (req, res) => {
             Address2,
             U_Zona,
             U_Comentario,
+            Comments,
             detailsList,
         };
+        // return res.json({data})
         //! Generar QR Code
         const qrCode = await QRCode.toDataURL(data.BarCode.toString());
 
@@ -898,8 +901,8 @@ const cancelToProsinController = async (req, res) => {
             if (responseProsin.data.mensaje) {
                 const mess = responseProsin.data.mensaje.split('§')
                 endTime = Date.now();
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
-                return res.status(400).json({ mensaje: `${mess[1] || 'Error en anulacionFacturacion'}` })
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || responseProsin.data.mensaje || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+                return res.status(400).json({ mensaje: `${mess[1] || responseProsin.data.mensaje || 'Error de Prosin en anulacionFacturacion'}` })
             }
         }
 
