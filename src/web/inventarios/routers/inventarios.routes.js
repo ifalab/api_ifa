@@ -1,5 +1,7 @@
 const { Router } = require('express')
-const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, postHabilitacionController, inventarioValoradoController, descripcionArticuloController, fechaVenLoteController, stockDisponibleController, habilitacionDiccionarioController, stockDisponibleIfavetController, facturasClienteLoteItemCodeController } = require('../controller/inventario.controller')
+const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, postHabilitacionController, inventarioValoradoController, descripcionArticuloController, fechaVenLoteController, stockDisponibleController, habilitacionDiccionarioController, stockDisponibleIfavetController, facturasClienteLoteItemCodeController,
+    detalleVentasController
+ } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -14,5 +16,6 @@ router.post('/habilitacion-diccionario', [validarToken, validarCampos], habilita
 router.get('/stock-disponible', [validarToken, validarCampos], stockDisponibleController)
 router.get('/stock-disponible-ifavet', [validarToken, validarCampos], stockDisponibleIfavetController)
 router.get('/facturas-cliente-lote-itemcode', [validarToken, validarCampos], facturasClienteLoteItemCodeController)
+router.get('/detalle-ventas', [validarToken, validarCampos], detalleVentasController)
 
 module.exports = router

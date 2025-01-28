@@ -32,7 +32,7 @@ const executeQuery = async (query) => {
         connection.exec(query, (err, result) => {
             if (err) {
                 console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
+                reject(new Error(`error en la consulta ${err.message || ''}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
@@ -205,8 +205,25 @@ const facturasClienteLoteItemCode = async (itemcode, cardCode, batchNum) => {
     } catch (error) {
         console.log({ error })
     }
-
 }
+
+const detalleVentas = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_ven_ventas_detalle where "DocEntry"=${id}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en detalleVentas: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -218,5 +235,6 @@ module.exports = {
     inventarioHabilitacionDict,
     entregaDetallerFactura,
     stockDisponibleIfavet,
-    facturasClienteLoteItemCode
+    facturasClienteLoteItemCode,
+    detalleVentas
 }
