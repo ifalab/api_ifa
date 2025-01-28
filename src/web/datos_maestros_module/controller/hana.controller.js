@@ -262,7 +262,7 @@ const setPrecioCadena = async (itemCode, precio, id_vend_sap, glosa) => {
         if (!connection) {
             await connectHANA();
         }
-        ///Faltaa
+        //Cambiar query
         const query = `call ${process.env.PRD}.ifa_dm_agregar_precio_oficial('${itemCode}',${precio},${id_vend_sap},'${glosa}');`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -278,6 +278,29 @@ const setPrecioCadena = async (itemCode, precio, id_vend_sap, glosa) => {
     }
 }
 
+const actualizarCliente= async(cardCode, columna, str, num)=>{
+    let query=''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `call ${process.env.PRD}.ifa_dm_update_cliente('${cardCode}','${columna}','${str}',${num});`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en actualizarCliente:', error);
+        throw {
+            status: 400,
+            message: `Error en actualizarCliente: ${error.message || ''}`,
+            query
+        }
+    }
+}
 
 module.exports = {
     dmClientes,
@@ -290,5 +313,6 @@ module.exports = {
     getZonasPorArea,
     getListaPreciosCadenas,
     setPrecioCadena,
-    getZonasPorSucursal
+    getZonasPorSucursal,
+    actualizarCliente
 }

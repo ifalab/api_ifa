@@ -622,7 +622,35 @@ const cobranzaPorSucursalYTipo = async (sucCode, tipo) => {
         }
     }
 }
-
+const getVendedores = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getVendedores: ${error.message || ''}`)
+    }
+}
+const getCobradores = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores
+                union all
+                select * from ${process.env.PRD}.ifa_dm_despachadores
+                order by "SlpCode"`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getCobradores: ${error.message || ''}`)
+    }
+}
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -661,5 +689,7 @@ module.exports = {
     cobranzaSaldoAlContadoDeudor,
     detalleFactura,
     cobranzaNormalesPorSucursal,
-    cobranzaPorSucursalYTipo
+    cobranzaPorSucursalYTipo,
+    getVendedores,
+    getCobradores
 }

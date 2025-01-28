@@ -4,7 +4,8 @@ const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
-    detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo
+    detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo, getVendedores,
+    getCobradores
 } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -1137,7 +1138,8 @@ TEXT 7 0 30 210 No hay Cobros de Hoy\r\n
 FORM \r\n
 PRINT\r\n
 `
-        const fileName = `${id_vendedor}_cierre_${fecha}.txt`;
+        const newDate = new Date()
+        const fileName = `${id_vendedor}_cierre_${fecha}_${newDate.getMilliseconds()}.txt`;
         const filePath = path.join(__dirname, 'resumen', fileName);
 
         const dir = path.dirname(filePath);
@@ -1366,6 +1368,23 @@ const cobranzaPorSucursalYTiposController = async (req, res) => {
     }
 }
 
+const getCobradoresController = async (req, res) => {
+    try {
+        const idSap = req.query.idSap
+        console.log({ idSap })
+        let cobradores = await getVendedores(idSap)
+
+        cobradores = cobradores.filter((element)=> element.SlpCode !=-1)
+        return res.json(cobradores)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getCobradoresController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -1405,5 +1424,6 @@ module.exports = {
     cobranzaFacturaPorClienteDespachadorController,
     detalleFacturaController,
     cobranzaPorSucursalesYTiposController,
-    cobranzaPorSucursalYTiposController
+    cobranzaPorSucursalYTiposController,
+    getCobradoresController
 }

@@ -657,8 +657,10 @@ const addAlmacenUsuarioController = async (req, res) => {
         const almacenes = await addAlmacenUsuario(idUser, codAlmacen)
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (almacenes.statusCode != 200) {
-            const mensaje = almacenes.message ? (almacenes.message.length > 255 ? 'Error en addAlmacenUsuario' : almacenes.message) : 'Error en addAlmacenUsuario'
-
+            let mensaje = response.message || 'Error en addAlmacenUsuario'
+            if(response.message.length > 255 ){
+                mensaje=response.message.slice(0,255);
+            }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, `${almacenes.query || ''}`, "auth/add-almacen-user", process.env.PRD)
             return res.status(400).json({ mensaje: `${almacenes.message || mensaje}` })
         }
@@ -683,8 +685,10 @@ const deleteAlmacenUsuarioController = async (req, res) => {
         const almacenes = await deleteAlmacenUsuario(idUser.toString(), codAlmacen)
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (almacenes.statusCode != 200) {
-            const mensaje = almacenes.message ? (almacenes.message.length > 255 ? 'Error en deleteAlmacenUsuario' : almacenes.message) : 'Error en deleteAlmacenUsuario'
-
+            let mensaje = response.message || 'Error en deleteAlmacenUsuario'
+            if(response.message.length > 255 ){
+                mensaje=response.message.slice(0,255);
+            }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, `${almacenes.query || ''}`, "auth/delete-almacen-user", process.env.PRD)
             return res.status(400).json({ mensaje })
         }
@@ -758,8 +762,10 @@ const addRutasDespachadoresController = async (req, res) => {
         const response = await addRutasDespachadores(idVendedor, idRuta)
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (response.statusCode != 200) {
-            const mensaje = response.message ? (response.message.length > 255 ? 'Error en addRutasDespachadores' : response.message) : 'Error en addRutasDespachadores'
-
+            let mensaje = response.message || 'Error en addRutasDespachadores'
+            if(response.message.length > 255 ){
+                mensaje=response.message.slice(0,255);
+            }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador", mensaje, `${response.query || ''}`, "auth/add-ruta-despachador", process.env.PRD)
             return res.status(400).json({ mensaje: `${response.message || mensaje}` })
         }
@@ -783,8 +789,10 @@ const deleteRutasDespachadoresController = async (req, res) => {
         const response = await deleteRutasDespachadores(idVendedor, idRuta)
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (response.statusCode != 200) {
-            const mensaje = response.message ? (response.message.length > 255 ? 'Error en deleteRutasDespachadores' : response.message) : 'Error en deleteRutasDespachadores'
-
+            let mensaje = response.message || 'Error en deleteRutasDespachadores'
+            if(response.message.length > 255 ){
+                mensaje=response.message.slice(0,255);
+            }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador", mensaje, `${response.query || ''}`, "auth/delete-ruta-despachador", process.env.PRD)
             return res.status(400).json({ mensaje: `${response.message || mensaje}` })
         }
