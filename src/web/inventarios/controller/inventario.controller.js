@@ -4,6 +4,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     facturasClienteLoteItemCode, detalleVentas } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
 const {postInvoice}= require("../../facturacion_module/controller/sld.controller")
+const { grabarLog } = require("../../shared/controller/hana.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -440,12 +441,29 @@ const detalleVentasController = async(req,res)=>{
 const devolucionCompletaController = async(req,res)=>{
     try {
         const body = req.body
+        console.log({body})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await postInvoice(body)
-        console.log({response})
-        return res.json(response)
+        if(response.status!=200){
+            console.log({errorMessage: response.errorMessage})
+            let mensaje= response.errorMessage|| 'Mensaje no definido'
+            if(mensaje.value)
+                mensaje = mensaje.value
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Error en postInvoice: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({mensaje: `Error en postInvoice: ${mensaje}`})
+        }
+
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Exito en la devolucion`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+        return res.json({
+            sapResponse: response.sapResponse,
+            idInvoice: response.idInvoice
+        })
     } catch (error) {
         console.log({error})
-        return res.status(500).json({mensaje:`error en el controlador detalleVentasController. ${error.message ||''}`})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `${error.message || 'Error en devolucionCompletaController'}`, `Catch controller devolucionCompletaController`, "inventario/devolucion-completa", process.env.PRD)
+
+        return res.status(500).json({mensaje:`Error en el controlador devolucionCompletaController. ${error.message ||''}`})
     }
 }
 
