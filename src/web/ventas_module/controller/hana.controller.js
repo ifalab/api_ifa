@@ -493,13 +493,12 @@ const obtenerOfertas = async (sucCode, codCliente) => {
     }
 }
 
-const detalleOferta = async (sucCode, codCliente) => {
+const detalleOferta = async (id) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        //Change query
-        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_ofertas(${sucCode}, '${codCliente}')`
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_OFERTA_DETALLE(${id})`
         const result = await executeQuery(query)
         return {
             status: 200,

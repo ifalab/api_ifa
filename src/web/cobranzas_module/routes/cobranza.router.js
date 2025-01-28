@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController, cobranzasPorZonasController, cobranzaHistoricoNacionalController, cobranzaHistoricoNormalesController, cobranzaHistoricoCadenasController, cobranzaHistoricoIfavetController, cobranzaHistoricoInstitucionesController, cobranzaHistoricoMasivosController, cobranzasPorZonasMesAntController, cobranzaClientePorVendedorController, cobranzaFacturaPorClienteController, clientesInstitucionesSaldoDeudorController, saldoDeudorInstitucionesController, realizarCobroController, comprobanteController, comprobantePDFController, resumenCobranzasController, cobrosRealizadosController, clientesPorSucursalController, cobranzaFacturaPorCliDespController, cobranzaClientePorVendedorIDController, clientesPorDespachadorController, cobranzaFacturaPorClienteDespachadorController,
-    detalleFacturaController
+    detalleFacturaController, cobranzaPorSucursalesYTiposController, cobranzaPorSucursalYTiposController
  } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -48,6 +48,8 @@ router.get('/cobros-realizados',[validarToken, validarCampos],cobrosRealizadosCo
 router.post('/clientes-sucursal',[validarToken, validarCampos],clientesPorSucursalController)
 router.get('/clientes-despachador',[validarToken, validarCampos],clientesPorDespachadorController)
 router.get('/detalle-factura',[validarToken, validarCampos],detalleFacturaController)
+router.post('/cob-sucursales-tipos',[validarToken, validarCampos],cobranzaPorSucursalesYTiposController)
+router.post('/cob-sucursal-tipos',[validarToken, validarCampos],cobranzaPorSucursalYTiposController)
 
 
 module.exports = router

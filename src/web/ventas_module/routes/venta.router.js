@@ -74,7 +74,7 @@ router.post('/lista-almacenes', [validarToken, validarCampos], listaAlmacenesCon
 router.get('/oferta-precio-itemcode', [validarToken, validarCampos], ofertaPrecioItemCodeController)
 router.get('/oferta-descripcion-articulo', [validarToken, validarCampos],descripcionArticuloController)
 router.get('/lista-ofertas', [validarToken, validarCampos], listaOfertasController)
-// router.get('/detalle-oferta', [validarToken, validarCampos], detalleOfertaController)
+router.get('/detalle-oferta', [validarToken, validarCampos], detalleOfertaController)
 router.get('/oferta-unidad-medida', [validarToken, validarCampos],unidadMedidaController)
 
 module.exports = router
