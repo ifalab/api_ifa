@@ -1,6 +1,7 @@
 const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos, 
     getListaPreciosOficiales, setPrecioOficial, getSucursales, getAreasPorSucursal, 
-    getZonasPorArea, getListaPreciosCadenas, setPrecioCadena, getZonasPorSucursal } = require("./hana.controller")
+    getZonasPorArea, getListaPreciosCadenas, setPrecioCadena, getZonasPorSucursal,
+    actualizarCliente } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -102,13 +103,14 @@ const dmUpdateClienteController = async (req, res) => {
         // const response = await getBusinessPartners(CardCode)
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (response.status == 400) {
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Cliente", `Error: ${response.errorMessage || 'patchBusinessPartners()'} `, `https://srvhana:50000/b1s/v1/BusinessPartners`, "datos-maestros/actualizar-cliente", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Cliente", `Error: ${response.errorMessage || 'patchBusinessPartners()'} `, `https://srvhana:50000/b1s/v1/BusinessPartners`, "datos-maestros/update-cliente", process.env.PRD)
             return res.status(400).json({ mensaje: `error del SAP en Path Business Partners ${response.errorMessage.value || ''}` })
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Cliente", `Exito en la operacion: ${response.message || ''} `, `https://srvhana:50000/b1s/v1/BusinessPartners`, "datos-maestros/actualizar-cliente", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Cliente", `Exito en la operacion: ${response.message || ''} `, `https://srvhana:50000/b1s/v1/BusinessPartners`, "datos-maestros/update-cliente", process.env.PRD)
         return res.json({ mensaje: `${response.message || 'operacion realizada con exito'}` })
     } catch (error) {
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Cliente", `Error en el controlador dmUpdateClienteController: ${error.message || ''} `, ``, "datos-maestros/actualizar-cliente", process.env.PRD)
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Cliente", `Error en el controlador dmUpdateClienteController: ${error.message || ''} `, ``, "datos-maestros/update-cliente", process.env.PRD)
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador dmUpdateClienteController' })
 
@@ -273,6 +275,37 @@ const getZonasPorSucursalController = async (req, res) => {
     }
 }
 
+const actualizarDatosClienteController = async (req, res) => {
+    try {
+        const {
+            CardCode,
+            U_B_dni_type,
+            SucCode,
+            AreaCode,
+            ZoneCode,
+            CreditLine} = req.body
+        console.log({body: req.body})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+
+        let response = await actualizarCliente(CardCode, `U_B_dni_type`, U_B_dni_type, 0)
+        response = await actualizarCliente(CardCode, `SucCode`, '', SucCode)
+        response = await actualizarCliente(CardCode, `AreaCode`, '', AreaCode)
+        response = await actualizarCliente(CardCode, `ZoneCode`, '', ZoneCode)
+        response = await actualizarCliente(CardCode, `CreditLine`, '', CreditLine)
+        if (response.status == 400) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Datos Cliente", `Error: ${response.errorMessage || 'actualizarCliente()'} `, ``, "datos-maestros/actualizar-cliente", process.env.PRD)
+            return res.status(400).json({ mensaje: `${response.errorMessage.value || 'Error en actualizarCliente'}` })
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Datos Cliente", `Exito en la operacion: ${response.message || ''} `, ``, "datos-maestros/actualizar-cliente", process.env.PRD)
+        return res.json({ mensaje: `${response.message || 'operacion realizada con exito'}` })
+    } catch (error) {
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Datos Cliente", `Error en el controlador actualizarDatosClienteController: ${error.message || ''}`, `${error.query || ''}`, "datos-maestros/actualizar-cliente", process.env.PRD)
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador actualizarDatosClienteController: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -285,5 +318,6 @@ module.exports = {
     getZonasPorAreaController,
     getListaPreciosCadenasController,
     setPrecioCadenaController,
-    getZonasPorSucursalController
+    getZonasPorSucursalController,
+    actualizarDatosClienteController
 }

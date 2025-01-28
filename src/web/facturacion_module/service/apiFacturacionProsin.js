@@ -46,6 +46,7 @@ const apiFacturacionProsin = {
             return {
                 statusCode: response.status,
                 data: response.data,
+                query: 'https://lab2.laboratoriosifa.com:96/api/sfl/AnulacionDocumento'
             };
         } catch (error) {
             // Maneja los errores y propaga el error al controlador
