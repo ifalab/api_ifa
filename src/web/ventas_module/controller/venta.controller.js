@@ -821,6 +821,7 @@ const listaOfertasController = async (req, res) => {
         data.forEach((element)=>{
             element.DocDate = element.DocDate.split(' ')[0]
             element.DocTime = element.DocTime.slice(0,2)+':'+element.DocTime.slice(2)
+            element.Price=parseFloat(element.DocTotal).toFixed(2);
         })
 
         return res.json(data)
@@ -836,6 +837,12 @@ const detalleOfertaController = async (req, res) => {
         const response = await detalleOferta(id)
         if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en detalleOferta' })
         const {data}= response
+        data.forEach((row)=>{
+            row.cantidad= parseFloat(row.Quantity).toFixed(0);
+            row.PriceAfVAT=parseFloat(row.PriceAfVAT).toFixed(2);
+            row.Price=parseFloat(row.Price).toFixed(2);
+            row.precioUnitario=parseFloat(row.precioUnitario).toFixed(2);
+        })
         return res.json(data)
     } catch (error) {
         console.log({ error })
