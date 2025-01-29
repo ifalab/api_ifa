@@ -1,10 +1,11 @@
 const { json } = require("express")
-const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado, 
-    descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet, 
+const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado,
+    descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet,
     facturasClienteLoteItemCode, detalleVentas } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
-const {postInvoice}= require("../../facturacion_module/controller/sld.controller")
+const { postInvoice } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
+const { obtenerEntregaDetalle } = require("../../facturacion_module/controller/hana.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -88,7 +89,7 @@ const postHabilitacionController = async (req, res) => {
         } else {
             return res.status(400).json({ mensaje: 'El usuario es obligatorio' })
         }
-        
+
         let listItem = []
         let index = 0
 
@@ -132,7 +133,7 @@ const postHabilitacionController = async (req, res) => {
                 "ItemCode": `${item.articulo}`,
                 "WarehouseCode": `${warehouseCode}`,
                 "Quantity": `${item.cantidadIngreso}`,
-                "U_DIM_ARTICULO":`${item.articuloDict}`,
+                "U_DIM_ARTICULO": `${item.articuloDict}`,
                 "AccountCode": "6110401",
                 "BatchNumbers": [
                     {
@@ -327,7 +328,7 @@ const stockDisponibleController = async (req, res) => {
                 .toLowerCase()
                 .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
                 .replace(/\.$/, '')
-                
+
         const formattedStock = stock.map(item => {
             const formattedItem = {};
             Object.keys(item).forEach(key => {
@@ -347,14 +348,14 @@ const habilitacionDiccionarioController = async (req, res) => {
     try {
         const cod = req.body.cod
         const codCliente = req.body.codCliente
-        console.log({cod})
+        console.log({ cod })
         const response = await inventarioHabilitacionDict(cod)
         // console.log({response})
-        console.log({response})
-        if(codCliente!="C000487"){
+        console.log({ response })
+        if (codCliente != "C000487") {
             console.log("No es igual")
             const responseFiltrado = response.filter(item => {
-                const {ItemEq} = item
+                const { ItemEq } = item
                 return !ItemEq.includes('Y');
             });
 
@@ -365,9 +366,9 @@ const habilitacionDiccionarioController = async (req, res) => {
             //         responseFiltrado
             //     }
             // }
-            return res.status(200).json({ response:responseFiltrado })
+            return res.status(200).json({ response: responseFiltrado })
         }
-        
+
         return res.status(200).json({ response })
     } catch (error) {
         console.log({ error })
@@ -387,7 +388,7 @@ const stockDisponibleIfavetController = async (req, res) => {
                 .toLowerCase()
                 .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
                 .replace(/\.$/, '')
-                
+
         const formattedStock = stock.map(item => {
             const formattedItem = {};
             Object.keys(item).forEach(key => {
@@ -404,66 +405,72 @@ const stockDisponibleIfavetController = async (req, res) => {
     }
 }
 
-const facturasClienteLoteItemCodeController = async(req,res)=>{
+const facturasClienteLoteItemCodeController = async (req, res) => {
     try {
         const itemCode = req.query.itemCode
         const cardCode = req.query.cardCode
         const batchNum = req.query.batchNum
-        const response = await facturasClienteLoteItemCode(itemCode,cardCode,batchNum)
+        const response = await facturasClienteLoteItemCode(itemCode, cardCode, batchNum)
         return res.json(response)
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'error en el controlador'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
-const detalleVentasController = async(req,res)=>{
+const detalleVentasController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await detalleVentas(id)
-        console.log({response})
-        let cabecera=[]
-        let detalle=[]
-        response.forEach((value)=>{
-            const {DocEntry, DocNum, DocDate, ...rest} = value
-            if(cabecera.length==0){
-                cabecera.push({DocEntry, DocNum, DocDate})
+        console.log({ response })
+        let cabecera = []
+        let detalle = []
+        response.forEach((value) => {
+            const { DocEntry, DocNum, DocDate, ...rest } = value
+            if (cabecera.length == 0) {
+                cabecera.push({ DocEntry, DocNum, DocDate })
             }
             detalle.push(rest)
         })
-        const venta = {...cabecera[0], detalle}
+        const venta = { ...cabecera[0], detalle }
         return res.json(venta)
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:`error en el controlador detalleVentasController. ${error.message ||''}`})
+        console.log({ error })
+        return res.status(500).json({ mensaje: `error en el controlador detalleVentasController. ${error.message || ''}` })
     }
 }
 
-const devolucionCompletaController = async(req,res)=>{
+const devolucionCompletaController = async (req, res) => {
     try {
-        const body = req.body
-        console.log({body})
+        const { DocEntry: docEntry } = req.body
+        // console.log({ body })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const response = await postInvoice(body)
-        if(response.status!=200){
-            console.log({errorMessage: response.errorMessage})
-            let mensaje= response.errorMessage|| 'Mensaje no definido'
-            if(mensaje.value)
-                mensaje = mensaje.value
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Error en postInvoice: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
-            return res.status(400).json({mensaje: `Error en postInvoice: ${mensaje}`})
+        // const docEntry = body.DocEntry
+        if (!docEntry || docEntry <= 0) {
+            return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
         }
+        const entrega = await obtenerEntregaDetalle(docEntry)
+        return res.json({ entrega })
+        // const response = await postInvoice(body)
+        // if(response.status!=200){
+        //     console.log({errorMessage: response.errorMessage})
+        //     let mensaje= response.errorMessage|| 'Mensaje no definido'
+        //     if(mensaje.value)
+        //         mensaje = mensaje.value
+        //     grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Error en postInvoice: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+        //     return res.status(400).json({mensaje: `Error en postInvoice: ${mensaje}`})
+        // }
 
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Exito en la devolucion`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
-        return res.json({
-            sapResponse: response.sapResponse,
-            idInvoice: response.idInvoice
-        })
+        // grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Exito en la devolucion`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+        // return res.json({
+        //     sapResponse: response.sapResponse,
+        //     idInvoice: response.idInvoice
+        // })
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `${error.message || 'Error en devolucionCompletaController'}`, `Catch controller devolucionCompletaController`, "inventario/devolucion-completa", process.env.PRD)
 
-        return res.status(500).json({mensaje:`Error en el controlador devolucionCompletaController. ${error.message ||''}`})
+        return res.status(500).json({ mensaje: `Error en el controlador devolucionCompletaController. ${error.message || ''}` })
     }
 }
 
