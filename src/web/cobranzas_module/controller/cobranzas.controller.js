@@ -768,7 +768,7 @@ const realizarCobroController = async (req, res) => {
             total += +sum
         })
         total = Number(total.toFixed(2))
-        
+
         if (TransferAccount || TransferAccount != null) {
             TransferSum = Number(TransferSum.toFixed(2))
             body.TransferSum = Number(TransferSum.toFixed(2))
@@ -1031,6 +1031,7 @@ const resumenCobranzasController = async (req, res) => {
         console.log(Intl.NumberFormat('de-DE').format(79000.50))
         // return res.json({response})
         let cpclContent = ''
+        let nombreVendedor = ''
         if (response.length != 0) {
             const Recibos = [];
             const Efectivo = [];
@@ -1081,7 +1082,7 @@ const resumenCobranzasController = async (req, res) => {
             }
             // return res.json({comprobante})
             console.log(comprobante.Date)
-
+            nombreVendedor = comprobante.ClpName
             const fechaObj = new Date(comprobante.Date);
 
             // Usar Intl.DateTimeFormat para formatear la fecha en español
@@ -1093,9 +1094,10 @@ TEXT 4 0 30 30 LABORATORIOS IFA S.A.\r\n
 TEXT 4 0 30 90 RESUMEN DE COBRANZA\r\n
 LINE 30 170 570 170 2\r\n
 TEXT 7 0 30 190 Fecha: ${formatoFecha}\r\n
+TEXT 7 0 30 210 Vendedor: ${comprobante.ClpName || ''}\r\n
 `;
 
-            let yPosition = 210;
+            let yPosition = 230;
 
             for (let i = 0; i < comprobante.Recibos.length; i++) {
                 if (comprobante.Recibos[i].Recibos.length != 0) {
@@ -1127,9 +1129,9 @@ TEXT 7 0 60 ${yPosition} TOTAL:                  ${Intl.NumberFormat('en-US').fo
         } else {
             cpclContent = `
 TEXT 4 0 30 30 LABORATORIOS IFA S.A.\r\n
-TEXT 4 0 30 60 RESUMEN DE COBRANZA\r\n
-TEXT 7 0 30 190 Fecha: ${fechaFormated}\r\n
-TEXT 7 0 30 210 No hay Cobros de Hoy\r\n
+TEXT 4 0 30 90 RESUMEN DE COBRANZA\r\n
+TEXT 7 0 30 150 Fecha: ${fechaFormated}\r\n
+TEXT 7 0 30 170 No hay Cobros de Hoy\r\n
 
 `
         }
@@ -1296,35 +1298,35 @@ const detalleFacturaController = async (req, res) => {
 
 const cobranzaPorSucursalesYTiposController = async (req, res) => {
     try {
-        const {sucCodes, tipos} = req.body
+        const { sucCodes, tipos } = req.body
         console.log({ sucCodes })
-        let listResponse=[];
+        let listResponse = [];
         let totalCobranza = 0
-        for(const sucCode of sucCodes){
-            const porTipo=[]
-            for(const tipo of tipos){
+        for (const sucCode of sucCodes) {
+            const porTipo = []
+            for (const tipo of tipos) {
                 const cobranza = await cobranzaPorSucursalYTipo(sucCode, tipo)
                 console.log({ cobranza })
-                if(cobranza.status == 400){
+                if (cobranza.status == 400) {
                     return res.status(400).json(`${cobranza.message || 'Error en cobranzaPorSucursalYTipo'}`)
                 }
-                const cobranzaName=[]
-                cobranza.data.forEach((dta)=> {
+                const cobranzaName = []
+                cobranza.data.forEach((dta) => {
                     cobranzaName.push({
-                        Sucursal:dta.SucName,
-                        Zonas:dta.ZoneName,
+                        Sucursal: dta.SucName,
+                        Zonas: dta.ZoneName,
                         Tipo: dta.GroupName,
                         Cobranzas: dta.Collection
                     })
                     totalCobranza += Number(dta.Collection)
                 })
                 porTipo.push(...cobranzaName)
-                console.log({porTipo})
+                console.log({ porTipo })
             }
             listResponse.push(porTipo)
         }
-        console.log({listResponse})
-        return res.json({ listResponse, totalCobranza})
+        console.log({ listResponse })
+        return res.json({ listResponse, totalCobranza })
     } catch (error) {
         console.log({ error })
         const mensaje = `Error en el controlador cobranzaPorSucursalesYTiposController: ${error.message || ''}`
@@ -1336,20 +1338,20 @@ const cobranzaPorSucursalesYTiposController = async (req, res) => {
 
 const cobranzaPorSucursalYTiposController = async (req, res) => {
     try {
-        const {sucCode, tipos} = req.body
-        let listResponse=[];
+        const { sucCode, tipos } = req.body
+        let listResponse = [];
         let totalCobranza = 0
-        for(const tipo of tipos){
+        for (const tipo of tipos) {
             const cobranza = await cobranzaPorSucursalYTipo(sucCode, tipo)
             console.log({ cobranza })
-            if(cobranza.status == 400){
+            if (cobranza.status == 400) {
                 return res.status(400).json(`${cobranza.message || 'Error en cobranzaPorSucursalYTipo'}`)
             }
-            const cobranzaName=[]
-            cobranza.data.forEach((dta)=> {
+            const cobranzaName = []
+            cobranza.data.forEach((dta) => {
                 cobranzaName.push({
-                    Sucursal:dta.SucName,
-                    Zonas:dta.ZoneName,
+                    Sucursal: dta.SucName,
+                    Zonas: dta.ZoneName,
                     Tipo: dta.GroupName,
                     Cobranzas: dta.Collection
                 })
@@ -1357,8 +1359,8 @@ const cobranzaPorSucursalYTiposController = async (req, res) => {
             })
             listResponse.push(...cobranzaName)
         }
-        console.log({listResponse})
-        return res.json({ listResponse, totalCobranza})
+        console.log({ listResponse })
+        return res.json({ listResponse, totalCobranza })
     } catch (error) {
         console.log({ error })
         const mensaje = `Error en el controlador cobranzaPorSucursalYTiposController: ${error.message || ''}`
@@ -1374,7 +1376,7 @@ const getCobradoresController = async (req, res) => {
         console.log({ idSap })
         let cobradores = await getVendedores(idSap)
 
-        cobradores = cobradores.filter((element)=> element.SlpCode !=-1)
+        cobradores = cobradores.filter((element) => element.SlpCode != -1)
         return res.json(cobradores)
     } catch (error) {
         console.log({ error })

@@ -31,7 +31,8 @@ const {
     descripcionArticulo,
     obtenerOfertas,
     detalleOferta,
-    unidadMedida
+    unidadMedida,
+    listaArticuloCadenas
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -838,9 +839,8 @@ const detalleOfertaController = async (req, res) => {
         if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en detalleOferta' })
         const {data}= response
         data.forEach((row)=>{
-            row.cantidad= parseFloat(row.Quantity).toFixed(0);
-            row.PriceAfVAT=parseFloat(row.PriceAfVAT).toFixed(2);
-            row.Price=parseFloat(row.Price).toFixed(2);
+            row.cantidad= parseFloat(row.Quantity).toFixed(0)
+            row.PriceAfVAT=parseFloat(row.PriceAfVAT).toFixed(2)
             row.precioUnitario=parseFloat(row.precioUnitario).toFixed(2);
         })
         return res.json(data)
@@ -860,6 +860,18 @@ const unidadMedidaController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+    }
+}
+
+const listaArticuloCadenasController = async(req,res)=>{
+    try {
+        const cardCode = req.query.cardCode
+        const listNum = req.query.listNum
+        const response = await listaArticuloCadenas(cardCode,listNum)
+        return res.json(response)
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'Error en el controlador'})
     }
 }
 
@@ -897,4 +909,5 @@ module.exports = {
     listaOfertasController,
     detalleOfertaController,
     unidadMedidaController,
+    listaArticuloCadenasController,
 };

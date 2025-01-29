@@ -32,11 +32,13 @@ const {
     descripcionArticuloController,
     listaOfertasController,
     detalleOfertaController,
-    unidadMedidaController
+    unidadMedidaController,
+    listaArticuloCadenasController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
+const { listaArticuloCadenas } = require('../controller/hana.controller')
 const router = Router()
 
 router.get('/sucursales', [validarToken, validarCampos], ventasPorSucursalController)
@@ -76,5 +78,6 @@ router.get('/oferta-descripcion-articulo', [validarToken, validarCampos],descrip
 router.get('/lista-ofertas', [validarToken, validarCampos], listaOfertasController)
 router.get('/detalle-oferta', [validarToken, validarCampos], detalleOfertaController)
 router.get('/oferta-unidad-medida', [validarToken, validarCampos],unidadMedidaController)
+router.get('/lista-articulo-cadenas', [validarToken, validarCampos],listaArticuloCadenasController)
 
 module.exports = router

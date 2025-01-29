@@ -525,6 +525,20 @@ const unidadMedida = async (itemCode) => {
     }
 }
 
+const listaArticuloCadenas = async (cardCode,listNum) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_catalogo_cadenas('${cardCode}',${listNum})`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en descripcionArticulo')
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -559,5 +573,6 @@ module.exports = {
     descripcionArticulo,
     obtenerOfertas,
     detalleOferta,
-    unidadMedida
+    unidadMedida,
+    listaArticuloCadenas
 }
