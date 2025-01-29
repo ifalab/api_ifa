@@ -32,7 +32,7 @@ const findClientesByVendedorController = async (req, res) => {
 const listaEncuestaController = async (req, res) => {
     try {
         const response = await listaEncuesta()
-        return res.json({ response })
+        return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador: listaEncuestaController' })

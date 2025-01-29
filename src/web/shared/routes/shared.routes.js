@@ -5,7 +5,7 @@ const { findClientesByVendedorController, listaEncuestaController, crearEncuesta
 const router = Router()
 
 router.get('/clientes-vendedor', [validarToken, validarCampos], findClientesByVendedorController)
-router.get('/encuesta', [validarToken, validarCampos], listaEncuestaController)
+router.get('/encuestas', [validarToken, validarCampos], listaEncuestaController)
 router.post('/crear-encuesta', [validarToken, validarCampos], crearEncuestaController)
 
 module.exports = router

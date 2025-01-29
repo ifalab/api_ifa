@@ -7,7 +7,7 @@ const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = req
 const { postInvoice } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle } = require("../../facturacion_module/controller/hana.controller")
-
+const {spObtenerCUF}= require("../../facturacion_module/controller/sql_genesis.controller")
 const clientePorDimensionUnoController = async (req, res) => {
     try {
 
@@ -426,9 +426,9 @@ const detalleVentasController = async (req, res) => {
         let cabecera = []
         let detalle = []
         response.forEach((value) => {
-            const { DocEntry, DocNum, DocDate, ...rest } = value
+            const { DocEntry, BaseEntry, DocNum, DocDate, Cuf, ...rest } = value
             if (cabecera.length == 0) {
-                cabecera.push({ DocEntry, DocNum, DocDate })
+                cabecera.push({ DocEntry, BaseEntry, DocNum, DocDate, Cuf })
             }
             detalle.push(rest)
         })
@@ -442,7 +442,7 @@ const detalleVentasController = async (req, res) => {
 
 const devolucionCompletaController = async (req, res) => {
     try {
-        const { DocEntry: docEntry, Cuf, DocDate } = req.body
+        const { DocEntry: docEntry, Cuf, DocDate, BaseEntry } = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (!docEntry || docEntry <= 0) {
             return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
@@ -452,23 +452,66 @@ const devolucionCompletaController = async (req, res) => {
         const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
         const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
         const formater = `${year}${month}${day}`;
-        const entrega = await entregaDetallerFactura(docEntry, Cuf, 0, formater)
-        return res.json({ formater })
-        // const response = await postInvoice(body)
-        // if(response.status!=200){
-        //     console.log({errorMessage: response.errorMessage})
-        //     let mensaje= response.errorMessage|| 'Mensaje no definido'
-        //     if(mensaje.value)
-        //         mensaje = mensaje.value
-        //     grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Error en postInvoice: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
-        //     return res.status(400).json({mensaje: `Error en postInvoice: ${mensaje}`})
-        // }
+        const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
+        if (entregas.message) {
+            endTime = Date.now()
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
+        }
+        const DocumentLinesHana = [];
+        let cabezeraHana = [];
+
+        let DocumentAdditionalExpenses = [];
+
+        for (const line of entregas) {
+            const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+
+            if (!cabezeraHana.length) {
+                cabezeraHana = {
+                    ...result,
+                    DocTotal: Number(DocTotal),
+                    U_OSLP_ID: U_OSLP_ID || "",
+                    U_UserCode: U_UserCode || ""
+                };
+                DocumentAdditionalExpenses = [
+                    { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                    { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                    { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                    { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                ]
+            }
+            DocumentLinesHana.push({
+                LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+            })
+        }
+
+        const responseHanaB = {
+            ...cabezeraHana,
+            DocumentLines: DocumentLinesHana,
+            DocumentAdditionalExpenses
+        }
+        console.log({ responseHanaB : JSON.stringify(responseHanaB, null, 2)})
+
+        const responceInvoice = await postInvoice(responseHanaB)
+        console.log({responceInvoice: JSON.stringify(responceInvoice, null, 2)})
+        // return res.json({responceInvoice, responseHanaB, entregas})
+       
+        if(responceInvoice.status!=200){
+            console.log({errorMessage: responceInvoice.errorMessage})
+            let mensaje= responceInvoice.errorMessage|| 'Mensaje no definido'
+            if(mensaje.value)
+                mensaje = mensaje.value
+            // grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Error en postInvoice: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({mensaje: `Error en postInvoice: ${mensaje}`})
+        }
 
         // grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Exito en la devolucion`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
-        // return res.json({
-        //     sapResponse: response.sapResponse,
-        //     idInvoice: response.idInvoice
-        // })
+        return res.json({
+            sapResponse: responceInvoice.sapResponse,
+            idInvoice: responceInvoice.idInvoice
+        })
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
