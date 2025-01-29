@@ -1,7 +1,8 @@
 const { json } = require("express")
 const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado,
     descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet,
-    facturasClienteLoteItemCode, detalleVentas } = require("./hana.controller")
+    facturasClienteLoteItemCode, detalleVentas,
+    entregaDetallerFactura } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
 const { postInvoice } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
@@ -441,15 +442,18 @@ const detalleVentasController = async (req, res) => {
 
 const devolucionCompletaController = async (req, res) => {
     try {
-        const { DocEntry: docEntry } = req.body
-        // console.log({ body })
+        const { DocEntry: docEntry, Cuf, DocDate } = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        // const docEntry = body.DocEntry
         if (!docEntry || docEntry <= 0) {
             return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
         }
-        const entrega = await obtenerEntregaDetalle(docEntry)
-        return res.json({ entrega })
+        const fechaFormater = new Date(DocDate)
+        const year = fechaFormater.getUTCFullYear();
+        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
+        const formater = `${year}${month}${day}`;
+        const entrega = await entregaDetallerFactura(docEntry, Cuf, 0, formater)
+        return res.json({ formater })
         // const response = await postInvoice(body)
         // if(response.status!=200){
         //     console.log({errorMessage: response.errorMessage})
