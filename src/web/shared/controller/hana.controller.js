@@ -33,7 +33,7 @@ const executeQuery = async (query) => {
         connection.exec(query, (err, result) => {
             if (err) {
                 console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
+                reject(new Error(`${err.message || 'Error en la consulta'}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
@@ -97,7 +97,7 @@ const listaEncuesta = async()=>{
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
-        throw new Error('Error al procesar la solicitud: listaEncuesta');
+        throw new Error(`Error al procesar listaEncuesta: ${error.message || ''}`);
     }
 
 }
@@ -106,25 +106,28 @@ const crearEncuesta = async(
     new_primeraPregunta,
     new_segundaPregunta,
     new_terceraPregunta,
+    new_cuartaPregunta,
+    new_quintaPregunta,
     new_recomendaciones,
     new_fullname,
     new_rol_user,
-    new_id_sap,
+    id_user,
     new_puntajePrimerPregunta,
     new_puntajeSegundaPregunta,
     new_puntajeTerceraPregunta,
-
+    new_puntajeCuartaPregunta,
+    new_puntajeQuintaPregunta
 )=>{
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_ENCUESTA('${new_primeraPregunta}','${new_segundaPregunta}','${new_terceraPregunta}','${new_recomendaciones}','${new_fullname}','${new_rol_user}',${new_id_sap},${new_puntajePrimerPregunta},${new_puntajeSegundaPregunta},${new_puntajeTerceraPregunta});`
+        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_ENCUESTA('${new_primeraPregunta}','${new_segundaPregunta}','${new_terceraPregunta}','${new_cuartaPregunta}','${new_quintaPregunta}','${new_recomendaciones}','${new_fullname}','${new_rol_user}',${id_user},${new_puntajePrimerPregunta},${new_puntajeSegundaPregunta},${new_puntajeTerceraPregunta},${new_puntajeCuartaPregunta},${new_puntajeQuintaPregunta});`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
-        throw new Error('Error al procesar la solicitud: crearEncuesta');
+        throw new Error(`Error al procesar crearEncuesta: ${error.message || ''}`);
     }
 
 }

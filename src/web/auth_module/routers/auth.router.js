@@ -13,7 +13,8 @@ const { authLoginPost, createUserController, findAllUserController, findUserById
     deleteRutasDespachadoresController,
     getDespachadorPorIdController,
     getAlmacenesLibresController,
-    validarTokenController
+    validarTokenController,
+    postSalesPersonsController
  } = require('../controllers/auth.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -52,5 +53,6 @@ router.post('/delete-ruta-despachador',[validarToken, validarCampos],deleteRutas
 router.get('/get-despachadores',[validarToken, validarCampos],getDespachadoresController)
 router.get('/get-despachador-por-id',[validarToken, validarCampos],getDespachadorPorIdController)
 router.get('/almacenes-libres',[validarToken, validarCampos],getAlmacenesLibresController)
+router.post('/sales-person',[validarToken, validarCampos],postSalesPersonsController)
 
 module.exports = router

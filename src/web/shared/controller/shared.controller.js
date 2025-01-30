@@ -41,38 +41,142 @@ const listaEncuestaController = async (req, res) => {
 
 const crearEncuestaController = async (req, res) => {
     try {
-
         const {
             new_primeraPregunta,
             new_segundaPregunta,
             new_terceraPregunta,
+            new_cuartaPregunta,
+            new_quintaPregunta,
             new_recomendaciones,
             new_fullname,
             new_rol_user,
-            new_id_sap,
+            id_user,
             new_puntajePrimerPregunta,
             new_puntajeSegundaPregunta,
             new_puntajeTerceraPregunta,
+            new_puntajeCuartaPregunta,
+            new_puntajeQuintaPregunta
         } = req.body
-        const response = await crearEncuesta(new_primeraPregunta,
+        const response = await crearEncuesta(
+            new_primeraPregunta,
             new_segundaPregunta,
             new_terceraPregunta,
+            new_cuartaPregunta,
+            new_quintaPregunta,
             new_recomendaciones,
             new_fullname,
             new_rol_user,
-            new_id_sap,
+            id_user,
             new_puntajePrimerPregunta,
             new_puntajeSegundaPregunta,
-            new_puntajeTerceraPregunta,)
+            new_puntajeTerceraPregunta,
+            new_puntajeCuartaPregunta,
+            new_puntajeQuintaPregunta)
+
+        if(response[0].response == 409){
+            return res.status(409).json({mensaje: `Ya se guardo su encuesta`})
+        }
         return res.json(...response)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador' })
+        return res.status(500).json({ mensaje: `Error en el controlador crearEncuestaController: ${error.message || ''}` })
     }
 }
+
+const resultadosEncuestaController = async (req, res) => {
+    try {
+        const response = await listaEncuesta()
+        const datos=[5]
+        for(let i=0; i<5; i++){
+            let valor1=Math.round(Math.random()*5)
+            let valor2=Math.round(Math.random()*5)
+            let valor3=Math.round(Math.random()*5)
+            let valor4=Math.round(Math.random()*5)
+            let valor5=0
+            datos[i]={
+                puntaje: [],
+                series: [],
+                labels: []
+            }
+            for(const user of response){
+                let puntaje =0
+                switch(i){
+                    case 0: 
+                        puntaje= user.PUNTAJEPRIMERPREGUNTA
+                        break;
+                    case 1: 
+                        puntaje= user.PUNTAJESEGUNDAPREGUNTA
+                        break;
+                    case 2: 
+                        puntaje= user.PUNTAJETERCERAPREGUNTA
+                        break;
+                    case 3:
+                        puntaje= user.PUNTAJECUARTAPREGUNTA
+                        break;
+                    case 4:
+                        puntaje= user.PUNTAJEQUINTAPREGUNTA
+                        break;
+                }
+
+                switch(puntaje){
+                    case 1:
+                        valor1++;
+                        break;
+                    case 2:
+                        valor2++;
+                        break;
+                    case 3:
+                        valor3++;
+                        break;
+                    case 4:
+                        valor4++;
+                        break;
+                    case 5:
+                        valor5++;
+                        break;
+                }
+            }
+            datos[i].puntaje.push(valor1)
+            datos[i].puntaje.push(valor2)
+            datos[i].puntaje.push(valor3)
+            datos[i].puntaje.push(valor4)
+            datos[i].puntaje.push(valor5)
+            
+            const sumValores= valor1+valor2+valor3+valor4+valor5
+            console.log({sumValores})
+            datos[i].series.push(Math.round((valor1 / sumValores)*10000)/100)
+            datos[i].series.push(Math.round((valor2 / sumValores)*10000)/100)
+            datos[i].series.push(Math.round((valor3 / sumValores)*10000)/100)
+            datos[i].series.push(Math.round((valor4 / sumValores)*10000)/100)
+            datos[i].series.push(Math.round((valor5 / sumValores)*10000)/100)
+            
+            datos[i].labels.push('Puntaje 1')
+            datos[i].labels.push('Puntaje 2')
+            datos[i].labels.push('Puntaje 3')
+            datos[i].labels.push('Puntaje 4')
+            datos[i].labels.push('Puntaje 5')
+        }
+        const preguntas=[response[0].PRIMERAPREGUNTA, 
+            response[0].SEGUNDAPREGUNTA,
+            response[0].TERCERAPREGUNTA,
+            response[0].CUARTAPREGUNTA,
+            response[0].QUINTAPREGUNTA
+        ]
+        const resultados = {
+            datos, preguntas
+        }
+
+        return res.json(resultados)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador: listaEncuestaController' })
+    }
+}
+
 
 module.exports = {
     findClientesByVendedorController,
     listaEncuestaController,
-    crearEncuestaController
+    crearEncuestaController,
+    resultadosEncuestaController
 }

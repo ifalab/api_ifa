@@ -7,6 +7,7 @@ const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveU
     getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario,
     addRutasDespachadores, getRutasLibresPorDespachador, getRutasAsignadasPorDespachador, getDespachadores, deleteRutasDespachadores
 } = require("./hana.controller")
+const { postSalesPersons }= require("./sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const authLoginPost = async (req, res) => {
@@ -851,6 +852,27 @@ const validarTokenController = async (req, res) => {
     }
 }
 
+
+const postSalesPersonsController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({body})
+        const response = await postSalesPersons(body)
+        if(response.status==400){
+            return res.status(400).json({mensaje: response.message.value || response.message||'Error en postSalesPersons'})
+        }
+        console.log({responsePostSalesPersons: response})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en postSalesPersonsController: ${error.message||''}`
+        })
+    }
+}
+
+
+
 module.exports = {
     authLoginPost,
     createUserController,
@@ -886,5 +908,6 @@ module.exports = {
     deleteRutasDespachadoresController,
     getDespachadorPorIdController,
     getAlmacenesLibresController,
-    validarTokenController
+    validarTokenController,
+    postSalesPersonsController
 }
