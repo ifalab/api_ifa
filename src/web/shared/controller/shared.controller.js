@@ -86,12 +86,17 @@ const crearEncuestaController = async (req, res) => {
 const resultadosEncuestaController = async (req, res) => {
     try {
         const response = await listaEncuesta()
+        
         const datos=[5]
         for(let i=0; i<5; i++){
-            let valor1=Math.round(Math.random()*5)
-            let valor2=Math.round(Math.random()*5)
-            let valor3=Math.round(Math.random()*5)
-            let valor4=Math.round(Math.random()*5)
+            // let valor1=Math.round(Math.random()*5)
+            // let valor2=Math.round(Math.random()*5)
+            // let valor3=Math.round(Math.random()*5)
+            // let valor4=Math.round(Math.random()*5)
+            let valor1=0
+            let valor2=0
+            let valor3=0
+            let valor4=0
             let valor5=0
             datos[i]={
                 puntaje: [],
@@ -143,12 +148,12 @@ const resultadosEncuestaController = async (req, res) => {
             datos[i].puntaje.push(valor5)
             
             const sumValores= valor1+valor2+valor3+valor4+valor5
-            console.log({sumValores})
-            datos[i].series.push(Math.round((valor1 / sumValores)*10000)/100)
-            datos[i].series.push(Math.round((valor2 / sumValores)*10000)/100)
-            datos[i].series.push(Math.round((valor3 / sumValores)*10000)/100)
-            datos[i].series.push(Math.round((valor4 / sumValores)*10000)/100)
-            datos[i].series.push(Math.round((valor5 / sumValores)*10000)/100)
+            // console.log({sumValores})
+            datos[i].series.push(sumValores==0?0:(Math.round((valor1 / sumValores)*10000)/100))
+            datos[i].series.push(sumValores==0?0:(Math.round((valor2 / sumValores)*10000)/100))
+            datos[i].series.push(sumValores==0?0:(Math.round((valor3 / sumValores)*10000)/100))
+            datos[i].series.push(sumValores==0?0:(Math.round((valor4 / sumValores)*10000)/100))
+            datos[i].series.push(sumValores==0?0:(Math.round((valor5 / sumValores)*10000)/100))
             
             datos[i].labels.push('Puntaje 1')
             datos[i].labels.push('Puntaje 2')
@@ -156,12 +161,15 @@ const resultadosEncuestaController = async (req, res) => {
             datos[i].labels.push('Puntaje 4')
             datos[i].labels.push('Puntaje 5')
         }
-        const preguntas=[response[0].PRIMERAPREGUNTA, 
+        let preguntas=[]
+        if(response.length>0){
+        preguntas=[response[0].PRIMERAPREGUNTA, 
             response[0].SEGUNDAPREGUNTA,
             response[0].TERCERAPREGUNTA,
             response[0].CUARTAPREGUNTA,
             response[0].QUINTAPREGUNTA
         ]
+        }
         const resultados = {
             datos, preguntas
         }

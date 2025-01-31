@@ -279,8 +279,11 @@ const findUserByIdController = async (req, res) => {
             ETIQUETA: value.ETIQUETA,
             CODEMP: value.CODEMP,
             PULL_RATING: value.PULL_RATING,
+            ID_VENDEDOR_SAP: value.ID_VENDEDOR_SAP,
+            ID_SAP: value.ID_SAP
 
         }
+        console.log({user})
         return res.json({ ...user })
     } catch (error) {
         console.log({ error })
@@ -857,14 +860,20 @@ const postSalesPersonsController = async (req, res) => {
     try {
         const body = req.body
         console.log({body})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await postSalesPersons(body)
         if(response.status==400){
-            return res.status(400).json({mensaje: response.message.value || response.message||'Error en postSalesPersons'})
+            const mensaje=response.message.value || response.message||'Error en postSalesPersons'
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Crear Sales Person", mensaje, `postSalesPersons`, "auth/sales-person", process.env.PRD)
+            return res.status(400).json({mensaje})
         }
         console.log({responsePostSalesPersons: response})
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Crear Sales Person", 'Exito en la creacion', `postSalesPersons`, "auth/sales-person", process.env.PRD)
         return res.json(response)
     } catch (error) {
         console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Crear Sales Person", `Error en postSalesPersonsController: ${error.message||''}`, ``, "auth/sales-person", process.env.PRD)
         return res.status(500).json({
             mensaje: `Error en postSalesPersonsController: ${error.message||''}`
         })
