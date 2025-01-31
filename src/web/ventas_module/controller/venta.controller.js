@@ -814,15 +814,15 @@ const descripcionArticuloController = async (req, res) => {
 
 const listaOfertasController = async (req, res) => {
     try {
-        const cardCode  = req.query.cardCode?? ''
+        const cardCode = req.query.cardCode ?? ''
         const sucCode = req.query.sucCode
         const response = await obtenerOfertas(sucCode, cardCode)
-        if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en obtenerOfertas' })
-        const {data}= response
-        data.forEach((element)=>{
+        if (response.status == 400) return res.status(400).json({ mensaje: response.message || 'Error en obtenerOfertas' })
+        const { data } = response
+        data.forEach((element) => {
             element.DocDate = element.DocDate.split(' ')[0]
-            element.DocTime = element.DocTime.slice(0,2)+':'+element.DocTime.slice(2)
-            element.Price=parseFloat(element.DocTotal).toFixed(2);
+            element.DocTime = element.DocTime.slice(0, 2) + ':' + element.DocTime.slice(2)
+            element.Price = parseFloat(element.DocTotal).toFixed(2);
         })
 
         return res.json(data)
@@ -834,14 +834,19 @@ const listaOfertasController = async (req, res) => {
 
 const detalleOfertaController = async (req, res) => {
     try {
-        const id  = req.query.id
+        const id = req.query.id
         const response = await detalleOferta(id)
-        if (response.status == 400) return res.status(400).json({ mensaje: response.message ||'Error en detalleOferta' })
-        const {data}= response
-        data.forEach((row)=>{
-            row.cantidad= parseFloat(row.Quantity).toFixed(0)
-            row.PriceAfVAT=parseFloat(row.PriceAfVAT).toFixed(2)
-            row.precioUnitario=parseFloat(row.precioUnitario).toFixed(2);
+        if (response.status == 400) return res.status(400).json({ mensaje: response.message || 'Error en detalleOferta' })
+        const { data } = response
+        data.forEach((row) => {
+            if (row.ItemCode == '101-004-064') {
+                // row.DiscPrcnt = 10
+            }
+            const subtotal = row.subTotal
+            row.Quantity = Number(row.Quantity)
+            row.PendQuantity = Number(row.PendQuantity)
+            row.Stock = Number(row.Stock)
+            row.subTotal = Number(subtotal)
         })
         return res.json(data)
     } catch (error) {
@@ -863,15 +868,25 @@ const unidadMedidaController = async (req, res) => {
     }
 }
 
-const listaArticuloCadenasController = async(req,res)=>{
+const listaArticuloCadenasController = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
         const listNum = req.query.listNum
-        const response = await listaArticuloCadenas(cardCode,listNum)
-        return res.json(response)
+        const response = await listaArticuloCadenas(cardCode, listNum)
+        let data = []
+        response.map((item) => {
+            if (item.PriceMax == null) {
+                item.PriceMax = 0
+            }else{
+                item.PriceMax = Number(item.PriceMax)
+            }
+            data.push(item)
+        })
+
+        return res.json(data)
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'Error en el controlador'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
 

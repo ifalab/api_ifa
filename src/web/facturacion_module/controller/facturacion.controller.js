@@ -349,7 +349,7 @@ const facturacionController = async (req, res) => {
             console.log({ responseHanaB })
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
-            if (!invoiceResponse.status == 400) {
+            if (invoiceResponse.status == 400) {
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
@@ -488,7 +488,7 @@ const facturacionController = async (req, res) => {
             console.log({ responseHanaB })
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
-            if (!invoiceResponse.status == 400) {
+            if (invoiceResponse.status == 400) {
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
@@ -1123,7 +1123,7 @@ const facturacionEntregaController = async (req, res) => {
             console.log({ responseHanaB })
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
-            if (!invoiceResponse.status == 400) {
+            if (invoiceResponse.status == 400) {
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
@@ -1288,7 +1288,7 @@ const facturacionEntregaController = async (req, res) => {
             console.log({ responseHanaB })
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
-            if (!invoiceResponse.status == 400) {
+            if (invoiceResponse.status == 400) {
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
