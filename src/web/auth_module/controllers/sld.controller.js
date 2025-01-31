@@ -70,6 +70,44 @@ const postSalesPersons = async (responseJson) => {
     }
 };
 
+const patchSalesPersons = async (id,responseJson) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/SalesPersons(${id})`;
+        const sapResponse = await axios.patch(url, responseJson, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+
+        // const url = 'https://srvhana:50000/b1s/v1/SalesPersons';
+        // const sapResponse = await axios.get(url, {
+        //     httpsAgent: agent,
+        //     headers: headers,
+        //     timeout: REQUEST_TIMEOUT
+        // });
+        return {
+            status: sapResponse.status,
+            data: sapResponse.data,
+            message: sapResponse.message || ''
+        }
+
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        console.error('Error en la solicitud POST para SalesPersons:', error.response?.data || error.message);
+        return {
+            status: error.status || 400,
+            message: errorMessage}
+    }
+};
+
 module.exports = {
     postSalesPersons,
+    patchSalesPersons
 }

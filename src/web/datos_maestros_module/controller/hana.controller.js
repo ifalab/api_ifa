@@ -236,34 +236,33 @@ const getZonasPorSucursal = async (code) => {
     }
 }
 
-const getListaPreciosCadenas = async () => {
+const getListaPreciosByIdCadenas = async (id) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        //Cambiar query
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_precios_oficial`;
+        
+        const query = `call ${process.env.PRD}.ifa_dm_precios_por_lista(${id})`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
             status: 200,
             data: result}
     } catch (error) {
-        console.error('Error en getListaPreciosCadenas:', error);
+        console.error('Error en getListaPreciosByIdCadenas:', error);
         return {
             status:400,
-            message: `Error en getListaPreciosCadenas: ${error.message || ''}`
+            message: `Error en getListaPreciosByIdCadenas: ${error.message || ''}`
         }
     }
 }
 
-const setPrecioCadena = async (itemCode, precio, id_vend_sap, glosa) => {
+const setPrecioCadena = async (listCode, itemCode, precio, id_vend_sap, glosa) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        //Cambiar query
-        const query = `call ${process.env.PRD}.ifa_dm_agregar_precio_oficial('${itemCode}',${precio},${id_vend_sap},'${glosa}');`;
+        const query = `call ${process.env.PRD}.ifa_dm_agregar_precios(${listCode},'${itemCode}',${precio},${id_vend_sap},'${glosa}');`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -302,6 +301,74 @@ const actualizarCliente= async(cardCode, columna, str, num)=>{
     }
 }
 
+const descuentoOfertasPorLinea= async(lineaItem, desc, fechaInicial, fechaFinal)=>{
+    let query=''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos(${lineaItem}, ${desc}, '${fechaInicial}', '${fechaFinal}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en descuentoOfertasPorLinea:', error);
+        return {
+            status: 400,
+            message: `Error en descuentoOfertasPorLinea: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
+const getAllLineas= async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        //change query
+        const query = `select * from ${process.env.PRD}.ifa_dm_lineas`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllLineas:', error);
+        throw {
+            status: 400,
+            message: `Error en getAllLineas: ${error.message || ''}`
+        }
+    }
+}
+
+const setDescuentoOfertasPorCantidad= async(lineaItem, desc, fechaInicial, fechaFinal)=>{
+    let query=''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        //Changeee
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos(${lineaItem}, ${desc}, '${fechaInicial}', '${fechaFinal}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en setDescuentoOfertasPorCantidad:', error);
+        return {
+            status: 400,
+            message: `Error en setDescuentoOfertasPorCantidad: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -311,8 +378,11 @@ module.exports = {
     getSucursales,
     getAreasPorSucursal,
     getZonasPorArea,
-    getListaPreciosCadenas,
+    getListaPreciosByIdCadenas,
     setPrecioCadena,
     getZonasPorSucursal,
-    actualizarCliente
+    actualizarCliente,
+    descuentoOfertasPorLinea,
+    getAllLineas,
+    setDescuentoOfertasPorCantidad
 }

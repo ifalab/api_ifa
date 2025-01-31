@@ -273,7 +273,7 @@ const listaPrecioCadenas = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select "ListCode", "ListName" from ${process.env.PRD}.ifa_dm_listas_de_precios_cadenas`
+        const query = `select "ListCode", "ListName" from ${process.env.PRD}.ifa_dm_listas_de_precios`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {

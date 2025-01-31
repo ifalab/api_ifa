@@ -4,8 +4,9 @@ const { validarCampos } = require('../../../middleware/validar_campos.middleware
 const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteController, 
     dmTipoDocumentosController, getListaPreciosOficialesController, setPrecioOficialController, 
     getSucursalesController, getAreasPorSucursalController, getZonasPorAreaController,
-    getListaPreciosCadenasController, setPrecioCadenaController, getZonasPorSucursalController,
-    actualizarDatosClienteController
+    getListaPreciosByIdCadenasController, setPrecioCadenaController, getZonasPorSucursalController,
+    actualizarDatosClienteController, descuentoOfertasPorLineaController, getAllLineasController, 
+    setDescuentoOfertasPorCantidadController
  } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller')
 const router = Router()
@@ -19,8 +20,12 @@ router.post('/set-precio-item', [validarToken, validarCampos], setPrecioOficialC
 router.get('/sucursales', [validarToken, validarCampos], getSucursalesController)
 router.get('/areas-por-sucursal', [validarToken, validarCampos], getAreasPorSucursalController)
 router.get('/zonas-por-area', [validarToken, validarCampos], getZonasPorAreaController)
-router.get('/precios-cadenas', [validarToken, validarCampos], getListaPreciosCadenasController)
+router.get('/precios-cadena-id', [validarToken, validarCampos], getListaPreciosByIdCadenasController)
 router.post('/set-precio-cadena', [validarToken, validarCampos], setPrecioCadenaController)
 router.get('/zonas-por-sucursal', [validarToken, validarCampos], getZonasPorSucursalController)
 router.patch('/actualizar-cliente', [validarToken, validarCampos], actualizarDatosClienteController)
+router.post('/descuento-linea', [validarToken, validarCampos], descuentoOfertasPorLineaController)
+router.get('/lineas', [validarToken, validarCampos], getAllLineasController)
+router.post('/descuento-cantidad', [validarToken, validarCampos], setDescuentoOfertasPorCantidadController)
+
 module.exports = router
