@@ -1,7 +1,7 @@
 const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos, 
     getListaPreciosOficiales, setPrecioOficial, getSucursales, getAreasPorSucursal, 
-    getZonasPorArea, getListaPreciosCadenas, setPrecioCadena, getZonasPorSucursal,
-    actualizarCliente } = require("./hana.controller")
+    getZonasPorArea, getListaPreciosByIdCadenas, setPrecioCadena, getZonasPorSucursal,
+    actualizarCliente, descuentoOfertasPorLinea, getAllLineas, setDescuentoOfertasPorCantidad } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -218,13 +218,13 @@ const getZonasPorAreaController = async (req, res) => {
     }
 }
 
-const getListaPreciosCadenasController = async (req, res) => {
+const getListaPreciosByIdCadenasController = async (req, res) => {
     try {
         const listCode = req.query.listCode
         console.log(listCode)
-        const lista = await getListaPreciosCadenas()
+        const lista = await getListaPreciosByIdCadenas(listCode)
         if(lista.status!=200){
-            return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosCadenas'}`})
+            return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosByIdCadenas'}`})
         }
         lista.data.forEach(element => {
             element.CreateDate = element.CreateDate.split(' ')[0]
@@ -232,7 +232,7 @@ const getListaPreciosCadenasController = async (req, res) => {
         return res.json({precios: lista.data})
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosCadenasController: ${error.message || ''}` })
+        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosByIdCadenasController: ${error.message || ''}` })
     }
 }
 
@@ -244,7 +244,7 @@ const setPrecioCadenaController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         let lista=[];
         for(const line of body.items){
-            const response = await setPrecioCadena(line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
+            const response = await setPrecioCadena(line.PriceList, line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
             if(response.status!=200){
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Error: ${response.message || 'setPrecioCadena()'} `, ``, "datos-maestros/set-precio-cadena", process.env.PRD)
                 return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioCadena'}`})
@@ -306,6 +306,59 @@ const actualizarDatosClienteController = async (req, res) => {
     }
 }
 
+const descuentoOfertasPorLineaController = async (req, res) => {
+    try {
+        console.log({body: req.body})
+        const {lineaItem, desc, fechaInicial, fechaFinal} = req.body
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const response = await descuentoOfertasPorLinea(lineaItem, desc, fechaInicial, fechaFinal)
+        if(response.status!=200){
+            // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Linea", `Error: ${response.message || 'descuentoOfertasPorLinea()'} `, `${response.query || 'descuentoOfertasPorLinea'}`, "datos-maestros/descuento-linea", process.env.PRD)
+            return res.status(400).json({mensaje: `${response.message || 'Error en descuentoOfertasPorLinea'}`})
+        }
+        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Linea", `Exito en la actualizacion de descuentos por linea`, `${response.query || 'descuentoOfertasPorLinea'}`, "datos-maestros/descuento-linea", process.env.PRD)
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `Error en el controlador descuentoOfertasPorLineaController: ${error.message || ''}`
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Linea", mensaje, ``, "datos-maestros/descuento-linea", process.env.PRD)
+        return res.status(500).json({ mensaje })
+    }
+}
+
+const getAllLineasController = async (req, res) => {
+    try {
+        const response = await getAllLineas()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getAllLineasController: ${error.message || ''}` })
+    }
+}
+
+///
+const setDescuentoOfertasPorCantidadController = async (req, res) => {
+    try {
+        console.log({body: req.body})
+        const {lineaItem, desc, fechaInicial, fechaFinal} = req.body///
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const response = await setDescuentoOfertasPorCantidad(lineaItem, desc, fechaInicial, fechaFinal)///
+        if(response.status!=200){
+            // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Error: ${response.message || 'setDescuentoOfertasPorCantidad()'} `, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-cantidad", process.env.PRD)
+            return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoOfertasPorCantidad'}`})
+        }
+        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Exito en la actualizacion de descuentos por cantidad`, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-cantidad", process.env.PRD)
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `Error en el controlador setDescuentoOfertasPorCantidadController: ${error.message || ''}`
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", mensaje, ``, "datos-maestros/descuento-cantidad", process.env.PRD)
+        return res.status(500).json({ mensaje })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -316,8 +369,11 @@ module.exports = {
     getSucursalesController,
     getAreasPorSucursalController,
     getZonasPorAreaController,
-    getListaPreciosCadenasController,
+    getListaPreciosByIdCadenasController,
     setPrecioCadenaController,
     getZonasPorSucursalController,
-    actualizarDatosClienteController
+    actualizarDatosClienteController,
+    descuentoOfertasPorLineaController,
+    getAllLineasController,
+    setDescuentoOfertasPorCantidadController
 }

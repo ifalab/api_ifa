@@ -7,7 +7,7 @@ const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveU
     getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario,
     addRutasDespachadores, getRutasLibresPorDespachador, getRutasAsignadasPorDespachador, getDespachadores, deleteRutasDespachadores
 } = require("./hana.controller")
-const { postSalesPersons }= require("./sld.controller")
+const { postSalesPersons, patchSalesPersons }= require("./sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const authLoginPost = async (req, res) => {
@@ -855,7 +855,6 @@ const validarTokenController = async (req, res) => {
     }
 }
 
-
 const postSalesPersonsController = async (req, res) => {
     try {
         const body = req.body
@@ -879,6 +878,32 @@ const postSalesPersonsController = async (req, res) => {
         })
     }
 }
+
+const patchSalesPersonsController = async (req, res) => {
+    try {
+        const id = req.query.id
+        const body = req.body
+        console.log({body})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const response = await patchSalesPersons(id,body)
+        if(response.status==400){
+            const mensaje=response.message.value || response.message||'Error en patchSalesPersons'
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Actualizar Sales Person", mensaje, `patchSalesPersons`, "auth/sales-person", process.env.PRD)
+            return res.status(400).json({mensaje})
+        }
+        console.log({responsePatchSalesPersons: response})
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Actualizar Sales Person", 'Exito al actualizar SalesPerson', `patchSalesPersons`, "auth/sales-person", process.env.PRD)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Actualizar Sales Person", `Error en patchSalesPersonsController: ${error.message||''}`, ``, "auth/sales-person", process.env.PRD)
+        return res.status(500).json({
+            mensaje: `Error en patchSalesPersonsController: ${error.message||''}`
+        })
+    }
+}
+
 
 
 
@@ -918,5 +943,6 @@ module.exports = {
     getDespachadorPorIdController,
     getAlmacenesLibresController,
     validarTokenController,
-    postSalesPersonsController
+    postSalesPersonsController,
+    patchSalesPersonsController
 }
