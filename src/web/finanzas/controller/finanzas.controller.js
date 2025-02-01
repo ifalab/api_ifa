@@ -857,7 +857,7 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
     const datosProcesados = procesarGastos(gastos);
     console.log({ datosProcesados })
     const data = calcularPorcentajes(datosProcesados);
-
+    // return res.json({data})
     const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
       date: year,
       monto: total,
@@ -884,7 +884,7 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
       };
       processData.push(newData);
     });
-
+    // return res.json({ data })
     const { datosConPorcentajes, ...restData } = data;
     const montos = processData[0].montos
     const year = []
@@ -929,6 +929,8 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
       return Object.values(groupedData);
     };
 
+    // return res.json({ formatDataByYear })
+
     const formattedData = formatDataByYear(processData);
     // formattedData.map((item))
     let totalizado = []
@@ -940,7 +942,7 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
     })
 
     formattedData.push({ date: 'Total', detalle: totalizado })
-    // return res.json({ totalByYear:12 });
+    return res.json({ totalByYear: totalByYearArray, formattedData });
   } catch (error) {
     console.log({ error })
     return res.status(500).json({ mensaje: 'Error en findXAgenciaSimpleGastosController ' })

@@ -270,6 +270,21 @@ const entregasSinFacturas = async (sucCode) => {
     }
 }
 
+const obtenerEntregaPorPedido = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_entregas_por_pedido(${id})`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerEntregaDetalle:', error.message || '');
+        return { message: `Error en obtenerEntregaPorPedido: ${error.message || ''}` }
+    }
+}
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -284,5 +299,6 @@ module.exports = {
     facturasPedidoCadenas,
     facturasAnuladas,
     pedidosPorEntrega,
-    entregasSinFacturas
+    entregasSinFacturas,
+    obtenerEntregaPorPedido,
 }

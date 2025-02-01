@@ -14,7 +14,8 @@ const { facturacionById, facturacionPedido } = require("../service/apiFacturacio
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
     facturasAnuladas, pedidosPorEntrega,
-    entregasSinFacturas } = require("./hana.controller")
+    entregasSinFacturas,
+    obtenerEntregaPorPedido } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -351,7 +352,7 @@ const facturacionController = async (req, res) => {
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
                 endTime = Date.now()
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
             }
             const response = {
@@ -490,7 +491,7 @@ const facturacionController = async (req, res) => {
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
                 endTime = Date.now()
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: patchEntrega: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud: postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
             }
             const response = {
@@ -1375,6 +1376,59 @@ const entregasSinFacturasController = async (req, res) => {
     }
 }
 
+const cancelarOrdenController = async (req, res) => {
+    try {
+        const docEntry = req.query.docEntry
+        const total = req.query.total
+        const entrega = req.query.entrega
+        const user = req.usuarioAutorizado
+        let listResponseDelivery = []
+        let response = {}
+
+        if (total == 1) {
+            console.log('ejecutando el cancel order')
+            const resCancel = await cancelOrder(docEntry)
+            if (resCancel.status == 400) {
+                grabarLog(user.USERCODE, user.USERNAME, "Cancelacion orden desde facturacion", `Error en cancelOrder: ${resCancel.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancelar-orden", process.env.PRD)
+                return res.status(400).json({ mensaje: `Error en cancelOrder: ${resCancel.errorMessage.value || ''}` })
+            } else {
+                response = resCancel
+            }
+        }
+
+        if (entrega == 1) {
+            const data = await obtenerEntregaPorPedido(docEntry)
+            for (const iterator of data) {
+
+                const responseDeliveryNotes = await cancelDeliveryNotes(iterator.DocEntry)
+                listResponseDelivery.push(responseDeliveryNotes)
+                if (responseDeliveryNotes.status == 400) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Cancelacion orden desde facturacion", `Error en cancelDeliveryNotes: ${responseDeliveryNotes.errorMessage.value || ''}`, `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancelar-orden", process.env.PRD)
+                    return res.status(400).json({ mensaje: `Error en cancelDeliveryNotes. ${responseDeliveryNotes.errorMessage.value || ''}` })
+                }
+                console.log('fin de anulacion de ordenes---------------------------------------------------------------')
+            }
+
+            const resCancel = await cancelOrder(docEntry)
+            if (resCancel.status == 400) {
+                grabarLog(user.USERCODE, user.USERNAME, "Cancelacion orden desde facturacion", `Error en cancelOrder: ${resCancel.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancelar-orden", process.env.PRD)
+                return res.status(400).json({ mensaje: `Error en cancelOrder: ${resCancel.errorMessage.value || ''}` })
+            } else {
+                response = resCancel
+            }
+
+
+        }
+
+        return res.json({ response, listResponseDelivery })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -1392,5 +1446,6 @@ module.exports = {
     obtenerEntregaDetalleController,
     facturasPedidoCadenasController,
     facturasAnuladasController,
-    entregasSinFacturasController
+    entregasSinFacturasController,
+    cancelarOrdenController
 }
