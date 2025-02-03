@@ -510,7 +510,7 @@ const clientesPorVendedor= async (id_vendedor) => {
         // const query = `CALL LAB_IFA_PRD.ifa_lapp_clientes_por_vendedor(${id_vendedor})`;
         console.log({ query })
         const result = await executeQuery(query)
-        console.log({result})
+        // console.log({result})
         return {
             statusCode: 200,
             data: result
@@ -651,6 +651,22 @@ const getCobradores = async () => {
         throw new Error(`error en getCobradores: ${error.message || ''}`)
     }
 }
+
+const saldoDeudorIfavet = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.DBSAPPRD}.IFA_COB_SALDO_DEUDOR_IFAVET`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: 'no se pudo traer los datos'
+        }
+    }
+}
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -691,5 +707,6 @@ module.exports = {
     cobranzaNormalesPorSucursal,
     cobranzaPorSucursalYTipo,
     getVendedores,
-    getCobradores
+    getCobradores,
+    saldoDeudorIfavet
 }
