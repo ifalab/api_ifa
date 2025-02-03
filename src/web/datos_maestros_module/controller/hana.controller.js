@@ -355,8 +355,9 @@ const setDescuentoOfertasPorCantidad= async(itemCode,cantMin, cantMax, desc, fec
         console.log({ query })
         const result = await executeQuery(query)
         return {
-            status: result.response || 200,
-            data: result.message || result,
+            status: result[0].response || 200,
+            message: result[0].message || '',
+            data: result,
             query
         }
     } catch (error) {
