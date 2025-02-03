@@ -839,9 +839,6 @@ const detalleOfertaController = async (req, res) => {
         if (response.status == 400) return res.status(400).json({ mensaje: response.message || 'Error en detalleOferta' })
         const { data } = response
         data.forEach((row) => {
-            if (row.ItemCode == '101-004-064') {
-                // row.DiscPrcnt = 10
-            }
             const subtotal = row.subTotal
             row.Quantity = Number(row.Quantity)
             row.PendQuantity = Number(row.PendQuantity)

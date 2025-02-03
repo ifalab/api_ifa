@@ -547,17 +547,22 @@ const facturacionStatusController = async (req, res) => {
 const facturacionStatusListController = async (req, res) => {
     try {
 
-        const { listWhsCode } = req.body
+        const { listWhsCode, date, bringAll } = req.body
         let data = []
+        const dateNow = date.split('T')
         for (const iterator of listWhsCode) {
             const dataToList = await facturaPedidoDB(iterator)
             dataToList.map((item) => {
-                data.push({ ...item })
+                const dateNowItem = item.DocDate.split(' ')
+                if (dateNow[0] == dateNowItem[0]) {
+                    data.push({ ...item })
+                }
+                if (bringAll) {
+                    data.push({ ...item })
+                }
             })
-
         }
         return res.json({ data })
-
     } catch (error) {
         console.log('error en facturacionStatusController')
         console.log({ error })
