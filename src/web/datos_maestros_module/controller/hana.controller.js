@@ -330,7 +330,7 @@ const getAllLineas= async()=>{
         if (!connection) {
             await connectHANA();
         }
-        //change query
+
         const query = `select * from ${process.env.PRD}.ifa_dm_lineas`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -344,14 +344,14 @@ const getAllLineas= async()=>{
     }
 }
 
-const setDescuentoOfertasPorCantidad= async(lineaItem, desc, fechaInicial, fechaFinal)=>{
+const setDescuentoOfertasPorCantidad= async(itemCode,cantMin, cantMax, desc, fechaInicial, fechaFinal)=>{
     let query=''
     try {
         if (!connection) {
             await connectHANA();
         }
-        //Changeee
-        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos(${lineaItem}, ${desc}, '${fechaInicial}', '${fechaFinal}');`;
+        
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos_detalle('${itemCode}',${cantMin}, ${cantMax}, ${desc}, '${fechaInicial}', '${fechaFinal}');`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -369,6 +369,45 @@ const setDescuentoOfertasPorCantidad= async(lineaItem, desc, fechaInicial, fecha
     }
 }
 
+const getArticulos = async(lineCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "LineItemCode"='${lineCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getArticulos:', error);
+        throw {
+            status: 400,
+            message: `Error en getArticulos: ${error.message || ''}`
+        }
+    }
+}
+
+const findCliente = async(code)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "LineItemCode"='${lineCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en findCliente:', error);
+        throw {
+            status: 400,
+            message: `Error en findCliente: ${error.message || ''}`
+        }
+    }
+}
+
+
+
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -384,5 +423,7 @@ module.exports = {
     actualizarCliente,
     descuentoOfertasPorLinea,
     getAllLineas,
-    setDescuentoOfertasPorCantidad
+    setDescuentoOfertasPorCantidad,
+    getArticulos,
+    findCliente
 }

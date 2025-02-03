@@ -6,7 +6,7 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getSucursalesController, getAreasPorSucursalController, getZonasPorAreaController,
     getListaPreciosByIdCadenasController, setPrecioCadenaController, getZonasPorSucursalController,
     actualizarDatosClienteController, descuentoOfertasPorLineaController, getAllLineasController, 
-    setDescuentoOfertasPorCantidadController
+    setDescuentoOfertasPorCantidadController, getArticulosController, findClienteController
  } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller')
 const router = Router()
@@ -27,5 +27,7 @@ router.patch('/actualizar-cliente', [validarToken, validarCampos], actualizarDat
 router.post('/descuento-linea', [validarToken, validarCampos], descuentoOfertasPorLineaController)
 router.get('/lineas', [validarToken, validarCampos], getAllLineasController)
 router.post('/descuento-cantidad', [validarToken, validarCampos], setDescuentoOfertasPorCantidadController)
+router.get('/articulos', [validarToken, validarCampos], getArticulosController)
+router.get('/find-cliente', [validarToken, validarCampos], findClienteController)
 
 module.exports = router

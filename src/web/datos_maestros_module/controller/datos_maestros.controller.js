@@ -1,7 +1,8 @@
 const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos, 
     getListaPreciosOficiales, setPrecioOficial, getSucursales, getAreasPorSucursal, 
     getZonasPorArea, getListaPreciosByIdCadenas, setPrecioCadena, getZonasPorSucursal,
-    actualizarCliente, descuentoOfertasPorLinea, getAllLineas, setDescuentoOfertasPorCantidad } = require("./hana.controller")
+    actualizarCliente, descuentoOfertasPorLinea, getAllLineas, setDescuentoOfertasPorCantidad,
+    getArticulos, findCliente } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -337,25 +338,51 @@ const getAllLineasController = async (req, res) => {
     }
 }
 
-///
+const getArticulosController = async (req, res) => {
+    try {
+        const lineCode= req.query.lineCode
+        const response = await getArticulos(lineCode)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getArticulosController: ${error.message || ''}` })
+    }
+}
+
 const setDescuentoOfertasPorCantidadController = async (req, res) => {
     try {
-        console.log({body: req.body})
-        const {lineaItem, desc, fechaInicial, fechaFinal} = req.body///
-        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const response = await setDescuentoOfertasPorCantidad(lineaItem, desc, fechaInicial, fechaFinal)///
-        if(response.status!=200){
-            // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Error: ${response.message || 'setDescuentoOfertasPorCantidad()'} `, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-cantidad", process.env.PRD)
-            return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoOfertasPorCantidad'}`})
+        const {body}=req
+        console.log({body})
+        let responses =[]
+        for(const descuento of body){
+            const {ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal} = descuento
+            const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+            const response = await setDescuentoOfertasPorCantidad(ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal)
+            responses.push(response)
+            if(response.status!=200){
+                // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Error: ${response.message || 'setDescuentoOfertasPorCantidad()'} `, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-cantidad", process.env.PRD)
+                return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoOfertasPorCantidad'}`, responses})
+            }
         }
         // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Exito en la actualizacion de descuentos por cantidad`, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-cantidad", process.env.PRD)
-        return res.json(response.data)
+        return res.json(responses)
     } catch (error) {
         console.log({ error })
         const mensaje = `Error en el controlador setDescuentoOfertasPorCantidadController: ${error.message || ''}`
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", mensaje, ``, "datos-maestros/descuento-cantidad", process.env.PRD)
         return res.status(500).json({ mensaje })
+    }
+}
+
+const findClienteController = async (req, res) => {
+    try {
+        const body= req.body
+        const response = await findCliente(body)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador findClienteController: ${error.message || ''}` })
     }
 }
 
@@ -375,5 +402,7 @@ module.exports = {
     actualizarDatosClienteController,
     descuentoOfertasPorLineaController,
     getAllLineasController,
-    setDescuentoOfertasPorCantidadController
+    setDescuentoOfertasPorCantidadController,
+    getArticulosController,
+    findClienteController
 }
