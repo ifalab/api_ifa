@@ -549,6 +549,7 @@ const facturacionStatusListController = async (req, res) => {
 
         const { listWhsCode, date, bringAll } = req.body
         let data = []
+        console.log({date})
         const dateNow = date.split('T')
         for (const iterator of listWhsCode) {
             const dataToList = await facturaPedidoDB(iterator)
