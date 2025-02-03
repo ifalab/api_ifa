@@ -5,7 +5,8 @@ const QRCode = require('qrcode');
 const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
     detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo, getVendedores,
-    getCobradores
+    getCobradores,
+    saldoDeudorIfavet
 } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -32,7 +33,13 @@ const cobranzasPorZonasController = async (req = request, res = response) => {
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
             })
+
+       
         const response = await cobranzaPorZona(username);
+        if (!response) {
+            return res.status(400).json({ mensaje: 'error al traer las cobranzas' })
+        }
+        console.log({response})
         // if (response.length == 0) {
         //     return res.status(400).json({ mensaje: 'Ingrese un usuario valido' })
         // }
@@ -654,7 +661,6 @@ const cobranzaClientePorVendedorController = async (req, res) => {
 const cobranzaClientePorVendedorIDController = async (req, res) => {
     try {
         const id = req.query.id
-        // console.log({id})
         if (!id) return res.status(400).json({ mensaje: 'no hay el id del vendedor' })
         const clientes = await clientesPorVendedor(id)
         return res.json({ clientes: clientes.data })
@@ -1387,6 +1393,16 @@ const getCobradoresController = async (req, res) => {
     }
 }
 
+const saldoDeudorIfavetController= async(req,res)=>{
+    try {
+        const clientes = await saldoDeudorIfavet()
+        return res.json({clientes})
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({mensaje:'Error al traer el saldo deudor de ifavet'})
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -1427,5 +1443,6 @@ module.exports = {
     detalleFacturaController,
     cobranzaPorSucursalesYTiposController,
     cobranzaPorSucursalYTiposController,
-    getCobradoresController
+    getCobradoresController,
+    saldoDeudorIfavetController,
 }
