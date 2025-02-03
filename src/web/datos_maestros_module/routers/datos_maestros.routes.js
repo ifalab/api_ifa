@@ -28,6 +28,6 @@ router.post('/descuento-linea', [validarToken, validarCampos], descuentoOfertasP
 router.get('/lineas', [validarToken, validarCampos], getAllLineasController)
 router.post('/descuento-cantidad', [validarToken, validarCampos], setDescuentoOfertasPorCantidadController)
 router.get('/articulos', [validarToken, validarCampos], getArticulosController)
-router.get('/find-cliente', [validarToken, validarCampos], findClienteController)
+router.post('/find-cliente', [validarToken, validarCampos], findClienteController)
 
 module.exports = router

@@ -355,8 +355,8 @@ const setDescuentoOfertasPorCantidad= async(itemCode,cantMin, cantMax, desc, fec
         console.log({ query })
         const result = await executeQuery(query)
         return {
-            status: 200,
-            data: result,
+            status: result.response || 200,
+            data: result.message || result,
             query
         }
     } catch (error) {
@@ -387,12 +387,12 @@ const getArticulos = async(lineCode)=>{
     }
 }
 
-const findCliente = async(code)=>{
+const findCliente = async(buscar)=>{
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "LineItemCode"='${lineCode}'`;
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '${buscar}' OR "CardName" LIKE '${buscar}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -404,9 +404,6 @@ const findCliente = async(code)=>{
         }
     }
 }
-
-
-
 
 module.exports = {
     dmClientes,

@@ -378,7 +378,10 @@ const setDescuentoOfertasPorCantidadController = async (req, res) => {
 const findClienteController = async (req, res) => {
     try {
         const body= req.body
-        const response = await findCliente(body)
+        console.log({body})
+        const buscar = body.buscar.toUpperCase()
+        console.log({buscar})
+        const response = await findCliente(buscar)
         return res.json(response)
     } catch (error) {
         console.log({ error })
