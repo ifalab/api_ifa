@@ -6,7 +6,10 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getSucursalesController, getAreasPorSucursalController, getZonasPorAreaController,
     getListaPreciosByIdCadenasController, setPrecioCadenaController, getZonasPorSucursalController,
     actualizarDatosClienteController, descuentoOfertasPorLineaController, getAllLineasController, 
-    setDescuentoOfertasPorCantidadController, getArticulosController, findClienteController
+    setDescuentoOfertasPorCantidadController, getArticulosController, findClienteController,
+    getDescuentosCantidadController, getIdDescuentosCantidadController, getArticuloByCodeController,
+    setDescuentoEspecialController, getAllDescuentosLineaController, deleteDescuentoLineaController,
+    setDescuentoEspecialPorArticuloController
  } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller')
 const router = Router()
@@ -29,5 +32,12 @@ router.get('/lineas', [validarToken, validarCampos], getAllLineasController)
 router.post('/descuento-cantidad', [validarToken, validarCampos], setDescuentoOfertasPorCantidadController)
 router.get('/articulos', [validarToken, validarCampos], getArticulosController)
 router.post('/find-cliente', [validarToken, validarCampos], findClienteController)
+router.get('/get-id-desc', [validarToken, validarCampos], getIdDescuentosCantidadController)
+router.post('/get-desc-cant', [validarToken, validarCampos], getDescuentosCantidadController)
+router.get('/get-item', [validarToken, validarCampos], getArticuloByCodeController)
+router.post('/descuento-especial', [validarToken, validarCampos], setDescuentoEspecialController)
+router.get('/get-desc-linea', [validarToken, validarCampos], getAllDescuentosLineaController)
+router.post('/delete-desc-linea', [validarToken, validarCampos], deleteDescuentoLineaController)
+router.post('/desc-especial-articulo', [validarToken, validarCampos], setDescuentoEspecialPorArticuloController)
 
 module.exports = router

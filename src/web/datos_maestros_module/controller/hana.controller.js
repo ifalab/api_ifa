@@ -48,7 +48,7 @@ const dmClientes = async () => {
             await connectHANA();
         }
 
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes`;
+        const query = `SELECT * FROM LAB_IFA_PRD.ifa_dm_clientes`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -68,7 +68,7 @@ const dmClientesPorCardCode = async (cardCode) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes WHERE "CardCode"= '${cardCode}'`;
+        const query = `SELECT * FROM LAB_IFA_PRD.ifa_dm_clientes WHERE "CardCode"= '${cardCode}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -301,17 +301,18 @@ const actualizarCliente= async(cardCode, columna, str, num)=>{
     }
 }
 
-const descuentoOfertasPorLinea= async(lineaItem, desc, fechaInicial, fechaFinal)=>{
+const descuentoOfertasPorLinea= async(lineaItem, desc, fechaInicial, fechaFinal, id_sap)=>{
     let query=''
     try {
         if (!connection) {
             await connectHANA();
         }
-        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos(${lineaItem}, ${desc}, '${fechaInicial}', '${fechaFinal}');`;
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos(${lineaItem}, ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap});`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
-            status: 200,
+            status: result[0].response || 200,
+            message: result[0].message || '',
             data: result,
             query
         }
@@ -331,7 +332,7 @@ const getAllLineas= async()=>{
             await connectHANA();
         }
 
-        const query = `select * from ${process.env.PRD}.ifa_dm_lineas`;
+        const query = `select * from LAB_IFA_PRD.ifa_dm_lineas`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -344,18 +345,26 @@ const getAllLineas= async()=>{
     }
 }
 
-const setDescuentoOfertasPorCantidad= async(itemCode,cantMin, cantMax, desc, fechaInicial, fechaFinal)=>{
+const setDescuentoOfertasPorCantidad= async(row,itemCode,cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del)=>{
     let query=''
     try {
         if (!connection) {
             await connectHANA();
         }
         
-        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos_detalle('${itemCode}',${cantMin}, ${cantMax}, ${desc}, '${fechaInicial}', '${fechaFinal}');`;
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos_detalle(${row},'${itemCode}',${cantMin}, ${cantMax}, ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap}, '${del}');`;
         console.log({ query })
         const result = await executeQuery(query)
+        console.log(result)
+        if(typeof result === 'number')
+            return {
+                status: 200, 
+                message: '',
+                data: result,
+                query
+            }
         return {
-            status: result[0].response || 200,
+            status: result[0].response || 200, 
             message: result[0].message || '',
             data: result,
             query
@@ -393,7 +402,7 @@ const findCliente = async(buscar)=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'`;
+        const query = `SELECT * FROM LAB_IFA_PRD.ifa_dm_clientes where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -402,6 +411,150 @@ const findCliente = async(buscar)=>{
         throw {
             status: 400,
             message: `Error en findCliente: ${error.message || ''}`
+        }
+    }
+}
+
+const getIdDescuentosCantidad = async(itemCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_id_descuentos_por_articulo('${itemCode}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getIdDescuentosCantidad:', error);
+        throw {
+            status: 400,
+            message: `Error en getIdDescuentosCantidad: ${error.message || ''}`
+        }
+    }
+}
+
+const getDescuentosCantidad = async(docNum,itemCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_descuentos_articulo_por_id(${docNum},'${itemCode}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDescuentosCantidad:', error);
+        throw {
+            status: 400,
+            message: `Error en getDescuentosCantidad: ${error.message || ''}`
+        }
+    }
+}
+
+const getArticuloByCode = async(code)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode"='${code}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getArticuloByCode:', error);
+        throw {
+            status: 400,
+            message: `Error en getArticuloByCode: ${error.message || ''}`
+        }
+    }
+}
+
+const setDescuentoEspecial= async(cardCode, lineCode, desc, fechaInicial, fechaFinal)=>{
+    let query=''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales('${cardCode}',${lineCode}, ${desc}, '${fechaInicial}', '${fechaFinal}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: result[0].response || 200,
+            message: result[0].message || '',
+            data: result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en setDescuentoEspecial:', error);
+        return {
+            status: 400,
+            message: `Error en setDescuentoEspecial: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
+const getAllDescuentosLinea = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_id_y_linea_descuentos_articulos()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllDescuentosLinea:', error);
+        throw {
+            status: 400,
+            message: `Error en getAllDescuentosLinea: ${error.message || ''}`
+        }
+    }
+}
+
+const deleteDescuentoLinea = async(id, lineaItemCode, id_sap)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_eliminar_descuentos_articulos(${id}, ${lineaItemCode}, ${id_sap})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status:200,
+            data: result}
+    } catch (error) {
+        console.error('Error en deleteDescuentoLinea:', error);
+        return {
+            status: 400,
+            message: `Error en deleteDescuentoLinea: ${error.message || ''}`
+        }
+    }
+}
+
+const setDescuentoEspecialPorArticulo= async(cardCode, itemCode, desc, fechaInicial, fechaFinal)=>{
+    let query=''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        //Change query
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales('${cardCode}','${itemCode}', ${desc}, '${fechaInicial}', '${fechaFinal}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: result[0].response || 200,
+            message: result[0].message || '',
+            data: result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en setDescuentoEspecialPorArticulo:', error);
+        return {
+            status: 400,
+            message: `Error en setDescuentoEspecialPorArticulo: ${error.message || ''}`,
+            query
         }
     }
 }
@@ -423,5 +576,12 @@ module.exports = {
     getAllLineas,
     setDescuentoOfertasPorCantidad,
     getArticulos,
-    findCliente
+    findCliente,
+    getIdDescuentosCantidad,
+    getDescuentosCantidad,
+    getArticuloByCode,
+    setDescuentoEspecial,
+    getAllDescuentosLinea,
+    deleteDescuentoLinea,
+    setDescuentoEspecialPorArticulo
 }
