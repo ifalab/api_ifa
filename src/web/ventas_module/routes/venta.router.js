@@ -33,7 +33,9 @@ const {
     listaOfertasController,
     detalleOfertaController,
     unidadMedidaController,
-    listaArticuloCadenasController
+    listaArticuloCadenasController,
+    clientesInstitucionesController,
+    clienteInstitucionByCardCodeController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -64,20 +66,22 @@ router.get('/historico-masivos', [validarToken, validarCampos], ventasHistoricoM
 router.get('/historico-instituciones', [validarToken, validarCampos], ventasHistoricoInstitucionesController)
 
 router.get('/ventas-zona', [validarToken, validarCampos], ventasVendedorPorZona)
-router.get('/ventas-zona-mes-ant', [validarToken, validarCampos],vendedorPorZonaMesAntController)
-router.post('/marcar-asistencia', [validarToken, validarCampos],marcarAsistenciaController)
-router.get('/asistencias-vendedor', [validarToken, validarCampos],getAsistenciasVendedorController)
-router.post('/asistencia-dia', [validarToken, validarCampos],listaAsistenciaDiaController)
-router.post('/prueba', [validarToken, validarCampos],pruebaBatchController)
+router.get('/ventas-zona-mes-ant', [validarToken, validarCampos], vendedorPorZonaMesAntController)
+router.post('/marcar-asistencia', [validarToken, validarCampos], marcarAsistenciaController)
+router.get('/asistencias-vendedor', [validarToken, validarCampos], getAsistenciasVendedorController)
+router.post('/asistencia-dia', [validarToken, validarCampos], listaAsistenciaDiaController)
+router.post('/prueba', [validarToken, validarCampos], pruebaBatchController)
 
 
 router.post('/usuario', [validarToken, validarCampos], ventasUsuarioController)
 router.post('/lista-almacenes', [validarToken, validarCampos], listaAlmacenesController)
 router.get('/oferta-precio-itemcode', [validarToken, validarCampos], ofertaPrecioItemCodeController)
-router.get('/oferta-descripcion-articulo', [validarToken, validarCampos],descripcionArticuloController)
+router.get('/oferta-descripcion-articulo', [validarToken, validarCampos], descripcionArticuloController)
 router.get('/lista-ofertas', [validarToken, validarCampos], listaOfertasController)
 router.get('/detalle-oferta', [validarToken, validarCampos], detalleOfertaController)
-router.get('/oferta-unidad-medida', [validarToken, validarCampos],unidadMedidaController)
-router.get('/lista-articulo-cadenas', [validarToken, validarCampos],listaArticuloCadenasController)
+router.get('/oferta-unidad-medida', [validarToken, validarCampos], unidadMedidaController)
+router.get('/lista-articulo-cadenas', [validarToken, validarCampos], listaArticuloCadenasController)
+router.get('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
+router.get('/cliente-institucion-by-cardcode', [validarToken, validarCampos],clienteInstitucionByCardCodeController)
 
 module.exports = router

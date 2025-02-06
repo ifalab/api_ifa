@@ -539,6 +539,34 @@ const listaArticuloCadenas = async (cardCode,listNum) => {
     }
 }
 
+const clientesInstituciones = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES_INSTITUCIONES`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en clientesInstituciones')
+    }
+}
+
+const clientesInstitucionByCardCode = async(cardCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `CALL ${process.env.PRD}.CLIENTE_INSTITUCION_BY_CARDCODE('${cardCode}')`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en clientesInstitucionByCardCode')
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -574,5 +602,7 @@ module.exports = {
     obtenerOfertas,
     detalleOferta,
     unidadMedida,
-    listaArticuloCadenas
+    listaArticuloCadenas,
+    clientesInstituciones,
+    clientesInstitucionByCardCode,
 }

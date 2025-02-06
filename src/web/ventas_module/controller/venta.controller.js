@@ -32,7 +32,9 @@ const {
     obtenerOfertas,
     detalleOferta,
     unidadMedida,
-    listaArticuloCadenas
+    listaArticuloCadenas,
+    clientesInstituciones,
+    clientesInstitucionByCardCode
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -874,7 +876,7 @@ const listaArticuloCadenasController = async (req, res) => {
         response.map((item) => {
             if (item.PriceMax == null) {
                 item.PriceMax = 0
-            }else{
+            } else {
                 item.PriceMax = Number(item.PriceMax)
             }
             data.push(item)
@@ -887,6 +889,29 @@ const listaArticuloCadenasController = async (req, res) => {
     }
 }
 
+const clientesInstitucionesController = async (req, res) => {
+    try {
+        const clientes = await clientesInstituciones()
+        return res.json(clientes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador', error })
+    }
+}
+
+
+const clienteInstitucionByCardCodeController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const response = await clientesInstitucionByCardCode(cardCode)
+        if (response.length == 0) return res.status(400).json({ mensaje: 'no se encontro el cliente' })
+        const cliente = response[0]
+        return res.json(cliente)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador', error })
+    }
+}
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -922,4 +947,6 @@ module.exports = {
     detalleOfertaController,
     unidadMedidaController,
     listaArticuloCadenasController,
+    clientesInstitucionesController,
+    clienteInstitucionByCardCodeController,
 };
