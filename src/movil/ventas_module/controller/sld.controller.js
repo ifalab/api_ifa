@@ -113,7 +113,7 @@ const postQuotations = async(newOrderDate)=>{
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
         console.error('Error en la solicitud POST para Entrega:', error.response?.data || error.message);
         return {
-            message: 'Hubo un problema en la solicitud',
+            message: 'Hubo un problema en la solicitud postQuotations',
             status: 400,
             errorMessage
         }

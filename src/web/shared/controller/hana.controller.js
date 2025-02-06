@@ -33,7 +33,7 @@ const executeQuery = async (query) => {
         connection.exec(query, (err, result) => {
             if (err) {
                 console.log('error en la consulta:', err.message)
-                reject(new Error(`${err.message || 'Error en la consulta'}`))
+                reject(new Error(`Error en la consulta: ${err.message || ''}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);

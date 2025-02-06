@@ -35,7 +35,7 @@ const listaEncuestaController = async (req, res) => {
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador: listaEncuestaController' })
+        return res.status(500).json({ mensaje: `Error en el controlador listaEncuestaController: ${error.message || ''}` })
     }
 }
 
