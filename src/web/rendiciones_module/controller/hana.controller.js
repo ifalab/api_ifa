@@ -49,7 +49,7 @@ const tipoDeCambion = async () => {
             await connectHANA();
         }
         console.log('tipoDeCambion EXECUTE')
-        const query = `CALL "LAB_IFA_PRD".IFA_CON_MONEDAS_TIPOS();`
+        const query = `CALL "${process.env.PRD}".IFA_CON_MONEDAS_TIPOS();`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -64,7 +64,7 @@ const findAllAperturaCaja = async () => {
             await connectHANA();
         }
         console.log('findAllAperturaCaja EXECUTE')
-        const query = `SELECT * FROM "${process.env.DBSAPPRD}".ifa_rw_estado_cajas`
+        const query = `SELECT * FROM "${process.env.PRD}".ifa_rw_estado_cajas`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -80,7 +80,7 @@ const findCajasEmpleado = async (codEmp) => {
             await connectHANA();
         }
         console.log('findCajasEmpleado EXECUTE')
-        const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_RW_CAJAS_X_EMPLEADO('${codEmp}')`
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_RW_CAJAS_X_EMPLEADO('${codEmp}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result

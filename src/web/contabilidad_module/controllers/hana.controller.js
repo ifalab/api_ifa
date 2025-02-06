@@ -43,71 +43,106 @@ const executeQuery = async (query) => {
     })
 }
 
-const tipoDeCambion = async ()=>{
+const tipoDeCambio = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('tipoDeCambion EXECUTE')
-        const query = `CALL "LAB_IFA_PRD".IFA_CON_MONEDAS_TIPOS();`
+        const query = `CALL "${process.env.PRD}".IFA_CON_MONEDAS_TIPOS();`
         const result = await executeQuery(query)
         return result
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         throw new Error('error en tipoDeCambion')
     }
 }
 
-const empleadosHana = async()=>{
+const empleadosHana = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('empleadosHana EXECUTE')
-        const query = `SELECT * FROM "LAB_IFA_PRD"."IFA_DM_EMPLEADOS"`
-        console.log({query})
+        const query = `SELECT * FROM "${process.env.PRD}"."IFA_DM_EMPLEADOS"`
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         throw new Error('error en empleadosHana')
     }
 }
 
-const findEmpleadoByCode = async(code)=>{
+const findEmpleadoByCode = async (code) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('findEmpleadoByCode EXECUTE')
-        const query = `CALL "LAB_IFA_PRD".IFA_DM_BUSCAR_EMPLEADO_POR_CODIGO('${code}')`
-        console.log({query})
+        const query = `CALL "${process.env.PRD}".IFA_DM_BUSCAR_EMPLEADO_POR_CODIGO('${code}')`
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         throw new Error('error en findEmpleadoByCode')
     }
 }
 
-const findAllBancos = async()=>{
+const findAllBancos = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('findAllBancos EXECUTE')
-        const query = `SELECT * FROM "LAB_IFA_PRD"."IFA_DM_TODOS_BANCOS"`
-        console.log({query})
+        const query = `SELECT * FROM "${process.env.PRD}"."IFA_DM_TODOS_BANCOS"`
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         throw new Error('error en findAllBancos')
     }
 }
+
+const findAllAccount = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('findAllAccount EXECUTE')
+        const query = `select "AcctCode", "AcctName" from ${process.env.PRD}.ifa_dm_cuentas where "AcctCode" in ('1120501','1110301')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findAllAccount')
+    }
+}
+
+const dataCierreCaja = async (id)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('dataCierreCaja EXECUTE')
+        const query = `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en dataCierreCaja')
+    }
+}
+
 module.exports = {
-    tipoDeCambion,
+    tipoDeCambio,
     empleadosHana,
     findEmpleadoByCode,
-    findAllBancos
+    findAllBancos,
+    findAllAccount,
+    dataCierreCaja,
 }

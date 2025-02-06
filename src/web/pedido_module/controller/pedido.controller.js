@@ -212,7 +212,7 @@ const sugeridosXClienteController = async (req, res, next) => {
         const cardCode = req.query.cardCode
 
         const sugeridos = await pedidoSugeridoXCliente(cardCode)
-        console.log({ sugeridos })
+        // console.log({ sugeridos })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
         grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", `${sugeridos.query || ''}`, "pedido/sugerido-cliente", process.env.PRD)

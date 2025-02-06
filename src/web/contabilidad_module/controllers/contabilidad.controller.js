@@ -1,4 +1,5 @@
-const { tipoDeCambion, empleadosHana, findEmpleadoByCode, findAllBancos } = require("./hana.controller")
+const { grabarLog } = require("../../shared/controller/hana.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 
 const asientoContableController = async (req, res) => {
@@ -23,7 +24,7 @@ const asientoContableController = async (req, res) => {
             Reference3,
             JournalEntryLines,
         })
-        const tipoCambio = await tipoDeCambion()
+        const tipoCambio = await tipoDeCambio()
         const usd = tipoCambio[0]
         console.log({ usd })
         const journalList = []
@@ -192,16 +193,17 @@ const createAsientoContableController = async (req, res) => {
             glosa,
             cheque,
             indicador,
-            reference
+            reference,
+            cuenta
         } = req.body
-        const tipoCambio = await tipoDeCambion()
+        const tipoCambio = await tipoDeCambio()
         const usdRate = tipoCambio[0]
         const usd = +usdRate.Rate
         if (monto == 0) return res.status(400).json({ mensaje: 'El monto no puede ser cero' })
         if (usd == 0) return res.status(400).json({ mensaje: 'El tipo de cambio no puede ser cero' })
         const newValue = +monto / usd
         let firstAccount = {
-            AccountCode: '1120501',
+            AccountCode: `${cuenta}`,
             ShortName: `${codEmp}`,
             Credit: 0,
             Debit: monto,
@@ -209,7 +211,7 @@ const createAsientoContableController = async (req, res) => {
             DebitSys: parseFloat(newValue.toFixed(2)),
             ContraAccount: `${banckAccount}`,
             LineMemo: `${glosa}`,
-            Reference1:`${reference}`,
+            Reference1: `${reference}`,
             Reference2: ''
         }
         let contraAccount = {
@@ -232,23 +234,18 @@ const createAsientoContableController = async (req, res) => {
             ReferenceDate: date,
             Memo: glosa,
             Indicator: indicador,
-            Reference:reference,
+            Reference: reference,
             JournalEntryLines
         }
 
-        console.log({...data})
-        // return
-        // return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja` })
+        console.log({ ...data })
         const response = await asientoContable({
             ...data
         })
         if (response.value) {
             return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja` })
-            // return res.status(400).json({ mensaje: `${response.value}` })
-            //{ lang: 'en-us', value: '10000415 - Linked value 11 does not exist' }
-            // value: "Enter valid code  [JournalEntryLines.ContraAccount][line: 2] , '1120501'"
         }
-        return res.json({mensaje:'Apertura de Caja creado con exito' })
+        return res.json({ mensaje: 'Apertura de Caja creado con exito' })
 
 
 
@@ -289,6 +286,94 @@ const findAllBancoController = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el find all bank controlador' })
     }
 }
+
+const findAllAccountController = async (req, res) => {
+    try {
+        const response = await findAllAccount()
+        res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el findAllAccountController' })
+    }
+}
+
+const cerrarCajaChicaController = async (req, res) => {
+    try {
+        const { id, glosa } = req.body
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({id,glosa})
+        const data = await dataCierreCaja(id)
+        if (data.length !== 2) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error en traer los datos necesarios para el cierre de caja`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
+            return res.status(400).json({ mensaje: 'Hubo un problemas en traer los datos necesarios para el cierre de caja' ,data})
+        }
+        const dataAccount = data[0]
+        const dataBankAccount = data[1]
+        const tipoCambio = await tipoDeCambio()
+        const usdRate = tipoCambio[0]
+        const usd = +usdRate.Rate
+        const montoBank = Number(dataBankAccount.Debit)
+        const montoAccount = Number(dataAccount.Credit)
+        if (montoBank == 0 || montoAccount == 0) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Error: El montoBank no puede ser cero: ${montoBank || 'no definido'} o el montoAccount no puede ser cero: ${montoAccount || 'no definido'}`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
+            return res.status(400).json({ mensaje: 'El Monto de las cuentas no puede ser cero' ,data})
+        }
+        if (usd == 0) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Error: El tipo de cambio no puede ser cero : ${usd || 'no definido'}`, `CALL "${process.env.PRD}".IFA_CON_MONEDAS_TIPOS();`, "contabilidad/cierre-caja-chica", process.env.PRD)
+            return res.status(400).json({ mensaje: 'El tipo de cambio no puede ser cero' })
+        }
+        const newMontoBank = +montoBank / usd
+        const newMontoAccount = +montoAccount / usd
+        let account = {
+            AccountCode: `${dataBankAccount.Account}`,
+            ShortName: `${dataBankAccount.ShortName}`,
+            Credit: 0,
+            Debit: parseFloat(montoBank.toFixed(2)),
+            CreditSys: 0,
+            DebitSys: parseFloat(newMontoBank.toFixed(2)),
+            ContraAccount: `${dataBankAccount.ContraAct}`,
+            LineMemo: `${glosa}`,
+            Reference1: ``,
+            Reference2: ''
+        }
+        let contraAccount = {
+            AccountCode: `${dataAccount.Account}`,
+            ShortName: `${dataAccount.ShortName}`,
+            Credit: parseFloat(montoAccount.toFixed(2)),
+            Debit: 0,
+            CreditSys: parseFloat(newMontoAccount.toFixed(2)),
+            DebitSys: 0,
+            ContraAccount: `${dataAccount.ContraAct}`,
+            LineMemo: glosa,
+            Reference1: ``,
+            Reference2: '',
+        }
+        let JournalEntryLines = []
+        JournalEntryLines.push(account)
+        JournalEntryLines.push(contraAccount)
+        const postJournalEntry = {
+            ReferenceDate: '',
+            Memo: glosa,
+            Indicator: '11',
+            Reference: '',
+            JournalEntryLines
+        }
+
+        const response = await asientoContable({
+            ...postJournalEntry
+        })
+        if (response.value) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error al cerrar la apertura de caja. SAP: ${response.value || 'no definido'}`, `${response.lang || ''}`, "contabilidad/cierre-caja-chica", process.env.PRD)
+            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. SAP: ${response.value || 'no definido'}` })
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Cierre de Caja realizado con exito`, `${''}`, "contabilidad/cierre-caja-chica", process.env.PRD)
+        return res.json({ mensaje: 'Cierre de Caja realizado con exito', postJournalEntry ,data})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -296,5 +381,7 @@ module.exports = {
     createAsientoContableController,
     empleadosController,
     empleadosByCodeController,
-    findAllBancoController
+    findAllBancoController,
+    findAllAccountController,
+    cerrarCajaChicaController
 }

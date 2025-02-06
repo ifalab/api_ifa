@@ -105,7 +105,7 @@ const facturacionController = async (req, res) => {
                     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                     return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
                 }
-                if (batchData && batchData.length !== 0) {
+                if (batchData && batchData.length > 0) {
                     // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
                     // console.log('------------------------------------------------------------------------------------')
                     // console.log({ UnitsOfMeasurment })
@@ -139,7 +139,6 @@ const facturacionController = async (req, res) => {
                     };
                     newLine = { ...newLine };
                     newDocumentLines.push(newLine)
-
                 }
 
 
@@ -550,15 +549,18 @@ const facturacionStatusListController = async (req, res) => {
         const { listWhsCode, date, bringAll } = req.body
         let data = []
         console.log({date})
+        if(!date){
+            return res.status(400).json({mensaje:'No hay fecha en la peticion'})
+        }
         const dateNow = date.split('T')
         for (const iterator of listWhsCode) {
             const dataToList = await facturaPedidoDB(iterator)
             dataToList.map((item) => {
                 const dateNowItem = item.DocDate.split(' ')
-                if (dateNow[0] == dateNowItem[0]) {
+                if (dateNow[0] == dateNowItem[0] && !bringAll) {
                     data.push({ ...item })
                 }
-                if (bringAll) {
+                if (bringAll ) {
                     data.push({ ...item })
                 }
             })
