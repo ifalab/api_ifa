@@ -469,14 +469,14 @@ const getArticuloByCode = async(code)=>{
     }
 }
 
-const setDescuentoEspecial= async(cardCode, lineCode, desc, fechaInicial, fechaFinal)=>{
+const setDescuentoEspecial= async(cardCode, lineCode, desc, fechaInicial, fechaFinal, id_sap)=>{
     let query=''
     try {
         if (!connection) {
             await connectHANA();
         }
         
-        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales('${cardCode}',${lineCode}, ${desc}, '${fechaInicial}', '${fechaFinal}');`;
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales('${cardCode}',${lineCode}, ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap});`;
         console.log({ query })
         const result = await executeQuery(query)
         return {

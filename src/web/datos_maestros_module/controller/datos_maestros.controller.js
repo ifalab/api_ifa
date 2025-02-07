@@ -443,9 +443,9 @@ const setDescuentoEspecialController = async (req, res) => {
     try {
         const {body}=req
         console.log({body})
-        const {cardCode, lineaItem, desc, fechaInicial, fechaFinal} = body 
+        const {cardCode, lineaItem, desc, fechaInicial, fechaFinal, id_sap} = body 
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const response = await setDescuentoEspecial(cardCode, lineaItem, desc, fechaInicial, fechaFinal)
+        const response = await setDescuentoEspecial(cardCode, lineaItem, desc, fechaInicial, fechaFinal, id_sap)
         if(response.status!=200){
             grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial", `Error: ${response.message || 'setDescuentoEspecial()'}`, `${response.query || 'setDescuentoEspecial'}`, "datos-maestros/descuento-especial", process.env.PRD)
             return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoEspecial'}`})
