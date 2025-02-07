@@ -34,7 +34,8 @@ const {
     unidadMedida,
     listaArticuloCadenas,
     clientesInstituciones,
-    clientesInstitucionByCardCode
+    clientesInstitucionByCardCode,
+    vendedoresPorSucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -325,9 +326,9 @@ const ventasVendedorPorZona = async (req = request, res = response) => {
             mensaje: "Todas las zonas del usuario"
         });
     } catch (err) {
-        console.log('error en ventasInstitucionesController')
+        console.log('error en ventasVendedorPorZona')
         console.log({ err })
-        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+        return res.status(500).json({ mensaje: `Error en ventasVendedorPorZona: ${err.message}` })
     }
 }
 
@@ -899,7 +900,6 @@ const clientesInstitucionesController = async (req, res) => {
     }
 }
 
-
 const clienteInstitucionByCardCodeController = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
@@ -912,6 +912,23 @@ const clienteInstitucionByCardCodeController = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en el controlador', error })
     }
 }
+
+const vendedoresPorSucursalController = async (req, res) => {
+    try {
+        const {sucursales} = req.body
+        let responses=[]
+        for(const suc of sucursales){
+            console.log(suc)
+            const response = await vendedoresPorSucursal(suc)
+            responses.push(...response)
+        }
+        return res.json(responses)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}`})
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -949,4 +966,5 @@ module.exports = {
     listaArticuloCadenasController,
     clientesInstitucionesController,
     clienteInstitucionByCardCodeController,
+    vendedoresPorSucursalController
 };

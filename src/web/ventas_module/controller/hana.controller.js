@@ -33,7 +33,7 @@ const executeQuery = async (query) => {
         connection.exec(query, (err, result) => {
             if (err) {
                 console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
+                reject(new Error(`error en la consulta: ${err.message}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
@@ -239,7 +239,7 @@ const ventasPorZonasVendedor = async (username, line, groupBy) => {
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en ventas por zona: ', err.message);
-        throw new Error('Error al procesar la solicitud: ventasUsuario');
+        throw new Error(`Error al procesar la solicitud ventasPorZonasVendedor: ${err.message}`);
     }
 }
 
@@ -567,6 +567,22 @@ const clientesInstitucionByCardCode = async(cardCode)=>{
     }
 }
 
+const vendedoresPorSucursal = async(suc)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        
+        const query = `CALL ${process.env.PRD}.IFA_DM_VENDEDORES_POR_SUCURSAL('${suc}')`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en vendedoresPorSucursal: ${error.message}`)
+    }
+}
+
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -605,4 +621,5 @@ module.exports = {
     listaArticuloCadenas,
     clientesInstituciones,
     clientesInstitucionByCardCode,
+    vendedoresPorSucursal
 }
