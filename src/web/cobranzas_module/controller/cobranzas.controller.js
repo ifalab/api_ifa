@@ -34,12 +34,12 @@ const cobranzasPorZonasController = async (req = request, res = response) => {
                 mensaje: 'Ingrese un username valido'
             })
 
-       
+
         const response = await cobranzaPorZona(username);
         if (!response) {
             return res.status(400).json({ mensaje: 'error al traer las cobranzas' })
         }
-        console.log({response})
+        console.log({ response })
         // if (response.length == 0) {
         //     return res.status(400).json({ mensaje: 'Ingrese un usuario valido' })
         // }
@@ -1378,10 +1378,8 @@ const cobranzaPorSucursalYTiposController = async (req, res) => {
 
 const getCobradoresController = async (req, res) => {
     try {
-        const idSap = req.query.idSap
-        console.log({ idSap })
-        let cobradores = await getVendedores(idSap)
 
+        let cobradores = await getVendedores()
         cobradores = cobradores.filter((element) => element.SlpCode != -1)
         return res.json(cobradores)
     } catch (error) {
@@ -1393,13 +1391,36 @@ const getCobradoresController = async (req, res) => {
     }
 }
 
-const saldoDeudorIfavetController= async(req,res)=>{
+const getCobradoresBySucursalController = async (req, res) => {
+    try {
+        const { listSucName } = req.body
+        let response = []
+        let cobradores = await getVendedores()
+        cobradores = cobradores.filter((element) => element.SlpCode != -1)
+
+        cobradores.map((item) => {
+            if (listSucName.includes(item.SucName)) {
+                response.push(item)
+            }
+        })
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getCobradoresController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const saldoDeudorIfavetController = async (req, res) => {
     try {
         const clientes = await saldoDeudorIfavet()
-        return res.json({clientes})
+        return res.json({ clientes })
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'Error al traer el saldo deudor de ifavet'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error al traer el saldo deudor de ifavet' })
     }
 }
 
@@ -1445,4 +1466,5 @@ module.exports = {
     cobranzaPorSucursalYTiposController,
     getCobradoresController,
     saldoDeudorIfavetController,
+    getCobradoresBySucursalController,
 }

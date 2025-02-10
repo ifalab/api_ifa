@@ -892,9 +892,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
         }
         let { estado } = estadoFacturaResponse[0]
-        // //! ELIMINAR: ------------------------------------------------------------------------------
-        // // estado = false
-        // //!  ------------------------------------------------------------------------------
+
         if (estado) {
             responseProsin = await anulacionFacturacion({
                 sucursal,
@@ -921,7 +919,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `Debe venir el doc entry` })
         }
         const reponseInvoice = await cancelInvoice(docEntry)
-        if (reponseInvoice.value) {
+        if (reponseInvoice.value && !reponseInvoice.value.includes('Document is already closed') ) {
             const outputDir = path.join(__dirname, 'outputsAnulacion');
             if (!fs.existsSync(outputDir)) {
                 fs.mkdirSync(outputDir);
@@ -1221,10 +1219,14 @@ const facturacionEntregaController = async (req, res) => {
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
             if (dataProsin && dataProsin.estado != 200) {
+                let messageEvaluate = ''
+                if(dataProsin.mensaje.includes('NIT INEXISTENTE')){
+                    messageEvaluate += 'Contacte con CPD.'
+                }
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.message || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '/api/sfl/FacturaCompraVenta', "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `Error de Prosin. ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
             }
-            if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: `Error de Prosin. ${dataProsin.mensaje || ''}`, dataProsin, bodyFinalFactura })
+            if (dataProsin.mensaje != null) return res.status(400).json({ mensaje: `Error de Prosin. ${dataProsin.mensaje || ''}. ${messageEvaluate}`, dataProsin, bodyFinalFactura })
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
             const cuf = dataProsin.datos.cuf

@@ -57,6 +57,7 @@ const postHabilitacionController = async (req, res) => {
         let concepto = ''
         let inventario = ''
         let warehouseCode = ''
+        const user = req.usuarioAutorizado
         let id = ''
         if (formulario.concepto !== null) concepto = formulario.concepto
         if (formulario.cliente) {
@@ -70,7 +71,9 @@ const postHabilitacionController = async (req, res) => {
         // console.log({ warehouseCode })
         // console.log({ id })
         // return res.json({ id: userLocal.user.ID })
+        
         if (formulario.almacen == null) {
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `el inventario es obligatorio. ${formulario.almacen||'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
         } else {
             if (formulario.almacen.WhsCode) {
@@ -176,6 +179,7 @@ const postHabilitacionController = async (req, res) => {
         if (response.lang) {
             console.log({ response })
             const responseValue = response.value;
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postSalidaHabilitacion, ${response.value||'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
             if (responseValue.includes('Batch/serial number') && responseValue.includes('does not exist; specify a valid batch/serial number')) {
                 return res.status(400).json({ mensaje: 'Hubo un Lote Incorrecto' });
             }
@@ -255,6 +259,7 @@ const postHabilitacionController = async (req, res) => {
         console.log({ responseEntradaHabilitacion })
         console.log({ value: responseEntradaHabilitacion.value })
         console.log({ lang: responseEntradaHabilitacion.lang })
+        grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${response.value||'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
         if (responseEntradaHabilitacion.value) {
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
         }

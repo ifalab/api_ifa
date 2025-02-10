@@ -2,7 +2,8 @@ const { Router } = require('express')
 const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormalesController, cobranzaCadenaController, cobranzaIfavetController, cobranzaIfavetMesAnteriorController, cobranzaCadenaMesAnteriorController, cobranzaNormalesMesAnteriorController, cobranzaPorSucursalMesAnteriorController, cobranzaMasivosController, cobranzaInstitucionesController, cobranzaMasivosMesAnteriorController, cobranzaInstitucionesMesAnteriorController, cobranzaPorSupervisorController, cobranzasPorZonasController, cobranzaHistoricoNacionalController, cobranzaHistoricoNormalesController, cobranzaHistoricoCadenasController, cobranzaHistoricoIfavetController, cobranzaHistoricoInstitucionesController, cobranzaHistoricoMasivosController, cobranzasPorZonasMesAntController, cobranzaClientePorVendedorController, cobranzaFacturaPorClienteController, clientesInstitucionesSaldoDeudorController, saldoDeudorInstitucionesController, realizarCobroController, comprobanteController, comprobantePDFController, resumenCobranzasController, cobrosRealizadosController, clientesPorSucursalController, cobranzaFacturaPorCliDespController, cobranzaClientePorVendedorIDController, clientesPorDespachadorController, cobranzaFacturaPorClienteDespachadorController,
     detalleFacturaController, cobranzaPorSucursalesYTiposController, cobranzaPorSucursalYTiposController,
     getCobradoresController,
-    saldoDeudorIfavetController
+    saldoDeudorIfavetController,
+    getCobradoresBySucursalController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -53,6 +54,7 @@ router.get('/detalle-factura',[validarToken, validarCampos],detalleFacturaContro
 router.post('/cob-sucursales-tipos',[validarToken, validarCampos],cobranzaPorSucursalesYTiposController)
 router.post('/cob-sucursal-tipos',[validarToken, validarCampos],cobranzaPorSucursalYTiposController)
 router.get('/get-cobradores',[validarToken, validarCampos],getCobradoresController)
+router.patch('/get-cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalController)
 router.get('/saldo-deudor-ifavet',[validarToken, validarCampos], saldoDeudorIfavetController)
 
 
