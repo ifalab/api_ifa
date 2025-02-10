@@ -4,7 +4,7 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     actualizarCliente, descuentoOfertasPorLinea, getAllLineas, setDescuentoOfertasPorCantidad,
     getArticulos, findCliente, getDescuentosCantidad, getIdDescuentosCantidad,
     getArticuloByCode, setDescuentoEspecial, getAllDescuentosLinea, deleteDescuentoLinea,
-    setDescuentoEspecialPorArticulo } = require("./hana.controller")
+    setDescuentoEspecialPorArticulo, obtenerTipos } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -287,7 +287,9 @@ const actualizarDatosClienteController = async (req, res) => {
             SucCode,
             AreaCode,
             ZoneCode,
-            CreditLine} = req.body
+            CreditLine,
+            GroupCode
+        } = req.body
         console.log({body: req.body})
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
 
@@ -296,6 +298,8 @@ const actualizarDatosClienteController = async (req, res) => {
         response = await actualizarCliente(CardCode, `AreaCode`, '', AreaCode)
         response = await actualizarCliente(CardCode, `ZoneCode`, '', ZoneCode)
         response = await actualizarCliente(CardCode, `CreditLine`, '', CreditLine)
+        response = await actualizarCliente(CardCode, `GroupCode`, '', GroupCode)
+
         if (response.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Datos Cliente", `Error: ${response.errorMessage || 'actualizarCliente()'} `, ``, "datos-maestros/actualizar-cliente", process.env.PRD)
             return res.status(400).json({ mensaje: `${response.errorMessage.value || 'Error en actualizarCliente'}` })
@@ -522,6 +526,16 @@ const setDescuentoEspecialPorArticuloController = async (req, res) => {
 }
 
 
+const obtenerTiposController = async (req, res) => {
+    try {
+        const tipos = await obtenerTipos()
+        return res.json(tipos)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador obtenerTiposController. ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -547,5 +561,6 @@ module.exports = {
     setDescuentoEspecialController,
     getAllDescuentosLineaController,
     deleteDescuentoLineaController,
-    setDescuentoEspecialPorArticuloController
+    setDescuentoEspecialPorArticuloController,
+    obtenerTiposController
 }

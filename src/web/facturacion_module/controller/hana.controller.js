@@ -285,6 +285,7 @@ const obtenerEntregaPorPedido = async (id) => {
         return { message: `Error en obtenerEntregaPorPedido: ${error.message || ''}` }
     }
 }
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,

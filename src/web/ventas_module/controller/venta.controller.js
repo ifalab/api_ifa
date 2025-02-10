@@ -909,7 +909,7 @@ const clienteInstitucionByCardCodeController = async (req, res) => {
         return res.json(cliente)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador', error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}`, error })
     }
 }
 

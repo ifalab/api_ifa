@@ -7,7 +7,7 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     facturacionEntregaController, facturacionStatusListController, facturasPedidoCadenasController,
     facturasAnuladasController,
     entregasSinFacturasController,
-    cancelarOrdenController
+    cancelarOrdenController,
  } = require('../controller/facturacion.controller')
 const router = Router()
 

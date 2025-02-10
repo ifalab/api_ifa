@@ -563,7 +563,7 @@ const clientesInstitucionByCardCode = async(cardCode)=>{
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en clientesInstitucionByCardCode')
+        throw new Error(`Error en clientesInstitucionByCardCode: ${error.message}`)
     }
 }
 

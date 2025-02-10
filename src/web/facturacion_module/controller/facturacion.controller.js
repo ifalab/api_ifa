@@ -15,7 +15,8 @@ const { facturacionProsin, anulacionFacturacion } = require("../service/apiFactu
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
     facturasAnuladas, pedidosPorEntrega,
     entregasSinFacturas,
-    obtenerEntregaPorPedido } = require("./hana.controller")
+    obtenerEntregaPorPedido,
+     } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -1457,5 +1458,5 @@ module.exports = {
     facturasPedidoCadenasController,
     facturasAnuladasController,
     entregasSinFacturasController,
-    cancelarOrdenController
+    cancelarOrdenController,
 }

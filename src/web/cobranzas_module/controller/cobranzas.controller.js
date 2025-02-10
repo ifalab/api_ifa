@@ -1312,7 +1312,7 @@ const cobranzaPorSucursalesYTiposController = async (req, res) => {
             const porTipo = []
             for (const tipo of tipos) {
                 const cobranza = await cobranzaPorSucursalYTipo(sucCode, tipo)
-                console.log({ cobranza })
+                // console.log({ cobranza })
                 if (cobranza.status == 400) {
                     return res.status(400).json(`${cobranza.message || 'Error en cobranzaPorSucursalYTipo'}`)
                 }
@@ -1327,7 +1327,7 @@ const cobranzaPorSucursalesYTiposController = async (req, res) => {
                     totalCobranza += Number(dta.Collection)
                 })
                 porTipo.push(...cobranzaName)
-                console.log({ porTipo })
+                // console.log({ porTipo })
             }
             listResponse.push(porTipo)
         }
