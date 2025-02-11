@@ -281,8 +281,8 @@ const employedByCardCode = async (cardCode) => {
     }
 }
 
-const actualizarEstadoComentario = async(id, estado,comentario)=>{
-    
+const actualizarEstadoComentario = async (id, estado, comentario) => {
+
     try {
         if (!connection) {
             await connectHANA();
@@ -301,7 +301,7 @@ const actualizarEstadoComentario = async(id, estado,comentario)=>{
     }
 }
 
-const actualizarEstadoRendicion = async(id,estado)=>{
+const actualizarEstadoRendicion = async (id, estado) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -320,7 +320,7 @@ const actualizarEstadoRendicion = async(id,estado)=>{
     }
 }
 
-const eliminarGastoID = async(idGasto)=>{
+const eliminarGastoID = async (idGasto) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -339,10 +339,166 @@ const eliminarGastoID = async(idGasto)=>{
     }
 }
 
+const costoComercialAreas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('costoComercialAreas EXECUTE')
+        // const query = `select * from ${process.env.PRD}."IFA_CC_AREAS"`
+        const query = `select * from LAB_IFA_PRD."IFA_CC_AREAS"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo traer datos del costo comercial - areas`
+        }
+
+    }
+}
+
+const costoComercialTipoCliente = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('costoComercialTipoCliente EXECUTE')
+        // const query = `select * from  ${process.env.PRD}."IFA_CC_TIPOS"`
+        const query = `select * from  LAB_IFA_PRD."IFA_CC_TIPOS"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo traer datos del costo comercial - Tipo clientes`
+        }
+
+    }
+}
+
+const costoComercialLineas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('costoComercialLineas EXECUTE')
+        // const query = `select * from  ${process.env.PRD}."IFA_CC_LINEAS"`
+        const query = `select * from  LAB_IFA_PRD."IFA_CC_LINEAS"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo traer datos del costo comercial - Lineas`
+        }
+
+    }
+}
+
+const costoComercialEspecialidades = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('costoComercialEspecialidades EXECUTE')
+        // const query = `select * from  ${process.env.PRD}."IFA_CC_ESPECIALIDADES"`
+        const query = `select * from  LAB_IFA_PRD."IFA_CC_ESPECIALIDADES"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo traer datos del costo comercial - Especialidades`
+        }
+
+    }
+}
+
+const costoComercialClasificaciones = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('costoComercialClasificaciones EXECUTE')
+        // const query = `select * from  ${process.env.PRD}."IFA_CC_CLASIFICACIONES"`
+        const query = `select * from  LAB_IFA_PRD."IFA_CC_CLASIFICACIONES"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo traer datos del costo comercial - Clasificaciones`
+        }
+
+    }
+}
+const costoComercialConceptos = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('costoComercialConceptos EXECUTE')
+        // const query = `select * from  ${process.env.PRD}."IFA_CC_CONCEPTOS"`
+        const query = `select * from  LAB_IFA_PRD."IFA_CC_CONCEPTOS"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo traer datos del costo comercial - Conceptos`
+        }
+
+    }
+}
+
+const costoComercialCuenta = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('costoComercialConceptos EXECUTE')
+        // const query = `select "Account","AcctName" from ${process.env.PRD}."IFA_RW_CONCEPTOS_COMERCIALES" GROUP BY  "Account","AcctName"`
+        const query = `select "Account","AcctName" from LAB_IFA_PRD."IFA_RW_CONCEPTOS_COMERCIALES" GROUP BY  "Account","AcctName"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo traer datos del costo comercial - Conceptos`
+        }
+
+    }
+}
+const filtroCC = async (areaCode,tipoCode,lineaCode,especialidadCode,clasificacionCode,conceptoCode, cuentaCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('costoComercialConceptos EXECUTE')
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_RW_FILTRAR_CONCEPTOS_COMERCIALES(${areaCode},${tipoCode},${lineaCode},${especialidadCode},${clasificacionCode},${conceptoCode},${cuentaCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo traer datos del costo comercial - Conceptos`
+        }
+
+    }
+}
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
-    rendicionDetallada, 
+    rendicionDetallada,
     rendicionByTransac,
     crearRendicion,
     crearGasto,
@@ -352,5 +508,13 @@ module.exports = {
     employedByCardCode,
     actualizarEstadoComentario,
     actualizarEstadoRendicion,
-    eliminarGastoID
+    eliminarGastoID,
+    costoComercialAreas,
+    costoComercialTipoCliente,
+    costoComercialLineas,
+    costoComercialEspecialidades,
+    costoComercialClasificaciones,
+    costoComercialConceptos,
+    costoComercialCuenta,
+    filtroCC,
 }

@@ -1,7 +1,7 @@
 const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController, cambiarEstadoRendicionController, verRendicionesEnRevisionController, sendToSapController, eliminarGastoController } = require('../controller/rendiciones.controller')
+const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController, cambiarEstadoRendicionController, verRendicionesEnRevisionController, sendToSapController, eliminarGastoController, costoComercialAreasController, costoComercialTipoClienteController, costoComercialLineasController, costoComercialEspecialidadesController, costoComercialClasificacionesController, costoComercialConceptosController, costoComercialCuentaController, filtroCCController } = require('../controller/rendiciones.controller')
 const router = Router()
 
 router.get('/find-all-aperturas', [validarToken, validarCampos], findAllAperturaController)
@@ -15,5 +15,13 @@ router.patch('/cambiar-estado-rendicion', [validarToken, validarCampos],cambiarE
 router.get('/ver-rendiciones-revision', [validarToken, validarCampos],verRendicionesEnRevisionController)
 router.post('/send-to-sap', [validarToken, validarCampos],sendToSapController )
 router.delete('/eliminar-gasto/:id', [validarToken, validarCampos],eliminarGastoController )
+router.get('/cc-areas', [validarToken, validarCampos],costoComercialAreasController)
+router.get('/cc-tipo', [validarToken, validarCampos],costoComercialTipoClienteController)
+router.get('/cc-lineas', [validarToken, validarCampos],costoComercialLineasController)
+router.get('/cc-especialidades', [validarToken, validarCampos],costoComercialEspecialidadesController)
+router.get('/cc-clasificaciones', [validarToken, validarCampos],costoComercialClasificacionesController)
+router.get('/cc-conceptos', [validarToken, validarCampos],costoComercialConceptosController)
+router.get('/cc-cuenta', [validarToken, validarCampos],costoComercialCuentaController)
+router.post('/cc-filtro', [validarToken, validarCampos],filtroCCController)
 
 module.exports = router

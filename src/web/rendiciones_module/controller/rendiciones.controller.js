@@ -1,5 +1,5 @@
 const sapService = require("../services/sap.service")
-const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID } = require("./hana.controller")
+const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -581,15 +581,15 @@ const sendToSapController = async (req, res) => {
         if (data.status >= 400) {
             return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}` });
         }
-        let listResSap = []
-        await Promise.all(data.map(async (item) => {
-            const { id, code, message } = item
-            const responseSap = await actualizarEstadoComentario(id, code, message)
-            listResSap.push(responseSap)
-        }))
-        const estadoRend = await actualizarEstadoRendicion(idRendicion, '3')
-        console.log({ listResSap, estadoRend })
-        return res.status(statusCode).json({ listResSap, estadoRend });
+        // let listResSap = []
+        // await Promise.all(data.map(async (item) => {
+        //     const { id, code, message } = item
+        //     const responseSap = await actualizarEstadoComentario(id, code, message)
+        //     listResSap.push(responseSap)
+        // }))
+        // const estadoRend = await actualizarEstadoRendicion(idRendicion, '3')
+        // console.log({ listResSap, estadoRend })
+        return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, data });
     } catch (error) {
         console.error({ error });
 
@@ -600,24 +600,33 @@ const sendToSapController = async (req, res) => {
         let listErrores = []
         let estadoRend
         console.log({ data })
-        if(data.length>0){
-            data.map((item)=>{
-                listErrores.push(`${item.message} - code: ${item.code||' Undefined '} - id: ${item.id||' Undefined '}`)
-            })
+        if (data.error.message) {
+            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data.error.message || ''}`, data, });
         }
-        if (statusCode == 400 && data.length > 0) {
-            await Promise.all(data.map(async (item) => {
-                const { id, code, message } = item
-                console.log({ id, code, message })
-                const cleanMessage = message.replace(/['".,:;]/g, "");
-                console.log({ id, code, cleanMessage })
-                const responseSap = await actualizarEstadoComentario(id, code, cleanMessage)
-                listResSap.push(responseSap)
-            }))
-            estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
+        if (data.error.response) {
+            if (data.error.response.length > 0) {
+                data.error.response.map((item) => {
+                    listErrores.push(`${item.message} - code: ${item.code || ' Undefined '} - id: ${item.id || ' Undefined '}`)
+                })
+            }
+        }
+
+        if (statusCode >= 400 && data.error.response) {
+            if (data.error.response.length > 0) {
+                await Promise.all(data.error.response.map(async (item) => {
+                    const { id, code, message } = item
+                    console.log({ id, code, message })
+                    const cleanMessage = message.replace(/['".,:;]/g, "");
+                    console.log({ id, code, cleanMessage })
+                    const responseSap = await actualizarEstadoComentario(id, code, cleanMessage)
+                    listResSap.push(responseSap)
+                }))
+                estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
+            }
+
         }
         console.log({ data, listResSap, estadoRend })
-        return res.status(statusCode).json({mensaje: `No se pudo crear la rendicion`, data, listResSap, estadoRend,listErrores });
+        return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion`, data, listResSap, estadoRend, listErrores });
     }
 }
 
@@ -634,6 +643,127 @@ const eliminarGastoController = async (req, res) => {
         return res.status(500).json({ mensaje: 'problemas en el controlador' })
     }
 }
+
+const costoComercialAreasController = async (req, res) => {
+    try {
+
+        const response = await costoComercialAreas()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
+    }
+}
+
+const costoComercialTipoClienteController = async (req, res) => {
+    try {
+
+        const response = await costoComercialTipoCliente()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
+    }
+}
+
+const costoComercialLineasController = async (req, res) => {
+    try {
+
+        const response = await costoComercialLineas()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
+    }
+}
+
+const costoComercialEspecialidadesController = async (req, res) => {
+    try {
+
+        const response = await costoComercialEspecialidades()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
+    }
+}
+
+const costoComercialClasificacionesController = async (req, res) => {
+    try {
+
+        const response = await costoComercialClasificaciones()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
+    }
+}
+
+const costoComercialConceptosController = async (req, res) => {
+    try {
+
+        const response = await costoComercialConceptos()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
+    }
+}
+
+const costoComercialCuentaController = async (req, res) => {
+    try {
+
+        const response = await costoComercialCuenta()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
+    }
+}
+
+const filtroCCController = async (req, res) => {
+    try {
+        const { areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode } = req.body
+        const response = await filtroCC(areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode)
+        const newTipo = []
+        const newLinea = []
+        const newEspecial = []
+        const newClasificacion = []
+        const newConcepto = []
+        const newAccount = []
+        response.map((item) => {
+            if (!newTipo.some(datatipo => datatipo.TypeCode === item.TypeCode)) {
+                newTipo.push({ TypeCode: item.TypeCode, Type: item.Type })
+            }
+
+            if (!newLinea.some(datatipo => datatipo.LineCode === item.LineCode)) {
+                newLinea.push({ LineCode: item.LineCode, Line: item.Line })
+            }
+
+            if (!newEspecial.some(datatipo => datatipo.SpecialtyCode === item.SpecialtyCode)) {
+                newEspecial.push({ SpecialtyCode: item.SpecialtyCode, Specialty: item.Specialty })
+            }
+
+            if (!newClasificacion.some(datatipo => datatipo.ClassificationCode === item.ClassificationCode)) {
+                newClasificacion.push({ ClassificationCode: item.ClassificationCode, Classification: item.Classification })
+            }
+
+            if (!newConcepto.some(datatipo => datatipo.ComlConceptCode === item.ComlConceptCode)) {
+                newConcepto.push({ ComlConceptCode: item.ComlConceptCode, ComlConcept: item.ComlConcept })
+            }
+
+            if (!newAccount.some(datatipo => datatipo.Account === item.Account)) {
+                newAccount.push({ Account: item.Account, AcctName: item.AcctName })
+            }
+        })
+
+        return res.json({ data: response, newTipo, newLinea, newEspecial, newClasificacion, newConcepto, newAccount, })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -645,5 +775,13 @@ module.exports = {
     cambiarEstadoRendicionController,
     verRendicionesEnRevisionController,
     sendToSapController,
-    eliminarGastoController
+    eliminarGastoController,
+    costoComercialAreasController,
+    costoComercialTipoClienteController,
+    costoComercialLineasController,
+    costoComercialEspecialidadesController,
+    costoComercialClasificacionesController,
+    costoComercialConceptosController,
+    costoComercialCuentaController,
+    filtroCCController,
 }

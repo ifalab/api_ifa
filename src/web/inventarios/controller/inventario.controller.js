@@ -7,7 +7,7 @@ const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = req
 const { postInvoice } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle } = require("../../facturacion_module/controller/hana.controller")
-const {spObtenerCUF}= require("../../facturacion_module/controller/sql_genesis.controller")
+const { spObtenerCUF } = require("../../facturacion_module/controller/sql_genesis.controller")
 const clientePorDimensionUnoController = async (req, res) => {
     try {
 
@@ -71,9 +71,9 @@ const postHabilitacionController = async (req, res) => {
         // console.log({ warehouseCode })
         // console.log({ id })
         // return res.json({ id: userLocal.user.ID })
-        
+
         if (formulario.almacen == null) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `el inventario es obligatorio. ${formulario.almacen||'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `el inventario es obligatorio. ${formulario.almacen || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
         } else {
             if (formulario.almacen.WhsCode) {
@@ -179,7 +179,7 @@ const postHabilitacionController = async (req, res) => {
         if (response.lang) {
             console.log({ response })
             const responseValue = response.value;
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postSalidaHabilitacion, ${response.value||'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postSalidaHabilitacion, ${response.value || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
             if (responseValue.includes('Batch/serial number') && responseValue.includes('does not exist; specify a valid batch/serial number')) {
                 return res.status(400).json({ mensaje: 'Hubo un Lote Incorrecto' });
             }
@@ -259,7 +259,7 @@ const postHabilitacionController = async (req, res) => {
         console.log({ responseEntradaHabilitacion })
         console.log({ value: responseEntradaHabilitacion.value })
         console.log({ lang: responseEntradaHabilitacion.lang })
-        grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${response.value||'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${response.value || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
         if (responseEntradaHabilitacion.value) {
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
         }
@@ -403,8 +403,27 @@ const stockDisponibleIfavetController = async (req, res) => {
             });
             return formattedItem;
         });
-
-        return res.json({ stock: formattedStock });
+        const result = []
+        formattedStock.map((item) => {
+            if (item.itemcode != '103-012-015' &&
+                item.itemcode != '103-012-017' &&
+                item.itemcode != '103-012-016' &&
+                item.itemcode != '103-005-001' &&
+                item.itemcode != '103-012-019' &&
+                item.itemcode != '103-012-018' &&
+                item.itemcode != '103-011-001' &&
+                item.itemcode != '103-012-020' &&
+                item.itemcode != '103-012-022' &&
+                item.itemcode != '103-012-021' &&
+                item.itemcode != '103-012-024' &&
+                item.itemcode != '103-012-023' &&
+                item.itemcode != '103-012-027' &&
+                item.itemcode != '103-012-026' &&
+                item.itemcode != '103-004-003') {
+                result.push(item)   
+            }
+        })
+        return res.json({ stock: result });
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
@@ -497,19 +516,19 @@ const devolucionCompletaController = async (req, res) => {
             DocumentLines: DocumentLinesHana,
             DocumentAdditionalExpenses
         }
-        console.log({ responseHanaB : JSON.stringify(responseHanaB, null, 2)})
+        console.log({ responseHanaB: JSON.stringify(responseHanaB, null, 2) })
 
         const responceInvoice = await postInvoice(responseHanaB)
-        console.log({responceInvoice: JSON.stringify(responceInvoice, null, 2)})
+        console.log({ responceInvoice: JSON.stringify(responceInvoice, null, 2) })
         // return res.json({responceInvoice, responseHanaB, entregas})
-       
-        if(responceInvoice.status!=200){
-            console.log({errorMessage: responceInvoice.errorMessage})
-            let mensaje= responceInvoice.errorMessage|| 'Mensaje no definido'
-            if(mensaje.value)
+
+        if (responceInvoice.status != 200) {
+            console.log({ errorMessage: responceInvoice.errorMessage })
+            let mensaje = responceInvoice.errorMessage || 'Mensaje no definido'
+            if (mensaje.value)
                 mensaje = mensaje.value
             // grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Error en postInvoice: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
-            return res.status(400).json({mensaje: `Error en postInvoice: ${mensaje}`})
+            return res.status(400).json({ mensaje: `Error en postInvoice: ${mensaje}` })
         }
 
         // grabarLog(usuario.USERCODE, usuario.USERNAME, "Inventario Devolucion Completa", `Exito en la devolucion`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
