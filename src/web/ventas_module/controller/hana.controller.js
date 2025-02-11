@@ -544,12 +544,13 @@ const clientesInstituciones = async()=>{
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES_INSTITUCIONES`
+        // const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES_INSTITUCIONES`
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "GroupCode"=105`
         const result = executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en clientesInstituciones')
+        throw new Error(`error en clientesInstituciones: ${error.message || ''}`)
     }
 }
 
@@ -558,7 +559,8 @@ const clientesInstitucionByCardCode = async(cardCode)=>{
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL ${process.env.PRD}.CLIENTE_INSTITUCION_BY_CARDCODE('${cardCode}')`
+        // const query = `CALL ${process.env.PRD}.CLIENTE_INSTITUCION_BY_CARDCODE('${cardCode}')`
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "CardCode"='${cardCode}'`
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -579,6 +581,25 @@ const vendedoresPorSucursal = async(suc)=>{
     } catch (error) {
         console.log({ error })
         throw new Error(`Error en vendedoresPorSucursal: ${error.message}`)
+    }
+}
+
+const obtenerOfertasInstituciones = async (sucCode, codCliente) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_ven_ofertas where "GroupCode"=105`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en obtenerOfertasInstituciones: ${error.message || ''}`
+        }
     }
 }
 
@@ -621,5 +642,6 @@ module.exports = {
     listaArticuloCadenas,
     clientesInstituciones,
     clientesInstitucionByCardCode,
-    vendedoresPorSucursal
+    vendedoresPorSucursal,
+    obtenerOfertasInstituciones
 }

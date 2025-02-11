@@ -35,7 +35,8 @@ const {
     listaArticuloCadenas,
     clientesInstituciones,
     clientesInstitucionByCardCode,
-    vendedoresPorSucursal
+    vendedoresPorSucursal,
+    obtenerOfertasInstituciones
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -896,7 +897,7 @@ const clientesInstitucionesController = async (req, res) => {
         return res.json(clientes)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador', error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}`, error })
     }
 }
 
@@ -928,6 +929,20 @@ const vendedoresPorSucursalController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}`})
     }
 }
+
+const obtenerOfertasInstitucionesController = async (req, res) => {
+    try {
+        const response = await obtenerOfertasInstituciones()
+        if(response.status == 400){
+            return res.status(400).json({mensaje: response.message || 'Error en obtenerOfertasInstituciones'})
+        }
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}`})
+    }
+}
+
 
 module.exports = {
     ventasPorSucursalController,
@@ -966,5 +981,6 @@ module.exports = {
     listaArticuloCadenasController,
     clientesInstitucionesController,
     clienteInstitucionByCardCodeController,
-    vendedoresPorSucursalController
+    vendedoresPorSucursalController,
+    obtenerOfertasInstitucionesController
 };
