@@ -344,7 +344,7 @@ const cerrarCajaChicaController = async (req, res) => {
             CreditSys: parseFloat(newMontoAccount.toFixed(2)),
             DebitSys: 0,
             ContraAccount: `${dataAccount.ContraAct}`,
-            LineMemo: glosa,
+            LineMemo: `${glosa}`,
             Reference1: ``,
             Reference2: '',
         }
@@ -355,7 +355,7 @@ const cerrarCajaChicaController = async (req, res) => {
             ReferenceDate: '',
             Memo: glosa,
             Indicator: '11',
-            Reference: '',
+            Reference: `${id}`,
             JournalEntryLines
         }
 

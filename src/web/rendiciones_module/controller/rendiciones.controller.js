@@ -560,6 +560,14 @@ const sendToSapController = async (req, res) => {
 
         })
 
+        console.log({
+            codEmp,
+            estado,
+            idRendicion,
+            transacId,
+            listFacturas,
+            listRecibos,
+        })
         const { statusCode, data } = await sapService.sendRendiciones({
             codEmp,
             estado,
@@ -569,7 +577,10 @@ const sendToSapController = async (req, res) => {
             listRecibos,
         });
 
-        console.log({ data })
+        console.log({ data, statusCode })
+        if (data.status >= 400) {
+            return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}` });
+        }
         let listResSap = []
         await Promise.all(data.map(async (item) => {
             const { id, code, message } = item
@@ -586,8 +597,14 @@ const sendToSapController = async (req, res) => {
         const statusCode = error.statusCode || 500;
         const data = error.message || 'Error desconocido en el controlador';
         let listResSap = []
+        let listErrores = []
         let estadoRend
         console.log({ data })
+        if(data.length>0){
+            data.map((item)=>{
+                listErrores.push(`${item.message} - code: ${item.code||' Undefined '} - id: ${item.id||' Undefined '}`)
+            })
+        }
         if (statusCode == 400 && data.length > 0) {
             await Promise.all(data.map(async (item) => {
                 const { id, code, message } = item
@@ -600,21 +617,21 @@ const sendToSapController = async (req, res) => {
             estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
         }
         console.log({ data, listResSap, estadoRend })
-        return res.status(statusCode).json({ data, listResSap, estadoRend, });
+        return res.status(statusCode).json({mensaje: `No se pudo crear la rendicion`, data, listResSap, estadoRend,listErrores });
     }
 }
 
-const eliminarGastoController = async(req,res)=>{
+const eliminarGastoController = async (req, res) => {
     try {
         const id = req.params.id
         const response = await eliminarGastoID(id)
         const status = response[0].reponse
-        console.log({status})
-        if(status!=200) return res.status(409).json({mensaje:'no se pudo eliminar el gasto'})
-        return res.json({mensaje:'el gasto fue eliminado'})
+        console.log({ status })
+        if (status != 200) return res.status(409).json({ mensaje: 'no se pudo eliminar el gasto' })
+        return res.json({ mensaje: 'el gasto fue eliminado' })
     } catch (error) {
-        console.log({error})
-        return res.status(500).json({mensaje:'problemas en el controlador'})
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'problemas en el controlador' })
     }
 }
 module.exports = {

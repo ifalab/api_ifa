@@ -546,7 +546,7 @@ const facturacionStatusController = async (req, res) => {
 const facturacionStatusListController = async (req, res) => {
     try {
 
-        const { listWhsCode, date, bringAll } = req.body
+        const { listWhsCode, date, bringAll,groupCode } = req.body
         let data = []
         console.log({date})
         if(!date){
@@ -558,7 +558,9 @@ const facturacionStatusListController = async (req, res) => {
             dataToList.map((item) => {
                 const dateNowItem = item.DocDate.split(' ')
                 if (dateNow[0] == dateNowItem[0] && !bringAll) {
-                    data.push({ ...item })
+                    // if(groupCode==-1){
+                        data.push({ ...item })
+                    // }else{}
                 }
                 if (bringAll ) {
                     data.push({ ...item })
@@ -584,6 +586,7 @@ const noteEntregaController = async (req, res) => {
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de entrega' });
         }
         const detailsList = [];
+        // return res.json({response})
         const {
             BarCode,
             DocNum,
@@ -603,6 +606,7 @@ const noteEntregaController = async (req, res) => {
             U_Zona,
             U_Comentario,
             Comments,
+            SlpName,
             ...restData
         } = response.result[0];
 
@@ -641,6 +645,7 @@ const noteEntregaController = async (req, res) => {
             U_Zona,
             U_Comentario,
             Comments,
+            SlpName:`${SlpName||'No Asignado'}`,
             detailsList,
         };
         // return res.json({data})

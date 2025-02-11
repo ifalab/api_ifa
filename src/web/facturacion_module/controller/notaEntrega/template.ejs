@@ -136,7 +136,8 @@
             margin: 0 5px;
             margin-top: 30px
         }
-        .comments{
+
+        .comments {
             margin: 1rem 0rem;
             padding: 1rem;
         }
@@ -248,7 +249,10 @@
         <div class="comments">
             <p><strong>Comentario:</strong>
                 <%= data.Comments %>
-            </p> 
+            </p>
+            <p><strong>Vendedor:</strong>
+                <%= data.SlpName %>
+            </p>
         </div>
         <div class="footer-text">
             <tr class="total-row">
@@ -262,7 +266,7 @@
                 <%= data.PymntGroup %>
             </p>
         </div>
-        
+
 
         <div class="footer-signatures">
             <div style="margin-top: 2rem;">Creado por <%= data.U_NAME %>

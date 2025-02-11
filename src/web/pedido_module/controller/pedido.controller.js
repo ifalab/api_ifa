@@ -598,7 +598,7 @@ const clientesSucursalController = async (req, res) => {
         let response = [];
         for (const id_suc of idSucursales) {
             const clientessucursal = await clientesPorSucursal(id_suc)
-            console.log({ clientessucursal })
+            // console.log({ clientessucursal })
             if (clientessucursal.statusCode != 200) {
                 return res.status(clientessucursal.statusCode).json({ mensaje: clientessucursal.message || 'Error en clientesPorSucursal' })
             }

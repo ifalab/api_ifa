@@ -64,7 +64,7 @@ const findAllAperturaCaja = async () => {
             await connectHANA();
         }
         console.log('findAllAperturaCaja EXECUTE')
-        const query = `SELECT * FROM "${process.env.PRD}".ifa_rw_estado_cajas`
+        const query = `SELECT * FROM "${process.env.PRD}".ifa_rw_cajas_vigentes`
         console.log({ query })
         const result = await executeQuery(query)
         return result

@@ -4,7 +4,8 @@ const sapService = {
     async sendRendiciones(body) {
         try {
             // Realiza la solicitud HTTP
-            const response = await httpClient.post('/rendicion', body);
+            console.log({body})
+            const response = await httpClient.post('lapp/rendicion', body);
 
             // Retorna un objeto con el código de estado y los datos
             return {
