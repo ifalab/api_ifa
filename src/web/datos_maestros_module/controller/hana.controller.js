@@ -562,6 +562,21 @@ const setDescuentoEspecialPorArticulo= async(cardCode, itemCode, desc, fechaInic
         }
     }
 }
+const obtenerTipos = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select * from ${process.env.PRD}.ifa_dm_tipos where "GroupCode"!=109 AND "GroupCode"!=110 AND "GroupCode"!=111 AND "GroupCode"!=114`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenertipos:', error.message || '');
+        return { message: `Error en obtenertipos: ${error.message || ''}` }
+    }
+}
 
 module.exports = {
     dmClientes,
@@ -587,5 +602,6 @@ module.exports = {
     setDescuentoEspecial,
     getAllDescuentosLinea,
     deleteDescuentoLinea,
-    setDescuentoEspecialPorArticulo
+    setDescuentoEspecialPorArticulo,
+    obtenerTipos
 }

@@ -9,7 +9,8 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     setDescuentoOfertasPorCantidadController, getArticulosController, findClienteController,
     getDescuentosCantidadController, getIdDescuentosCantidadController, getArticuloByCodeController,
     setDescuentoEspecialController, getAllDescuentosLineaController, deleteDescuentoLineaController,
-    setDescuentoEspecialPorArticuloController
+    setDescuentoEspecialPorArticuloController,     
+    obtenerTiposController
  } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller')
 const router = Router()
@@ -39,5 +40,6 @@ router.post('/descuento-especial', [validarToken, validarCampos], setDescuentoEs
 router.get('/get-desc-linea', [validarToken, validarCampos], getAllDescuentosLineaController)
 router.post('/delete-desc-linea', [validarToken, validarCampos], deleteDescuentoLineaController)
 router.post('/desc-especial-articulo', [validarToken, validarCampos], setDescuentoEspecialPorArticuloController)
+router.get('/tipos', [validarToken, validarCampos], obtenerTiposController)
 
 module.exports = router
