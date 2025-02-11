@@ -248,7 +248,6 @@ const postHabilitacionController = async (req, res) => {
             DocumentLines.push(linea)
         })
 
-
         const dataFinal = {
             ...cabecera,
             DocumentLines
@@ -261,17 +260,19 @@ const postHabilitacionController = async (req, res) => {
         console.log({ lang: responseEntradaHabilitacion.lang })
         grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${response.value || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
         if (responseEntradaHabilitacion.value) {
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value||''}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
         }
-
+        grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitado con exito`, ``, "inventario/habilitacion", process.env.PRD)
         return res.json(responseEntradaHabilitacion)
-
     } catch (error) {
+        console.error(error)
+        const user = req.usuarioAutorizado ||{USERCODE: 'No definido', USERNAME: 'No definido'}
+        grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error en postSalidaController: ${error.message}`, `catch del controlador`, "inventario/habilitacion", process.env.PRD)
         return res.status(500), json({
-            mensaje: 'Error en postSalidaController ',
+            mensaje: `Error en postSalidaController: ${error.message}`,
             error,
         })
-
     }
 }
 
