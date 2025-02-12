@@ -30,13 +30,14 @@ const {
     ofertaPrecioPorItemCode,
     descripcionArticulo,
     obtenerOfertas,
-    detalleOferta,
+    detalleOfertaCadena,
     unidadMedida,
     listaArticuloCadenas,
     clientesInstituciones,
     clientesInstitucionByCardCode,
     vendedoresPorSucursal,
-    obtenerOfertasInstituciones
+    obtenerOfertasInstituciones,
+    detalleOferta
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -836,11 +837,11 @@ const listaOfertasController = async (req, res) => {
     }
 }
 
-const detalleOfertaController = async (req, res) => {
+const detalleOfertaCadenaController = async (req, res) => {
     try {
         const id = req.query.id
-        const response = await detalleOferta(id)
-        if (response.status == 400) return res.status(400).json({ mensaje: response.message || 'Error en detalleOferta' })
+        const response = await detalleOfertaCadena(id)
+        if (response.status == 400) return res.status(400).json({ mensaje: response.message || 'Error en detalleOfertaCadena' })
         const { data } = response
         data.forEach((row) => {
             const subtotal = row.subTotal
@@ -852,7 +853,7 @@ const detalleOfertaController = async (req, res) => {
         return res.json(data)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en detalleOfertaController ${error.message || ''}` })
+        return res.status(500).json({ mensaje: `Error en detalleOfertaCadenaController ${error.message || ''}` })
     }
 }
 
@@ -943,6 +944,19 @@ const obtenerOfertasInstitucionesController = async (req, res) => {
     }
 }
 
+const detalleOfertaController = async (req, res) => {
+    try {
+        const id = req.query.id
+        const response = await detalleOferta(id)
+        if (response.status == 400) 
+            return res.status(400).json({ mensaje: response.message || 'Error en detalleOferta' })
+        
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en detalleOfertaController: ${error.message || ''}` })
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -976,11 +990,12 @@ module.exports = {
     ofertaPrecioItemCodeController,
     descripcionArticuloController,
     listaOfertasController,
-    detalleOfertaController,
+    detalleOfertaCadenaController,
     unidadMedidaController,
     listaArticuloCadenasController,
     clientesInstitucionesController,
     clienteInstitucionByCardCodeController,
     vendedoresPorSucursalController,
-    obtenerOfertasInstitucionesController
+    obtenerOfertasInstitucionesController,
+    detalleOfertaController
 };

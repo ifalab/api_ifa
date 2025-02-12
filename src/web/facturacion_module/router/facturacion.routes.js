@@ -8,6 +8,7 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     facturasAnuladasController,
     entregasSinFacturasController,
     cancelarOrdenController,
+    pedidosInstitucionesController
  } = require('../controller/facturacion.controller')
 const router = Router()
 
@@ -32,5 +33,6 @@ router.post('/facturas-anuladas', [validarToken, validarCampos], facturasAnulada
 router.post('/entregas-sin-facturas', [validarToken, validarCampos], entregasSinFacturasController)
 
 router.get('/cancelar-orden', [validarToken, validarCampos], cancelarOrdenController)
+router.post('/pedidos-instituciones', [validarToken, validarCampos], pedidosInstitucionesController)
 
 module.exports = router

@@ -493,12 +493,30 @@ const obtenerOfertas = async (sucCode, codCliente) => {
     }
 }
 
-const detalleOferta = async (id) => {
+const detalleOfertaCadena = async (id) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_OFERTA_DETALLE(${id})`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {status: 400,
+            message: `Error en detalleOfertaCadena: ${error.message || ''}`
+        }
+    }
+}
+
+const detalleOferta = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_ven_ofertas_detalle where "DocEntry"=${id}`
         const result = await executeQuery(query)
         return {
             status: 200,
@@ -637,11 +655,12 @@ module.exports = {
     ofertaPrecioPorItemCode,
     descripcionArticulo,
     obtenerOfertas,
-    detalleOferta,
+    detalleOfertaCadena,
     unidadMedida,
     listaArticuloCadenas,
     clientesInstituciones,
     clientesInstitucionByCardCode,
     vendedoresPorSucursal,
-    obtenerOfertasInstituciones
+    obtenerOfertasInstituciones,
+    detalleOferta
 }

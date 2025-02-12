@@ -106,7 +106,6 @@ const asientoContable = async (data) => {
         // Retorna la respuesta en caso de éxito
         console.log({ response })
         const status = response.status
-        const location = response.headers.location
         const locationHeader = response.headers.location;
         const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
         const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
