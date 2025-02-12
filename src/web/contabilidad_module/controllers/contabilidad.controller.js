@@ -243,7 +243,7 @@ const createAsientoContableController = async (req, res) => {
             ...data
         })
         if (response.value) {
-            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja` })
+            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. Sap Error: ${response.value || 'No definido'}` })
         }
         return res.json({ mensaje: 'Apertura de Caja creado con exito' })
 

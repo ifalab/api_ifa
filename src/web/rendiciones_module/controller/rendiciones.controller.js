@@ -50,6 +50,7 @@ const rendicionDetalladaController = async (req, res) => {
                 DESCUENTO,
                 GIFCARD,
                 // COMENTARIO,
+                ID_CUENTA,
                 ...rest
             } = item
             const data = {
@@ -65,6 +66,7 @@ const rendicionDetalladaController = async (req, res) => {
                 TASACERO: +TASACERO,
                 DESCUENTO: +DESCUENTO,
                 GIFCARD: +GIFCARD,
+                ID_CUENTA:+ID_CUENTA
                 // COMENTARIO:COMENTARIO
             }
             listaDetalles.push(data)
@@ -157,6 +159,7 @@ const crearRendicionController = async (req, res) => {
                 idRendicion,
                 month,
                 year,
+                new_id_cuenta,
             } = item
 
             const fecha = new_fecha.split('/')
@@ -186,6 +189,8 @@ const crearRendicionController = async (req, res) => {
                 idRendicion,
                 month,
                 year,
+                '',
+                new_id_cuenta,
             )
             result.push(responseHana[0] || responseHana)
 
@@ -267,6 +272,7 @@ const crearActualizarGastoController = async (req, res) => {
                 idRendicion,
                 month,
                 year,
+                new_id_cuenta
             } = item
 
             const fecha = new_fecha.split('/')
@@ -296,6 +302,8 @@ const crearActualizarGastoController = async (req, res) => {
                     idRendicion,
                     month,
                     year,
+                    '',
+                    new_id_cuenta,
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -322,6 +330,8 @@ const crearActualizarGastoController = async (req, res) => {
                     new_gifCard,
                     new_estado,
                     idRendicion,
+                    '',
+                    new_id_cuenta
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -403,6 +413,7 @@ const gastosEnRevisionController = async (req, res) => {
                 idRendicion,
                 month,
                 year,
+                new_id_cuenta,
             } = item
 
             const fecha = new_fecha.split('/')
@@ -432,6 +443,7 @@ const gastosEnRevisionController = async (req, res) => {
                     idRendicion,
                     month,
                     year,
+                    new_id_cuenta
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -458,6 +470,8 @@ const gastosEnRevisionController = async (req, res) => {
                     new_gifCard,
                     '2',
                     idRendicion,
+                    '',
+                    new_id_cuenta
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -724,6 +738,15 @@ const costoComercialCuentaController = async (req, res) => {
 const filtroCCController = async (req, res) => {
     try {
         const { areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode } = req.body
+        console.log({
+            areaCode,
+            tipoCode,
+            lineaCode,
+            especialidadCode,
+            clasificacionCode,
+            conceptoCode,
+            cuentaCode
+        })
         const response = await filtroCC(areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode)
         const newTipo = []
         const newLinea = []
@@ -731,6 +754,11 @@ const filtroCCController = async (req, res) => {
         const newClasificacion = []
         const newConcepto = []
         const newAccount = []
+
+        if(!response){
+            return res.status(400).json({mensaje:'No se pudieron traer los datos de costo comercial'})
+        }
+
         response.map((item) => {
             if (!newTipo.some(datatipo => datatipo.TypeCode === item.TypeCode)) {
                 newTipo.push({ TypeCode: item.TypeCode, Type: item.Type })
@@ -757,7 +785,7 @@ const filtroCCController = async (req, res) => {
             }
         })
 
-        return res.json({ data: response, newTipo, newLinea, newEspecial, newClasificacion, newConcepto, newAccount, })
+        return res.json({ result: response, newTipo, newLinea, newEspecial, newClasificacion, newConcepto, newAccount, })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'problemas en el controlador' })
