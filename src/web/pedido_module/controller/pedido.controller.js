@@ -625,6 +625,62 @@ const clientesSucursalController = async (req, res) => {
     }
 }
 
+const pedidoInstitucionController = async (req, res) => {
+    try {
+        const body = req.body
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        body.Series = 319;
+        let num = 0
+        body.DocumentLines.forEach((line) => {
+            line.LineNum = num
+            line.GrossPrice = Number(line.GrossPrice.toFixed(2))
+            line.GrossTotal = Number(line.GrossTotal.toFixed(2))
+            line.AccountCode = "4110101";
+            line.TaxCode = "IVA";
+            const totalNoDiscount = line.GrossPrice * line.Quantity
+            const descLinea = Number((totalNoDiscount) - line.GrossTotal)
+            console.log({ totalNoDiscount })
+            line.U_DESCLINEA = Number(descLinea.toFixed(2));
+            num++;
+        })
+        console.log({ body })
+        let sumaDetalle = 0
+        body.DocumentLines.forEach((line) => {
+            sumaDetalle += Number(line.GrossTotal.toFixed(2))
+        })
+        body.DocTotal = Number(body.DocTotal.toFixed(2))
+        console.log({ body: JSON.stringify(body, 2) })
+        sumaDetalle = Number(sumaDetalle.toFixed(2))
+        if (body.DocTotal != sumaDetalle) {
+            const mensaje = 'El Total no es igual a la suma del detalle'
+            grabarLog(user.USERCODE, user.USERNAME, "Pedido Institucion", mensaje + ` DocTotal: ${body.DocTotal || 0}, SumDetalle: ${sumaDetalle}`, '', "pedido/pedido-institucion", process.env.PRD)
+            return res.status(400).json({ mensaje })
+        }
+
+        console.log({body})
+        const response = await postOrden(body)
+        console.log({response})
+        if (response.status != 200 && response.status != 204) {
+            let mensaje = `${response.message || 'Error en postOrden'}`
+            if (response.errorMessage) {
+                mensaje += `: ${response.errorMessage}`
+            }
+            grabarLog(user.USERCODE, user.USERNAME, "Pedido Institucion", mensaje, 'https://srvhana:50000/b1s/v1/Orders', "pedido/pedido-institucion", process.env.PRD)
+            return res.status(400).json({ mensaje })
+        }
+
+        grabarLog(user.USERCODE, user.USERNAME, "Pedido Institucion", `Oferta de Venta creada con exito`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/pedido-institucion", process.env.PRD)
+        return res.json({ mensaje: response.message, orderNumber: response.orderNumber })
+    } catch (error) {
+        console.log({ error })
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        let mensaje = `Error en controlador pedidoInstitucionController ${error.message || ''}`
+        if (mensaje.length > 255) mensaje = 'Error en controlador pedidoInstitucionController'
+        grabarLog(user.USERCODE, user.USERNAME, "Pedido Institucion", mensaje, '', "pedido/pedido-institucion", process.env.PRD)
+        return res.status(500).json({ mensaje })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -648,5 +704,6 @@ module.exports = {
     pedidoCadenaController,
     precioArticuloCadenaController,
     listaPrecioCadenasController,
-    clientesSucursalController
+    clientesSucursalController,
+    pedidoInstitucionController
 }

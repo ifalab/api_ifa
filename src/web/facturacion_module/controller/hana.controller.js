@@ -168,7 +168,7 @@ const facturaPedidoDB = async (whsCode) => {
 
     } catch (error) {
         console.error('Error en facturaInfo:', error.message);
-        return { message: 'Error al procesar la solicitud: facturaPedidoDB' }
+        return { message: `Error al procesar la solicitud facturaPedidoDB: ${error.message || ''}` }
     }
 }
 

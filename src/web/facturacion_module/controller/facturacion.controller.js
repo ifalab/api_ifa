@@ -1445,6 +1445,27 @@ const cancelarOrdenController = async (req, res) => {
     }
 }
 
+const pedidosInstitucionesController = async (req, res) => {
+    try {
+        const {listWhsCode} = req.body
+        // const {listWhsCode} = req.body
+        let responses = []
+        for(const whsCode of listWhsCode){
+            const data = await facturaPedidoDB(whsCode)
+            for(const pedido of data){
+                if(pedido.GroupName == 'INSTITUCIONES')
+                    responses.push(pedido)
+            }
+        }
+        return res.json(responses)
+
+    } catch (error) {
+        console.log('error en pedidosInstitucionesController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador pedidosInstitucionesController: ${error.message|| ''}` })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -1464,4 +1485,5 @@ module.exports = {
     facturasAnuladasController,
     entregasSinFacturasController,
     cancelarOrdenController,
+    pedidosInstitucionesController
 }

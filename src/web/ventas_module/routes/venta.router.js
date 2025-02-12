@@ -31,13 +31,14 @@ const {
     ofertaPrecioItemCodeController,
     descripcionArticuloController,
     listaOfertasController,
-    detalleOfertaController,
+    detalleOfertaCadenaController,
     unidadMedidaController,
     listaArticuloCadenasController,
     clientesInstitucionesController,
     clienteInstitucionByCardCodeController,
     vendedoresPorSucursalController,
-    obtenerOfertasInstitucionesController
+    obtenerOfertasInstitucionesController,
+    detalleOfertaController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -80,7 +81,7 @@ router.post('/lista-almacenes', [validarToken, validarCampos], listaAlmacenesCon
 router.get('/oferta-precio-itemcode', [validarToken, validarCampos], ofertaPrecioItemCodeController)
 router.get('/oferta-descripcion-articulo', [validarToken, validarCampos], descripcionArticuloController)
 router.get('/lista-ofertas', [validarToken, validarCampos], listaOfertasController)
-router.get('/detalle-oferta', [validarToken, validarCampos], detalleOfertaController)
+router.get('/detalle-oferta-cadena', [validarToken, validarCampos], detalleOfertaCadenaController)
 router.get('/oferta-unidad-medida', [validarToken, validarCampos], unidadMedidaController)
 router.get('/lista-articulo-cadenas', [validarToken, validarCampos], listaArticuloCadenasController)
 router.get('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
@@ -88,5 +89,6 @@ router.get('/cliente-institucion-by-cardcode', [validarToken, validarCampos],cli
 
 router.post('/vendedor-sucursal', [validarToken, validarCampos],vendedoresPorSucursalController)
 router.get('/ofertas-instituciones', [validarToken, validarCampos],obtenerOfertasInstitucionesController)
+router.get('/detalle-oferta', [validarToken, validarCampos], detalleOfertaController)
 
 module.exports = router
