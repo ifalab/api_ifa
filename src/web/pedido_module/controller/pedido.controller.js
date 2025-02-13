@@ -182,7 +182,7 @@ const listaPreciosOficilaController = async (req, res) => {
         return res.json({ listaPrecio })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador' })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
     }
 }
 
@@ -572,9 +572,9 @@ const precioArticuloCadenaController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        let mensaje = `Error en controlador pedidoCadenaController ${error.message || ''}`
-        if (mensaje.length > 255) mensaje = 'Error en controlador pedidoCadenaController'
-        grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/crear-oferta-venta", process.env.PRD)
+        let mensaje = `Error en controlador precioArticuloCadenaController ${error.message || ''}`
+        if (mensaje.length > 255) mensaje = 'Error en controlador precioArticuloCadenaController'
+        grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", mensaje, '', "pedido/precio-articulo-cadena", process.env.PRD)
         return res.status(500).json({ mensaje })
     }
 }

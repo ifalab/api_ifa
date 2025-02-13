@@ -27,7 +27,7 @@ const connectSLD = async () => {
     } catch (error) {
         // Manejo de errores
         console.error('Error de logueo al SLD', error.message);
-        throw new Error('Error de logueo al SLD');
+        throw new Error(`Error de logueo al SLD: ${error.message || ''}`);
     }
 };
 // Verifica si la sesión sigue siendo válida
@@ -104,14 +104,14 @@ const postQuotations = async(newOrderDate)=>{
         });
 
         return {
-            message: 'Orden grabada con éxito',
+            message: 'Oferta grabada con éxito',
             // orderNumber: orderNumber,
             status: 200,
             // statusText: response.statusText
         }
     } catch (error) {
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
-        console.error('Error en la solicitud POST para Entrega:', error.response?.data || error.message);
+        console.error('Error en la solicitud POST para postQuotations:', error.response?.data || error.message);
         return {
             message: 'Hubo un problema en la solicitud postQuotations',
             status: 400,

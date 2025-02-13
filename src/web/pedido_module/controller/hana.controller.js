@@ -150,7 +150,7 @@ const listaPrecioOficial = async (cardCode) => {
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
-        throw new Error('Error al procesar la solicitud: listaPrecioOficial');
+        throw new Error(`Error al procesar la solicitud: listaPrecioOficial: ${error.message}`);
     }
 }
 

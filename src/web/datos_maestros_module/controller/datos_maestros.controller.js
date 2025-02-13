@@ -414,7 +414,7 @@ const getDescuentosCantidadController = async (req, res) => {
         const body= req.body
         console.log({body})
         const response = await getDescuentosCantidad(body.Id, body.ItemCode)
-        console.log(response)
+        // console.log(response)
         response.forEach((value)=>{
             value.ToDate = value.ToDate.split(' ')[0]
             value.FromDate = value.FromDate.split(' ')[0]
@@ -484,19 +484,19 @@ const deleteDescuentoLineaController = async (req, res) => {
     try {
         const {id, lineItem, id_sap} = req.body
         console.log({id, lineItem, id_sap})
-        // const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await deleteDescuentoLinea(id, lineItem, id_sap)
         console.log(response)
         if(response.status !=200){
-            // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Oferta Linea", `Error: ${response.message || 'deleteDescuentoLinea()'}`, `${response.query || 'deleteDescuentoLinea'}`, "datos-maestros/delete-desc-linea", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Oferta Linea", `Error: ${response.message || 'deleteDescuentoLinea()'}`, `${response.query || 'deleteDescuentoLinea'}`, "datos-maestros/delete-desc-linea", process.env.PRD)
             return res.status(400).json({mensaje: response.message || 'Error desconocido en deleteDescuentoLinea'})
         }
-        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Oferta Linea", `Exito al eliminar el descuento`, `${response.query || 'deleteDescuentoLinea'}`, "datos-maestros/delete-desc-linea", process.env.PRD)
-        return res.json(response)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Oferta Linea", `Exito al eliminar el descuento`, `${response.query || 'deleteDescuentoLinea'}`, "datos-maestros/delete-desc-linea", process.env.PRD)
+        return res.json(response.data)
     } catch (error) {
         console.log({ error })
-        // const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Oferta Linea", `Error en controlador deleteDescuentoLineaController: ${error.message || ''} `, `catch del controller`, "datos-maestros/delete-desc-linea", process.env.PRD)
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Oferta Linea", `Error en controlador deleteDescuentoLineaController: ${error.message || ''} `, `catch del controller`, "datos-maestros/delete-desc-linea", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en el controlador deleteDescuentoLineaController: ${error.message || ''}` })
     }
 }
