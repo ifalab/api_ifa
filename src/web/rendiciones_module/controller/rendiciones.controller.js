@@ -605,29 +605,31 @@ const sendToSapController = async (req, res) => {
         // console.log({ listResSap, estadoRend })
         return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, data });
     } catch (error) {
+        console.log('Error: --------------------------------------------')
         console.error({ error });
+        console.error({ errorMessage : error.message });
 
         // Maneja errores y responde al cliente
         const statusCode = error.statusCode || 500;
-        const data = error.message || 'Error desconocido en el controlador';
+        const data = error.message.error.message || 'Error desconocido en el controlador';
         let listResSap = []
         let listErrores = []
         let estadoRend
         console.log({ data })
-        if (data.error.message) {
-            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data.error.message || ''}`, data, });
+        if (error.message.error.message) {
+            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''}` });
         }
-        if (data.error.response) {
-            if (data.error.response.length > 0) {
-                data.error.response.map((item) => {
+        if (error.response) {
+            if (error.response.length > 0) {
+                error.response.map((item) => {
                     listErrores.push(`${item.message} - code: ${item.code || ' Undefined '} - id: ${item.id || ' Undefined '}`)
                 })
             }
         }
 
-        if (statusCode >= 400 && data.error.response) {
-            if (data.error.response.length > 0) {
-                await Promise.all(data.error.response.map(async (item) => {
+        if (statusCode >= 400 && error.response) {
+            if (error.response.length > 0) {
+                await Promise.all(error.response.map(async (item) => {
                     const { id, code, message } = item
                     console.log({ id, code, message })
                     const cleanMessage = message.replace(/['".,:;]/g, "");

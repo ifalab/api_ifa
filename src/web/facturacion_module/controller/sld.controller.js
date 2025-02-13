@@ -212,7 +212,6 @@ const cancelOrder = async (id) => {
     try {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
-
         const headers = {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
