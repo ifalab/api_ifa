@@ -587,7 +587,6 @@ const noteEntregaController = async (req, res) => {
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de entrega' });
         }
         const detailsList = [];
-        // return res.json({response})
         const {
             BarCode,
             DocNum,

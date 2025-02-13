@@ -41,6 +41,7 @@ const {
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
+const { postInventoryTransferRequests } = require("./sld.controller");
 
 
 
@@ -917,9 +918,9 @@ const clienteInstitucionByCardCodeController = async (req, res) => {
 
 const vendedoresPorSucursalController = async (req, res) => {
     try {
-        const {sucursales} = req.body
-        let responses=[]
-        for(const suc of sucursales){
+        const { sucursales } = req.body
+        let responses = []
+        for (const suc of sucursales) {
             console.log(suc)
             const response = await vendedoresPorSucursal(suc)
             responses.push(...response)
@@ -927,20 +928,20 @@ const vendedoresPorSucursalController = async (req, res) => {
         return res.json(responses)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}`})
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
     }
 }
 
 const obtenerOfertasInstitucionesController = async (req, res) => {
     try {
         const response = await obtenerOfertasInstituciones()
-        if(response.status == 400){
-            return res.status(400).json({mensaje: response.message || 'Error en obtenerOfertasInstituciones'})
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: response.message || 'Error en obtenerOfertasInstituciones' })
         }
         return res.json(response.data)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}`})
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
     }
 }
 
@@ -948,13 +949,41 @@ const detalleOfertaController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await detalleOferta(id)
-        if (response.status == 400) 
+        if (response.status == 400)
             return res.status(400).json({ mensaje: response.message || 'Error en detalleOferta' })
-        
+
         return res.json(response.data)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en detalleOfertaController: ${error.message || ''}` })
+    }
+}
+
+const crearSolicitudPlantaController = async (req, res) => {
+    try {
+        const {
+            Series,
+            Reference1,
+            Reference2,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            ToWarehouse,
+            StockTransferLines,
+        } = req.body
+        const sapResponse = await postInventoryTransferRequests({
+            Series,
+            Reference1,
+            Reference2,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            ToWarehouse,
+            StockTransferLines,
+        })
+        return res.json({sapResponse})
+    } catch (error) {
+        console.log({ error })
     }
 }
 
@@ -997,5 +1026,6 @@ module.exports = {
     clienteInstitucionByCardCodeController,
     vendedoresPorSucursalController,
     obtenerOfertasInstitucionesController,
-    detalleOfertaController
+    detalleOfertaController,
+    crearSolicitudPlantaController
 };
