@@ -136,7 +136,8 @@ const catalogoController = async (req, res) => {
 
 const descuentoArticuloController = async (req, res) => {
     try {
-        const articulos = await findDescuentosArticulos()
+        const cardCode = req.query.cardCode
+        const articulos = await findDescuentosArticulos(cardCode)
         return res.json({ articulos })
     } catch (error) {
         console.log({ error })

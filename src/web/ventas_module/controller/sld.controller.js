@@ -53,7 +53,7 @@ const postInventoryTransferRequests = async (responseJson) => {
         });
 
         return {
-            message: 'Entrega grabada con éxito',
+            message: 'Solicitud grabada con éxito',
             status: sapResponse.status,
             statusText: sapResponse.statusText,
         }
