@@ -1,5 +1,5 @@
 const sapService = require("../services/sap.service")
-const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC } = require("./hana.controller")
+const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -66,7 +66,7 @@ const rendicionDetalladaController = async (req, res) => {
                 TASACERO: +TASACERO,
                 DESCUENTO: +DESCUENTO,
                 GIFCARD: +GIFCARD,
-                ID_CUENTA:+ID_CUENTA
+                ID_CUENTA: +ID_CUENTA
                 // COMENTARIO:COMENTARIO
             }
             listaDetalles.push(data)
@@ -601,13 +601,13 @@ const sendToSapController = async (req, res) => {
         //     const responseSap = await actualizarEstadoComentario(id, code, message)
         //     listResSap.push(responseSap)
         // }))
-        // const estadoRend = await actualizarEstadoRendicion(idRendicion, '3')
-        // console.log({ listResSap, estadoRend })
-        return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, data });
+        const estadoRend = await actualizarEstadoRendicion(idRendicion, '3')
+        console.log({ listResSap, estadoRend })
+        return res.status(statusCode).json({ mensaje: `Se creo la rendicion con exito.`, data });
     } catch (error) {
         console.log('Error: --------------------------------------------')
         console.error({ error });
-        console.error({ errorMessage : error.message });
+        console.error({ errorMessage: error.message });
 
         // Maneja errores y responde al cliente
         const statusCode = error.statusCode || 500;
@@ -757,8 +757,8 @@ const filtroCCController = async (req, res) => {
         const newConcepto = []
         const newAccount = []
 
-        if(!response){
-            return res.status(400).json({mensaje:'No se pudieron traer los datos de costo comercial'})
+        if (!response) {
+            return res.status(400).json({ mensaje: 'No se pudieron traer los datos de costo comercial' })
         }
 
         response.map((item) => {
@@ -794,6 +794,28 @@ const filtroCCController = async (req, res) => {
     }
 }
 
+const actualizarGlosaRendController = async (req, res) => {
+    try {
+        const { idRend, new_glosa } = req.body
+        if (!idRend) {
+            return res.status(400).json({ mensaje: 'debe existir un Id de la Rendicion' })
+        }
+        if (!new_glosa) {
+            return res.status(400).json({ mensaje: 'debe existir una glosa' })
+        }
+        const responseHana = await actualizarGlosaRendicion(idRend, new_glosa)
+        const { response } = responseHana[0]
+        console.log({ response })
+        if (response != 200) {
+            return res.status(400).json({ mensaje: 'no se pudo actualizar la glosa' })
+        }
+        return res.json({ response, responseHana })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -814,4 +836,5 @@ module.exports = {
     costoComercialConceptosController,
     costoComercialCuentaController,
     filtroCCController,
+    actualizarGlosaRendController,
 }

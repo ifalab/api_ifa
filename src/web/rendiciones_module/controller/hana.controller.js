@@ -497,6 +497,26 @@ const filtroCC = async (areaCode,tipoCode,lineaCode,especialidadCode,clasificaci
 
     }
 }
+
+const actualizarGlosaRendicion = async (idRend, new_glosa) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarGlosaRendicion EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_GLOSA_RENDICION(${idRend},'${new_glosa}');`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo actualizar la glosa`
+        }
+
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -519,4 +539,5 @@ module.exports = {
     costoComercialConceptos,
     costoComercialCuenta,
     filtroCC,
+    actualizarGlosaRendicion,
 }

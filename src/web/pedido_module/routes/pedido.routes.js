@@ -7,7 +7,8 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     precioArticuloCadenaController,
     listaPrecioCadenasController,
     clientesSucursalController,
-    pedidoInstitucionController} = require('../controller/pedido.controller')
+    pedidoInstitucionController,
+    crearOrderCadenaController} = require('../controller/pedido.controller')
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
@@ -21,6 +22,7 @@ router.get('/sugerido-zona', [validarToken, validarCampos],sugeridosXZonaControl
 router.get('/sugerido-cliente', [validarToken, validarCampos],sugeridosXClienteController)
 router.get('/zonas-vendedor', [validarToken, validarCampos],findZonasXVendedorController)
 router.post('/crear-orden', [validarToken, validarCampos],crearOrderController)
+router.post('/crear-orden-cad', [validarToken, validarCampos],crearOrderCadenaController)
 router.post('/crear-oferta', [validarToken, validarCampos],crearOrderController)
 router.get('/white-list', [validarToken, validarCampos],whiteListController)
 router.get('/pendientes-vendedor', [validarToken, validarCampos],pedidosPorVendedorPendientesController)

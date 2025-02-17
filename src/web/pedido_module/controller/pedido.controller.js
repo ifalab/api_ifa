@@ -19,12 +19,13 @@ const { findClientePorVendedor,
     listaPrecioCadenas,
     clientesPorSucursal
 } = require("./hana.controller");
-const { postOrden, postQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
+const { postOrden, postQuotations, patchQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
 const QRCode = require('qrcode');
 const path = require('path');
 const ejs = require('ejs');
 const pdf = require('html-pdf');
+const { detalleOfertaCadena } = require("../../ventas_module/controller/hana.controller");
 
 const clientesVendedorController = async (req, res) => {
     try {
@@ -159,27 +160,42 @@ const listaPreciosOficilaController = async (req, res) => {
         const noDiscount = req.query.noDiscount
         const cardCode = req.query.cardCode
         const listaPrecioResponse = await listaPrecioOficial(cardCode)
+        return res.json({ listaPrecio: listaPrecioResponse })
         // return res.json({listaPrecioResponse})
-        let descuentosLinea = []
-        descuentosLinea = await findDescuentosLineas()
-        // return res.json({descuentosLinea})
-        listaDescLinea = procesarListaCodigo(descuentosLinea)
-        let listaPrecio = []
-        // return res.json({listaPrecioResponse})
-        listaPrecioResponse.map((item) => {
-            const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemName === item.LineItemName)
-            if (noDiscount == 'Y') {
-                if (desc) {
-                    listaPrecio.push({ ...item, descEsp: +desc.Desc })
-                } else {
-                    listaPrecio.push({ ...item, descEsp: 0 })
-                }
-            } else {
-                listaPrecio.push({ ...item, descEsp: 0 })
-            }
-        })
-        // return res.json({ listaDescLinea})
-        return res.json({ listaPrecio })
+        // let descuentosLinea = []
+        // descuentosLinea = await findDescuentosLineas()
+        // // return res.json({descuentosLinea,listaPrecioResponse})
+        // listaDescLinea = procesarListaCodigo(descuentosLinea)
+        // // return res.json({ descuentosLinea, listaPrecioResponse, listaDescLinea })
+        // let listaPrecio = []
+        // // return res.json({listaPrecioResponse})
+        // listaPrecioResponse.map((item) => {
+        //     const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemName === item.LineItemName)
+        //     if (noDiscount == 'Y') {
+        //         if (desc && desc.Desc > 0) {
+
+        //             const descLin = +desc.Desc
+        //             const descItem = +item.descEsp
+
+        //             if (descLin > descItem) {
+        //                 listaPrecio.push({ ...item, descEsp: +desc.Desc })
+        //             } else {
+        //                 listaPrecio.push({ ...item, descEsp: +item.descEsp })
+        //             }
+
+        //         } else {
+        //             // console.log('----------------------- DESC')
+        //             // console.log({ desc })
+        //             listaPrecio.push({ ...item, descEsp: +item.descEsp })
+        //         }
+        //     } else {
+        //         console.log('----------------------- DESC')
+        //         console.log({ desc })
+        //         listaPrecio.push({ ...item, descEsp: 0 })
+        //     }
+        // })
+        // // return res.json({ listaDescLinea})
+        // return res.json({ listaPrecio })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
@@ -251,9 +267,6 @@ const crearOrderController = async (req, res) => {
     try {
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        // console.log(JSON.stringify(body, null, 2))
-        // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         const docLine = body.DocumentLines
         let alprazolamContains = false
         let otherContains = false
@@ -272,7 +285,7 @@ const crearOrderController = async (req, res) => {
         console.log(JSON.stringify({ docLine, alprazolamContains, otherContains }, null, 2))
         // return
         const ordenResponse = await postOrden(body)
-        
+
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         console.log(JSON.stringify(ordenResponse, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
@@ -280,11 +293,142 @@ const crearOrderController = async (req, res) => {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
         }
-        
+
 
         console.log({ usuario })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
 
+        return res.json({ ...ordenResponse })
+    } catch (error) {
+        console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ usuario })
+        const message = `Error en el controlador crearOrderController: ${error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${message || ''}`, '', "pedido/crear-orden", process.env.PRD)
+
+        return res.status(500).json({ message })
+    }
+}
+
+const crearOrderCadenaController = async (req, res) => {
+    const body = req.body
+    try {
+        const alprazolamCode = '102-004-028'
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const docLine = body.DocumentLines
+        const docEntry = body.DocEntry
+
+        let alprazolamContains = false
+        let otherContains = false
+        docLine.map((item) => {
+            if (item.ItemCode == alprazolamCode) {
+                alprazolamContains = true
+            } else {
+                otherContains = true
+            }
+        })
+        // return
+        if (alprazolamContains && otherContains) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
+
+        }
+        console.log(JSON.stringify({ body }, null, 2))
+        // return
+        const DocumentLines = []
+        docLine.map((item) => {
+            if (item.LineNum == -2) {
+                const { BaseLine, BaseEntry, BaseType, ...rest } = item
+                DocumentLines.push({ ...rest, LineNum: null, Currency: 'BS' })
+            }
+        })
+        // return res.json({ DocumentLines })
+        if (!docEntry) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error no existe el doc entry en la peticion.`, '', "pedido/crear-orden-cad", process.env.PRD)
+            return res.status(400).json({ message: `Error no existe el doc entry en la peticion.` })
+        } else {
+            const sapResponse = await patchQuotations(+docEntry, { DocumentLines })
+            if (sapResponse.status == 400) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error del SAP. ${sapResponse.errorMessage.value || 'No definido'}`, '', "pedido/crear-orden-cad", process.env.PRD)
+                return res.status(400).json({ message: `Error del SAP. ${sapResponse.errorMessage.value || 'No definido'}` })
+            }
+            // console.log(JSON.stringify({ repsonse :sapResponse.response }, null, 2))
+        }
+        const detalle = await detalleOfertaCadena(+docEntry)
+        // return res.json({ detalle,  })
+        const {
+            Series,
+            CardCode,
+            FederalTaxID,
+            DocDate,
+            DocDueDate,
+            DocEntry,
+            JournalMemo,
+            PaymentGroupCode,
+            U_NIT,
+            U_RAZSOC,
+            DocTotal,
+            SalesPersonCode,
+            U_OSLP_ID,
+            U_UserCode,
+        } = body
+        const ordenBody = {
+            Series,
+            CardCode,
+            FederalTaxID,
+            DocDate,
+            DocDueDate,
+            JournalMemo,
+            PaymentGroupCode,
+            U_NIT,
+            U_RAZSOC,
+            DocTotal,
+            SalesPersonCode,
+            U_OSLP_ID,
+            U_UserCode,
+        }
+        const DocumentLinesToBody = []
+        let idx = 0
+        let newDocTotal = 0
+        detalle.data.map((item) => {
+            const { LineNum, ItemCode, SalUnitMsr, Quantity, PriceMax, subTotal, WhsCode } = item
+            const price = parseFloat(PriceMax) || 0
+            const qty = parseFloat(Quantity) || 0
+            const total = parseFloat(subTotal) || 0
+            const descLin = (price * qty) - total
+            const doc = {
+                LineNum: idx,
+                ItemCode,
+                Quantity: +Quantity,
+                GrossPrice: Number(price.toFixed(2)),
+                GrossTotal: Number(total.toFixed(2)),
+                WarehouseCode: WhsCode,
+                AccountCode: "",
+                TaxCode: "IVA",
+                BaseType: 23,
+                BaseLine: +LineNum,
+                BaseEntry: +docEntry,
+                MeasureUnit: SalUnitMsr,
+                U_DESCLINEA: Number(descLin.toFixed(2)),
+            }
+            newDocTotal += total
+            DocumentLinesToBody.push({ ...doc })
+            idx++
+        })
+        ordenBody.DocumentLines = DocumentLinesToBody
+        ordenBody.DocTotal = Number(newDocTotal.toFixed(2))
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        console.log(JSON.stringify(ordenBody, null, 2))
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        // return res.json({ detalle, DocumentLines, ordenBody })
+        const ordenResponse = await postOrden(ordenBody)
+
+        if (ordenResponse.status == 400) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+        }
+        console.log({ usuario })
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
         return res.json({ ...ordenResponse })
     } catch (error) {
         console.log({ error })
@@ -657,9 +801,9 @@ const pedidoInstitucionController = async (req, res) => {
             return res.status(400).json({ mensaje })
         }
 
-        console.log({body})
+        console.log({ body })
         const response = await postOrden(body)
-        console.log({response})
+        console.log({ response })
         if (response.status != 200 && response.status != 204) {
             let mensaje = `${response.message || 'Error en postOrden'}`
             if (response.errorMessage) {
@@ -705,5 +849,6 @@ module.exports = {
     precioArticuloCadenaController,
     listaPrecioCadenasController,
     clientesSucursalController,
-    pedidoInstitucionController
+    pedidoInstitucionController,
+    crearOrderCadenaController
 }
