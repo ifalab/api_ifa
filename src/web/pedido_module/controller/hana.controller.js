@@ -56,12 +56,13 @@ const findClientePorVendedor = async (name) => {
     }
 }
 
-const findDescuentosArticulos = async () => {
+const findDescuentosArticulos = async (cardCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM ${process.env.PRD}.IFA_VM_DESCUENTOS_POR_ARTICULO`
+        // const query = `SELECT * FROM ${process.env.PRD}.IFA_VM_DESCUENTOS_POR_ARTICULO`
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_DESCUENTOS_OFERTAS('${cardCode}')`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
