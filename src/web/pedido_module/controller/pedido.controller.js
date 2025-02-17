@@ -159,27 +159,27 @@ const listaPreciosOficilaController = async (req, res) => {
         const noDiscount = req.query.noDiscount
         const cardCode = req.query.cardCode
         const listaPrecioResponse = await listaPrecioOficial(cardCode)
-        // return res.json({listaPrecioResponse})
-        let descuentosLinea = []
-        descuentosLinea = await findDescuentosLineas()
-        // return res.json({descuentosLinea})
-        listaDescLinea = procesarListaCodigo(descuentosLinea)
-        let listaPrecio = []
-        // return res.json({listaPrecioResponse})
-        listaPrecioResponse.map((item) => {
-            const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemName === item.LineItemName)
-            if (noDiscount == 'Y') {
-                if (desc) {
-                    listaPrecio.push({ ...item, descEsp: +desc.Desc })
-                } else {
-                    listaPrecio.push({ ...item, descEsp: 0 })
-                }
-            } else {
-                listaPrecio.push({ ...item, descEsp: 0 })
-            }
-        })
-        // return res.json({ listaDescLinea})
-        return res.json({ listaPrecio })
+        return res.json({listaPrecio: listaPrecioResponse})
+        // let descuentosLinea = []
+        // descuentosLinea = await findDescuentosLineas()
+        // // return res.json({descuentosLinea})
+        // listaDescLinea = procesarListaCodigo(descuentosLinea)
+        // let listaPrecio = []
+        // // return res.json({listaPrecioResponse})
+        // listaPrecioResponse.map((item) => {
+        //     const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemName === item.LineItemName)
+        //     if (noDiscount == 'Y') {
+        //         if (desc) {
+        //             listaPrecio.push({ ...item, descEsp: +desc.Desc })
+        //         } else {
+        //             listaPrecio.push({ ...item, descEsp: 0 })
+        //         }
+        //     } else {
+        //         listaPrecio.push({ ...item, descEsp: 0 })
+        //     }
+        // })
+        // // return res.json({ listaDescLinea})
+        // return res.json({ listaPrecio })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
@@ -513,6 +513,8 @@ const pedidoCadenaController = async (req, res) => {
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         body.Series = 343;
         let num = 0
+        let sumaDetalle = 0
+
         body.DocumentLines.forEach((line) => {
             line.LineNum = num
             line.GrossPrice = Number(line.GrossPrice.toFixed(2))
@@ -524,12 +526,11 @@ const pedidoCadenaController = async (req, res) => {
             console.log({ totalNoDiscount })
             line.U_DESCLINEA = Number(descLinea.toFixed(2));
             num++;
-        })
-        console.log({ body })
-        let sumaDetalle = 0
-        body.DocumentLines.forEach((line) => {
+            
             sumaDetalle += Number(line.GrossTotal.toFixed(2))
         })
+        console.log({ body })
+        
         body.DocTotal = Number(body.DocTotal.toFixed(2))
         console.log({ body: JSON.stringify(body, 2) })
         sumaDetalle = Number(sumaDetalle.toFixed(2))

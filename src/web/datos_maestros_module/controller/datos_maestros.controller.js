@@ -4,7 +4,8 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     actualizarCliente, descuentoOfertasPorLinea, getAllLineas, setDescuentoOfertasPorCantidad,
     getArticulos, findCliente, getDescuentosCantidad, getIdDescuentosCantidad,
     getArticuloByCode, setDescuentoEspecial, getAllDescuentosLinea, deleteDescuentoLinea,
-    setDescuentoEspecialPorArticulo, obtenerTipos } = require("./hana.controller")
+    setDescuentoEspecialPorArticulo, obtenerTipos, obtenerDescuetosEspeciales,
+    getIdsDescuentoEspecial, getDescuentosEspecialesById } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -22,7 +23,7 @@ const dmClientesController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({
-            mensaje: 'error en el controlador'
+            mensaje: `Error en el controlador: ${error.message || ''}`
         })
     }
 }
@@ -32,6 +33,7 @@ const dmClientesPorCardCodeController = async (req, res) => {
         const cardCode = req.query.cardCode
         const cliente = await dmClientesPorCardCode(cardCode)
         // const usuario = req.usuarioAutorizado
+        console.log({cliente})
         if (!cliente[0]) {
             // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cliente por CardCode", `Error: No se encontro el cliente por el cardcode, se uso el cardcode: ${cardCode} `, ``, "datos-maestros/clientes-cardcode", process.env.PRD)
             return res.status(400).json({ mensaje: 'el cliente no existe' })
@@ -288,7 +290,8 @@ const actualizarDatosClienteController = async (req, res) => {
             AreaCode,
             ZoneCode,
             CreditLine,
-            GroupCode
+            GroupCode,
+            LicTradNum
         } = req.body
         console.log({body: req.body})
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -299,6 +302,7 @@ const actualizarDatosClienteController = async (req, res) => {
         response = await actualizarCliente(CardCode, `ZoneCode`, '', ZoneCode)
         response = await actualizarCliente(CardCode, `CreditLine`, '', CreditLine)
         response = await actualizarCliente(CardCode, `GroupCode`, '', GroupCode)
+        response = await actualizarCliente(CardCode, `LicTradNum`, '', LicTradNum)
 
         if (response.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Datos Cliente", `Error: ${response.errorMessage || 'actualizarCliente()'} `, ``, "datos-maestros/actualizar-cliente", process.env.PRD)
@@ -536,6 +540,49 @@ const obtenerTiposController = async (req, res) => {
     }
 }
 
+const obtenerDescuetosEspecialesController = async (req, res) => {
+    try {
+        const descuentos = await obtenerDescuetosEspeciales()
+        return res.json(descuentos)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador obtenerDescuetosEspecialesController. ${error.message || ''}` })
+    }
+}
+
+const getIdsDescuentoEspecialController = async (req, res) => {
+    try {
+        const itemCode= req.query.itemCode
+        const cardCode= req.query.cardCode
+        const response = await getIdsDescuentoEspecial(cardCode, itemCode)
+        console.log(response)
+        response.sort((a, b) => a.Id - b.Id);
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getIdsDescuentoEspecialController: ${error.message || ''}` })
+    }
+}
+
+const getDescuentosEspecialesByIdController = async (req, res) => {
+    try {
+        const body= req.body
+        console.log({body})
+        const response = await getDescuentosEspecialesById(body.Id, body.ItemCode)
+        console.log(response)
+        response.forEach((value)=>{
+            value.ToDate = value.ToDate.split(' ')[0]
+            value.FromDate = value.FromDate.split(' ')[0]
+        })
+        response.sort((a, b) => a.Row - b.Row);
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getDescuentosEspecialesByIdController: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -562,5 +609,8 @@ module.exports = {
     getAllDescuentosLineaController,
     deleteDescuentoLineaController,
     setDescuentoEspecialPorArticuloController,
-    obtenerTiposController
+    obtenerTiposController,
+    obtenerDescuetosEspecialesController,
+    getIdsDescuentoEspecialController,
+    getDescuentosEspecialesByIdController
 }

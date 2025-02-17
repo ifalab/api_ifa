@@ -981,9 +981,18 @@ const crearSolicitudPlantaController = async (req, res) => {
             ToWarehouse,
             StockTransferLines,
         })
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+
+        if(sapResponse.lang){
+            grabarLog(user.USERCODE, user.USERNAME, "Instituciones Solicitud Planta", sapResponse.value, 'postInventoryTransferRequests', "venta/solicitud-planta", process.env.PRD)
+            return res.status(400).json({mensaje: sapResponse.value})
+        }
         return res.json({sapResponse})
     } catch (error) {
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(user.USERCODE, user.USERNAME, "Instituciones Solicitud Planta", `Error en el controlador crearSolicitudPlantaController: ${error.message}`, 'catch del controller', "venta/solicitud-planta", process.env.PRD)
         console.log({ error })
+        return res.status(500).json({mensaje: `Error en el controlador crearSolicitudPlantaController: ${error.message}`})
     }
 }
 
