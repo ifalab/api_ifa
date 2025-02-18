@@ -1,5 +1,5 @@
 const sapService = require("../services/sap.service")
-const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion } = require("./hana.controller")
+const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -27,6 +27,8 @@ const rendicionDetalladaController = async (req, res) => {
         const id = req.params.id
         const listaDetalles = []
         const response = await rendicionDetallada(id)
+        console.log('================================  RESPONSE RENDICION DETALLE')
+        // return res.json(response)
         if (response.length == 0) return res.status(400).json({ mensaje: 'no hay detalle de la rendicion' })
 
 
@@ -49,8 +51,10 @@ const rendicionDetalladaController = async (req, res) => {
                 TASACERO,
                 DESCUENTO,
                 GIFCARD,
-                // COMENTARIO,
+                COMENTARIO,
                 ID_CUENTA,
+                GLOSA_REND,
+                FECHACONTABILIZACION,
                 ...rest
             } = item
             const data = {
@@ -66,8 +70,8 @@ const rendicionDetalladaController = async (req, res) => {
                 TASACERO: +TASACERO,
                 DESCUENTO: +DESCUENTO,
                 GIFCARD: +GIFCARD,
-                ID_CUENTA: +ID_CUENTA
-                // COMENTARIO:COMENTARIO
+                ID_CUENTA: +ID_CUENTA,
+                COMENTARIO: COMENTARIO
             }
             listaDetalles.push(data)
         })
@@ -79,6 +83,8 @@ const rendicionDetalladaController = async (req, res) => {
             ESTADO,
             YEAR_RENDICION,
             MONTH_RENDICION,
+            GLOSA_REND,
+            FECHACONTABILIZACION,
         } = response[0]
         const dataFinal = {
             ID,
@@ -87,6 +93,8 @@ const rendicionDetalladaController = async (req, res) => {
             ESTADO,
             YEAR_RENDICION,
             MONTH_RENDICION,
+            GLOSA_REND,
+            FECHACONTABILIZACION,
             listaDetalles
         }
         return res.json({ ...dataFinal })
@@ -114,12 +122,14 @@ const crearRendicionController = async (req, res) => {
             codEmp,
             transacId,
             estado,
+            glosaRend,
             listaGastos
         } = req.body
         const date = new Date()
         const year = date.getFullYear()
         const month = date.getMonth() + 1
-        const response = await crearRendicion(transacId, codEmp, estado, month, year)
+        console.log('======================================                 DATA TO CREATE REND')
+        const response = await crearRendicion(transacId, codEmp, estado, month, year, glosaRend)
         if (!response[0].ID) return res.status(404).json({ mensaje: 'error al crear la rendicion' })
         const idRendicion = response[0].ID
 
@@ -551,6 +561,7 @@ const sendToSapController = async (req, res) => {
     try {
         let listRecibos = []
         let listFacturas = []
+        let listResHana = []
         let errores = []
 
         for (const iterator of listaGastos) {
@@ -593,17 +604,136 @@ const sendToSapController = async (req, res) => {
 
         console.log({ data, statusCode })
         if (data.status >= 400) {
-            return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}` });
+            await Promise.all(listFacturas.map(async (item) => {
+                const { id_gasto } = item
+                const responseSap = await actualizarEstadoComentario(id_gasto, 2, `No se pudo contabilizar, error del SAP. ${data.message || ''}`)
+                listResHana.push(responseSap)
+            }))
+            await Promise.all(listRecibos.map(async (item) => {
+                const { id_gasto } = item
+                const responseSap = await actualizarEstadoComentario(id_gasto, 2, `No se pudo contabilizar, error del SAP. ${data.message || ''}`)
+                listResHana.push(responseSap)
+            }))
+            return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, listResHana });
         }
-        // let listResSap = []
-        // await Promise.all(data.map(async (item) => {
-        //     const { id, code, message } = item
-        //     const responseSap = await actualizarEstadoComentario(id, code, message)
-        //     listResSap.push(responseSap)
-        // }))
+
+        await Promise.all(listFacturas.map(async (item) => {
+            const {
+                id_gasto,
+                new_nit,
+                new_tipo,
+                new_gasto,
+                new_nroFactura,
+                new_codAut,
+                new_fecha,
+                new_nombreRazon,
+                new_glosa,
+                new_importeTotal,
+                new_ice,
+                new_iehd,
+                new_ipj,
+                new_tasas,
+                new_otroNoSujeto,
+                new_exento,
+                new_tasaCero,
+                new_descuento,
+                new_codControl,
+                new_gifCard,
+                new_id_cuenta } = item
+            const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
+            listResHana.push(responseSap)
+            const fecha = new_fecha.split('/')
+            const fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
+            console.log({ fechaFormateada, fecha, new_fecha })
+            const responseHana = await actualizarGastos(
+                id_gasto,
+                new_nit,
+                new_tipo,
+                new_gasto,
+                new_nroFactura,
+                new_codAut,
+                fechaFormateada,
+                new_nombreRazon,
+                new_glosa,
+                new_importeTotal,
+                new_ice,
+                new_iehd,
+                new_ipj,
+                new_tasas,
+                new_otroNoSujeto,
+                new_exento,
+                new_tasaCero,
+                new_descuento,
+                new_codControl,
+                new_gifCard,
+                '3',
+                idRendicion,
+                '',
+                new_id_cuenta
+            )
+            listResHana.push(responseHana)
+        }))
+        await Promise.all(listRecibos.map(async (item) => {
+            const {
+                id_gasto,
+                new_nit,
+                new_tipo,
+                new_gasto,
+                new_nroFactura,
+                new_codAut,
+                new_fecha,
+                new_nombreRazon,
+                new_glosa,
+                new_importeTotal,
+                new_ice,
+                new_iehd,
+                new_ipj,
+                new_tasas,
+                new_otroNoSujeto,
+                new_exento,
+                new_tasaCero,
+                new_descuento,
+                new_codControl,
+                new_gifCard,
+                new_id_cuenta } = item
+            const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
+            listResHana.push(responseSap)
+            const fecha = new_fecha.split('/')
+            const fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
+            console.log({ fechaFormateada, fecha, new_fecha })
+            const responseHana = await actualizarGastos(
+                id_gasto,
+                new_nit,
+                new_tipo,
+                new_gasto,
+                new_nroFactura,
+                new_codAut,
+                fechaFormateada,
+                new_nombreRazon,
+                new_glosa,
+                new_importeTotal,
+                new_ice,
+                new_iehd,
+                new_ipj,
+                new_tasas,
+                new_otroNoSujeto,
+                new_exento,
+                new_tasaCero,
+                new_descuento,
+                new_codControl,
+                new_gifCard,
+                '3',
+                idRendicion,
+                '',
+                new_id_cuenta
+            )
+            listResHana.push(responseHana)
+
+        }))
+
         const estadoRend = await actualizarEstadoRendicion(idRendicion, '3')
-        console.log({ listResSap, estadoRend })
-        return res.status(statusCode).json({ mensaje: `Se creo la rendicion con exito.`, data });
+        console.log({ estadoRend })
+        return res.status(statusCode).json({ mensaje: `Se registro la rendicion en el SAP con exito.`, data, listResHana });
     } catch (error) {
         console.log('Error: --------------------------------------------')
         console.error({ error });
@@ -615,9 +745,10 @@ const sendToSapController = async (req, res) => {
         let listResSap = []
         let listErrores = []
         let estadoRend
+        estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
         console.log({ data })
         if (error.message.error.message) {
-            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''}` });
+            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''}`, estadoRend });
         }
         if (error.response) {
             if (error.response.length > 0) {
@@ -637,7 +768,7 @@ const sendToSapController = async (req, res) => {
                     const responseSap = await actualizarEstadoComentario(id, code, cleanMessage)
                     listResSap.push(responseSap)
                 }))
-                estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
+
             }
 
         }
@@ -816,6 +947,28 @@ const actualizarGlosaRendController = async (req, res) => {
     }
 }
 
+const actualizarFechaContRendController = async (req, res) => {
+    try {
+        const { idRend, new_date } = req.body
+        if (!idRend) {
+            return res.status(400).json({ mensaje: 'debe existir un Id de la Rendicion' })
+        }
+        if (!new_date) {
+            return res.status(400).json({ mensaje: 'debe existir una fecha valida' })
+        }
+        const responseHana = await actualizarfechaContRendicion(idRend, new_date)
+        const { response } = responseHana[0]
+        console.log({ response })
+        if (response != 200) {
+            return res.status(400).json({ mensaje: 'no se pudo actualizar la fecha de contabilizacion' })
+        }
+        return res.json({ response, responseHana })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -837,4 +990,5 @@ module.exports = {
     costoComercialCuentaController,
     filtroCCController,
     actualizarGlosaRendController,
+    actualizarFechaContRendController
 }

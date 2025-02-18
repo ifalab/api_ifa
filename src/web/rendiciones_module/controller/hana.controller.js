@@ -122,13 +122,13 @@ const rendicionByTransac = async (codTransac) => {
     }
 }
 
-const crearRendicion = async (NEW_TransactionId, NEW_CodEmp, NEW_ESTADO, NEW_MES, NEW_YEAR) => {
+const crearRendicion = async (NEW_TransactionId, NEW_CodEmp, NEW_ESTADO, NEW_MES, NEW_YEAR,new_glosa) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('crearRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION('${NEW_TransactionId}','${NEW_CodEmp}','${NEW_ESTADO}',${NEW_MES},${NEW_YEAR})`
+        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION('${NEW_TransactionId}','${NEW_CodEmp}','${NEW_ESTADO}',${NEW_MES},${NEW_YEAR},'${new_glosa}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -517,6 +517,24 @@ const actualizarGlosaRendicion = async (idRend, new_glosa) => {
     }
 }
 
+const actualizarfechaContRendicion = async (idRend, new_date) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarGlosaRendicion EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_FECHACONT_RENDICION(${idRend},'${new_date}');`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo actualizar la fecha de la rendicion`
+        }
+
+    }
+}
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -540,4 +558,5 @@ module.exports = {
     costoComercialCuenta,
     filtroCC,
     actualizarGlosaRendicion,
+    actualizarfechaContRendicion,
 }

@@ -1432,8 +1432,6 @@ const cancelarOrdenController = async (req, res) => {
             } else {
                 response = resCancel
             }
-
-
         }
 
         return res.json({ response, listResponseDelivery })
