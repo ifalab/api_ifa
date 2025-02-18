@@ -509,17 +509,19 @@ const setDescuentoEspecialPorArticuloController = async (req, res) => {
     try {
         const {body}=req
         console.log({body})
-        const {cardCode, itemCode, desc, fechaInicial, fechaFinal, id_sap} = body 
-        // return res.json({cardCode, itemCode, desc, fechaInicial, fechaFinal})
-        
-        // const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const response = await setDescuentoEspecialPorArticulo(cardCode, itemCode, desc, fechaInicial, fechaFinal, id_sap)
-        if(response.status!=200){
-            // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial", `Error: ${response.message || 'setDescuentoEspecialPorArticulo()'} `, `${response.query || 'setDescuentoEspecialPorArticulo'}`, "datos-maestros/desc-especial-articulo", process.env.PRD)
-            return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoEspecialPorArticulo'}`})
+        let responses =[]            
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        for(const descuento of body){
+            const {Row, CardCode, ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete } = descuento
+            const response = await setDescuentoEspecialPorArticulo(Row, CardCode, ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
+            responses.push(response)
+            if(response.status!=200){
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Error: ${response.message || 'setDescuentoOfertasPorCantidad()'} `, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-cantidad", process.env.PRD)
+                return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoOfertasPorCantidad'}`})
+            }
         }
-        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial", `Exito en la actualizacion de descuentos por cantidad`, `${response.query || 'setDescuentoEspecialPorArticulo'}`, "datos-maestros/desc-especial-articulo", process.env.PRD)
-        return res.json(response)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Exito en la actualizacion de descuentos por cantidad`, ``, "datos-maestros/descuento-cantidad", process.env.PRD)
+        return res.json(responses)
     } catch (error) {
         console.log({ error })
         const mensaje = `Error en el controlador setDescuentoEspecialPorArticuloController: ${error.message || ''}`
@@ -568,7 +570,7 @@ const getDescuentosEspecialesByIdController = async (req, res) => {
     try {
         const body= req.body
         console.log({body})
-        const response = await getDescuentosEspecialesById(body.Id, body.ItemCode)
+        const response = await getDescuentosEspecialesById(body.Id, body.ItemCode, body.CardCode)
         console.log(response)
         response.forEach((value)=>{
             value.ToDate = value.ToDate.split(' ')[0]

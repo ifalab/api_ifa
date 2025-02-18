@@ -67,7 +67,7 @@ const findDescuentosArticulos = async (cardCode) => {
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
-        throw new Error('Error al procesar la solicitud: findDescuentosArticulos');
+        throw new Error(`Error al procesar la solicitud findDescuentosArticulos: ${error.message}`);
     }
 }
 
@@ -317,6 +317,56 @@ const clientesPorSucursal= async (id_sucursal) => {
         }
     }
 }
+
+const getAllArticulos= async (itemName) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where upper("ItemName") LIKE '%${itemName}%' limit 15`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllArticulos:', error.message);
+        throw { 
+            message: `Error al procesar getAllArticulos: ${error.message || ''}` 
+        }
+    }
+}
+
+const articuloDiccionario = async (cod) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `call ${process.env.PRD}.IFA_LAPP_INV_HABILITACION_DICT('${cod}')`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en articuloDiccionario:', error.message);
+        return { message: `Error al procesar la solicitud: articuloDiccionario: ${error.message}` }
+    }
+}
+
+const stockInstitucionPorArticulo = async (cod) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `call ${process.env.PRD}.ifa_inv_obtener_stock_institucion_por_articulo('${cod}')`;
+        const query = `call LAB_IFA_PRD.ifa_inv_obtener_stock_institucion_por_articulo('${cod}')`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en stockInstitucionPorArticulo:', error.message);
+        throw { message: `Error al procesar stockInstitucionPorArticulo: ${error.message}` }
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -336,5 +386,8 @@ module.exports = {
     pedidosPorVendedorHoy,
     precioArticuloCadena,
     listaPrecioCadenas,
-    clientesPorSucursal
+    clientesPorSucursal,
+    getAllArticulos,
+    articuloDiccionario,
+    stockInstitucionPorArticulo
 }
