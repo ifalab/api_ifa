@@ -1,3 +1,4 @@
+const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module/controllers/hana.controller")
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion } = require("./hana.controller")
 
@@ -555,7 +556,9 @@ const sendToSapController = async (req, res) => {
         estado,
         idRendicion,
         transacId,
-        listaGastos
+        glosaRend,
+        fechaContabilizado,
+        listaGastos,
     } = req.body
 
     try {
@@ -564,6 +567,24 @@ const sendToSapController = async (req, res) => {
         let listResHana = []
         let errores = []
 
+        // console.log(JSON.stringify({
+        //     codEmp,
+        //     estado,
+        //     idRendicion,
+        //     transacId,
+        //     glosaRend,
+        //     fechaContabilizado,
+        //     listaGastos,
+        // }, null, 2))
+        // return res.json({
+        //     codEmp,
+        //     estado,
+        //     idRendicion,
+        //     transacId,
+        //     glosaRend,
+        //     fechaContabilizado,
+        //     listaGastos,
+        // })
         for (const iterator of listaGastos) {
             if (iterator.new_estado !== '2') {
                 return res.status(400).json({ mensaje: 'Todas las filas deben estar EN REVISION' });
@@ -584,25 +605,27 @@ const sendToSapController = async (req, res) => {
             }
 
         })
+        const fecha = fechaContabilizado.split('T')
+        const tipoCambio = await tipoDeCambioByFecha(fecha[0])
+        const usdRate = tipoCambio[0]
+        const usd = +usdRate.Rate
+        console.log({ usd })
+        // return res.json(usd)
 
-        console.log({
-            codEmp,
-            estado,
-            idRendicion,
-            transacId,
-            listFacturas,
-            listRecibos,
-        })
         const { statusCode, data } = await sapService.sendRendiciones({
+            usd,
             codEmp,
             estado,
             idRendicion,
             transacId,
+            glosaRend,
+            fechaContabilizado,
             listFacturas,
             listRecibos,
         });
 
         console.log({ data, statusCode })
+        // return res.json({ statusCode, data })
         if (data.status >= 400) {
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
@@ -741,14 +764,14 @@ const sendToSapController = async (req, res) => {
 
         // Maneja errores y responde al cliente
         const statusCode = error.statusCode || 500;
-        const data = error.message.error.message || 'Error desconocido en el controlador';
+        const data = `${error.message || 'Error desconocido en el controlador'}`;
         let listResSap = []
         let listErrores = []
         let estadoRend
         estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
         console.log({ data })
-        if (error.message.error.message) {
-            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''}`, estadoRend });
+        if (error.message.error?.message) {
+            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${error.message.error?.message || ''}`, estadoRend });
         }
         if (error.response) {
             if (error.response.length > 0) {

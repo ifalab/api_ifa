@@ -236,6 +236,7 @@ const findDimension = async (dimension) => {
         let query = ``
 
         if (dimension == 1) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONUNO`
+        // if (dimension == 2) query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES_TIPOS`
         if (dimension == 2) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONDOS`
         if (dimension == 3) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONTRES`
         const result = await executeQuery(query)

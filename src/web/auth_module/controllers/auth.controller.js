@@ -7,7 +7,7 @@ const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveU
     getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario,
     addRutasDespachadores, getRutasLibresPorDespachador, getRutasAsignadasPorDespachador, getDespachadores, deleteRutasDespachadores
 } = require("./hana.controller")
-const { postSalesPersons, patchSalesPersons }= require("./sld.controller")
+const { postSalesPersons, patchSalesPersons } = require("./sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const authLoginPost = async (req, res) => {
@@ -283,7 +283,7 @@ const findUserByIdController = async (req, res) => {
             ID_SAP: value.ID_SAP
 
         }
-        console.log({user})
+        console.log({ user })
         return res.json({ ...user })
     } catch (error) {
         console.log({ error })
@@ -445,6 +445,13 @@ const findDimensionController = async (req, res) => {
         const dim = req.params.dim
         const response = await findDimension(dim)
         return res.json({ response })
+        // const respDim2 = []
+        // if (dim == 2) {
+        //     return res.json({ response })
+        // } else {
+        //     return res.json({ response })
+        // }
+
     } catch (error) {
         return res.status(500).json({
             mensaje: 'Error en findDimensionController',
@@ -662,8 +669,8 @@ const addAlmacenUsuarioController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (almacenes.statusCode != 200) {
             let mensaje = response.message || 'Error en addAlmacenUsuario'
-            if(response.message.length > 255 ){
-                mensaje=response.message.slice(0,255);
+            if (response.message.length > 255) {
+                mensaje = response.message.slice(0, 255);
             }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, `${almacenes.query || ''}`, "auth/add-almacen-user", process.env.PRD)
             return res.status(400).json({ mensaje: `${almacenes.message || mensaje}` })
@@ -690,8 +697,8 @@ const deleteAlmacenUsuarioController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (almacenes.statusCode != 200) {
             let mensaje = response.message || 'Error en deleteAlmacenUsuario'
-            if(response.message.length > 255 ){
-                mensaje=response.message.slice(0,255);
+            if (response.message.length > 255) {
+                mensaje = response.message.slice(0, 255);
             }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir Almacen a usuario", mensaje, `${almacenes.query || ''}`, "auth/delete-almacen-user", process.env.PRD)
             return res.status(400).json({ mensaje })
@@ -767,8 +774,8 @@ const addRutasDespachadoresController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (response.statusCode != 200) {
             let mensaje = response.message || 'Error en addRutasDespachadores'
-            if(response.message.length > 255 ){
-                mensaje=response.message.slice(0,255);
+            if (response.message.length > 255) {
+                mensaje = response.message.slice(0, 255);
             }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Añadir ruta a despachador", mensaje, `${response.query || ''}`, "auth/add-ruta-despachador", process.env.PRD)
             return res.status(400).json({ mensaje: `${response.message || mensaje}` })
@@ -794,8 +801,8 @@ const deleteRutasDespachadoresController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (response.statusCode != 200) {
             let mensaje = response.message || 'Error en deleteRutasDespachadores'
-            if(response.message.length > 255 ){
-                mensaje=response.message.slice(0,255);
+            if (response.message.length > 255) {
+                mensaje = response.message.slice(0, 255);
             }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Eliminar ruta a despachador", mensaje, `${response.query || ''}`, "auth/delete-ruta-despachador", process.env.PRD)
             return res.status(400).json({ mensaje: `${response.message || mensaje}` })
@@ -850,7 +857,7 @@ const validarTokenController = async (req, res) => {
         if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'el usuario no esta autorizado a entrar en el sistema' })
         return res.status(200).json({ mensaje: 'Autorizado', validate: true })
     } catch (error) {
-        console.error({error})
+        console.error({ error })
         return res.status(500).json({ mensaje: 'error en el controlador de validacion del token' })
     }
 }
@@ -858,23 +865,23 @@ const validarTokenController = async (req, res) => {
 const postSalesPersonsController = async (req, res) => {
     try {
         const body = req.body
-        console.log({body})
+        console.log({ body })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await postSalesPersons(body)
-        if(response.status==400){
-            const mensaje=response.message.value || response.message||'Error en postSalesPersons'
+        if (response.status == 400) {
+            const mensaje = response.message.value || response.message || 'Error en postSalesPersons'
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Crear Sales Person", mensaje, `postSalesPersons`, "auth/sales-person", process.env.PRD)
-            return res.status(400).json({mensaje})
+            return res.status(400).json({ mensaje })
         }
-        console.log({responsePostSalesPersons: response})
+        console.log({ responsePostSalesPersons: response })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Crear Sales Person", 'Exito en la creacion', `postSalesPersons`, "auth/sales-person", process.env.PRD)
         return res.json(response)
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Crear Sales Person", `Error en postSalesPersonsController: ${error.message||''}`, ``, "auth/sales-person", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Crear Sales Person", `Error en postSalesPersonsController: ${error.message || ''}`, ``, "auth/sales-person", process.env.PRD)
         return res.status(500).json({
-            mensaje: `Error en postSalesPersonsController: ${error.message||''}`
+            mensaje: `Error en postSalesPersonsController: ${error.message || ''}`
         })
     }
 }
@@ -883,23 +890,23 @@ const patchSalesPersonsController = async (req, res) => {
     try {
         const id = req.query.id
         const body = req.body
-        console.log({body})
+        console.log({ body })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const response = await patchSalesPersons(id,body)
-        if(response.status==400){
-            const mensaje=response.message.value || response.message||'Error en patchSalesPersons'
+        const response = await patchSalesPersons(id, body)
+        if (response.status == 400) {
+            const mensaje = response.message.value || response.message || 'Error en patchSalesPersons'
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Actualizar Sales Person", mensaje, `patchSalesPersons`, "auth/sales-person", process.env.PRD)
-            return res.status(400).json({mensaje})
+            return res.status(400).json({ mensaje })
         }
-        console.log({responsePatchSalesPersons: response})
+        console.log({ responsePatchSalesPersons: response })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Actualizar Sales Person", 'Exito al actualizar SalesPerson', `patchSalesPersons`, "auth/sales-person", process.env.PRD)
         return res.json(response)
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Actualizar Sales Person", `Error en patchSalesPersonsController: ${error.message||''}`, ``, "auth/sales-person", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Gestion usuario Actualizar Sales Person", `Error en patchSalesPersonsController: ${error.message || ''}`, ``, "auth/sales-person", process.env.PRD)
         return res.status(500).json({
-            mensaje: `Error en patchSalesPersonsController: ${error.message||''}`
+            mensaje: `Error en patchSalesPersonsController: ${error.message || ''}`
         })
     }
 }
