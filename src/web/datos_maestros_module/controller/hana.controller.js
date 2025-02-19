@@ -346,7 +346,7 @@ const getAllLineas= async()=>{
     }
 }
 
-const setDescuentoOfertasPorCantidad= async(row,itemCode,cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del)=>{
+const setDescuentoOfertasPorCantidad= async(row, itemCode,cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del)=>{
     let query=''
     try {
         if (!connection) {
@@ -538,14 +538,25 @@ const deleteDescuentoLinea = async(id, lineaItemCode, id_sap)=>{
     }
 }
 
-const setDescuentoEspecialPorArticulo= async(cardCode, itemCode, desc, fechaInicial, fechaFinal, id_sap)=>{
+const setDescuentoEspecialPorArticulo= async(row, cardCode, itemCode, cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del)=>{
     let query=''
     try {
         if (!connection) {
             await connectHANA();
         }
-        
-        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales_articulos('${cardCode}','${itemCode}', ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap});`;
+        /*
+    IN cardcode VARCHAR(100),
+    IN ItemCode VARCHAR(60),
+    IN disco DECIMAL(16,2), 
+    IN fechainicio DATE,
+    IN fechafin DATE,
+    IN usuario INT,
+    IN rownum int,
+	IN mini int,
+	IN maxi int,
+	IN deleterow varchar(30)
+        */
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales_articulos('${cardCode}','${itemCode}', ${desc}, '${fechaInicial}', '${fechaFinal}',${id_sap},${row}, ${cantMin}, ${cantMax}, '${del}');`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -602,7 +613,7 @@ const getIdsDescuentoEspecial = async(cardCode,itemCode)=>{
             await connectHANA();
         }
         //change query
-        const query = `call ${process.env.PRD}.ifa_dm_obtener_id_descuentos_por_articulo('${itemCode}')`;
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_id_descuentos_especiales_por_articulo('${itemCode}', '${cardCode}')`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -615,13 +626,13 @@ const getIdsDescuentoEspecial = async(cardCode,itemCode)=>{
     }
 }
 
-const getDescuentosEspecialesById= async(docNum,itemCode)=>{
+const getDescuentosEspecialesById= async(docNum,itemCode, cardCode)=>{
     try {
         if (!connection) {
             await connectHANA();
         }
         //Change query
-        const query = `call ${process.env.PRD}.ifa_dm_obtener_descuentos_articulo_por_id(${docNum},'${itemCode}')`;
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_descuentos_especiales_articulos_por_id(${docNum},'${itemCode}', '${cardCode}')`;
         console.log({ query })
         const result = await executeQuery(query)
         return result

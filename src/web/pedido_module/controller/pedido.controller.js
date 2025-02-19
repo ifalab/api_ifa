@@ -17,7 +17,10 @@ const { findClientePorVendedor,
     pedidosPorVendedorHoy,
     precioArticuloCadena,
     listaPrecioCadenas,
-    clientesPorSucursal
+    clientesPorSucursal,
+    getAllArticulos,
+    articuloDiccionario,
+    stockInstitucionPorArticulo
 } = require("./hana.controller");
 const { postOrden, postQuotations, patchQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -142,7 +145,7 @@ const descuentoArticuloController = async (req, res) => {
         return res.json({ articulos })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador' })
+        return res.status(500).json({ mensaje: `error en el controlador: ${error.message}` })
     }
 }
 
@@ -812,6 +815,65 @@ const pedidoInstitucionController = async (req, res) => {
     }
 }
 
+const getAllArticulosController = async (req, res) => {
+    try {
+        const itemName = req.query.itemName
+        const upercase= itemName.toUpperCase()
+        console.log({upercase}, {itemName})
+        const articulos = await getAllArticulos(upercase)
+        return res.json( articulos )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `error en el controlador getAllArticulosController: ${error.message}` })
+    }
+}
+
+const articuloDiccionarioController = async (req, res) => {
+    try {
+        const cod = req.body.cod
+        const codCliente = req.body.codCliente
+        console.log({ cod })
+        const response = await articuloDiccionario(cod)
+        // console.log({response})
+        console.log({ response })
+        if (codCliente != "C000487" && response.length>0) {
+            console.log("No es igual")
+            const responseFiltrado = response.filter(item => {
+                const { ItemEq } = item
+                return !ItemEq.includes('Y');
+            });
+            return res.status(200).json(responseFiltrado)
+        }
+
+        return res.status(200).json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en el articuloDiccionarioController: ${error.message}`,
+            error
+        })
+
+    }
+}
+
+const stockInstitucionPorArticuloController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const response = await stockInstitucionPorArticulo(itemCode)
+        if(response.length>0){
+            const responseDict={}
+            response.forEach((value)=>{
+                responseDict[value.WhsCode]=value.Stock
+            })
+            return res.json( responseDict )
+        }
+        return res.json( response )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador stockInstitucionPorArticuloController: ${error.message}` })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -837,5 +899,8 @@ module.exports = {
     listaPrecioCadenasController,
     clientesSucursalController,
     pedidoInstitucionController,
-    crearOrderCadenaController
+    crearOrderCadenaController,
+    getAllArticulosController,
+    articuloDiccionarioController,
+    stockInstitucionPorArticuloController
 }
