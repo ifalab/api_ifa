@@ -194,6 +194,7 @@ const createAsientoContableController = async (req, res) => {
             cheque,
             indicador,
             reference,
+            voucher,
             cuenta
         } = req.body
         const tipoCambio = await tipoDeCambio()
@@ -214,6 +215,9 @@ const createAsientoContableController = async (req, res) => {
             Reference1: `${reference}`,
             Reference2: ''
         }
+        if (voucher || voucher == '') {
+            firstAccount.AdditionalReference = voucher
+        }
         let contraAccount = {
             AccountCode: `${banckAccount}`,
             ShortName: `${banckAccount}`,
@@ -225,6 +229,9 @@ const createAsientoContableController = async (req, res) => {
             LineMemo: glosa,
             Reference1: `${cheque}`,
             Reference2: '',
+        }
+        if (voucher || voucher == '') {
+            contraAccount.AdditionalReference = voucher
         }
 
         let JournalEntryLines = []
@@ -301,11 +308,11 @@ const cerrarCajaChicaController = async (req, res) => {
     try {
         const { id, glosa } = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({id,glosa})
+        console.log({ id, glosa })
         const data = await dataCierreCaja(id)
         if (data.length !== 2) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error en traer los datos necesarios para el cierre de caja`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
-            return res.status(400).json({ mensaje: 'Hubo un problemas en traer los datos necesarios para el cierre de caja' ,data})
+            return res.status(400).json({ mensaje: 'Hubo un problemas en traer los datos necesarios para el cierre de caja', data })
         }
         const dataAccount = data[0]
         const dataBankAccount = data[1]
@@ -316,7 +323,7 @@ const cerrarCajaChicaController = async (req, res) => {
         const montoAccount = Number(dataAccount.Credit)
         if (montoBank == 0 || montoAccount == 0) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Error: El montoBank no puede ser cero: ${montoBank || 'no definido'} o el montoAccount no puede ser cero: ${montoAccount || 'no definido'}`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
-            return res.status(400).json({ mensaje: 'El Monto de las cuentas no puede ser cero' ,data})
+            return res.status(400).json({ mensaje: 'El Monto de las cuentas no puede ser cero', data })
         }
         if (usd == 0) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Error: El tipo de cambio no puede ser cero : ${usd || 'no definido'}`, `CALL "${process.env.PRD}".IFA_CON_MONEDAS_TIPOS();`, "contabilidad/cierre-caja-chica", process.env.PRD)
@@ -367,7 +374,7 @@ const cerrarCajaChicaController = async (req, res) => {
             return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. SAP: ${response.value || 'no definido'}` })
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Cierre de Caja realizado con exito`, `${''}`, "contabilidad/cierre-caja-chica", process.env.PRD)
-        return res.json({ mensaje: 'Cierre de Caja realizado con exito', postJournalEntry ,data})
+        return res.json({ mensaje: 'Cierre de Caja realizado con exito', postJournalEntry, data })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })

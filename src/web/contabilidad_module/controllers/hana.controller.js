@@ -58,6 +58,21 @@ const tipoDeCambio = async () => {
     }
 }
 
+const tipoDeCambioByFecha = async (fecha) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('tipoDeCambion EXECUTE')
+        const query = `CALL "${process.env.PRD}".IFA_CON_MONEDAS_TIPOS_BY_FECHA('${fecha}');`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en tipoDeCambion')
+    }
+}
+
 const empleadosHana = async () => {
     try {
         if (!connection) {
@@ -145,4 +160,5 @@ module.exports = {
     findAllBancos,
     findAllAccount,
     dataCierreCaja,
+    tipoDeCambioByFecha,
 }
