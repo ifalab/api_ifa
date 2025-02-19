@@ -516,17 +516,17 @@ const setDescuentoEspecialPorArticuloController = async (req, res) => {
             const response = await setDescuentoEspecialPorArticulo(Row, CardCode, ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
             responses.push(response)
             if(response.status!=200){
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Error: ${response.message || 'setDescuentoOfertasPorCantidad()'} `, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-cantidad", process.env.PRD)
-                return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoOfertasPorCantidad'}`})
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial Cantidad", `Error: ${response.message || 'setDescuentoEspecialPorArticulo()'} `, `${response.query || 'setDescuentoEspecialPorArticulo'}`, "datos-maestros/desc-especial-articulo", process.env.PRD)
+                return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoEspecialPorArticulo'}`})
             }
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Exito en la actualizacion de descuentos por cantidad`, ``, "datos-maestros/descuento-cantidad", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial Cantidad", `Exito en la actualizacion de descuentos por cantidad`, ``, "datos-maestros/desc-especial-articulo", process.env.PRD)
         return res.json(responses)
     } catch (error) {
         console.log({ error })
         const mensaje = `Error en el controlador setDescuentoEspecialPorArticuloController: ${error.message || ''}`
-        // const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial", mensaje, `catch controller`, "datos-maestros/desc-especial-articulo", process.env.PRD)
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial", mensaje, `catch controller`, "datos-maestros/desc-especial-articulo", process.env.PRD)
         return res.status(500).json({ mensaje })
     }
 }

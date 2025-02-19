@@ -51,13 +51,16 @@ const postInventoryTransferRequests = async (responseJson) => {
             headers: headers,
             timeout: REQUEST_TIMEOUT
         });
-
+        console.log({postResponse: sapResponse})
+        const locationHeader = sapResponse.headers.location;
+        const deliveryNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        const deliveryNumber = deliveryNumberMatch ? deliveryNumberMatch[1] : 'Desconocido';
         return {
             message: 'Solicitud grabada con éxito',
             status: sapResponse.status,
             statusText: sapResponse.statusText,
+            deliveryNumber: deliveryNumber,
         }
-
     } catch (error) {
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
         console.error('Error en la solicitud POST InventoryTransferRequests:', error.response?.data || error.message);

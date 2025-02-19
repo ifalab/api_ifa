@@ -559,8 +559,16 @@ const setDescuentoEspecialPorArticulo= async(row, cardCode, itemCode, cantMin, c
         query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales_articulos('${cardCode}','${itemCode}', ${desc}, '${fechaInicial}', '${fechaFinal}',${id_sap},${row}, ${cantMin}, ${cantMax}, '${del}');`;
         console.log({ query })
         const result = await executeQuery(query)
+        console.log({result})
+        if(typeof result === 'number')
+            return {
+                status: 200, 
+                message: 'Item actualizado con exito',
+                data: result,
+                query
+            }
         return {
-            status: result[0].response || 200,
+            status: result[0].response || 200, 
             message: result[0].message || '',
             data: result,
             query
@@ -612,7 +620,6 @@ const getIdsDescuentoEspecial = async(cardCode,itemCode)=>{
         if (!connection) {
             await connectHANA();
         }
-        //change query
         const query = `call ${process.env.PRD}.ifa_dm_obtener_id_descuentos_especiales_por_articulo('${itemCode}', '${cardCode}')`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -631,7 +638,6 @@ const getDescuentosEspecialesById= async(docNum,itemCode, cardCode)=>{
         if (!connection) {
             await connectHANA();
         }
-        //Change query
         const query = `call ${process.env.PRD}.ifa_dm_obtener_descuentos_especiales_articulos_por_id(${docNum},'${itemCode}', '${cardCode}')`;
         console.log({ query })
         const result = await executeQuery(query)

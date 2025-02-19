@@ -109,16 +109,18 @@ const patchQuotations = async (id,DocumentLines) => {
 
         // console.log('Nueva Orden: #', orderNumber)
         // Envía una respuesta exitosa con mensaje personalizado
+        
+        // console.log({responseSap: response})
         return {
             message: 'Orden grabada con éxito',
             // orderNumber: orderNumber,
-            response,
+            // response,
             status: response.status,
             statusText: response.statusText
         }
     } catch (error) {
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud PATCH';
-        console.error('Error en la solicitud Patch para Entrega:', error.response?.data || error.message);
+        console.error('Error en la solicitud Patch para Quotations:', error.response?.data || error.message);
         return {
             message: 'Hubo un problema en la solicitud',
             status: 400,

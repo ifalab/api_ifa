@@ -850,6 +850,7 @@ const detalleOfertaCadenaController = async (req, res) => {
             row.PendQuantity = Number(row.PendQuantity)
             row.Stock = Number(row.Stock)
             row.subTotal = Number(subtotal)
+            row.cantidadMod = row.Stock < row.PendQuantity? row.Stock: row.PendQuantity 
         })
         return res.json(data)
     } catch (error) {
@@ -981,13 +982,14 @@ const crearSolicitudPlantaController = async (req, res) => {
             ToWarehouse,
             StockTransferLines,
         })
-        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({sapResponse})
 
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if(sapResponse.lang){
             grabarLog(user.USERCODE, user.USERNAME, "Instituciones Solicitud Planta", sapResponse.value, 'postInventoryTransferRequests', "venta/solicitud-planta", process.env.PRD)
             return res.status(400).json({mensaje: sapResponse.value})
         }
-        return res.json({sapResponse})
+        return res.json(sapResponse)
     } catch (error) {
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         grabarLog(user.USERCODE, user.USERNAME, "Instituciones Solicitud Planta", `Error en el controlador crearSolicitudPlantaController: ${error.message}`, 'catch del controller', "venta/solicitud-planta", process.env.PRD)

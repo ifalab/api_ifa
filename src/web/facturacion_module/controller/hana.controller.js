@@ -286,6 +286,22 @@ const obtenerEntregaPorPedido = async (id) => {
     }
 }
 
+const facturaPedidoInstituciones = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_instituciones()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en facturaPedidoInstituciones:', error.message);
+        return { message: `Error al procesar la solicitud facturaPedidoInstituciones: ${error.message || ''}` }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -302,4 +318,5 @@ module.exports = {
     pedidosPorEntrega,
     entregasSinFacturas,
     obtenerEntregaPorPedido,
+    facturaPedidoInstituciones
 }

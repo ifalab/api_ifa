@@ -322,29 +322,53 @@ const crearOrderCadenaController = async (req, res) => {
             return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
 
         }
+        console.log("body de llegada: =====================================");        
         console.log(JSON.stringify({ body }, null, 2))
         // return
         const DocumentLines = []
+        let grossTotal= 0
         docLine.map((item) => {
             if (item.LineNum == -2) {
-                const { BaseLine, BaseEntry, BaseType, ...rest } = item
+                const { BaseLine, GrossTotal, BaseEntry, BaseType, ...rest } = item
                 DocumentLines.push({ ...rest, LineNum: null, Currency: 'BS' })
+                grossTotal = GrossTotal
             }
         })
         // return res.json({ DocumentLines })
         if (!docEntry) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error no existe el doc entry en la peticion.`, '', "pedido/crear-orden-cad", process.env.PRD)
             return res.status(400).json({ message: `Error no existe el doc entry en la peticion.` })
-        } else {
+        } else if(DocumentLines!=[]){
+            const detalle = await detalleOfertaCadena(+docEntry)
+            let newDocTotal = grossTotal
+            detalle.data.map((item) => {
+                const { subTotal } = item
+                const total = parseFloat(subTotal) || 0
+                newDocTotal += total
+            })
+            console.log({newDocTotal})
+
+            console.log(JSON.stringify({ DocumentLines, docEntry }, null, 2))
             const sapResponse = await patchQuotations(+docEntry, { DocumentLines })
             if (sapResponse.status == 400) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error del SAP. ${sapResponse.errorMessage.value || 'No definido'}`, '', "pedido/crear-orden-cad", process.env.PRD)
                 return res.status(400).json({ message: `Error del SAP. ${sapResponse.errorMessage.value || 'No definido'}` })
             }
-            // console.log(JSON.stringify({ repsonse :sapResponse.response }, null, 2))
+            console.log(JSON.stringify({ repsonse :sapResponse.response }, null, 2))
+            //---------
+            
+            const sapResponse2 = await patchQuotations(+docEntry, { DocTotal: newDocTotal })
+            if (sapResponse2.status == 400) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error del SAP. ${sapResponse2.errorMessage.value || 'No definido'}`, '', "pedido/crear-orden-cad", process.env.PRD)
+                return res.status(400).json({ message: `Error del SAP. ${sapResponse2.errorMessage.value || 'No definido'}` })
+            }
+            console.log(JSON.stringify({ repsonse2 :sapResponse2.response }, null, 2))
+
+            // return res.json({ok: '200'})
         }
-        const detalle = await detalleOfertaCadena(+docEntry)
-        // return res.json({ detalle,  })
+
+        // await new Promise(resolve => setTimeout(resolve, 1000));
+
         const {
             Series,
             CardCode,
@@ -378,40 +402,24 @@ const crearOrderCadenaController = async (req, res) => {
         }
         const DocumentLinesToBody = []
         let idx = 0
-        let newDocTotal = 0
-        detalle.data.map((item) => {
-            const { LineNum, ItemCode, SalUnitMsr, Quantity, PriceMax, subTotal, WhsCode } = item
-            const price = parseFloat(PriceMax) || 0
-            const qty = parseFloat(Quantity) || 0
-            const total = parseFloat(subTotal) || 0
-            const descLin = (price * qty) - total
-            const doc = {
-                LineNum: idx,
-                ItemCode,
-                Quantity: +Quantity,
-                GrossPrice: Number(price.toFixed(2)),
-                GrossTotal: Number(total.toFixed(2)),
-                WarehouseCode: WhsCode,
-                AccountCode: "",
-                TaxCode: "IVA",
-                BaseType: 23,
-                BaseLine: +LineNum,
-                BaseEntry: +docEntry,
-                MeasureUnit: SalUnitMsr,
-                U_DESCLINEA: Number(descLin.toFixed(2)),
+        docLine.map((item) => {
+            if (item.LineNum == -2) {
+                const { BaseLine, BaseEntry, BaseType, ...rest } = item
+                DocumentLinesToBody.push({ ...rest, LineNum: idx, Currency: 'BS' })
+            }else{
+                DocumentLinesToBody.push(item)
             }
-            newDocTotal += total
-            DocumentLinesToBody.push({ ...doc })
             idx++
         })
+        
         ordenBody.DocumentLines = DocumentLinesToBody
-        ordenBody.DocTotal = Number(newDocTotal.toFixed(2))
-        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+
+        console.log("body de post orden: =====================================");
         console.log(JSON.stringify(ordenBody, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         // return res.json({ detalle, DocumentLines, ordenBody })
         const ordenResponse = await postOrden(ordenBody)
-
+        console.log(ordenResponse)
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
