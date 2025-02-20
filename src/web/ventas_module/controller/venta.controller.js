@@ -891,7 +891,7 @@ const listaArticuloCadenasController = async (req, res) => {
         return res.json(data)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
     }
 }
 

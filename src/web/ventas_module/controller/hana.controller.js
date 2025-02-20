@@ -553,7 +553,7 @@ const listaArticuloCadenas = async (cardCode,listNum) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en descripcionArticulo')
+        throw new Error(`Error en listaArticuloCadenas: ${error.message}`)
     }
 }
 

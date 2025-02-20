@@ -161,30 +161,9 @@ const descuentoCondicionController = async (req, res) => {
 
 const listaPreciosOficilaController = async (req, res) => {
     try {
-        const noDiscount = req.query.noDiscount
         const cardCode = req.query.cardCode
         const listaPrecioResponse = await listaPrecioOficial(cardCode)
         return res.json({listaPrecio: listaPrecioResponse})
-        // let descuentosLinea = []
-        // descuentosLinea = await findDescuentosLineas()
-        // // return res.json({descuentosLinea})
-        // listaDescLinea = procesarListaCodigo(descuentosLinea)
-        // let listaPrecio = []
-        // // return res.json({listaPrecioResponse})
-        // listaPrecioResponse.map((item) => {
-        //     const desc = descuentosLinea.find(itemLinea => itemLinea.LineItemName === item.LineItemName)
-        //     if (noDiscount == 'Y') {
-        //         if (desc) {
-        //             listaPrecio.push({ ...item, descEsp: +desc.Desc })
-        //         } else {
-        //             listaPrecio.push({ ...item, descEsp: 0 })
-        //         }
-        //     } else {
-        //         listaPrecio.push({ ...item, descEsp: 0 })
-        //     }
-        // })
-        // // return res.json({ listaDescLinea})
-        // return res.json({ listaPrecio })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
@@ -331,7 +310,7 @@ const crearOrderCadenaController = async (req, res) => {
             if (item.LineNum == -2) {
                 const { BaseLine, GrossTotal, BaseEntry, BaseType, ...rest } = item
                 DocumentLines.push({ ...rest, LineNum: null, Currency: 'BS' })
-                grossTotal = GrossTotal
+                grossTotal += GrossTotal
             }
         })
         // return res.json({ DocumentLines })
