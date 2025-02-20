@@ -602,7 +602,7 @@ const vendedoresPorSucursal = async(suc)=>{
     }
 }
 
-const obtenerOfertasInstituciones = async (sucCode, codCliente) => {
+const obtenerOfertasInstituciones = async () => {
     try {
         if (!connection) {
             await connectHANA()
@@ -621,6 +621,24 @@ const obtenerOfertasInstituciones = async (sucCode, codCliente) => {
     }
 }
 
+const obtenerOfertasVendedores = async (id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_ven_ofertas where "SlpCodeCli"='${id_sap}'`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en obtenerOfertasVendedores: ${error.message || ''}`
+        }
+    }
+}
 
 module.exports = {
     ventaPorSucursal,
@@ -662,5 +680,6 @@ module.exports = {
     clientesInstitucionByCardCode,
     vendedoresPorSucursal,
     obtenerOfertasInstituciones,
-    detalleOferta
+    detalleOferta,
+    obtenerOfertasVendedores
 }
