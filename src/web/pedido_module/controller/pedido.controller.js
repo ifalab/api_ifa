@@ -164,7 +164,7 @@ const listaPreciosOficilaController = async (req, res) => {
         const noDiscount = req.query.noDiscount
         const cardCode = req.query.cardCode
         const listaPrecioResponse = await listaPrecioOficial(cardCode)
-        return res.json({listaPrecio: listaPrecioResponse})
+        return res.json({ listaPrecio: listaPrecioResponse })
         // let descuentosLinea = []
         // descuentosLinea = await findDescuentosLineas()
         // // return res.json({descuentosLinea})
@@ -301,6 +301,8 @@ const crearOrderController = async (req, res) => {
 
 const crearOrderCadenaController = async (req, res) => {
     const body = req.body
+    // console.log(JSON.stringify({ body }, null, 2))
+    // return 
     try {
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -322,11 +324,11 @@ const crearOrderCadenaController = async (req, res) => {
             return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
 
         }
-        console.log("body de llegada: =====================================");        
+        console.log("body de llegada: =====================================");
         console.log(JSON.stringify({ body }, null, 2))
         // return
         const DocumentLines = []
-        let grossTotal= 0
+        let grossTotal = 0
         docLine.map((item) => {
             if (item.LineNum == -2) {
                 const { BaseLine, GrossTotal, BaseEntry, BaseType, ...rest } = item
@@ -338,7 +340,7 @@ const crearOrderCadenaController = async (req, res) => {
         if (!docEntry) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error no existe el doc entry en la peticion.`, '', "pedido/crear-orden-cad", process.env.PRD)
             return res.status(400).json({ message: `Error no existe el doc entry en la peticion.` })
-        } else if(DocumentLines!=[]){
+        } else if (DocumentLines != []) {
             const detalle = await detalleOfertaCadena(+docEntry)
             let newDocTotal = grossTotal
             detalle.data.map((item) => {
@@ -346,7 +348,7 @@ const crearOrderCadenaController = async (req, res) => {
                 const total = parseFloat(subTotal) || 0
                 newDocTotal += total
             })
-            console.log({newDocTotal})
+            console.log({ newDocTotal })
 
             console.log(JSON.stringify({ DocumentLines, docEntry }, null, 2))
             const sapResponse = await patchQuotations(+docEntry, { DocumentLines })
@@ -354,21 +356,21 @@ const crearOrderCadenaController = async (req, res) => {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error del SAP. ${sapResponse.errorMessage.value || 'No definido'}`, '', "pedido/crear-orden-cad", process.env.PRD)
                 return res.status(400).json({ message: `Error del SAP. ${sapResponse.errorMessage.value || 'No definido'}` })
             }
-            console.log(JSON.stringify({ repsonse :sapResponse.response }, null, 2))
+            console.log(JSON.stringify({ repsonse: sapResponse.response }, null, 2))
             //---------
-            
+
             const sapResponse2 = await patchQuotations(+docEntry, { DocTotal: newDocTotal })
             if (sapResponse2.status == 400) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error del SAP. ${sapResponse2.errorMessage.value || 'No definido'}`, '', "pedido/crear-orden-cad", process.env.PRD)
                 return res.status(400).json({ message: `Error del SAP. ${sapResponse2.errorMessage.value || 'No definido'}` })
             }
-            console.log(JSON.stringify({ repsonse2 :sapResponse2.response }, null, 2))
+            console.log(JSON.stringify({ repsonse2: sapResponse2.response }, null, 2))
 
             // return res.json({ok: '200'})
         }
 
         // await new Promise(resolve => setTimeout(resolve, 1000));
-
+        const detalle = await detalleOfertaCadena(+docEntry)
         const {
             Series,
             CardCode,
@@ -380,7 +382,7 @@ const crearOrderCadenaController = async (req, res) => {
             PaymentGroupCode,
             U_NIT,
             U_RAZSOC,
-            DocTotal,
+            // DocTotal,
             SalesPersonCode,
             U_OSLP_ID,
             U_UserCode,
@@ -395,25 +397,57 @@ const crearOrderCadenaController = async (req, res) => {
             PaymentGroupCode,
             U_NIT,
             U_RAZSOC,
-            DocTotal,
+            // DocTotal,
             SalesPersonCode,
             U_OSLP_ID,
             U_UserCode,
         }
+        let DocTotal = 0
+        if (!detalle) {
+            return res.status(400).json({ mensaje: 'Hubo un error al intentar obtener el detalle de la orden.' })
+        }
+        detalle.data.map((item) => {
+            const subTotal = Number(item.subTotal)
+            DocTotal += Number(subTotal.toFixed(2))
+        })
+        ordenBody.DocTotal = DocTotal
         const DocumentLinesToBody = []
         let idx = 0
-        docLine.map((item) => {
-            if (item.LineNum == -2) {
-                const { BaseLine, BaseEntry, BaseType, ...rest } = item
-                DocumentLinesToBody.push({ ...rest, LineNum: idx, Currency: 'BS' })
-            }else{
-                DocumentLinesToBody.push(item)
-            }
+        detalle.data.map((item) => {
+            const {
+                subTotal:subTotalDet,
+                SalUnitMsr,
+                Quantity,
+                ItemCode,
+                PriceMax,
+                WhsCode, 
+            } = item
+            const qty = Number(Quantity)
+            const prcMax = Number(PriceMax)
+            const subTot = Number(subTotalDet)
+            const descLin = (prcMax * qty) - subTot
+            DocumentLinesToBody.push({
+                LineNum: idx,
+                ItemCode,
+                Currency: 'BS',
+                Quantity:qty,
+                GrossPrice: Number(PriceMax),
+                GrossTotal: Number(subTotalDet),
+                WarehouseCode: WhsCode,
+                AccountCode: '',
+                TaxCode: 'IVA',
+                MeasureUnit: SalUnitMsr,
+                U_DESCLINEA: Number(descLin.toFixed(2)),
+                BaseLine:idx,
+                BaseEntry:docEntry,
+                BaseType:23,
+            })
             idx++
         })
-        
+
         ordenBody.DocumentLines = DocumentLinesToBody
 
+        // return res.json({ ordenBody, detalle })
         console.log("body de post orden: =====================================");
         console.log(JSON.stringify(ordenBody, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
@@ -667,11 +701,11 @@ const pedidoCadenaController = async (req, res) => {
             console.log({ totalNoDiscount })
             line.U_DESCLINEA = Number(descLinea.toFixed(2));
             num++;
-            
+
             sumaDetalle += Number(line.GrossTotal.toFixed(2))
         })
         console.log({ body })
-        
+
         body.DocTotal = Number(body.DocTotal.toFixed(2))
         console.log({ body: JSON.stringify(body, 2) })
         sumaDetalle = Number(sumaDetalle.toFixed(2))
@@ -826,10 +860,10 @@ const pedidoInstitucionController = async (req, res) => {
 const getAllArticulosController = async (req, res) => {
     try {
         const itemName = req.query.itemName
-        const upercase= itemName.toUpperCase()
-        console.log({upercase}, {itemName})
+        const upercase = itemName.toUpperCase()
+        console.log({ upercase }, { itemName })
         const articulos = await getAllArticulos(upercase)
-        return res.json( articulos )
+        return res.json(articulos)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `error en el controlador getAllArticulosController: ${error.message}` })
@@ -844,7 +878,7 @@ const articuloDiccionarioController = async (req, res) => {
         const response = await articuloDiccionario(cod)
         // console.log({response})
         console.log({ response })
-        if (codCliente != "C000487" && response.length>0) {
+        if (codCliente != "C000487" && response.length > 0) {
             console.log("No es igual")
             const responseFiltrado = response.filter(item => {
                 const { ItemEq } = item
@@ -868,14 +902,14 @@ const stockInstitucionPorArticuloController = async (req, res) => {
     try {
         const itemCode = req.query.itemCode
         const response = await stockInstitucionPorArticulo(itemCode)
-        if(response.length>0){
-            const responseDict={}
-            response.forEach((value)=>{
-                responseDict[value.WhsCode]=value.Stock
+        if (response.length > 0) {
+            const responseDict = {}
+            response.forEach((value) => {
+                responseDict[value.WhsCode] = value.Stock
             })
-            return res.json( responseDict )
+            return res.json(responseDict)
         }
-        return res.json( response )
+        return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador stockInstitucionPorArticuloController: ${error.message}` })
