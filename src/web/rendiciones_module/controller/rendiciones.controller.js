@@ -1,7 +1,7 @@
 const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module/controllers/hana.controller")
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
-    getProveedor, searchClients,
+    getProveedor, searchBeneficiarios,
     findAllCajasEmpleados
  } = require("./hana.controller")
 
@@ -70,6 +70,8 @@ const rendicionDetalladaController = async (req, res) => {
                 ID_CUENTA,
                 GLOSA_REND,
                 FECHACONTABILIZACION,
+                BENEFICIARIO,
+                COD_BENEFICIARIO,
                 ...rest
             } = item
             const data = {
@@ -86,7 +88,9 @@ const rendicionDetalladaController = async (req, res) => {
                 DESCUENTO: +DESCUENTO,
                 GIFCARD: +GIFCARD,
                 ID_CUENTA: +ID_CUENTA,
-                COMENTARIO: COMENTARIO
+                COMENTARIO: COMENTARIO,
+                BENEFICIARIO,
+                COD_BENEFICIARIO,
             }
             listaDetalles.push(data)
         })
@@ -185,6 +189,8 @@ const crearRendicionController = async (req, res) => {
                 month,
                 year,
                 new_id_cuenta,
+                new_beneficiario,
+                new_cod_beneficiario
             } = item
 
             const fecha = new_fecha.split('/')
@@ -216,6 +222,8 @@ const crearRendicionController = async (req, res) => {
                 year,
                 '',
                 new_id_cuenta,
+                new_beneficiario,
+                new_cod_beneficiario
             )
             result.push(responseHana[0] || responseHana)
 
@@ -230,7 +238,7 @@ const crearRendicionController = async (req, res) => {
         return res.json({ result })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
     }
 }
 
@@ -297,7 +305,9 @@ const crearActualizarGastoController = async (req, res) => {
                 idRendicion,
                 month,
                 year,
-                new_id_cuenta
+                new_id_cuenta,
+                new_beneficiario,
+                new_cod_beneficiario
             } = item
 
             const fecha = new_fecha.split('/')
@@ -329,6 +339,8 @@ const crearActualizarGastoController = async (req, res) => {
                     year,
                     '',
                     new_id_cuenta,
+                    new_beneficiario,
+                    new_cod_beneficiario
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -356,7 +368,9 @@ const crearActualizarGastoController = async (req, res) => {
                     new_estado,
                     idRendicion,
                     '',
-                    new_id_cuenta
+                    new_id_cuenta,
+                    new_beneficiario,
+                    new_cod_beneficiario
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -676,7 +690,10 @@ const sendToSapController = async (req, res) => {
                 new_descuento,
                 new_codControl,
                 new_gifCard,
-                new_id_cuenta } = item
+                new_id_cuenta,
+                new_beneficiario,
+                new_cod_beneficiario 
+            } = item
             const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
             listResHana.push(responseSap)
             const fecha = new_fecha.split('/')
@@ -706,7 +723,9 @@ const sendToSapController = async (req, res) => {
                 '3',
                 idRendicion,
                 '',
-                new_id_cuenta
+                new_id_cuenta,
+                new_beneficiario,
+                new_cod_beneficiario
             )
             listResHana.push(responseHana)
         }))
@@ -732,7 +751,9 @@ const sendToSapController = async (req, res) => {
                 new_descuento,
                 new_codControl,
                 new_gifCard,
-                new_id_cuenta } = item
+                new_id_cuenta,
+                new_beneficiario,
+                new_cod_beneficiario } = item
             const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
             listResHana.push(responseSap)
             const fecha = new_fecha.split('/')
@@ -762,7 +783,9 @@ const sendToSapController = async (req, res) => {
                 '3',
                 idRendicion,
                 '',
-                new_id_cuenta
+                new_id_cuenta,
+                new_beneficiario,
+                new_cod_beneficiario
             )
             listResHana.push(responseHana)
 
@@ -966,21 +989,22 @@ const actualizarGlosaRendController = async (req, res) => {
     try {
         const { idRend, new_glosa } = req.body
         if (!idRend) {
-            return res.status(400).json({ mensaje: 'debe existir un Id de la Rendicion' })
+            return res.status(400).json({ mensaje: 'Debe existir un Id de la Rendicion' })
         }
         if (!new_glosa) {
-            return res.status(400).json({ mensaje: 'debe existir una glosa' })
+            return res.json({ mensaje: 'No existe la glosa' })
+            //return res.status(400).json({ mensaje: 'Debe existir una glosa' })
         }
         const responseHana = await actualizarGlosaRendicion(idRend, new_glosa)
         const { response } = responseHana[0]
         console.log({ response })
         if (response != 200) {
-            return res.status(400).json({ mensaje: 'no se pudo actualizar la glosa' })
+            return res.status(400).json({ mensaje: 'No se pudo actualizar la glosa' })
         }
         return res.json({ response, responseHana })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
     }
 }
 
@@ -1024,16 +1048,16 @@ const getProveedorController = async (req, res) => {
     }
 }
 
-const searchClientsController = async (req, res) => {
+const searchBeneficiariosController = async (req, res) => {
     try {
         const {cadena}= req.body
         const upperCadena = cadena.toUpperCase()
         console.log({cadena}, {upperCadena})
-        const clientes = await searchClients(upperCadena)
+        const clientes = await searchBeneficiarios(upperCadena)
         return res.json(clientes)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en searchClientsController: ${error.message || ''}` })
+        return res.status(500).json({ mensaje: `Error en searchBeneficiariosController: ${error.message || ''}` })
     }
 }
 
@@ -1060,6 +1084,6 @@ module.exports = {
     actualizarGlosaRendController,
     actualizarFechaContRendController,
     getProveedorController,
-    searchClientsController,
+    searchBeneficiariosController,
     findAllCajasController
 }
