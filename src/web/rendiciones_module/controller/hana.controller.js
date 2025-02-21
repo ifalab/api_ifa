@@ -177,7 +177,7 @@ const crearGasto = async (
     month,
     year,
     new_comentario,
-    new_id_cuenta
+    new_id_cuenta,
 ) => {
     try {
         if (!connection) {
@@ -579,6 +579,21 @@ const searchClients = async (cadena) => {
     }
 }
 
+const concepComercialById = async(id)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_rw_concepto_comercial_by_id(${id})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en searchClients: ${error.message | ''}`)
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -605,5 +620,6 @@ module.exports = {
     actualizarfechaContRendicion,
     getProveedor,
     searchClients,
-    findAllCajasEmpleados
+    findAllCajasEmpleados,
+    concepComercialById,
 }

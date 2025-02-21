@@ -2,7 +2,8 @@ const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
     getProveedor, searchClients,
-    findAllCajasEmpleados
+    findAllCajasEmpleados,
+    concepComercialById
  } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -907,7 +908,7 @@ const costoComercialCuentaController = async (req, res) => {
 
 const filtroCCController = async (req, res) => {
     try {
-        const { areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode } = req.body
+        const { areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode,id } = req.body
         console.log({
             areaCode,
             tipoCode,
@@ -915,7 +916,8 @@ const filtroCCController = async (req, res) => {
             especialidadCode,
             clasificacionCode,
             conceptoCode,
-            cuentaCode
+            cuentaCode,
+            id,
         })
         const response = await filtroCC(areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode)
         const newTipo = []
@@ -951,7 +953,11 @@ const filtroCCController = async (req, res) => {
             }
 
             if (!newAccount.some(datatipo => datatipo.Account === item.Account)) {
-                newAccount.push({ Account: item.Account, AcctName: item.AcctName })
+                newAccount.push({ 
+                    Account: item.Account,
+                     AcctName: item.AcctName,
+                     Id:item.Id,
+                     })
             }
         })
 
@@ -1036,6 +1042,21 @@ const searchClientsController = async (req, res) => {
     }
 }
 
+
+const conceptoComercialByIdController = async (req, res) => {
+    try {
+        const id= req.params.id
+        console.log({id})
+        const result= await concepComercialById(id)
+        if(result.length == 0) return res.status(404).json({mensjae:'no se encontro el CC'})
+        const data = result[0]
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1060,5 +1081,6 @@ module.exports = {
     actualizarFechaContRendController,
     getProveedorController,
     searchClientsController,
-    findAllCajasController
+    findAllCajasController,
+    conceptoComercialByIdController,
 }

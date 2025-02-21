@@ -4,7 +4,8 @@ const { validarCampos } = require('../../../middleware/validar_campos.middleware
 const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController, cambiarEstadoRendicionController, verRendicionesEnRevisionController, sendToSapController, eliminarGastoController, costoComercialAreasController, costoComercialTipoClienteController, costoComercialLineasController, costoComercialEspecialidadesController, costoComercialClasificacionesController, costoComercialConceptosController, costoComercialCuentaController, filtroCCController, actualizarGlosaRendController, actualizarFechaContRendController,
     getProveedorController,
     searchClientsController,
-    findAllCajasController
+    findAllCajasController,
+    conceptoComercialByIdController
  } = require('../controller/rendiciones.controller')
 const router = Router()
 
@@ -32,6 +33,7 @@ router.patch('/actualizar-glosa-rend', [validarToken, validarCampos], actualizar
 router.patch('/actualizar-fecha-rend', [validarToken, validarCampos], actualizarFechaContRendController)
 router.get('/proveedor', [validarToken, validarCampos], getProveedorController)
 router.get('/search-clients', [validarToken, validarCampos], searchClientsController)
+router.get('/cc-by-id/:id', [validarToken, validarCampos], conceptoComercialByIdController)
 
 
 module.exports = router
