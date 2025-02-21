@@ -90,6 +90,21 @@ const findCajasEmpleado = async (codEmp) => {
     }
 }
 
+const findAllCajasEmpleados = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_LAPP_TODAS_CAJAS`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findCajasEmpleado ')
+    }
+}
+
 const rendicionDetallada = async (id) => {
     try {
         if (!connection) {
@@ -260,7 +275,6 @@ const verRendicionesEnRevision = async () => {
         return {
             error: `No se pudieron traer las rendiciones desde la base de datos`
         }
-
     }
 }
 
@@ -337,7 +351,6 @@ const eliminarGastoID = async (idGasto) => {
         return {
             error: `No se pudo eliminar el gasto`
         }
-
     }
 }
 
@@ -559,4 +572,5 @@ module.exports = {
     filtroCC,
     actualizarGlosaRendicion,
     actualizarfechaContRendicion,
+    findAllCajasEmpleados
 }
