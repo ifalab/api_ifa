@@ -660,6 +660,24 @@ const obtenerPedidosDetalle = async (baseEntry) => {
     }
 }
 
+const obtenerOfertasPorSucursal = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_ven_ofertas where "SucCode"=${sucCode}`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en obtenerOfertasPorSucursal: ${error.message || ''}`
+        }
+    }
+}
 
 module.exports = {
     ventaPorSucursal,
@@ -703,5 +721,6 @@ module.exports = {
     obtenerOfertasInstituciones,
     detalleOferta,
     obtenerOfertasVendedores,
-    obtenerPedidosDetalle
+    obtenerPedidosDetalle,
+    obtenerOfertasPorSucursal
 }
