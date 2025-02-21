@@ -1,6 +1,9 @@
 const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module/controllers/hana.controller")
 const sapService = require("../services/sap.service")
-const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion, findAllCajasEmpleados } = require("./hana.controller")
+const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
+    getProveedor, searchClients,
+    findAllCajasEmpleados
+ } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -25,7 +28,7 @@ const findAllCajasEmpleadoController = async (req, res) => {
 
 const findAllCajasController = async (req, res) => {
     try {
-        const codEmp = req.params.codEmp
+        
         const listCajas = await findAllCajasEmpleados()
         return res.status(200).json({ listCajas })
     } catch (error) {
@@ -1003,6 +1006,36 @@ const actualizarFechaContRendController = async (req, res) => {
     }
 }
 
+const getProveedorController = async (req, res) => {
+    try {
+        const id= req.query.id
+        const proveedor = await getProveedor(id)
+        if(proveedor.length ==0){
+            return res.json({
+                LicTradNum: `${id}`,
+                CardFName: "",
+                CardCode: ""
+            })
+        }
+        return res.json(...proveedor)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getProveedorController: ${error.message || ''}` })
+    }
+}
+
+const searchClientsController = async (req, res) => {
+    try {
+        const {cadena}= req.body
+        console.log({cadena})
+        const clientes = await searchClients(cadena)
+        return res.json(clientes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en searchClientsController: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1025,5 +1058,7 @@ module.exports = {
     filtroCCController,
     actualizarGlosaRendController,
     actualizarFechaContRendController,
+    getProveedorController,
+    searchClientsController,
     findAllCajasController
 }
