@@ -1,7 +1,10 @@
 const { Router } = require('express')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController, cambiarEstadoRendicionController, verRendicionesEnRevisionController, sendToSapController, eliminarGastoController, costoComercialAreasController, costoComercialTipoClienteController, costoComercialLineasController, costoComercialEspecialidadesController, costoComercialClasificacionesController, costoComercialConceptosController, costoComercialCuentaController, filtroCCController, actualizarGlosaRendController, actualizarFechaContRendController } = require('../controller/rendiciones.controller')
+const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDetalladaController, rendicionByTransacController, crearRendicionController, crearActualizarGastoController, gastosEnRevisionController, cambiarEstadoRendicionController, verRendicionesEnRevisionController, sendToSapController, eliminarGastoController, costoComercialAreasController, costoComercialTipoClienteController, costoComercialLineasController, costoComercialEspecialidadesController, costoComercialClasificacionesController, costoComercialConceptosController, costoComercialCuentaController, filtroCCController, actualizarGlosaRendController, actualizarFechaContRendController,
+    getProveedorController,
+    searchClientsController
+ } = require('../controller/rendiciones.controller')
 const router = Router()
 
 router.get('/find-all-aperturas', [validarToken, validarCampos], findAllAperturaController)
@@ -25,6 +28,8 @@ router.get('/cc-cuenta', [validarToken, validarCampos], costoComercialCuentaCont
 router.post('/cc-filtro', [validarToken, validarCampos], filtroCCController)
 router.patch('/actualizar-glosa-rend', [validarToken, validarCampos], actualizarGlosaRendController)
 router.patch('/actualizar-fecha-rend', [validarToken, validarCampos], actualizarFechaContRendController)
+router.get('/proveedor', [validarToken, validarCampos], getProveedorController)
+router.get('/search-clients', [validarToken, validarCampos], searchClientsController)
 
 
 module.exports = router

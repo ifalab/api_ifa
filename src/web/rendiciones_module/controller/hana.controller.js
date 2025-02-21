@@ -535,6 +535,37 @@ const actualizarfechaContRendicion = async (idRend, new_date) => {
 
     }
 }
+
+const getProveedor = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "LicTradNum", "CardFName", "CardCode" from ${process.env.PRD}.ifa_dm_proveedores where "LicTradNum" = '${id}'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getProveedor: ${error.message | ''}`)
+    }
+}
+
+const searchClients = async (cadena) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "CardCode", "CardName" from ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '%${cadena}%' OR "CardName" LIKE '%${cadena}%'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en searchClients: ${error.message | ''}`)
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -559,4 +590,6 @@ module.exports = {
     filtroCC,
     actualizarGlosaRendicion,
     actualizarfechaContRendicion,
+    getProveedor,
+    searchClients
 }
