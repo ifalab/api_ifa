@@ -626,7 +626,7 @@ module.exports = {
     actualizarGlosaRendicion,
     actualizarfechaContRendicion,
     getProveedor,
-    searchClients,
+    searchBeneficiarios,
     findAllCajasEmpleados,
     concepComercialById,
 }
