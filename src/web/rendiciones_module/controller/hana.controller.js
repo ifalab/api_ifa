@@ -33,7 +33,7 @@ const executeQuery = async (query) => {
         connection.exec(query, (err, result) => {
             if (err) {
                 console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
+                reject(new Error(`Error en la consulta: ${err.message}`))
             } else {
                 console.log('Datos obtenidos con exito');
                 resolve(result);
@@ -178,19 +178,23 @@ const crearGasto = async (
     year,
     new_comentario,
     new_id_cuenta,
+    new_beneficiario,
+    new_cod_beneficiario
 ) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('crearRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION_GASTOS('${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'1',${idRendicion},${month},${year},'${new_comentario || ''}',${new_id_cuenta})`
+        ///query
+        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION_GASTOS('${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'1',${idRendicion},${month},${year},'${new_comentario || ''}',${new_id_cuenta}, '${new_beneficiario}', '${new_cod_beneficiario}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
         return {
+            mensaje: `${error.message || ''}`,
             error: `Error, no se pudieron insertar los datos con nit: ${new_nit || 'No definido'},Tipo: ${new_tipo || 'No definido'}, Factura: ${new_nroFactura || 'No definido'}, Razon: ${new_nombreRazon || 'No definido'}, Glosa: ${new_glosa || 'No definido'}`
         }
 
@@ -222,14 +226,16 @@ const actualizarGastos = async (
     new_estado,
     idRendicion,
     new_comentario,
-    new_id_cuenta
+    new_id_cuenta,
+    new_beneficiario,
+    new_cod_beneficiario
 ) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('actualizarGastos EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS(${ID},'${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'${new_estado}',${idRendicion},'${new_comentario || ''}',${new_id_cuenta})`
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS(${ID},'${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'${new_estado}',${idRendicion},'${new_comentario || ''}',${new_id_cuenta}, '${new_beneficiario}', '${new_cod_beneficiario}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -524,6 +530,7 @@ const actualizarGlosaRendicion = async (idRend, new_glosa) => {
     } catch (error) {
         console.log({ error })
         return {
+            message: `${error.message || ''}`,
             error: `No se pudo actualizar la glosa`
         }
 
@@ -564,18 +571,18 @@ const getProveedor = async (id) => {
     }
 }
 
-const searchClients = async (cadena) => {
+const searchBeneficiarios = async (cadena) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select "CardCode", "CardName" from ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '%${cadena}%' OR "CardName" LIKE '%${cadena}%'`
+        const query = `select * from ${process.env.PRD}.ifa_dm_beneficiarios where upper("Code") LIKE '%${cadena}%' OR upper("Name") LIKE '%${cadena}%'`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error(`Error en searchClients: ${error.message | ''}`)
+        throw new Error(`Error en searchBeneficiarios: ${error.message | ''}`)
     }
 }
 

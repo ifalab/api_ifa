@@ -640,6 +640,45 @@ const obtenerOfertasVendedores = async (id_sap) => {
     }
 }
 
+const obtenerPedidosDetalle = async (baseEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_ven_pedidos_detalle where "BaseType" = 23 and "BaseEntry" = ${baseEntry}`
+        //group by "DocEntry"
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en obtenerPedidosDetalle: ${error.message || ''}`
+        }
+    }
+}
+
+const obtenerOfertasPorSucursal = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_ven_ofertas where "SucCode"=${sucCode}`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en obtenerOfertasPorSucursal: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -681,5 +720,7 @@ module.exports = {
     vendedoresPorSucursal,
     obtenerOfertasInstituciones,
     detalleOferta,
-    obtenerOfertasVendedores
+    obtenerOfertasVendedores,
+    obtenerPedidosDetalle,
+    obtenerOfertasPorSucursal
 }

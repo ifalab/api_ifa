@@ -38,7 +38,9 @@ const {
     vendedoresPorSucursal,
     obtenerOfertasInstituciones,
     detalleOferta,
-    obtenerOfertasVendedores
+    obtenerOfertasVendedores,
+    obtenerPedidosDetalle,
+    obtenerOfertasPorSucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1014,6 +1016,35 @@ const obtenerOfertasVendedoresController = async (req, res) => {
     }
 }
 
+const obtenerOfertasPorSucursalController = async (req, res) => {
+    try{
+        const {sucCode} = req.query
+        const response = await obtenerOfertasPorSucursal(sucCode)
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: response.message || 'Error en obtenerOfertasPorSucursal' })
+        }
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const obtenerPedidosDetalleController = async (req, res) => {
+    try{
+        const {baseEntry} = req.body
+        console.log({body: req.body})
+        const response = await obtenerPedidosDetalle(baseEntry)
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: response.message || 'Error en obtenerPedidosDetalle' })
+        }
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1055,5 +1086,7 @@ module.exports = {
     obtenerOfertasInstitucionesController,
     detalleOfertaController,
     crearSolicitudPlantaController,
-    obtenerOfertasVendedoresController
+    obtenerOfertasVendedoresController,
+    obtenerPedidosDetalleController,
+    obtenerOfertasPorSucursalController
 };
