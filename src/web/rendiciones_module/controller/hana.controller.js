@@ -556,7 +556,7 @@ const searchClients = async (cadena) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select "CardCode", "CardName" from ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '%${cadena}%' OR "CardName" LIKE '%${cadena}%'`
+        const query = `select "CardCode", "CardName" from ${process.env.PRD}.ifa_dm_clientes where upper("CardCode") LIKE '%${cadena}%' OR upper("CardName") LIKE '%${cadena}%'`
         console.log({ query })
         const result = await executeQuery(query)
         return result

@@ -1015,8 +1015,9 @@ const getProveedorController = async (req, res) => {
 const searchClientsController = async (req, res) => {
     try {
         const {cadena}= req.body
-        console.log({cadena})
-        const clientes = await searchClients(cadena)
+        const upperCadena = cadena.toUpperCase()
+        console.log({cadena}, {upperCadena})
+        const clientes = await searchClients(upperCadena)
         return res.json(clientes)
     } catch (error) {
         console.log({ error })
