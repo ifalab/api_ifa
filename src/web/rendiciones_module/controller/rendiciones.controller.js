@@ -1,7 +1,8 @@
 const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module/controllers/hana.controller")
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
-    getProveedor, searchClients
+    getProveedor, searchClients,
+    findAllCajasEmpleados
  } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -18,6 +19,17 @@ const findAllCajasEmpleadoController = async (req, res) => {
     try {
         const codEmp = req.params.codEmp
         const listCajas = await findCajasEmpleado(codEmp)
+        return res.status(200).json({ listCajas })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador que trae las aperturas de caja' })
+    }
+}
+
+const findAllCajasController = async (req, res) => {
+    try {
+        
+        const listCajas = await findAllCajasEmpleados()
         return res.status(200).json({ listCajas })
     } catch (error) {
         console.log({ error })
@@ -1048,5 +1060,6 @@ module.exports = {
     actualizarGlosaRendController,
     actualizarFechaContRendController,
     getProveedorController,
-    searchClientsController
+    searchClientsController,
+    findAllCajasController
 }
