@@ -22,7 +22,7 @@ const { findClientePorVendedor,
     articuloDiccionario,
     stockInstitucionPorArticulo
 } = require("./hana.controller");
-const { postOrden, postQuotations, patchQuotations } = require("../../../movil/ventas_module/controller/sld.controller");
+const { postOrden, postQuotations, patchQuotations, getQuotation } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
 const QRCode = require('qrcode');
 const path = require('path');
@@ -784,8 +784,13 @@ const clientesSucursalController = async (req, res) => {
 
 const pedidoInstitucionController = async (req, res) => {
     try {
-        const body = req.body
+        const {BaseEntry, ...body} = req.body
+        console.log({body})
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        
+        const oferta = await getQuotation(BaseEntry)
+        return res.json(oferta.response)
+        
         body.Series = 319;
         let num = 0
         body.DocumentLines.forEach((line) => {
