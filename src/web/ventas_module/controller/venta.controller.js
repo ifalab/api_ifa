@@ -168,14 +168,19 @@ const ventasUsuarioController = async (req, res) => {
     try {
         const { userCode, dim1, dim2, dim3, groupBy } = req.body
         let totalPresupuesto = 0, totalVentas = 0, totalCump = 0
-        const response = await ventasUsuario(
-            userCode,
-            dim1,
-            dim2,
-            dim3,
-            groupBy,
-        )
-        response.map((item) => {
+        let responses = [];
+        for(const itemDim2 of dim2){
+            const response = await ventasUsuario(
+                userCode,
+                dim1,
+                itemDim2,
+                dim3,
+                groupBy,
+            )
+            responses.push(...response)
+        }
+        // return res.json({responses})
+        responses.map((item) => {
             totalPresupuesto += +item.Ppto
             totalVentas += +item.Ventas
         })
@@ -185,7 +190,7 @@ const ventasUsuarioController = async (req, res) => {
         if (totalPresupuesto == 0) {
             totalCump = 1
         }
-        return res.status(200).json({ response, totalPresupuesto, totalVentas, totalCump })
+        return res.status(200).json({ response: responses, totalPresupuesto, totalVentas, totalCump })
         // return res.status(200).json(response)
     } catch (error) {
         console.log('error en ventasUsuarioController')
