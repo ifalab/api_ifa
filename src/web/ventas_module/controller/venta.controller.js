@@ -179,8 +179,25 @@ const ventasUsuarioController = async (req, res) => {
             )
             responses.push(...response)
         }
-        // return res.json({responses})
-        responses.map((item) => {
+        let response = []
+        responses.forEach((item)=>{
+            const item2= response.findIndex((item2)=> item2.Sucursal == item.Sucursal)
+            console.log({item2})
+            if(item2!=-1){
+                response[item2].Ventas += Number(item.Ventas)
+                response[item2].Cump += Number(item.Cump)
+                response[item2].Ppto += Number(item.Ppto)
+            }else{
+                response.push({
+                    Sucursal: item.Sucursal,
+                    Ppto: Number(item.Ppto),
+                    Ventas: Number(item.Ventas),
+                    Cump: Number(item.Cump)
+                })
+            }
+        })
+
+        response.map((item) => {
             totalPresupuesto += +item.Ppto
             totalVentas += +item.Ventas
         })
@@ -190,12 +207,12 @@ const ventasUsuarioController = async (req, res) => {
         if (totalPresupuesto == 0) {
             totalCump = 1
         }
-        return res.status(200).json({ response: responses, totalPresupuesto, totalVentas, totalCump })
+        return res.status(200).json({ response, totalPresupuesto, totalVentas, totalCump })
         // return res.status(200).json(response)
     } catch (error) {
         console.log('error en ventasUsuarioController')
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
     }
 }
 
