@@ -150,9 +150,15 @@ const postQuotations = async(newOrderDate)=>{
             headers: headers
         });
 
+        // Extrae el número del encabezado location
+        const locationHeader = response.headers.location;
+        const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+
+        console.log('Nueva Orden: #', orderNumber)
         return {
             message: 'Oferta grabada con éxito',
-            // orderNumber: orderNumber,
+            orderNumber: orderNumber,
             status: 200,
             // statusText: response.statusText
         }
@@ -167,6 +173,46 @@ const postQuotations = async(newOrderDate)=>{
     }
 }
 
+const getQuotation = async(id)=>{
+
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const url = `https://srvhana:50000/b1s/v1/Quotations(${id})`;
+
+        // Configura los encabezados para incluir la cookie y el encabezado Prefer
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        console.log({newOrderDate})
+        // Realiza la solicitud POST a la API externa usando el agente y los encabezados
+        const response = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers
+        });
+
+        // Extrae el número del encabezado location
+        // const locationHeader = response.headers.location;
+        // const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        // const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+
+        // console.log('Nueva Orden: #', orderNumber)
+        return {
+            data: response,
+            status: 200,
+        }
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        console.error('Error en la solicitud POST para postQuotations:', error.response?.data || error.message);
+        return {
+            message: 'Hubo un problema en la solicitud postQuotations',
+            status: 400,
+            errorMessage
+        }
+    }
+}
 /////////////////////////////////////////////////////////////////////////////
 // Controlador para manejar la solicitud POST de consulta de batch
 const postEntrega = async (responseJson) => {
@@ -407,4 +453,5 @@ module.exports = {
     cancelIncomingPayment,
     postQuotations,
     patchQuotations,
+    getQuotation
 }
