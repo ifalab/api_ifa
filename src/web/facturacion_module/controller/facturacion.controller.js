@@ -558,14 +558,16 @@ const facturacionStatusListController = async (req, res) => {
         for (const iterator of listWhsCode) {
             const dataToList = await facturaPedidoDB(iterator)
             dataToList.map((item) => {
-                const dateNowItem = item.DocDate.split(' ')
-                if (dateNow[0] == dateNowItem[0] && !bringAll) {
-                    // if(groupCode==-1){
+                if(item.GroupName != 'INSTITUCIONES'){
+                    const dateNowItem = item.DocDate.split(' ')
+                    if (dateNow[0] == dateNowItem[0] && !bringAll) {
+                        // if(groupCode==-1){
+                            data.push({ ...item })
+                        // }else{}
+                    }
+                    if (bringAll ) {
                         data.push({ ...item })
-                    // }else{}
-                }
-                if (bringAll ) {
-                    data.push({ ...item })
+                    }
                 }
             })
         }
