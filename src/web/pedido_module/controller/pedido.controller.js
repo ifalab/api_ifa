@@ -918,6 +918,7 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
             line.GrossTotal = Number(line.GrossTotal.toFixed(2))
             line.AccountCode = "4110101";
             line.TaxCode = "IVA";
+            
             const totalNoDiscount = line.GrossPrice * line.Quantity
             const descLinea = Number((totalNoDiscount) - line.GrossTotal)
             console.log({ totalNoDiscount })
@@ -952,8 +953,8 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
         const detalle = await detalleOfertaCadena(+docEntry)
         return res.json({response,detalle,body})
 
-        grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", `Oferta de Venta creada con exito`, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
-        return res.json({ mensaje: response.message })
+        // grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", `Oferta de Venta creada con exito`, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
+        // return res.json({ mensaje: response.message })
     } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
