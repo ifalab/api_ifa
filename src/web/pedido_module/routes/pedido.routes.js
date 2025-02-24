@@ -11,7 +11,8 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     crearOrderCadenaController,
     getAllArticulosController,
     articuloDiccionarioController,
-    stockInstitucionPorArticuloController} = require('../controller/pedido.controller')
+    stockInstitucionPorArticuloController,
+    pedidoOfertaInstitucionesController} = require('../controller/pedido.controller')
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
@@ -34,6 +35,7 @@ router.get('/anulados-vendedor', [validarToken, validarCampos],pedidosPorVendedo
 router.get('/pedido-layout', [validarToken, validarCampos],pedidoLayoutController)
 router.get('/hoy-vendedor', [validarToken, validarCampos],pedidosPorVendedorHoyController)
 router.post('/crear-oferta-venta', [validarToken, validarCampos],pedidoCadenaController)
+router.post('/crear-oferta-venta-inst', [validarToken, validarCampos],pedidoOfertaInstitucionesController)
 router.get('/precio-articulo-cadena', [validarToken, validarCampos],precioArticuloCadenaController)
 router.get('/lista-precio-cadenas',[validarToken,validarCampos],listaPrecioCadenasController)
 router.post('/clientes-sucursal', [validarToken, validarCampos], clientesSucursalController)

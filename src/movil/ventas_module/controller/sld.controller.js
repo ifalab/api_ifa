@@ -51,7 +51,7 @@ const postOrden = async (newOrderDate) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        console.log({newOrderDate})
+        console.log({ newOrderDate })
         // Realiza la solicitud POST a la API externa usando el agente y los encabezados
         const response = await axios.post(url, newOrderDate, {
             httpsAgent: agent,
@@ -83,7 +83,7 @@ const postOrden = async (newOrderDate) => {
 
 };
 
-const patchQuotations = async (id,DocumentLines) => {
+const patchQuotations = async (id, DocumentLines) => {
     try {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
@@ -95,7 +95,7 @@ const patchQuotations = async (id,DocumentLines) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        console.log({DocumentLines})
+        console.log({ DocumentLines })
         // Realiza la solicitud POST a la API externa usando el agente y los encabezados
         const response = await axios.patch(url, DocumentLines, {
             httpsAgent: agent,
@@ -109,7 +109,7 @@ const patchQuotations = async (id,DocumentLines) => {
 
         // console.log('Nueva Orden: #', orderNumber)
         // Envía una respuesta exitosa con mensaje personalizado
-        
+
         // console.log({responseSap: response})
         return {
             message: 'Orden grabada con éxito',
@@ -130,7 +130,7 @@ const patchQuotations = async (id,DocumentLines) => {
 
 };
 
-const postQuotations = async(newOrderDate)=>{
+const postQuotations = async (newOrderDate) => {
 
     try {
         const currentSession = await validateSession();
@@ -143,16 +143,19 @@ const postQuotations = async(newOrderDate)=>{
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        console.log({newOrderDate})
+        console.log({ newOrderDate })
         // Realiza la solicitud POST a la API externa usando el agente y los encabezados
         const response = await axios.post(url, newOrderDate, {
             httpsAgent: agent,
             headers: headers
         });
 
+        const locationHeader = response.headers.location;
+        const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
         return {
             message: 'Oferta grabada con éxito',
-            // orderNumber: orderNumber,
+            orderNumber: orderNumber ||  0,
             status: 200,
             // statusText: response.statusText
         }
@@ -382,8 +385,8 @@ const cancelIncomingPayment = async (id) => {
         };
 
         const url = `https://srvhana:50000/b1s/v1/IncomingPayments(${id})/Cancel`
-        
-        const sapResponse = await axios.post(url,{}, {
+
+        const sapResponse = await axios.post(url, {}, {
             httpsAgent: agent,
             headers: headers
         });
