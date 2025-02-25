@@ -309,7 +309,7 @@ const crearOrderCadenaController = async (req, res) => {
         const DocumentLines = []
         let grossTotal = 0
         docLine.map((item) => {
-            if (item.LineNum == -2) {
+            if (item.BaseLine == -2) {
                 const { BaseLine, GrossTotal, BaseEntry, BaseType, ...rest } = item
                 DocumentLines.push({ ...rest, LineNum: null, Currency: 'BS' })
                 grossTotal += GrossTotal
@@ -362,7 +362,7 @@ const crearOrderCadenaController = async (req, res) => {
             PaymentGroupCode,
             U_NIT,
             U_RAZSOC,
-            // DocTotal,
+            DocTotal,
             SalesPersonCode,
             U_OSLP_ID,
             U_UserCode,
@@ -377,48 +377,50 @@ const crearOrderCadenaController = async (req, res) => {
             PaymentGroupCode,
             U_NIT,
             U_RAZSOC,
-            // DocTotal,
+            DocTotal,
             SalesPersonCode,
             U_OSLP_ID,
             U_UserCode,
         }
-        let DocTotal = 0
+        // let DocTotal = 0
         if (!detalle) {
             return res.status(400).json({ mensaje: 'Hubo un error al intentar obtener el detalle de la orden.' })
         }
-        detalle.data.map((item) => {
-            const subTotal = Number(item.subTotal)
-            DocTotal += Number(subTotal.toFixed(2))
-        })
-        ordenBody.DocTotal = DocTotal
+        // detalle.data.map((item) => {
+        //     const subTotal = Number(item.subTotal)
+        //     DocTotal += Number(subTotal.toFixed(2))
+        // })
+        // ordenBody.DocTotal = DocTotal
         const DocumentLinesToBody = []
         let idx = 0
-        detalle.data.map((item) => {
+        docLine.map((item) => {
             const {
-                subTotal: subTotalDet,
-                SalUnitMsr,
+                GrossTotal,
+                MeasureUnit,
                 Quantity,
                 ItemCode,
-                PriceMax,
+                GrossPrice,
                 WhsCode,
             } = item
-            const qty = Number(Quantity)
-            const prcMax = Number(PriceMax)
-            const subTot = Number(subTotalDet)
+            let data = detalle.data.find((item2)=> item2.ItemCode == ItemCode)
+            let baseLine = data.LineNum
+            const qty = Quantity>data.Quantity? Number(data.Quantity) : Number(Quantity)
+            const prcMax = Number(GrossPrice)
+            const subTot = Number(GrossTotal)
             const descLin = (prcMax * qty) - subTot
             DocumentLinesToBody.push({
                 LineNum: idx,
                 ItemCode,
                 Currency: 'BS',
                 Quantity: qty,
-                GrossPrice: Number(PriceMax),
-                GrossTotal: Number(subTotalDet),
+                GrossPrice: prcMax,
+                GrossTotal: subTot,
                 WarehouseCode: WhsCode,
                 AccountCode: '',
                 TaxCode: 'IVA',
-                MeasureUnit: SalUnitMsr,
+                MeasureUnit: data.SalUnitMsr || MeasureUnit,
                 U_DESCLINEA: Number(descLin.toFixed(2)),
-                BaseLine: idx,
+                BaseLine: baseLine,
                 BaseEntry: docEntry,
                 BaseType: 23,
             })
