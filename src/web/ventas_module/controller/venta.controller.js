@@ -40,7 +40,8 @@ const {
     detalleOferta,
     obtenerOfertasVendedores,
     obtenerPedidosDetalle,
-    obtenerOfertasPorSucursal
+    obtenerOfertasPorSucursal,
+    detalleOfertaPendCadena
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -885,6 +886,28 @@ const detalleOfertaCadenaController = async (req, res) => {
     }
 }
 
+const detalleOfertaCadenaPendController = async (req, res) => {
+    try {
+        const id = req.query.id
+        const response = await detalleOfertaPendCadena(id)
+        if (response.status == 400) return res.status(400).json({ mensaje: response.message || 'Error en detalleOfertaCadena' })
+        const { data } = response
+        data.forEach((row) => {
+            const subtotal = row.subTotal
+            row.Quantity = Number(row.Quantity)
+            row.PendQuantity = Number(row.PendQuantity)
+            row.Stock = Number(row.Stock)
+            row.subTotal = Number(subtotal)
+            row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
+            row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
+        })
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en detalleOfertaCadenaController ${error.message || ''}` })
+    }
+}
+
 const unidadMedidaController = async (req, res) => {
     try {
         const itemCode = req.query.itemCode
@@ -1110,5 +1133,6 @@ module.exports = {
     crearSolicitudPlantaController,
     obtenerOfertasVendedoresController,
     obtenerPedidosDetalleController,
-    obtenerOfertasPorSucursalController
+    obtenerOfertasPorSucursalController,
+    detalleOfertaCadenaPendController,
 };

@@ -511,6 +511,24 @@ const detalleOfertaCadena = async (id) => {
     }
 }
 
+const detalleOfertaPendCadena = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_OFERTA_DETALLE_PENDIENTE(${id})`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {status: 400,
+            message: `Error en detalleOfertaCadena: ${error.message || ''}`
+        }
+    }
+}
+
 const detalleOferta = async (id) => {
     try {
         if (!connection) {
@@ -722,5 +740,6 @@ module.exports = {
     detalleOferta,
     obtenerOfertasVendedores,
     obtenerPedidosDetalle,
-    obtenerOfertasPorSucursal
+    obtenerOfertasPorSucursal,
+    detalleOfertaPendCadena
 }

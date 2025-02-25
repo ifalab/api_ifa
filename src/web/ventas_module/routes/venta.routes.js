@@ -42,7 +42,8 @@ const {
     crearSolicitudPlantaController,
     obtenerOfertasVendedoresController,
     obtenerPedidosDetalleController,
-    obtenerOfertasPorSucursalController
+    obtenerOfertasPorSucursalController,
+    detalleOfertaCadenaPendController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -86,6 +87,7 @@ router.get('/oferta-precio-itemcode', [validarToken, validarCampos], ofertaPreci
 router.get('/oferta-descripcion-articulo', [validarToken, validarCampos], descripcionArticuloController)
 router.get('/lista-ofertas', [validarToken, validarCampos], listaOfertasController)
 router.get('/detalle-oferta-cadena', [validarToken, validarCampos], detalleOfertaCadenaController)
+router.get('/detalle-oferta-cadena-pend', [validarToken, validarCampos], detalleOfertaCadenaPendController)
 router.get('/oferta-unidad-medida', [validarToken, validarCampos], unidadMedidaController)
 router.get('/lista-articulo-cadenas', [validarToken, validarCampos], listaArticuloCadenasController)
 router.get('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
