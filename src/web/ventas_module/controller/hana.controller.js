@@ -697,6 +697,45 @@ const obtenerOfertasPorSucursal = async (sucCode) => {
     }
 }
 
+const listaClienteEmpleado = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "SucCode"= ${sucCode}`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en listaClienteEmpleado: ${error.message || ''}`
+        }
+    }
+}
+
+const clienteEmpleado = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"= '${cardCode}'`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en ClienteEmpleado: ${error.message || ''}`
+        }
+    }
+}
+
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -741,5 +780,7 @@ module.exports = {
     obtenerOfertasVendedores,
     obtenerPedidosDetalle,
     obtenerOfertasPorSucursal,
-    detalleOfertaPendCadena
+    detalleOfertaPendCadena,
+    listaClienteEmpleado,
+    clienteEmpleado,
 }

@@ -241,7 +241,6 @@ const getListaPreciosByIdCadenas = async (id) => {
         if (!connection) {
             await connectHANA();
         }
-        
         const query = `call ${process.env.PRD}.ifa_dm_precios_por_lista(${id})`;
         console.log({ query })
         const result = await executeQuery(query)

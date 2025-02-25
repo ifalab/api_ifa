@@ -238,7 +238,8 @@ const findDimension = async (dimension) => {
         if (dimension == 1) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONUNO`
         // if (dimension == 2) query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES_TIPOS`
         if (dimension == 2) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONDOS`
-        if (dimension == 3) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONTRES`
+        if (dimension == 3) query = `SELECT "LineItemCode" as "ID", "LineItemName" as "DIMROLE" FROM ${process.env.PRD}.IFA_DM_LINEAS`
+        // if (dimension == 3) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONTRES`
         const result = await executeQuery(query)
         return result
     } catch (error) {

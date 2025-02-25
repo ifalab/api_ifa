@@ -445,13 +445,7 @@ const findDimensionController = async (req, res) => {
         const dim = req.params.dim
         const response = await findDimension(dim)
         return res.json({ response })
-        // const respDim2 = []
-        // if (dim == 2) {
-        //     return res.json({ response })
-        // } else {
-        //     return res.json({ response })
-        // }
-
+    
     } catch (error) {
         return res.status(500).json({
             mensaje: 'Error en findDimensionController',

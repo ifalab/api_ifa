@@ -4,7 +4,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     getProveedor, searchBeneficiarios,
     findAllCajasEmpleados,
     concepComercialById
- } = require("./hana.controller")
+} = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -29,7 +29,7 @@ const findAllCajasEmpleadoController = async (req, res) => {
 
 const findAllCajasController = async (req, res) => {
     try {
-        
+
         const listCajas = await findAllCajasEmpleados()
         return res.status(200).json({ listCajas })
     } catch (error) {
@@ -654,7 +654,18 @@ const sendToSapController = async (req, res) => {
         });
 
         console.log({ data, statusCode })
-        // return res.json({ statusCode, data })
+        console.log(JSON.stringify({
+            usd,
+            codEmp,
+            estado,
+            idRendicion,
+            transacId,
+            glosaRend,
+            fechaContabilizado,
+            listFacturas,
+            listRecibos,
+        }, null, 2))
+        return res.json({ statusCode, data })
         if (data.status >= 400) {
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
@@ -693,7 +704,7 @@ const sendToSapController = async (req, res) => {
                 new_gifCard,
                 new_id_cuenta,
                 new_beneficiario,
-                new_cod_beneficiario 
+                new_cod_beneficiario
             } = item
             const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
             listResHana.push(responseSap)
@@ -931,7 +942,7 @@ const costoComercialCuentaController = async (req, res) => {
 
 const filtroCCController = async (req, res) => {
     try {
-        const { areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode,id } = req.body
+        const { areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode, id } = req.body
         console.log({
             areaCode,
             tipoCode,
@@ -976,11 +987,11 @@ const filtroCCController = async (req, res) => {
             }
 
             if (!newAccount.some(datatipo => datatipo.Account === item.Account)) {
-                newAccount.push({ 
+                newAccount.push({
                     Account: item.Account,
-                     AcctName: item.AcctName,
-                     Id:item.Id,
-                     })
+                    AcctName: item.AcctName,
+                    Id: item.Id,
+                })
             }
         })
 
@@ -1038,9 +1049,9 @@ const actualizarFechaContRendController = async (req, res) => {
 
 const getProveedorController = async (req, res) => {
     try {
-        const id= req.query.id
+        const id = req.query.id
         const proveedor = await getProveedor(id)
-        if(proveedor.length ==0){
+        if (proveedor.length == 0) {
             return res.json({
                 LicTradNum: `${id}`,
                 CardFName: "",
@@ -1056,9 +1067,9 @@ const getProveedorController = async (req, res) => {
 
 const searchBeneficiariosController = async (req, res) => {
     try {
-        const {cadena}= req.body
+        const { cadena } = req.body
         const upperCadena = cadena.toUpperCase()
-        console.log({cadena}, {upperCadena})
+        console.log({ cadena }, { upperCadena })
         const clientes = await searchBeneficiarios(upperCadena)
         return res.json(clientes)
     } catch (error) {
@@ -1069,10 +1080,10 @@ const searchBeneficiariosController = async (req, res) => {
 
 const conceptoComercialByIdController = async (req, res) => {
     try {
-        const id= req.params.id
-        console.log({id})
-        const result= await concepComercialById(id)
-        if(result.length == 0) return res.status(404).json({mensjae:'no se encontro el CC'})
+        const id = req.params.id
+        console.log({ id })
+        const result = await concepComercialById(id)
+        if (result.length == 0) return res.status(404).json({ mensjae: 'no se encontro el CC' })
         const data = result[0]
         return res.json(data)
     } catch (error) {

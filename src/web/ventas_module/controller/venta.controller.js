@@ -41,7 +41,9 @@ const {
     obtenerOfertasVendedores,
     obtenerPedidosDetalle,
     obtenerOfertasPorSucursal,
-    detalleOfertaPendCadena
+    detalleOfertaPendCadena,
+    listaClienteEmpleado,
+    clienteEmpleado
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -170,7 +172,7 @@ const ventasUsuarioController = async (req, res) => {
         const { userCode, dim1, dim2, dim3, groupBy } = req.body
         let totalPresupuesto = 0, totalVentas = 0, totalCump = 0
         let responses = [];
-        for(const itemDim2 of dim2){
+        for (const itemDim2 of dim2) {
             const response = await ventasUsuario(
                 userCode,
                 dim1,
@@ -181,14 +183,14 @@ const ventasUsuarioController = async (req, res) => {
             responses.push(...response)
         }
         let response = []
-        responses.forEach((item)=>{
-            const item2= response.findIndex((item2)=> item2.Sucursal == item.Sucursal)
-            console.log({item2})
-            if(item2!=-1){
+        responses.forEach((item) => {
+            const item2 = response.findIndex((item2) => item2.Sucursal == item.Sucursal)
+            console.log({ item2 })
+            if (item2 != -1) {
                 response[item2].Ventas += Number(item.Ventas)
                 response[item2].Cump += Number(item.Cump)
                 response[item2].Ppto += Number(item.Ppto)
-            }else{
+            } else {
                 response.push({
                     Sucursal: item.Sucursal,
                     Ppto: Number(item.Ppto),
@@ -1048,7 +1050,7 @@ const crearSolicitudPlantaController = async (req, res) => {
 }
 
 const obtenerOfertasVendedoresController = async (req, res) => {
-    try{
+    try {
         const id = req.query.id
         const response = await obtenerOfertasVendedores(id)
         if (response.status == 400) {
@@ -1062,8 +1064,8 @@ const obtenerOfertasVendedoresController = async (req, res) => {
 }
 
 const obtenerOfertasPorSucursalController = async (req, res) => {
-    try{
-        const {sucCode} = req.query
+    try {
+        const { sucCode } = req.query
         const response = await obtenerOfertasPorSucursal(sucCode)
         if (response.status == 400) {
             return res.status(400).json({ mensaje: response.message || 'Error en obtenerOfertasPorSucursal' })
@@ -1076,14 +1078,46 @@ const obtenerOfertasPorSucursalController = async (req, res) => {
 }
 
 const obtenerPedidosDetalleController = async (req, res) => {
-    try{
-        const {baseEntry} = req.body
-        console.log({body: req.body})
+    try {
+        const { baseEntry } = req.body
+        console.log({ body: req.body })
         const response = await obtenerPedidosDetalle(baseEntry)
         if (response.status == 400) {
             return res.status(400).json({ mensaje: response.message || 'Error en obtenerPedidosDetalle' })
         }
         return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const listaClienteEmpleadosController = async (req, res) => {
+    try {
+        const sucCode = req.query.sucCode
+        const response = await listaClienteEmpleado(sucCode)
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: response.message || 'Error en listaClienteEmpleados' })
+        }
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const ClienteEmpleadosController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const response = await clienteEmpleado(cardCode)
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: response.message || 'Error en listaClienteEmpleados' })
+        }
+        console.log({response})
+        if (response.data.length == 0) {
+            return res.status(400).json({ mensaje: `No se encontro el usuario con el carCode: ${cardCode}` })
+        }
+        return res.json(response.data[0])
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
@@ -1135,4 +1169,6 @@ module.exports = {
     obtenerPedidosDetalleController,
     obtenerOfertasPorSucursalController,
     detalleOfertaCadenaPendController,
+    listaClienteEmpleadosController,
+    ClienteEmpleadosController
 };

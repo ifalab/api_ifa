@@ -43,7 +43,9 @@ const {
     obtenerOfertasVendedoresController,
     obtenerPedidosDetalleController,
     obtenerOfertasPorSucursalController,
-    detalleOfertaCadenaPendController
+    detalleOfertaCadenaPendController,
+    listaClienteEmpleadosController,
+    ClienteEmpleadosController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -100,6 +102,8 @@ router.post('/solicitud-planta', [validarToken, validarCampos], crearSolicitudPl
 router.get('/ofertas-vendedores', [validarToken, validarCampos], obtenerOfertasVendedoresController)
 router.post('/pedidos-detalle', [validarToken, validarCampos], obtenerPedidosDetalleController)
 router.get('/ofertas-sucursal', [validarToken, validarCampos], obtenerOfertasPorSucursalController)
+router.get('/lista-empleado-cliente', [validarToken, validarCampos],listaClienteEmpleadosController )
+router.get('/empleado-cliente', [validarToken, validarCampos],ClienteEmpleadosController)
 
 
 module.exports = router
