@@ -330,6 +330,7 @@ const crearOrderCadenaController = async (req, res) => {
             console.log({ newDocTotal })
 
             console.log(JSON.stringify({ DocumentLines, docEntry }, null, 2))
+            //?------------------------------------------------------------------------
             const sapResponse = await patchQuotations(+docEntry, { DocumentLines })
             if (sapResponse.status == 400) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error del SAP. ${sapResponse.errorMessage.value || 'No definido'}`, '', "pedido/crear-orden-cad", process.env.PRD)
@@ -951,10 +952,99 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
 
         const docEntry = response.orderNumber
         const detalle = await detalleOfertaCadena(+docEntry)
-        return res.json({response,detalle,body})
 
-        // grabarLog(user.USERCODE, user.USERNAME, "Oferta Ventas", `Oferta de Venta creada con exito`, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-venta", process.env.PRD)
-        // return res.json({ mensaje: response.message })
+        //----------------
+        const {
+            Series,
+            CardCode,
+            FederalTaxID,
+            DocDate,
+            JournalMemo,
+            PaymentGroupCode,
+            U_NIT,
+            U_RAZSOC,
+            DocTotal,
+            SalesPersonCode,
+            U_OSLP_ID,
+            U_UserCode,
+        } = body
+        const ordenBody = {
+            Series:319,
+            CardCode,
+            FederalTaxID,
+            DocDate,
+            DocDueDate:DocDate,
+            JournalMemo,
+            PaymentGroupCode,
+            U_NIT,
+            U_RAZSOC,
+            // DocTotal,
+            SalesPersonCode,
+            U_OSLP_ID,
+            U_UserCode,
+        }
+        // let DocTotal = 0
+        if (!detalle) {
+            return res.status(400).json({ mensaje: 'Hubo un error al intentar obtener el detalle de la orden.' })
+        }
+        // detalle.data.map((item) => {
+        //     const subTotal = Number(item.subTotal)
+        //     DocTotal += Number(subTotal.toFixed(2))
+        // })
+        ordenBody.DocTotal = DocTotal
+        const DocumentLinesToBody = []
+        let idx = 0
+        detalle.data.map((item) => {
+            const {
+                subTotal: subTotalDet,
+                SalUnitMsr,
+                Quantity,
+                ItemCode,
+                PriceMax,
+                WhsCode,
+            } = item
+            const qty = Number(Quantity)
+            const prcMax = Number(PriceMax)
+            const subTot = Number(subTotalDet)
+            const descLin = (prcMax * qty) - subTot
+            DocumentLinesToBody.push({
+                LineNum: item.LineNum,
+                ItemCode,
+                Currency: 'BS',
+                Quantity: qty,
+                GrossPrice: Number(PriceMax),
+                GrossTotal: Number(subTotalDet),
+                WarehouseCode: WhsCode,
+                AccountCode: '',
+                TaxCode: 'IVA',
+                MeasureUnit: SalUnitMsr,
+                U_DESCLINEA: Number(descLin.toFixed(2)),
+                BaseLine: idx,
+                BaseEntry: docEntry,
+                BaseType: 23,
+            })
+            idx++
+        })
+
+        ordenBody.DocumentLines = DocumentLinesToBody
+        // return res.json({response,detalle,body,ordenBody})
+        // return res.json({ ordenBody, detalle })
+        console.log("body de post orden: =====================================");
+        console.log(JSON.stringify(ordenBody, null, 2))
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        // return res.json({ detalle, DocumentLines, ordenBody })
+        const ordenResponse = await postOrden(ordenBody)
+        console.log(ordenResponse)
+        if (ordenResponse.status == 400) {
+            grabarLog(user.USERCODE, user.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+        }
+        console.log({ user })
+        grabarLog(user.USERCODE, user.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+        
+        //-----------------------
+        return res.json(ordenResponse)
+
     } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }

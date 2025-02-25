@@ -155,7 +155,7 @@ const postQuotations = async (newOrderDate) => {
         const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
         return {
             message: 'Oferta grabada con éxito',
-            orderNumber: orderNumber ||  0,
+            orderNumber: orderNumber || 0,
             status: 200,
             // statusText: response.statusText
         }
@@ -170,7 +170,7 @@ const postQuotations = async (newOrderDate) => {
     }
 }
 
-const getQuotation = async(id)=>{
+const getQuotation = async (id) => {
 
     try {
         const currentSession = await validateSession();
@@ -183,21 +183,22 @@ const getQuotation = async(id)=>{
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        console.log({newOrderDate})
+        // console.log({newOrderDate})
         // Realiza la solicitud POST a la API externa usando el agente y los encabezados
         const response = await axios.get(url, {
             httpsAgent: agent,
             headers: headers
         });
 
-        // Extrae el número del encabezado location
-        // const locationHeader = response.headers.location;
+        const locationHeader = response.headers.location;
         // const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
         // const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
 
         // console.log('Nueva Orden: #', orderNumber)
         return {
-            data: response,
+            data: response.data || {},
+            // orderNumber,
+            locationHeader,
             status: 200,
         }
     } catch (error) {
