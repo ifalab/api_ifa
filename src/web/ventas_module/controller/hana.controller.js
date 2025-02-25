@@ -645,7 +645,7 @@ const obtenerPedidosDetalle = async (baseEntry) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.ifa_ven_pedidos_detalle where "BaseType" = 23 and "BaseEntry" = ${baseEntry} order by "LineNum"`
+        const query = `select * from ${process.env.PRD}.ifa_ven_pedidos_detalle where "BaseType" = 23 and "BaseEntry" = ${baseEntry} order by "DocEntry", "LineNum"`
         //group by "DocEntry"
         const result = await executeQuery(query)
         return {
