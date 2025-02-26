@@ -735,6 +735,25 @@ const clienteEmpleado = async (cardCode) => {
     }
 }
 
+const obtenerArticulosVehiculo = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" like '%IFA%' AND "SellItem"='N'`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en obtenerArticulosVehiculo: ${error.message || ''}`
+        }
+    }
+}
+
 
 module.exports = {
     ventaPorSucursal,
@@ -783,4 +802,5 @@ module.exports = {
     detalleOfertaPendCadena,
     listaClienteEmpleado,
     clienteEmpleado,
+    obtenerArticulosVehiculo
 }

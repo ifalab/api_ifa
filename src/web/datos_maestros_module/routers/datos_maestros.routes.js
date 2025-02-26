@@ -10,7 +10,8 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getDescuentosCantidadController, getIdDescuentosCantidadController, getArticuloByCodeController,
     setDescuentoEspecialController, getAllDescuentosLineaController, deleteDescuentoLineaController,
     setDescuentoEspecialPorArticuloController, obtenerTiposController, obtenerDescuetosEspecialesController, 
-    getIdsDescuentoEspecialController, getDescuentosEspecialesByIdController
+    getIdsDescuentoEspecialController, getDescuentosEspecialesByIdController, getVendedoresController,
+    getZonasController, getAllTiposController, getZonasTiposPorVendedorController, asignarZonasYTiposAVendedoresController
  } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller')
 const router = Router()
@@ -44,5 +45,10 @@ router.get('/tipos', [validarToken, validarCampos], obtenerTiposController)
 router.get('/descuentos-especiales', [validarToken, validarCampos], obtenerDescuetosEspecialesController)
 router.get('/ids-especiales', [validarToken, validarCampos], getIdsDescuentoEspecialController)
 router.post('/especiales-by-id', [validarToken, validarCampos], getDescuentosEspecialesByIdController)
+router.get('/all-vendedores', [validarToken, validarCampos], getVendedoresController)
+router.get('/zonas', [validarToken, validarCampos], getZonasController)
+router.get('/all-tipos', [validarToken, validarCampos], getAllTiposController)
+router.get('/zonasytipos-vendedor', [validarToken, validarCampos], getZonasTiposPorVendedorController)
+router.post('/zonasytipos-vendedor', [validarToken, validarCampos], asignarZonasYTiposAVendedoresController)
 
 module.exports = router

@@ -367,6 +367,23 @@ const stockInstitucionPorArticulo = async (cod) => {
     }
 }
 
+const listaNegraDescuentos = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `select * from ${process.env.PRD}.IFA_DM_ARTICULOS_LISTA_NEGRA_DESCUENTOS`;
+        const query = `select * from LAB_IFA_PRD.IFA_DM_ARTICULOS_LISTA_NEGRA_DESCUENTOS`;
+
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en listaNegraDescuentos:', error.message);
+        throw { message: `Error al procesar listaNegraDescuentos: ${error.message}` }
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -389,5 +406,6 @@ module.exports = {
     clientesPorSucursal,
     getAllArticulos,
     articuloDiccionario,
-    stockInstitucionPorArticulo
+    stockInstitucionPorArticulo,
+    listaNegraDescuentos
 }

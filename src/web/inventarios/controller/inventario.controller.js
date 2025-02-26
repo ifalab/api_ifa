@@ -2,8 +2,8 @@ const { json } = require("express")
 const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado,
     descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet,
     facturasClienteLoteItemCode, detalleVentas,
-    entregaDetallerFactura } = require("./hana.controller")
-const { postSalidaHabilitacion, postEntradaHabilitacion, createQuotation } = require("./sld.controller")
+    entregaDetallerFactura, detalleParaDevolucion } = require("./hana.controller")
+const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn } = require("./sld.controller")
 const { postInvoice } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle } = require("../../facturacion_module/controller/hana.controller")
@@ -467,7 +467,7 @@ const detalleVentasController = async (req, res) => {
 
 const devolucionCompletaController = async (req, res) => {
     try {
-        const { DocEntry: docEntry, Cuf, DocDate, BaseEntry } = req.body
+        const { DocEntry: docEntry, Cuf, DocDate, DocDueDate, BaseEntry, CardCode, Detalle} = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (!docEntry || docEntry <= 0) {
             return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
@@ -483,33 +483,85 @@ const devolucionCompletaController = async (req, res) => {
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
             return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
         }
+
         const DocumentLinesHana = [];
         let cabezeraHana = [];
-
         let DocumentAdditionalExpenses = [];
 
-        for (const line of entregas) {
-            const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-                DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+        if(entregas.length == 0){
+            return res.status(400).json({mensaje:'No existen entregas'})
+        }else{
+            // for (const line of entregas) {
+            //     const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+            //         ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+            //         DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
 
-            if (!cabezeraHana.length) {
-                cabezeraHana = {
-                    ...result,
-                    DocTotal: Number(DocTotal),
-                    U_OSLP_ID: U_OSLP_ID || "",
-                    U_UserCode: U_UserCode || ""
+            //     if (!cabezeraHana.length) {
+            //         cabezeraHana = {
+            //             ...result,
+            //             DocTotal: Number(DocTotal),
+            //             U_OSLP_ID: U_OSLP_ID || "",
+            //             U_UserCode: U_UserCode || ""
+            //         };
+            //         DocumentAdditionalExpenses = [
+            //             { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+            //             { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+            //             { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+            //             { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+            //         ]
+            //     }
+            //     DocumentLinesHana.push({
+            //         LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+            //     })
+            // }
+
+
+            const processedLines = [];
+            let baseLineCounter = 0;
+
+            for (const line of Detalle) {
+                const { LineNum, ItemCode, WarehouseCode, Quantity, UnitPrice } = line;
+                const batchData = await getLotes(ItemCode, WarehouseCode, Quantity);
+
+                if (!batchData || batchData.length === 0) {
+                    return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}` });
+                }
+
+                const batchNumbers = batchData.map(batch => ({
+                    BaseLineNumber: baseLineCounter.toString(),
+                    BatchNumber: batch.BatchNum,
+                    Quantity: Number(batch.Quantity).toFixed(6),        // Formato de cantidad
+                    ItemCode: batch.ItemCode//,
+
+                }));
+
+                const processedLine = {
+                    BaseType: -1,
+                    U_TYPE: '15',
+                    U_NUMENTRADA: docEntry,
+                    U_INCOTERM: LineNum,
+                    LineNum: baseLineCounter,  // También ajustamos LineNum para que sea único
+                    ItemCode: ItemCode,
+                    Quantity: Quantity,
+                    TaxCode: 'IVA',
+                    UnitPrice: UnitPrice,
+                    WarehouseCode: WarehouseCode,
+                    BatchNumbers: batchNumbers
                 };
-                DocumentAdditionalExpenses = [
-                    { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
-                    { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
-                    { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
-                    { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
-                ]
+
+                processedLines.push(processedLine);
+                baseLineCounter++; // Incrementamos el contador para la siguiente línea
             }
-            DocumentLinesHana.push({
-                LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
-            })
+            const responseJson = {
+                Series: 352,
+                CardCode,
+                DocDate,
+                DocDueDate,
+                DocumentLines: processedLines
+            };
+
+            console.log('Datos a enviar a SAP:', JSON.stringify(responseJson, null, 2));
+
         }
 
         const responseHanaB = {
@@ -519,9 +571,9 @@ const devolucionCompletaController = async (req, res) => {
         }
         console.log({ responseHanaB: JSON.stringify(responseHanaB, null, 2) })
 
-        const responceInvoice = await postInvoice(responseHanaB)
+        const responceInvoice = await postReturn(responseHanaB)
         console.log({ responceInvoice: JSON.stringify(responceInvoice, null, 2) })
-        // return res.json({responceInvoice, responseHanaB, entregas})
+        return res.json({responceInvoice, responseHanaB, entregas})
 
         if (responceInvoice.status != 200) {
             console.log({ errorMessage: responceInvoice.errorMessage })
@@ -546,6 +598,30 @@ const devolucionCompletaController = async (req, res) => {
     }
 }
 
+const detalleParaDevolucionController = async (req, res) => {
+    try {
+        const id = req.query.id
+        const response = await detalleParaDevolucion(id)
+        // return res.json({response})
+        console.log({ response })
+        let cabecera = []
+        let detalle = []
+        response.forEach((value) => {
+            const { DocEntry, BaseEntry, DocNum, DocDate, Cuf, ...rest } = value
+            if (cabecera.length == 0) {
+                cabecera.push({ DocEntry, BaseEntry, DocNum, DocDate, Cuf })
+            }
+            detalle.push(rest)
+        })
+        detalle.sort((a, b) => a.LineNum - b.LineNum);
+        const venta = { ...cabecera[0], detalle }
+        return res.json(venta)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `error en el controlador detalleParaDevolucionController. ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -559,5 +635,6 @@ module.exports = {
     stockDisponibleIfavetController,
     facturasClienteLoteItemCodeController,
     detalleVentasController,
-    devolucionCompletaController
+    devolucionCompletaController,
+    detalleParaDevolucionController
 }

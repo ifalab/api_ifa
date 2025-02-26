@@ -650,6 +650,99 @@ const getDescuentosEspecialesById= async(docNum,itemCode, cardCode)=>{
     }
 }
 
+const getVendedores= async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "SlpCode", "SlpName" from ${process.env.PRD}.ifa_dm_vendedores`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getVendedores:', error);
+        throw {
+            status: 400,
+            message: `Error en getVendedores: ${error.message || ''}`
+        }
+    }
+}
+
+const getAllTipos= async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "GroupCode", "GroupName" from ${process.env.PRD}.ifa_dm_tipos`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllTipos:', error);
+        throw {
+            status: 400,
+            message: `Error en getAllTipos: ${error.message || ''}`
+        }
+    }
+}
+
+const getZonas= async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "ZoneCode", "ZoneName" from ${process.env.PRD}.ifa_dm_zonas`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getZonas:', error);
+        throw {
+            status: 400,
+            message: `Error en getZonas: ${error.message || ''}`
+        }
+    }
+}
+
+const getZonasTiposPorVendedor= async(id_vendedor)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "SlpCodeCli", "SlpNameCli", "ZoneCode", "ZoneName", "GroupCode", "GroupName" 
+from ${process.env.PRD}.ifa_dm_vendedores_zonasytipos
+where "SlpCodeCli" = ${id_vendedor}`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getZonasTiposPorVendedor:', error);
+        throw {
+            status: 400,
+            message: `Error en getZonasTiposPorVendedor: ${error.message || ''}`
+        }
+    }
+}
+const asignarZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_agregar_zonasytipos_a_vendedores(${id_vendedor}, ${zona}, ${tipo})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            result}
+    } catch (error) {
+        console.error('Error en asignarZonasYTiposAVendedores:', error);
+        return {
+            status: 400,
+            message: `Error en asignarZonasYTiposAVendedores: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -678,5 +771,10 @@ module.exports = {
     obtenerTipos,
     obtenerDescuetosEspeciales,
     getIdsDescuentoEspecial,
-    getDescuentosEspecialesById
+    getDescuentosEspecialesById,
+    getVendedores,
+    getAllTipos,
+    getZonas,
+    getZonasTiposPorVendedor,
+    asignarZonasYTiposAVendedores
 }
