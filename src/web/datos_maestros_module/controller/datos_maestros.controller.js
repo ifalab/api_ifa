@@ -5,7 +5,8 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getArticulos, findCliente, getDescuentosCantidad, getIdDescuentosCantidad,
     getArticuloByCode, setDescuentoEspecial, getAllDescuentosLinea, deleteDescuentoLinea,
     setDescuentoEspecialPorArticulo, obtenerTipos, obtenerDescuetosEspeciales,
-    getIdsDescuentoEspecial, getDescuentosEspecialesById } = require("./hana.controller")
+    getIdsDescuentoEspecial, getDescuentosEspecialesById, getVendedores, getZonas, getAllTipos,
+    getZonasTiposPorVendedor, asignarZonasYTiposAVendedores } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -585,6 +586,62 @@ const getDescuentosEspecialesByIdController = async (req, res) => {
     }
 }
 
+const getVendedoresController = async (req, res) => {
+    try {
+        const vendedores = await getVendedores()
+        return res.json(vendedores)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getVendedoresController. ${error.message || ''}` })
+    }
+}
+
+const getZonasController = async (req, res) => {
+    try {
+        const vendedores = await getZonas()
+        return res.json(vendedores)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getZonasController. ${error.message || ''}` })
+    }
+}
+
+const getAllTiposController = async (req, res) => {
+    try {
+        const vendedores = await getAllTipos()
+        return res.json(vendedores)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getAllTiposController. ${error.message || ''}` })
+    }
+}
+
+const getZonasTiposPorVendedorController = async (req, res) => {
+    try {
+        const id_vendedor = req.query.id
+        const vendedores = await getZonasTiposPorVendedor(id_vendedor)
+        return res.json(vendedores)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getZonasTiposPorVendedorController. ${error.message || ''}` })
+    }
+}
+
+const asignarZonasYTiposAVendedoresController = async (req, res) => {
+    try {
+        const {id_vendedor, zona, tipo} = req.body
+        console.log({body: req.body})
+        const respond = await asignarZonasYTiposAVendedores(id_vendedor, zona, tipo)
+        if(respond.status != 200){
+            return res.status(400).json({mensaje: `${respond.message || ''}`})
+        }
+        return res.json(respond.result)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador asignarZonasYTiposAVendedoresController. ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -614,5 +671,10 @@ module.exports = {
     obtenerTiposController,
     obtenerDescuetosEspecialesController,
     getIdsDescuentoEspecialController,
-    getDescuentosEspecialesByIdController
+    getDescuentosEspecialesByIdController,
+    getVendedoresController,
+    getZonasController,
+    getAllTiposController,
+    getZonasTiposPorVendedorController,
+    asignarZonasYTiposAVendedoresController
 }

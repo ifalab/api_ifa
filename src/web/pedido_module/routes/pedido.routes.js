@@ -12,7 +12,8 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     getAllArticulosController,
     articuloDiccionarioController,
     stockInstitucionPorArticuloController,
-    pedidoOfertaInstitucionesController } = require('../controller/pedido.controller')
+    pedidoOfertaInstitucionesController,
+    listaNegraDescuentosController } = require('../controller/pedido.controller')
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
@@ -43,5 +44,6 @@ router.post('/pedido-institucion', [validarToken, validarCampos], pedidoInstituc
 router.get('/articulos', [validarToken, validarCampos], getAllArticulosController)
 router.post('/articulo-diccionario', [validarToken, validarCampos], articuloDiccionarioController)
 router.get('/stock-institucion', [validarToken, validarCampos], stockInstitucionPorArticuloController)
+router.get('/lista-negra-desc', [validarToken, validarCampos], listaNegraDescuentosController)
 
 module.exports = router

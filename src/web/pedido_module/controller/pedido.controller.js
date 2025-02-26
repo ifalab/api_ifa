@@ -20,7 +20,8 @@ const { findClientePorVendedor,
     clientesPorSucursal,
     getAllArticulos,
     articuloDiccionario,
-    stockInstitucionPorArticulo
+    stockInstitucionPorArticulo,
+    listaNegraDescuentos
 } = require("./hana.controller");
 const { postOrden, postQuotations, patchQuotations, getQuotation } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -1056,6 +1057,17 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
         return res.status(500).json({ mensaje })
     }
 }
+
+const listaNegraDescuentosController = async (req, res) => {
+    try {
+        const items = await listaNegraDescuentos()
+        return res.json(items)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `error en el controlador:listaNegraDescuentosController: ${error.message}` })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -1086,4 +1098,5 @@ module.exports = {
     articuloDiccionarioController,
     stockInstitucionPorArticuloController,
     pedidoOfertaInstitucionesController,
+    listaNegraDescuentosController
 }

@@ -11,7 +11,7 @@ let session = null;
 // Función para conectar y obtener la sesión
 const connectSLD = async () => {
   try {
-    const url = 'https://172.16.11.25:50000/b1s/v1/Login';
+    const url = 'https://srvhana:50000/b1s/v1/Login';
     const data = {
       CompanyDB: process.env.DBSAPPRD,
       UserName: process.env.USERSAP,
@@ -134,7 +134,48 @@ const postEntradaHabilitacion = async (data) => {
   }
 };
 
+const postReturn = async (data) => {
+  try {
+    // Verifica o genera una sesión
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+    console.log({ currentSession })
+
+    const url = 'https://srvhana:50000/b1s/v1/Returns';
+
+    // Configura los encabezados para la solicitud
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+    };
+    // Realiza la solicitud POST
+    const response = await axios.post(url, { ...data }, {
+      httpsAgent: agent,
+      headers: headers
+    });
+    console.log({ responseReturns : response })
+
+    // Retorna la respuesta en caso de éxito
+    const status = response.status
+    const locationHeader = response.headers.location;
+    const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+    const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+    console.log('entrada habilitada')
+    // console.log({ location })
+    // console.log({response})
+    console.log({ status })
+    return { status, orderNumber };
+  } catch (error) {
+    // Centraliza el manejo de errores
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+    console.error('Error en la solicitud POST Returns:', errorMessage);
+    // throw new Error(errorMessage);
+    return errorMessage
+  }
+};
+
 module.exports = {
   postSalidaHabilitacion,
-  postEntradaHabilitacion
+  postEntradaHabilitacion,
+  postReturn
 };
