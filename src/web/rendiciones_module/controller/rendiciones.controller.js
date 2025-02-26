@@ -3,7 +3,8 @@ const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
     getProveedor, searchBeneficiarios,
     findAllCajasEmpleados,
-    concepComercialById
+    concepComercialById,
+    actualizarCCRendicion
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -665,7 +666,9 @@ const sendToSapController = async (req, res) => {
             listFacturas,
             listRecibos,
         }, null, 2))
-        return res.json({ statusCode, data })
+        console.log('DATOS de REND-----------------------------------------------------------')
+        console.log({statusCode, data})
+        // return res.json({ statusCode, data })
         if (data.status >= 400) {
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
@@ -678,6 +681,7 @@ const sendToSapController = async (req, res) => {
                 listResHana.push(responseSap)
             }))
             return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, listResHana });
+        
         }
 
         await Promise.all(listFacturas.map(async (item) => {
@@ -1092,6 +1096,31 @@ const conceptoComercialByIdController = async (req, res) => {
     }
 }
 
+const actualizarCCRendController = async (req, res) => {
+    try {
+        const { id,idRend, new_cuenta_cc } = req.body
+        if (!id) {
+            return res.status(400).json({ mensaje: 'debe existir un Id del Gasto' })
+        }
+        if (!idRend) {
+            return res.status(400).json({ mensaje: 'debe existir un Id de la Rendicion' })
+        }
+        if (!new_cuenta_cc) {
+            return res.status(400).json({ mensaje: 'debe venir una cuenta CC' })
+        }
+        const responseHana = await actualizarCCRendicion(id,idRend, new_cuenta_cc)
+        const { response } = responseHana[0]
+        console.log({ response })
+        if (response != 200) {
+            return res.status(400).json({ mensaje: 'no se pudo actualizar la fecha de contabilizacion' })
+        }
+        return res.json({ response, responseHana })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1118,4 +1147,5 @@ module.exports = {
     searchBeneficiariosController,
     findAllCajasController,
     conceptoComercialByIdController,
+    actualizarCCRendController,
 }

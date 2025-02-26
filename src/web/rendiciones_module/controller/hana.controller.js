@@ -556,6 +556,24 @@ const actualizarfechaContRendicion = async (idRend, new_date) => {
     }
 }
 
+const actualizarCCRendicion = async (id,idRend, new_cuenta_cc) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarCCRendicion EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_CUENTA_CC(${id},${idRend},'${new_cuenta_cc}');`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo actualizar la cuenta CC`
+        }
+
+    }
+}
 const getProveedor = async (id) => {
     try {
         if (!connection) {
@@ -629,4 +647,5 @@ module.exports = {
     searchBeneficiarios,
     findAllCajasEmpleados,
     concepComercialById,
+    actualizarCCRendicion,
 }
