@@ -227,11 +227,16 @@ const createAsientoContableController = async (req, res) => {
             DebitSys: 0,
             ContraAccount: '',
             LineMemo: glosa,
-            Reference1: `${cheque}`,
+            // Reference1: `${cheque}`,
+            Reference1: ``,
             Reference2: '',
         }
         if (voucher || voucher == '') {
             contraAccount.AdditionalReference = voucher
+        }
+
+        if (cheque || cheque == '') {
+            contraAccount.AdditionalReference = cheque
         }
 
         let JournalEntryLines = []
