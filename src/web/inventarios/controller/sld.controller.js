@@ -170,7 +170,9 @@ const postReturn = async (data) => {
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
     console.error('Error en la solicitud POST Returns:', errorMessage);
     // throw new Error(errorMessage);
-    return errorMessage
+    return {
+      status: 400,
+      errorMessage}
   }
 };
 
