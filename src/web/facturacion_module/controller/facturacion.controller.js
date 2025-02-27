@@ -16,8 +16,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     facturasAnuladas, pedidosPorEntrega,
     entregasSinFacturas,
     obtenerEntregaPorPedido,
-    facturaPedidoInstituciones
-     } = require("./hana.controller")
+    facturaPedidoInstituciones,
+    obtenerPedidoDetalle } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -1973,6 +1973,98 @@ const facturacionInstitucionesController = async (req, res) => {
     }
 }
 
+const getLocalISOString = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000; // Offset en milisegundos
+    const localISOTime = new Date(now.getTime() - offset).toISOString().slice(0, -1); // Quita la 'Z'
+    return localISOTime;
+}
+
+const facturacionVehiculo = async (req, res) => {
+    const startTime = Date.now();
+    const { nro_ped } = req.body;
+    const user = req.usuarioAutorizado
+    const id_sap = user.ID_SAP
+    // console.log(user.USERNAME);
+
+    const today = getLocalISOString();
+    // console.log(today); // Ejemplo: "2025-02-27T14:30:12.215"
+    
+    let body = {};
+    try {
+        const data = await obtenerPedidoDetalle(nro_ped);
+        // console.log(data)
+        // const detalle = data.map(item => ({
+        //     producto: item.ItemCode,
+        //     cantidad: item.Quantity,
+        //     descripcion: item.Dscription,
+        //     precioUnitario: item.UnitPrice,
+        //     montoDescuento: item.Disc,
+        //     subtotal: +(item.Quantity * item.UnitPrice).toFixed(2),
+        //     numeroImei: "",
+        //     numeroSerie: "",
+        // }))
+        const detalle =[{
+            producto: data[0].ItemCode,
+            descripcion: data[0].Dscription,
+            cantidad: +data[0].Quantity,
+            precioUnitario: +data[0].UnitPrice,
+            montoDescuento: +data[0].Disc,
+            subTotal: +(data[0].Quantity * data[0].UnitPrice).toFixed(2),
+            numeroImei: "",
+            numeroSerie: "",
+        }]
+        body = {
+            sucursal: data[0].SucCode,
+            punto: 0,
+            documento_via: "123466",
+            codigo_cliente_externo: "",
+            tipo_identificacion: 1,
+            identificacion: "62135320",
+            complemento: "",
+            nombre: user.USERNAME,
+            correo: "gabdihu@gmail.com",
+            direccion: "Barrio Santa Rosita",
+            codigo_excepcion: false,
+            metodo_pago: 1,
+            numeroTarjeta: "",
+            montoDetalle: 500,
+            descuentoAdicional: 1.72,
+            giftCard: 0.00,
+            codigoMoneda: 1,
+            tipoCambio: 1,
+            usuario: user.USERNAME,
+            facturaManual: false,
+            fechaEmision: '2025-02-27T16:41:12.215',
+            mediaPagina: true,
+            detalle: detalle
+        }
+
+        const responseProsin = await facturacionProsin(body, user)
+
+        res.status(200).json(responseProsin);
+    }catch (error) {
+        console.log({ error })
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ user })
+        const endTime = Date.now()
+        grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch Facturar Vehiculo. ${error.message || ''}, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar/vehiculo", process.env.PRD)
+        return res.status(error.statusCode ?? 500).json({
+            mensaje: `Error en el controlador Catch. ${error?.message || 'No definido'}`,
+            sapMessage: `${error?.message || 'No definido'}`,
+            error: {
+                message: error.message ?? '',
+                stack: error.stack,
+                statusCode: error.statusCode || 500,
+            },
+            errorController: {
+                ...error
+            },
+            bodyFactura: body
+        })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -1993,5 +2085,6 @@ module.exports = {
     entregasSinFacturasController,
     cancelarOrdenController,
     pedidosInstitucionesController,
-    facturacionInstitucionesController
+    facturacionInstitucionesController,
+    facturacionVehiculo
 }
