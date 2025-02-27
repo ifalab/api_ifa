@@ -74,6 +74,8 @@ const rendicionDetalladaController = async (req, res) => {
                 FECHACONTABILIZACION,
                 BENEFICIARIO,
                 COD_BENEFICIARIO,
+                DETALLE_CUENTA,
+                CUENTA_CC,
                 ...rest
             } = item
             const data = {
@@ -93,6 +95,8 @@ const rendicionDetalladaController = async (req, res) => {
                 COMENTARIO: COMENTARIO,
                 BENEFICIARIO,
                 COD_BENEFICIARIO,
+                DETALLE_CUENTA,
+                CUENTA_PRODUCTIVA:CUENTA_CC
             }
             listaDetalles.push(data)
         })
@@ -192,7 +196,8 @@ const crearRendicionController = async (req, res) => {
                 year,
                 new_id_cuenta,
                 new_beneficiario,
-                new_cod_beneficiario
+                new_cod_beneficiario,
+                new_detalle_cuenta,
             } = item
 
             const fecha = new_fecha.split('/')
@@ -225,7 +230,8 @@ const crearRendicionController = async (req, res) => {
                 '',
                 new_id_cuenta,
                 new_beneficiario,
-                new_cod_beneficiario
+                new_cod_beneficiario,
+                new_detalle_cuenta
             )
             result.push(responseHana[0] || responseHana)
 
@@ -309,7 +315,8 @@ const crearActualizarGastoController = async (req, res) => {
                 year,
                 new_id_cuenta,
                 new_beneficiario,
-                new_cod_beneficiario
+                new_cod_beneficiario,
+                new_detalle_cuenta
             } = item
 
             const fecha = new_fecha.split('/')
@@ -342,7 +349,8 @@ const crearActualizarGastoController = async (req, res) => {
                     '',
                     new_id_cuenta,
                     new_beneficiario,
-                    new_cod_beneficiario
+                    new_cod_beneficiario,
+                    new_detalle_cuenta
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -372,7 +380,8 @@ const crearActualizarGastoController = async (req, res) => {
                     '',
                     new_id_cuenta,
                     new_beneficiario,
-                    new_cod_beneficiario
+                    new_cod_beneficiario,
+                    new_detalle_cuenta
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -455,6 +464,7 @@ const gastosEnRevisionController = async (req, res) => {
                 month,
                 year,
                 new_id_cuenta,
+                new_detalle_cuenta,
             } = item
 
             const fecha = new_fecha.split('/')
@@ -484,7 +494,8 @@ const gastosEnRevisionController = async (req, res) => {
                     idRendicion,
                     month,
                     year,
-                    new_id_cuenta
+                    new_id_cuenta,
+                    new_detalle_cuenta
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -512,7 +523,8 @@ const gastosEnRevisionController = async (req, res) => {
                     '2',
                     idRendicion,
                     '',
-                    new_id_cuenta
+                    new_id_cuenta,
+                    new_detalle_cuenta
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -708,7 +720,8 @@ const sendToSapController = async (req, res) => {
                 new_gifCard,
                 new_id_cuenta,
                 new_beneficiario,
-                new_cod_beneficiario
+                new_cod_beneficiario,
+                new_detalle_cuenta
             } = item
             const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
             listResHana.push(responseSap)
@@ -741,7 +754,8 @@ const sendToSapController = async (req, res) => {
                 '',
                 new_id_cuenta,
                 new_beneficiario,
-                new_cod_beneficiario
+                new_cod_beneficiario,
+                new_detalle_cuenta
             )
             listResHana.push(responseHana)
         }))
@@ -769,7 +783,10 @@ const sendToSapController = async (req, res) => {
                 new_gifCard,
                 new_id_cuenta,
                 new_beneficiario,
-                new_cod_beneficiario } = item
+                new_cod_beneficiario,
+                new_detalle_cuenta
+             } = item
+                
             const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
             listResHana.push(responseSap)
             const fecha = new_fecha.split('/')
@@ -801,7 +818,8 @@ const sendToSapController = async (req, res) => {
                 '',
                 new_id_cuenta,
                 new_beneficiario,
-                new_cod_beneficiario
+                new_cod_beneficiario,
+                new_detalle_cuenta
             )
             listResHana.push(responseHana)
 
