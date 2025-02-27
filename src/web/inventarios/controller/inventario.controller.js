@@ -491,35 +491,10 @@ const devolucionCompletaController = async (req, res) => {
         if(entregas.length == 0){
             return res.status(400).json({mensaje:'No existen entregas'})
         }else{
-            // for (const line of entregas) {
-            //     const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
-            //         ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-            //         DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
-
-            //     if (!cabezeraHana.length) {
-            //         cabezeraHana = {
-            //             ...result,
-            //             DocTotal: Number(DocTotal),
-            //             U_OSLP_ID: U_OSLP_ID || "",
-            //             U_UserCode: U_UserCode || ""
-            //         };
-            //         DocumentAdditionalExpenses = [
-            //             { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
-            //             { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
-            //             { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
-            //             { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
-            //         ]
-            //     }
-            //     DocumentLinesHana.push({
-            //         LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
-            //     })
-            // }
-
-
             const processedLines = [];
             let baseLineCounter = 0;
-
-            for (const line of Detalle) {
+            // return res.json({entregas})
+            for (const line of entregas) {
                 const { LineNum, ItemCode, WarehouseCode, Quantity, UnitPrice } = line;
                 const batchData = await getLotes(ItemCode, WarehouseCode, Quantity);
 
