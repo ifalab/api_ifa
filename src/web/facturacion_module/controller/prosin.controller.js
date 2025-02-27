@@ -11,11 +11,13 @@ const postFacturacionProsin = async (body) => {
             Authorization: `Basic SUZBOkdlbmVzaXM6eg==`
         }
         const url = `${process.env.API_PROSIN}/api/sfl/FacturaCompraVenta`
+        
         console.log({ url, body });
         const responseProsin = await axios.post(url, { ...body }, {
             httpsAgent: agent,
             headers: headers
         })
+        
         return {
             statusCode: responseProsin.status,
             data: responseProsin.data,

@@ -302,6 +302,23 @@ const facturaPedidoInstituciones = async () => {
     }
 }
 
+const obtenerPedidoDetalle = async (nro_ped) => {
+    // console.log(nro_ped)
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_ven_pedidos_detalle WHERE "DocEntry" = ${nro_ped}`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en facturarVehiculo:', error.message);
+        return { message: `Error al procesar la solicitud facturarVehiculo: ${error.message || ''}` }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -318,5 +335,6 @@ module.exports = {
     pedidosPorEntrega,
     entregasSinFacturas,
     obtenerEntregaPorPedido,
-    facturaPedidoInstituciones
+    facturaPedidoInstituciones,
+    obtenerPedidoDetalle
 }
