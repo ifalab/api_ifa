@@ -95,7 +95,6 @@ router.get('/oferta-unidad-medida', [validarToken, validarCampos], unidadMedidaC
 router.get('/lista-articulo-cadenas', [validarToken, validarCampos], listaArticuloCadenasController)
 router.get('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
 router.get('/cliente-institucion-by-cardcode', [validarToken, validarCampos],clienteInstitucionByCardCodeController)
-
 router.post('/vendedor-sucursal', [validarToken, validarCampos],vendedoresPorSucursalController)
 router.get('/ofertas-instituciones', [validarToken, validarCampos],obtenerOfertasInstitucionesController)
 router.get('/detalle-oferta', [validarToken, validarCampos], detalleOfertaController)

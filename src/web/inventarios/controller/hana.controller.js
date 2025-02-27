@@ -230,14 +230,15 @@ const detalleParaDevolucion = async (docEntry) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
+        // const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
+        const query = `call LAB_IFA_PRD.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
         throw {
-            message: `Error en detalleVentas: ${error.message || ''}`
+            message: `Error en detalleParaDevolucion: ${error.message || ''}`
         }
     }
 }
