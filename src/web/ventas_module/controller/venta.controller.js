@@ -1127,7 +1127,8 @@ const ClienteEmpleadosController = async (req, res) => {
 
 const obtenerArticulosVehiculoController = async (req, res) => {
     try {
-        const response = await obtenerArticulosVehiculo()
+        const {cadena} = req.body
+        const response = await obtenerArticulosVehiculo(cadena)
         if (response.status == 400) {
             return res.status(400).json({ mensaje: response.message || 'Error en obtenerArticulosVehiculo' })
         }

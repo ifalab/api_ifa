@@ -106,6 +106,6 @@ router.get('/ofertas-sucursal', [validarToken, validarCampos], obtenerOfertasPor
 router.get('/lista-empleado-cliente', [validarToken, validarCampos],listaClienteEmpleadosController )
 router.get('/empleado-cliente', [validarToken, validarCampos],ClienteEmpleadosController)
 
-router.get('/articulos-vehiculo', [validarToken, validarCampos],obtenerArticulosVehiculoController)
+router.post('/articulos-vehiculo', [validarToken, validarCampos],obtenerArticulosVehiculoController)
 
 module.exports = router
