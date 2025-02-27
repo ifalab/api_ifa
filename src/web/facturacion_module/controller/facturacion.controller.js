@@ -175,7 +175,7 @@ const facturacionController = async (req, res) => {
             // return res.json({ ...finalDataEntrega })
             console.log('FINAL ENTREGA------------------------------------------------------------')
             console.log({ finalDataEntrega })
-            // return res.json({finalDataEntrega,responseBatch})
+            // return res.json({finalDataEntrega, newData, restData})
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
             deliveryBody = await postEntrega(finalDataEntrega)
             if (deliveryBody.lang) {
