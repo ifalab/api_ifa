@@ -2030,11 +2030,11 @@ const facturacionVehiculo = async (req, res) => {
             documento_via: `17-${nro_ped}`,
             codigo_cliente_externo: "",
             tipo_identificacion: 1,
-            identificacion: "",
+            identificacion: data[0].LicTradNum,
             complemento: "",
             nombre: user.USERNAME,
-            correo: "",
-            direccion: "",
+            correo: data[0].E_Mail,
+            direccion: data[0].Address,
             codigo_excepcion: false,
             metodo_pago: 1,
             numeroTarjeta: "",
@@ -2103,7 +2103,7 @@ const facturacionVehiculo = async (req, res) => {
 
             }
             DocumentLinesHana.push({
-                LineNum, BaseType: 17, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                LineNum, BaseType: `${17}-${nro_ped}`, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
             })
         }
 

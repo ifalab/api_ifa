@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, postHabilitacionController, inventarioValoradoController, descripcionArticuloController, fechaVenLoteController, stockDisponibleController, habilitacionDiccionarioController, stockDisponibleIfavetController, facturasClienteLoteItemCodeController,
-    detalleVentasController, devolucionCompletaController, detalleParaDevolucionController, pruebaController,
+    detalleVentasController, devolucionCompletaController, pruebaController,
     getAllAlmacenesController,
     devolucionExcepcionalController,
     devolucionNotaDebitoCreditoController
@@ -23,7 +23,6 @@ router.get('/detalle-ventas', [validarToken, validarCampos], detalleVentasContro
 router.post('/devolucion-completa', [validarToken, validarCampos], devolucionCompletaController)
 router.post('/devolucion-excepcional', [validarToken, validarCampos], devolucionExcepcionalController)
 router.post('/devolucion-ndc', [validarToken, validarCampos], devolucionNotaDebitoCreditoController)
-router.get('/detalle-dev', [validarToken, validarCampos], detalleParaDevolucionController)
 router.get('/prueba', [validarToken, validarCampos], pruebaController)
 router.get('/all-almacenes', [validarToken, validarCampos],getAllAlmacenesController)
 
