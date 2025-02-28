@@ -115,7 +115,7 @@ const postInvoice = async (body) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = 'https://srvhana:50000/b1s/v1/Invoices';
+        const url = 'https://172.16.11.25:50000/b1s/v1/Invoices';
         const sapResponse = await axios.post(url, body, {
             httpsAgent: agent,
             headers: headers,
