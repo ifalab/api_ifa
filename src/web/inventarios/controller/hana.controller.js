@@ -193,6 +193,24 @@ const entregaDetallerFactura = async (docentry, cuf, nrofactura, fecha) => {
     }
 }
 
+const pedidoDetallerFactura = async (docentry, cuf, nrofactura, fecha) => {
+    try {
+
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_PEDIDO_DETALLE_TOFACTURAR(${docentry},'${cuf}',${nrofactura},'${fecha}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en entregaDetallerFactura:', error.message);
+        return { message: 'Error al procesar la solicitud: entregaDetallerFactura', error }
+    }
+}
+
 const facturasClienteLoteItemCode = async (itemcode, cardCode, batchNum) => {
     try {
         if (!connection) {
@@ -256,5 +274,6 @@ module.exports = {
     stockDisponibleIfavet,
     facturasClienteLoteItemCode,
     detalleVentas,
-    detalleParaDevolucion
+    detalleParaDevolucion,
+    pedidoDetallerFactura
 }

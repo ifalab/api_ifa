@@ -9,7 +9,7 @@ const PdfPrinter = require('pdfmake');
 const fs = require('fs');
 // pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-const { entregaDetallerFactura } = require("../../inventarios/controller/hana.controller")
+const { entregaDetallerFactura, pedidoDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
@@ -1984,7 +1984,7 @@ const facturacionVehiculo = async (req, res) => {
     const startTime = Date.now();
     const { nro_ped } = req.body;
     const user = req.usuarioAutorizado
-    const id_sap = user.ID_SAP
+    // const id_sap = user.ID_SAP
     // console.log(user.USERNAME);
 
     const today = getLocalISOString();
@@ -1993,31 +1993,38 @@ const facturacionVehiculo = async (req, res) => {
     let body = {};
     try {
         const data = await obtenerPedidoDetalle(nro_ped);
+        // return res.status(200).json(data);
         // console.log(data)
-        // const detalle = data.map(item => ({
-        //     producto: item.ItemCode,
-        //     cantidad: item.Quantity,
-        //     descripcion: item.Dscription,
-        //     precioUnitario: item.UnitPrice,
-        //     montoDescuento: item.Disc,
-        //     subtotal: +(item.Quantity * item.UnitPrice).toFixed(2),
-        //     numeroImei: "",
-        //     numeroSerie: "",
-        // }))
-        const detalle =[{
-            producto: data[0].ItemCode,
-            descripcion: data[0].Dscription,
-            cantidad: +data[0].Quantity,
-            precioUnitario: +data[0].UnitPrice,
-            montoDescuento: +data[0].Disc,
-            subTotal: +(data[0].Quantity * data[0].UnitPrice).toFixed(2),
+        const detalle = data.map(item => ({
+            producto: item.ItemCode,
+            cantidad: item.Quantity,
+            descripcion: item.Dscription,
+            precioUnitario: item.UnitPrice,
+            montoDescuento: item.Disc,
+            subtotal: +((item.Quantity * item.UnitPrice) - item.Disc).toFixed(2),
             numeroImei: "",
             numeroSerie: "",
-        }]
+        }))
+        
+        const montoDetalle = detalle
+        .reduce((total, item) => total + item.subtotal, 0)
+        .toFixed(2); 
+        
+        console.log(data);
+        // const detalle =[{
+            //     producto: data[0].ItemCode,
+            //     descripcion: data[0].Dscription,
+            //     cantidad: +data[0].Quantity,
+            //     precioUnitario: +data[0].UnitPrice,
+            //     montoDescuento: +data[0].Disc,
+            //     subTotal: +(data[0].Quantity * data[0].UnitPrice).toFixed(2),
+            //     numeroImei: "",
+            //     numeroSerie: "",
+            // }]
         body = {
-            sucursal: data[0].SucCode,
+            sucursal: 0,
             punto: 0,
-            documento_via: "123466",
+            documento_via: "1234707",
             codigo_cliente_externo: "",
             tipo_identificacion: 1,
             identificacion: "62135320",
@@ -2028,40 +2035,109 @@ const facturacionVehiculo = async (req, res) => {
             codigo_excepcion: false,
             metodo_pago: 1,
             numeroTarjeta: "",
-            montoDetalle: 500,
-            descuentoAdicional: 1.72,
+            montoDetalle: montoDetalle,
+            descuentoAdicional: 0.00,
             giftCard: 0.00,
             codigoMoneda: 1,
             tipoCambio: 1,
             usuario: user.USERNAME,
             facturaManual: false,
-            fechaEmision: '2025-02-27T16:41:12.215',
+            fechaEmision: today,
             mediaPagina: true,
             detalle: detalle
         }
+        
+        // return res.status(200).json(body);
+        const responseProsin = await facturacionProsin(body, user);
+        // return res.status(200).json(responseProsin);
 
-        const responseProsin = await facturacionProsin(body, user)
+        const { cuf, factura } = responseProsin.data.datos;
 
-        res.status(200).json(responseProsin);
+        const fechaString = responseProsin.data.fecha;
+
+        const [dia, mes, anioHora] = fechaString.split("/");
+        const [anio] = anioHora.split(" ");
+
+        const formater = `${anio}${mes}${dia}`;
+        // console.log(formater);
+        const responseHana = await pedidoDetallerFactura(+nro_ped, cuf, +factura, formater)
+
+        const DocumentLinesHana = [];
+        let cabezeraHana = [];
+
+        let DocumentAdditionalExpenses = [];
+
+        for (const line of responseHana) {
+            const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+
+            if (!cabezeraHana.length) {
+                cabezeraHana = {
+                    ...result,
+                    DocTotal: Number(DocTotal),
+                    U_OSLP_ID: U_OSLP_ID || "",
+                    U_UserCode: U_UserCode || ""
+                };
+                DocumentAdditionalExpenses = [
+                    { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                    { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                    { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                    { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                ]
+
+            }
+            DocumentLinesHana.push({
+                LineNum, BaseType: 17, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+            })
+        }
+
+        const responseHanaB = {
+            ...cabezeraHana,
+            DocumentLines: DocumentLinesHana,
+            DocumentAdditionalExpenses
+        }
+        // return res.json({ responseHanaB })
+        const invoiceResponse = await postInvoice(responseHanaB)
+        console.log({ invoiceResponse })
+        // return res.json({ invoiceResponse })
+        // if (invoiceResponse.status == 400) {
+            //     endTime = Date.now()
+        //     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+        //     return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
+        // }
+        const response = {
+            status: invoiceResponse.status || {},
+            statusText: invoiceResponse.statusText || {},
+            idInvoice: invoiceResponse.idInvoice,
+            delivery: +nro_ped,
+            cuf
+        }
+        console.log({ response })
+        endTime = Date.now()
+        // grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+        return res.json({ ...response, cuf })
+        
     }catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        const endTime = Date.now()
-        grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch Facturar Vehiculo. ${error.message || ''}, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar/vehiculo", process.env.PRD)
-        return res.status(error.statusCode ?? 500).json({
-            mensaje: `Error en el controlador Catch. ${error?.message || 'No definido'}`,
-            sapMessage: `${error?.message || 'No definido'}`,
-            error: {
-                message: error.message ?? '',
-                stack: error.stack,
-                statusCode: error.statusCode || 500,
-            },
-            errorController: {
-                ...error
-            },
-            bodyFactura: body
-        })
+        res.status(400).json({error});
+        // const endTime = Date.now()
+        // grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch Facturar Vehiculo. ${error.message || ''}, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar/vehiculo", process.env.PRD)
+        // return res.status(error.statusCode ?? 500).json({
+        //     mensaje: `Error en el controlador Catch. ${error?.message || 'No definido'}`,
+        //     sapMessage: `${error?.message || 'No definido'}`,
+        //     error: {
+        //         message: error.message ?? '',
+        //         stack: error.stack,
+        //         statusCode: error.statusCode || 500,
+        //     },
+        //     errorController: {
+        //         ...error
+        //     },
+        //     bodyFactura: body
+        // })
     }
 }
 
