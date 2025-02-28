@@ -6,7 +6,8 @@ const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDeta
     searchBeneficiariosController,
     findAllCajasController,
     conceptoComercialByIdController,
-    actualizarCCRendController
+    actualizarCCRendController,
+    actualizarGlosaPRDGastoController
  } = require('../controller/rendiciones.controller')
 const router = Router()
 
@@ -32,6 +33,7 @@ router.get('/cc-cuenta', [validarToken, validarCampos], costoComercialCuentaCont
 router.post('/cc-filtro', [validarToken, validarCampos], filtroCCController)
 router.patch('/actualizar-glosa-rend', [validarToken, validarCampos], actualizarGlosaRendController)
 router.patch('/actualizar-fecha-rend', [validarToken, validarCampos], actualizarFechaContRendController)
+router.patch('/actualizar-glosa-prd', [validarToken, validarCampos], actualizarGlosaPRDGastoController)
 router.patch('/actualizar-cc-rend', [validarToken, validarCampos], actualizarCCRendController)
 router.patch('/actualizar-cc', [validarToken, validarCampos], )
 router.get('/proveedor', [validarToken, validarCampos], getProveedorController)
