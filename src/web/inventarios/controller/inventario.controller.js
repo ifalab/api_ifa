@@ -495,7 +495,7 @@ const devolucionCompletaController = async (req, res) => {
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
             return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas})
         }
-        const batchEntrega =await obtenerEntregaDetalleDevolucion(docEntry);
+        const batchEntrega =await obtenerEntregaDetalleDevolucion(docEntry);//Lotes
         if(batchEntrega.length ==0){
             return res.status(400).json({mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega})
         }
@@ -593,6 +593,8 @@ const devolucionCompletaController = async (req, res) => {
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
                 ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
              } = lineDevolucion
             if(cabeceraCN.length==0){
@@ -616,7 +618,10 @@ const devolucionCompletaController = async (req, res) => {
             const newLineDev = {
                 LineNum: numDev,
                 BaseLine: LineNumDev,
-                ...restDev
+                BaseType: 16,
+                BaseEntry: docEntryDev,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev
             }
 
             DocumentLinesCN.push(newLineDev)
@@ -648,30 +653,6 @@ const devolucionCompletaController = async (req, res) => {
     }
 }
 
-const detalleParaDevolucionController = async (req, res) => {
-    try {
-        const id = req.query.id
-        const response = await detalleParaDevolucion(id)
-        // return res.json({response})
-        console.log({ response })
-        let cabecera = []
-        let detalle = []
-        response.forEach((value) => {
-            const { DocEntry, BaseEntry, DocNum, DocDate, Cuf, ...rest } = value
-            if (cabecera.length == 0) {
-                cabecera.push({ DocEntry, BaseEntry, DocNum, DocDate, Cuf })
-            }
-            detalle.push(rest)
-        })
-        detalle.sort((a, b) => a.LineNum - b.LineNum);
-        const venta = { ...cabecera[0], detalle }
-        return res.json(venta)
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: `error en el controlador detalleParaDevolucionController. ${error.message || ''}` })
-    }
-}
-
 const pruebaController = async (req, res) => {
     try {
         const {id, docEntryFact} = req.query
@@ -684,6 +665,8 @@ const pruebaController = async (req, res) => {
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
                 ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
              } = lineDevolucion
             if(cabeceraCN.length==0){
@@ -700,7 +683,7 @@ const pruebaController = async (req, res) => {
                     JournalMemo: JournalMemoDev,
                     PaymentGroupCode,
                     SalesPersonCode,
-                    Series: 361,
+                    Series: 354,
                     U_UserCode
                 })
             }
@@ -708,7 +691,9 @@ const pruebaController = async (req, res) => {
                 LineNum: numDev,
                 BaseLine: LineNumDev,
                 BaseType: 16,
-                ...restDev
+                BaseEntry: id,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev
             }
 
             DocumentLinesCN.push(newLineDev)
@@ -760,7 +745,6 @@ module.exports = {
     facturasClienteLoteItemCodeController,
     detalleVentasController,
     devolucionCompletaController,
-    detalleParaDevolucionController,
     pruebaController,
     getAllAlmacenesController
 }
