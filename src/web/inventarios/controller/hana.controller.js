@@ -193,6 +193,42 @@ const entregaDetallerFactura = async (docentry, cuf, nrofactura, fecha) => {
     }
 }
 
+const entregaDetalleToProsin = async (docentry) => {
+    try {
+
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_DEVOLUCION_DETALLE_TO_NDCPROSIN(${docentry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en entregaDetalleToProsin:', error.message);
+        return { message: 'Error al procesar la solicitud: entregaDetalleToProsin', error }
+    }
+}
+
+const pedidoDetallerFactura = async (docentry, cuf, nrofactura, fecha) => {
+    try {
+
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_PEDIDO_DETALLE_TOFACTURAR(${docentry},'${cuf}',${nrofactura},'${fecha}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en entregaDetallerFactura:', error.message);
+        return { message: 'Error al procesar la solicitud: entregaDetallerFactura', error }
+    }
+}
+
 const facturasClienteLoteItemCode = async (itemcode, cardCode, batchNum) => {
     try {
         if (!connection) {
@@ -306,5 +342,7 @@ module.exports = {
     detalleParaDevolucion,
     obtenerEntregaDetalle,
     obtenerDevolucionDetalle,
-    getAllAlmacenes
+    getAllAlmacenes,
+    entregaDetalleToProsin,
+    pedidoDetallerFactura
 }
