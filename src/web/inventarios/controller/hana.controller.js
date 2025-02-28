@@ -243,6 +243,53 @@ const detalleParaDevolucion = async (docEntry) => {
     }
 }
 
+const obtenerEntregaDetalle = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE_TODEVOLVER(${id})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerEntregaDetalle:', error.message);
+        return { message: `Error en obtenerEntregaDetalle: ${error.message || ''}` }
+    }
+}
+
+const obtenerDevolucionDetalle = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_DEVOLUCION_DETALLE_TONDC(${id})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerDevolucionDetalle:', error.message);
+        return { message: `Error en obtenerDevolucionDetalle: ${error.message || ''}` }
+    }
+}
+
+const getAllAlmacenes = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getAllAlmacenes ${error.message}`)
+    }
+}
+
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -256,5 +303,8 @@ module.exports = {
     stockDisponibleIfavet,
     facturasClienteLoteItemCode,
     detalleVentas,
-    detalleParaDevolucion
+    detalleParaDevolucion,
+    obtenerEntregaDetalle,
+    obtenerDevolucionDetalle,
+    getAllAlmacenes
 }
