@@ -2027,7 +2027,7 @@ const facturacionVehiculo = async (req, res) => {
         body = {
             sucursal: 0,
             punto: 0,
-            documento_via: "1234707",
+            documento_via: "1234708",
             codigo_cliente_externo: "",
             tipo_identificacion: 1,
             identificacion: "62135320",
@@ -2052,7 +2052,19 @@ const facturacionVehiculo = async (req, res) => {
         
         // return res.status(200).json(body);
         const responseProsin = await facturacionProsin(body, user);
+        const { data: dataProsin } = responseProsin
+        console.log({ dataProsin })
         // return res.status(200).json(responseProsin);
+        if (dataProsin && dataProsin.estado != 200) {
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${body.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, body })
+        }
+        if (dataProsin.mensaje != null) {
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || ""}, codigo_cliente: ${body.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, body })
+        }
 
         const { cuf, factura } = responseProsin.data.datos;
 
@@ -2104,11 +2116,11 @@ const facturacionVehiculo = async (req, res) => {
         const invoiceResponse = await postInvoice(responseHanaB)
         console.log({ invoiceResponse })
         // return res.json({ invoiceResponse })
-        // if (invoiceResponse.status == 400) {
-            //     endTime = Date.now()
-        //     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
-        //     return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
-        // }
+        if (invoiceResponse.status == 400) {
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
+        }
         const response = {
             status: invoiceResponse.status || {},
             statusText: invoiceResponse.statusText || {},
@@ -2118,29 +2130,28 @@ const facturacionVehiculo = async (req, res) => {
         }
         console.log({ response })
         endTime = Date.now()
-        // grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
         return res.json({ ...response, cuf })
         
     }catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        res.status(400).json({error});
         // const endTime = Date.now()
-        // grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch Facturar Vehiculo. ${error.message || ''}, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar/vehiculo", process.env.PRD)
-        // return res.status(error.statusCode ?? 500).json({
-        //     mensaje: `Error en el controlador Catch. ${error?.message || 'No definido'}`,
-        //     sapMessage: `${error?.message || 'No definido'}`,
-        //     error: {
-        //         message: error.message ?? '',
-        //         stack: error.stack,
-        //         statusCode: error.statusCode || 500,
-        //     },
-        //     errorController: {
-        //         ...error
-        //     },
-        //     bodyFactura: body
-        // })
+        grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch Facturar Vehiculo. ${error.message || ''}, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar/vehiculo", process.env.PRD)
+        return res.status(error.statusCode ?? 500).json({
+            mensaje: `Error en el controlador Catch. ${error?.message || 'No definido'}`,
+            sapMessage: `${error?.message || 'No definido'}`,
+            error: {
+                message: error.message ?? '',
+                stack: error.stack,
+                statusCode: error.statusCode || 500,
+            },
+            errorController: {
+                ...error
+            },
+            bodyFactura: body
+        })
     }
 }
 
