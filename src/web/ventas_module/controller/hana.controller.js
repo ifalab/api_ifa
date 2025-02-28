@@ -740,7 +740,7 @@ const obtenerArticulosVehiculo = async (cadena) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" like '%IFA%' AND "SellItem"='N' AND (upper("ItemName") like '%${cadena}%' OR upper("ItemCode") like '%${cadena}%')`
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" like '%IFA%' AND "SellItem"='Y' AND (upper("ItemName") like '%${cadena}%' OR upper("ItemCode") like '%${cadena}%')`
         const result = await executeQuery(query)
         return {
             status: 200,

@@ -822,7 +822,118 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
         const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
         const formater = `${year}${month}${day}`;
-        const entregas = await entregaDetalleToProsin(docEntry)
+        console.log({ docEntry })
+
+        //----------------------
+        const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
+        if (entregas.message) {
+            endTime = Date.now()
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
+        }
+        if (entregas.length == 0) {
+            endTime = Date.now()
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
+        }
+        //*-------------------------------------------------- OBTENER ENTREGA DETALLE DEV
+        const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
+        if (batchEntrega.length == 0) {
+            return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega })
+        }
+        let batchNumbers = []
+        let newDocumentLines = []
+        for (const line of entregas) {
+            let newLine = {}
+            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, ...restLine } = line;
+            const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
+            console.log({ batch: batchData })
+            if (batchData.message) {
+                endTime = Date.now();
+                // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `${batchData.message || 'Error en obtenerEntregaDetalleDevolucion'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+                return res.status(400).json({ mensaje: `${batchData.message || 'Error en obtenerEntregaDetalleDevolucion'}` })
+            }
+            if (batchData && batchData.length > 0) {
+                // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
+                let new_quantity = 0
+                batchData.map((batch) => {
+                    new_quantity = Number(new_quantity) + Number(batch.OutQtyL)
+                })
+                console.log('------------------------------------------------------------------------------------')
+                console.log({ new_quantity, UnitsOfMeasurment })
+                console.log('------------------------------------------------------------------------------------')
+
+                //console.log({ batchData })
+                batchNumbers = batchData.map(batch => ({
+                    BaseLineNumber: LineNum,
+                    BatchNumber: batch.BatchNum,
+                    Quantity: Number(batch.OutQtyL).toFixed(6),
+                    ItemCode: batch.ItemCode
+                }))
+
+                // const data = {
+                //     BaseLine: LineNum,
+                //     BaseType: 17,
+                //     BaseEntry,
+                // }
+
+                newLine = {
+                    // ...data,
+                    ItemCode,
+                    WarehouseCode: Almacen,
+                    Quantity: new_quantity / UnitsOfMeasurment,
+                    LineNum,
+                    ...restLine,
+                    BatchNumbers: batchNumbers
+                };
+                newLine = { ...newLine };
+                console.log('------newLine-----')
+                console.log({ newLine })
+
+                newDocumentLines.push(newLine)
+            }
+
+        }
+        // console.log('rest data------------------------------------------------------------')
+        // console.log({ restData })
+
+
+        const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega } = entregas[0]
+
+        const finalData = {
+            // DocDate,
+            // DocDueDate,
+            Series: 352,
+            CardCode: cardCodeEntrega,
+            U_NIT,
+            U_RAZSOC,
+            U_UserCode: id_sap,
+            DocumentLines: newDocumentLines,
+        }
+
+        finalDataEntrega = finalData
+        // return res.json(finalDataEntrega)
+        //*--------------------------------------------------- POST RETURN 
+        const responceReturn = await postReturn(finalDataEntrega)
+        // return res.json({responceReturn, finalDataEntrega, newDocumentLines})
+
+        if (responceReturn.status > 300) {
+            console.log({ errorMessage: responceReturn.errorMessage })
+            let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
+            if (mensaje.value)
+                mensaje = mensaje.value
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
+        }
+
+        const docEntryDev = responceReturn.orderNumber
+        //*------------------------------------------------ DETALLE TO PROSIN
+
+        const entregasFromProsin = await entregaDetalleToProsin(docEntryDev)
+        console.log({ entregasFromProsin })
+        if (!entregasFromProsin || entregasFromProsin.length == 0) {
+            return res.json({ mensaje: 'Error al obtener el detalle de la factura.' })
+        }
         const {
             sucursal,
             punto,
@@ -831,76 +942,114 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             tipo_identificacion,
             identificacion,
             complemento,
-            nombre
-        } = entregas
+            nombre,
+            correo,
+            direccion,
+            subTotal,
+            fechaEmision
+        } = entregasFromProsin[0]
+
         const dataToProsin = {
-            sucursal
+            sucursal,
+            punto,
+            documento_via: `${documento_via}`,
+            codigo_cliente_externo,
+            tipo_identificacion,
+            identificacion,
+            complemento: complemento || "",
+            nombre,
+            correo,
+            direccion,
+            numeroAutorizacionCuf: Cuf,
+            montoTotalDevuelto: +subTotal,
+            usuario: user.USERNAME,
+            fechaEmision,
+            mediaPagina: true,
+            detalle: []
         }
-        const responseProsin = await notaDebitoCredito(user)
-        return res.json({
-            entregas
+        Detalle.map((item) => {
+            dataToProsin.detalle.push({
+                producto: item.ItemCode,
+                cantidad: (item.devolucion) ? +item.cantidad : +item.Quantity,
+                precioUnitario: +item.UnitPrice,
+                montoDescuento: +item.Disc,
+                subTotal: +item.PriceAfDi,
+                codigoDetalleTransaccion: (item.devolucion) ? 2 : 1
+            })
         })
-        // if (entregas.message) {
-        //     endTime = Date.now()
-        //     // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
-        //     return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
-        // }
-        // if (entregas.length == 0) {
-        //     endTime = Date.now()
-        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
-        //     return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
-        // }
-        // const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
-        // const devolucionDetalle = await obtenerDevolucionDetalle(docEntryDev)
-        // const cabeceraCN = []
-        // const DocumentLinesCN = []
-        // let numDev = 0
-        // for (const lineDevolucion of devolucionDetalle) {
-        //     const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
-        //         CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
-        //         PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
-        //         ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-        //         ...restDev
-        //     } = lineDevolucion
-        //     if (cabeceraCN.length == 0) {
-        //         cabeceraCN.push({
-        //             DocDate: DocDateDev,
-        //             DocDueDate: DocDueDateDev,
-        //             CardCode: CardCodeDev,
-        //             NumAtCard,
-        //             DocTotal: DocTotalDev,
-        //             DocCurrency: DocCurrencyDev,
-        //             Reference1: docEntryDev,// DocEntry de la devolucion
-        //             Reference2: docEntry ?? '',// DocEntry de la factura
-        //             Comments: CommentsDev,
-        //             JournalMemo: JournalMemoDev,
-        //             PaymentGroupCode,
-        //             SalesPersonCode,
-        //             Series: 361,
-        //             U_UserCode
-        //         })
-        //     }
-        //     const newLineDev = {
-        //         LineNum: numDev,
-        //         BaseLine: LineNumDev,
-        //         ...restDev
-        //     }
-
-        //     DocumentLinesCN.push(newLineDev)
-        //     numDev += numDev
-        // }
-
-        // const bodyCreditNotes = {
-        //     ...cabeceraCN[0],
-        //     DocumentLines: DocumentLinesCN
-        // }
-
-
         // return res.json({
-        //     entregas,
-        //     batchEntrega,
-        //     // bodyCreditNotes,
+        //     entregasFromProsin,
+        //     dataToProsin,
+
         // })
+        //*------------------------------------------------------------------------ PROSIN
+        const responseProsin = await notaDebitoCredito(dataToProsin, user)
+        if (responseProsin.data.estado !== 200) {
+            return res.status(400).json({ mensaje: `Error al intentar facturar la Nota Debito Credito. ${responseProsin.data.mensaje || ''}` })
+        }
+        //     "responseProsin": {
+        //     "statusCode": 200,
+        //     "data": {
+        //         "estado": 500,
+        //         "datos": null,
+        //         "fecha": "28/02/2025 17:09:48",
+        //         "mensaje": "PA.alta_nota_credito_debito_sfl.§PA.leer_factura_sfl.§LA FACTURA NO EXISTE. MATRIZ=1 SUCURSAL=0 PUNTO=0 CUF=4661A21FEE5F743C66BF05E76615094F54F6FA54C614B9CA572971F74 ERROR=0 ROWCOUNT=0"
+        //     },
+        //     "query": "https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito"
+        // }
+        //*------------------------------------------------------------------------ RESPONSE PROSIN
+        //*--------------------------------------------------------------------- OBTENER CON DOCENTRY DEV
+        const devolucionDetalle = await obtenerDevolucionDetalle(docEntryDev)
+        const cabeceraCN = []
+        const DocumentLinesCN = []
+        let numDev = 0
+        for (const lineDevolucion of devolucionDetalle) {
+            const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
+                CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
+                PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ...restDev
+            } = lineDevolucion
+            if (cabeceraCN.length == 0) {
+                cabeceraCN.push({
+                    DocDate: DocDateDev,
+                    DocDueDate: DocDueDateDev,
+                    CardCode: CardCodeDev,
+                    NumAtCard,
+                    DocTotal: DocTotalDev,
+                    DocCurrency: DocCurrencyDev,
+                    Reference1: docEntryDev,// DocEntry de la devolucion
+                    Reference2: docEntry ?? '',// DocEntry de la factura
+                    Comments: CommentsDev,
+                    JournalMemo: JournalMemoDev,
+                    PaymentGroupCode,
+                    SalesPersonCode,
+                    Series: 361,
+                    U_UserCode
+                })
+            }
+            const newLineDev = {
+                LineNum: numDev,
+                BaseLine: LineNumDev,
+                ...restDev
+            }
+
+            DocumentLinesCN.push(newLineDev)
+            numDev += numDev
+        }
+
+        const bodyCreditNotes = {
+            ...cabeceraCN[0],
+            DocumentLines: DocumentLinesCN
+        }
+        const responseCreditNote = await postCreditNotes(bodyCreditNotes)
+
+        return res.json({
+            entregasFromProsin,
+            dataToProsin,
+            responseProsin,
+            responseCreditNote
+        })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })

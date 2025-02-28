@@ -253,6 +253,7 @@ const crearOrderController = async (req, res) => {
         }
         console.log(JSON.stringify({ docLine, alprazolamContains, otherContains }, null, 2))
         // return
+        console.log(JSON.stringify({ body }, null, 2))
         const ordenResponse = await postOrden(body)
 
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
@@ -403,9 +404,9 @@ const crearOrderCadenaController = async (req, res) => {
                 GrossPrice,
                 WhsCode,
             } = item
-            let data = detalle.data.find((item2)=> item2.ItemCode == ItemCode)
+            let data = detalle.data.find((item2) => item2.ItemCode == ItemCode)
             let baseLine = data.LineNum
-            const qty = Quantity>data.Quantity? Number(data.Quantity) : Number(Quantity)
+            const qty = Quantity > data.Quantity ? Number(data.Quantity) : Number(Quantity)
             const prcMax = Number(GrossPrice)
             const subTot = Number(GrossTotal)
             const descLin = (prcMax * qty) - subTot
@@ -788,13 +789,13 @@ const clientesSucursalController = async (req, res) => {
 
 const pedidoInstitucionController = async (req, res) => {
     try {
-        const {BaseEntry, ...body} = req.body
-        console.log({body})
+        const { BaseEntry, ...body } = req.body
+        console.log({ body })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        
+
         const oferta = await getQuotation(BaseEntry)
         return res.json(oferta.response)
-        
+
         body.Series = 319;
         let num = 0
         body.DocumentLines.forEach((line) => {
@@ -922,7 +923,7 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
             line.GrossTotal = Number(line.GrossTotal.toFixed(2))
             line.AccountCode = "4110101";
             line.TaxCode = "IVA";
-            
+
             const totalNoDiscount = line.GrossPrice * line.Quantity
             const descLinea = Number((totalNoDiscount) - line.GrossTotal)
             console.log({ totalNoDiscount })
@@ -972,11 +973,11 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
             U_UserCode,
         } = body
         const ordenBody = {
-            Series:319,
+            Series: 319,
             CardCode,
             FederalTaxID,
             DocDate,
-            DocDueDate:DocDate,
+            DocDueDate: DocDate,
             JournalMemo,
             PaymentGroupCode,
             U_NIT,
@@ -1044,7 +1045,7 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
         }
         console.log({ user })
         grabarLog(user.USERCODE, user.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
-        
+
         //-----------------------
         return res.json(ordenResponse)
 
