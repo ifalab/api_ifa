@@ -50,7 +50,18 @@ const authLoginV2 = async (req, res) => {
         const valueRol = rol[0]
         const dimensionUno = await dimensionUnoByUser(user.ID)
         const dimensionDos = await dimensionDosByUser(user.ID)
-        const dimensionTres = await dimensionTresByUser(user.ID)
+        const dimension = await dimensionTresByUser(user.ID)
+        let dimensionTres = []
+        dimension.map((item) => {
+            dimensionTres.push({
+                ID: item.LineItemCode,
+                DIMROLE: item.LineItemName,
+                CREATED_AT:new Date(),
+                ID_USUARIO: item.ID_USUARIO,
+                ISACTIVE:true,
+                ID_DIMENSION_TRES: item.LineItemCode,
+            })
+        })
         // return res.json({ UserCode:user.USERCODE })
         return res.json({ user, rol, dimensionUno, dimensionDos, dimensionTres, token })
     } catch (error) {
@@ -445,7 +456,7 @@ const findDimensionController = async (req, res) => {
         const dim = req.params.dim
         const response = await findDimension(dim)
         return res.json({ response })
-    
+
     } catch (error) {
         return res.status(500).json({
             mensaje: 'Error en findDimensionController',
@@ -483,7 +494,18 @@ const findAllDimensionDosByUserController = async (req, res) => {
 const findAllDimensionTresByUserController = async (req, res) => {
     try {
         const id = req.params.id
-        const dimensionTres = await dimensionTresByUser(id)
+        const dimension = await dimensionTresByUser(id)
+        let dimensionTres = []
+        dimension.map((item) => {
+            dimensionTres.push({
+                ID: item.LineItemCode,
+                DIMROLE: item.LineItemName,
+                CREATED_AT:new Date(),
+                ID_USUARIO: item.ID_USUARIO,
+                ISACTIVE:true,
+                ID_DIMENSION_TRES: item.LineItemCode,
+            })
+        })
         return res.json({ dimensionTres })
     } catch (error) {
         return res.status(500).json({

@@ -559,6 +559,25 @@ const actualizarfechaContRendicion = async (idRend, new_date) => {
     }
 }
 
+const actualizarGlosaPRDGastos = async (id,new_glosa_prd) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarCCRendicion EXECUTE')
+        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS_GLOSA_PRD(${id},'${new_glosa_prd}');`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo actualizar la glosa PRD del Gasto`
+        }
+
+    }
+}
+
 const actualizarCCRendicion = async (id,idRend, new_cuenta_cc) => {
     try {
         if (!connection) {
@@ -651,4 +670,5 @@ module.exports = {
     findAllCajasEmpleados,
     concepComercialById,
     actualizarCCRendicion,
+    actualizarGlosaPRDGastos,
 }

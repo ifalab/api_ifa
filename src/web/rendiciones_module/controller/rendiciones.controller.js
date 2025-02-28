@@ -4,7 +4,8 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     getProveedor, searchBeneficiarios,
     findAllCajasEmpleados,
     concepComercialById,
-    actualizarCCRendicion
+    actualizarCCRendicion,
+    actualizarGlosaPRDGastos
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -76,6 +77,7 @@ const rendicionDetalladaController = async (req, res) => {
                 COD_BENEFICIARIO,
                 DETALLE_CUENTA,
                 CUENTA_CC,
+                GLOSA_PRD,
                 ...rest
             } = item
             const data = {
@@ -96,7 +98,8 @@ const rendicionDetalladaController = async (req, res) => {
                 BENEFICIARIO,
                 COD_BENEFICIARIO,
                 DETALLE_CUENTA,
-                CUENTA_PRODUCTIVA:CUENTA_CC
+                CUENTA_PRODUCTIVA:CUENTA_CC,
+                GLOSA_PRD
             }
             listaDetalles.push(data)
         })
@@ -1069,6 +1072,28 @@ const actualizarFechaContRendController = async (req, res) => {
     }
 }
 
+const actualizarGlosaPRDGastoController = async (req, res) => {
+    try {
+        const { idRend, new_glosa_prd } = req.body
+        if (!idRend) {
+            return res.status(400).json({ mensaje: 'debe existir un Id de la Rendicion' })
+        }
+        if (!new_glosa_prd) {
+            return res.status(400).json({ mensaje: 'debe existir una glosa valida' })
+        }
+        const responseHana = await actualizarGlosaPRDGastos(idRend, new_glosa_prd)
+        const { response } = responseHana[0]
+        console.log({ response })
+        if (response != 200) {
+            return res.status(400).json({ mensaje: 'no se pudo actualizar la Glosa PRD' })
+        }
+        return res.json({ response, responseHana })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 const getProveedorController = async (req, res) => {
     try {
         const id = req.query.id
@@ -1166,4 +1191,5 @@ module.exports = {
     findAllCajasController,
     conceptoComercialByIdController,
     actualizarCCRendController,
+    actualizarGlosaPRDGastoController,
 }
