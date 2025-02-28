@@ -275,6 +275,21 @@ const obtenerDevolucionDetalle = async (id) => {
     }
 }
 
+const getAllAlmacenes = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getAllAlmacenes ${error.message}`)
+    }
+}
+
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -290,5 +305,6 @@ module.exports = {
     detalleVentas,
     detalleParaDevolucion,
     obtenerEntregaDetalle,
-    obtenerDevolucionDetalle
+    obtenerDevolucionDetalle,
+    getAllAlmacenes
 }
