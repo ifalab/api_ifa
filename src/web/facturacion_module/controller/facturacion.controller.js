@@ -2027,7 +2027,7 @@ const facturacionVehiculo = async (req, res) => {
         body = {
             sucursal: 0,
             punto: 0,
-            documento_via: "1234708",
+            documento_via: "1234710",
             codigo_cliente_externo: "",
             tipo_identificacion: 1,
             identificacion: "62135320",
@@ -2103,7 +2103,7 @@ const facturacionVehiculo = async (req, res) => {
 
             }
             DocumentLinesHana.push({
-                LineNum, BaseType: 17, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                LineNum, BaseType: `${17}-${nro_ped}`, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
             })
         }
 
