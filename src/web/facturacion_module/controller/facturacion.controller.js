@@ -318,7 +318,10 @@ const facturacionController = async (req, res) => {
             let DocumentAdditionalExpenses = [];
 
             for (const line of responseHana) {
-                const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                const {
+                    LineNum,
+                    BaseType,
+                    BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
                     ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
                     DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
 
@@ -381,7 +384,7 @@ const facturacionController = async (req, res) => {
             } else {
                 dataToProsin = bodyFinalFactura
             }
-            
+
             if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion != 1 && dataToProsin.tipo_identificacion != 5)) {
                 endTime = Date.now()
@@ -548,24 +551,24 @@ const facturacionStatusController = async (req, res) => {
 const facturacionStatusListController = async (req, res) => {
     try {
 
-        const { listWhsCode, date, bringAll,groupCode } = req.body
+        const { listWhsCode, date, bringAll, groupCode } = req.body
         let data = []
-        console.log({date})
-        if(!date){
-            return res.status(400).json({mensaje:'No hay fecha en la peticion'})
+        console.log({ date })
+        if (!date) {
+            return res.status(400).json({ mensaje: 'No hay fecha en la peticion' })
         }
         const dateNow = date.split('T')
         for (const iterator of listWhsCode) {
             const dataToList = await facturaPedidoDB(iterator)
             dataToList.map((item) => {
-                if(item.GroupName != 'INSTITUCIONES'){
+                if (item.GroupName != 'INSTITUCIONES') {
                     const dateNowItem = item.DocDate.split(' ')
                     if (dateNow[0] == dateNowItem[0] && !bringAll) {
                         // if(groupCode==-1){
-                            data.push({ ...item })
+                        data.push({ ...item })
                         // }else{}
                     }
-                    if (bringAll ) {
+                    if (bringAll) {
                         data.push({ ...item })
                     }
                 }
@@ -648,7 +651,7 @@ const noteEntregaController = async (req, res) => {
             U_Zona,
             U_Comentario,
             Comments,
-            SlpName:`${SlpName||'No Asignado'}`,
+            SlpName: `${SlpName || 'No Asignado'}`,
             detailsList,
         };
         // return res.json({data})
@@ -927,7 +930,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `Debe venir el doc entry` })
         }
         const reponseInvoice = await cancelInvoice(docEntry)
-        if (reponseInvoice.value && !reponseInvoice.value.includes('Document is already closed') ) {
+        if (reponseInvoice.value && !reponseInvoice.value.includes('Document is already closed')) {
             const outputDir = path.join(__dirname, 'outputsAnulacion');
             if (!fs.existsSync(outputDir)) {
                 fs.mkdirSync(outputDir);
@@ -1228,7 +1231,7 @@ const facturacionEntregaController = async (req, res) => {
             const { data: dataProsin } = responseProsin
             if (dataProsin && dataProsin.estado != 200) {
                 let messageEvaluate = ''
-                if(dataProsin.mensaje.includes('NIT INEXISTENTE')){
+                if (dataProsin.mensaje.includes('NIT INEXISTENTE')) {
                     messageEvaluate += 'Contacte con CPD.'
                 }
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.message || ""}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, '/api/sfl/FacturaCompraVenta', "facturacion/facturar", process.env.PRD)
@@ -1458,11 +1461,11 @@ const pedidosInstitucionesController = async (req, res) => {
         // }
         // return res.json({data: responses})
         const data = await facturaPedidoInstituciones()
-        return res.json({data})
+        return res.json({ data })
     } catch (error) {
         console.log('error en pedidosInstitucionesController')
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador pedidosInstitucionesController: ${error.message|| ''}` })
+        return res.status(500).json({ mensaje: `Error en el controlador pedidosInstitucionesController: ${error.message || ''}` })
     }
 }
 
@@ -1823,7 +1826,7 @@ const facturacionInstitucionesController = async (req, res) => {
             } else {
                 dataToProsin = bodyFinalFactura
             }
-            
+
             if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion != 1 && dataToProsin.tipo_identificacion != 5)) {
                 endTime = Date.now()
@@ -1989,7 +1992,7 @@ const facturacionVehiculo = async (req, res) => {
 
     const today = getLocalISOString();
     // console.log(today); // Ejemplo: "2025-02-27T14:30:12.215"
-    
+
     let body = {};
     try {
         const data = await obtenerPedidoDetalle(nro_ped);
@@ -2004,7 +2007,7 @@ const facturacionVehiculo = async (req, res) => {
         //     numeroImei: "",
         //     numeroSerie: "",
         // }))
-        const detalle =[{
+        const detalle = [{
             producto: data[0].ItemCode,
             descripcion: data[0].Dscription,
             cantidad: +data[0].Quantity,
@@ -2043,7 +2046,7 @@ const facturacionVehiculo = async (req, res) => {
         const responseProsin = await facturacionProsin(body, user)
 
         res.status(200).json(responseProsin);
-    }catch (error) {
+    } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })

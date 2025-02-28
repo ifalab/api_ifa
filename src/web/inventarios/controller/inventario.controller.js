@@ -2,7 +2,7 @@ const { json } = require("express")
 const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado,
     descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet,
     facturasClienteLoteItemCode, detalleVentas,
-    entregaDetallerFactura, detalleParaDevolucion, obtenerEntregaDetalle:  obtenerEntregaDetalleDevolucion, 
+    entregaDetallerFactura, detalleParaDevolucion, obtenerEntregaDetalle: obtenerEntregaDetalleDevolucion,
     obtenerDevolucionDetalle,
     getAllAlmacenes } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes } = require("./sld.controller")
@@ -262,14 +262,14 @@ const postHabilitacionController = async (req, res) => {
         console.log({ lang: responseEntradaHabilitacion.lang })
         grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${responseEntradaHabilitacion.value || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
         if (responseEntradaHabilitacion.value) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value||''}`, ``, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || ''}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
         }
         grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitado con exito`, ``, "inventario/habilitacion", process.env.PRD)
         return res.json(responseEntradaHabilitacion)
     } catch (error) {
         console.error(error)
-        const user = req.usuarioAutorizado ||{USERCODE: 'No definido', USERNAME: 'No definido'}
+        const user = req.usuarioAutorizado || { USERCODE: 'No definido', USERNAME: 'No definido' }
         grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error en postSalidaController: ${error.message}`, `catch del controlador`, "inventario/habilitacion", process.env.PRD)
         return res.status(500), json({
             mensaje: `Error en postSalidaController: ${error.message}`,
@@ -423,7 +423,7 @@ const stockDisponibleIfavetController = async (req, res) => {
                 item.itemcode != '103-012-027' &&
                 item.itemcode != '103-012-026' &&
                 item.itemcode != '103-004-003') {
-                result.push(item)   
+                result.push(item)
             }
         })
         return res.json({ stock: result });
@@ -470,10 +470,10 @@ const detalleVentasController = async (req, res) => {
 const devolucionCompletaController = async (req, res) => {
     try {
         const startTime = Date.now();
-        const { DocEntry: docEntry, Cuf, BaseEntry, Detalle, id_sap, 
+        const { DocEntry: docEntry, Cuf, BaseEntry, Detalle, id_sap,
             DocDate,
             DocDueDate,
-            CardCode, Almacen} = req.body
+            CardCode, Almacen } = req.body
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (!docEntry || docEntry <= 0) {
             return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
@@ -490,21 +490,21 @@ const devolucionCompletaController = async (req, res) => {
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
             return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
         }
-        if (entregas.length==0) {
+        if (entregas.length == 0) {
             endTime = Date.now()
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
-            return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas})
+            return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
         }
-        const batchEntrega =await obtenerEntregaDetalleDevolucion(docEntry);//Lotes
-        if(batchEntrega.length ==0){
-            return res.status(400).json({mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega})
+        const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
+        if (batchEntrega.length == 0) {
+            return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega })
         }
         let batchNumbers = []
         let newDocumentLines = []
         for (const line of entregas) {
             let newLine = {}
             const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, ...restLine } = line;
-            const batchData = batchEntrega.filter((item)=> item.ItemCode == ItemCode)
+            const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
             console.log({ batch: batchData })
             if (batchData.message) {
                 endTime = Date.now();
@@ -520,7 +520,7 @@ const devolucionCompletaController = async (req, res) => {
                 console.log('------------------------------------------------------------------------------------')
                 console.log({ new_quantity, UnitsOfMeasurment })
                 console.log('------------------------------------------------------------------------------------')
-                
+
                 //console.log({ batchData })
                 batchNumbers = batchData.map(batch => ({
                     BaseLineNumber: LineNum,
@@ -546,7 +546,7 @@ const devolucionCompletaController = async (req, res) => {
                 };
                 newLine = { ...newLine };
                 console.log('------newLine-----')
-                console.log({newLine})
+                console.log({ newLine })
 
                 newDocumentLines.push(newLine)
             }
@@ -554,10 +554,10 @@ const devolucionCompletaController = async (req, res) => {
         }
         // console.log('rest data------------------------------------------------------------')
         // console.log({ restData })
-        
+
 
         const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega } = entregas[0]
-      
+
         const finalData = {
             // DocDate,
             // DocDueDate,
@@ -580,7 +580,7 @@ const devolucionCompletaController = async (req, res) => {
             if (mensaje.value)
                 mensaje = mensaje.value
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega  })
+            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
         }
 
         const docEntryDev = responceReturn.orderNumber
@@ -588,16 +588,16 @@ const devolucionCompletaController = async (req, res) => {
         const cabeceraCN = []
         const DocumentLinesCN = []
         let numDev = 0
-        for(const lineDevolucion of devolucionDetalle){
-            const {DocDate: DocDateDev, DocDueDate: DocDueDateDev,NumAtCard, DocTotal: DocTotalDev,
+        for (const lineDevolucion of devolucionDetalle) {
+            const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
                 ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
                 ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
-             } = lineDevolucion
-            if(cabeceraCN.length==0){
+            } = lineDevolucion
+            if (cabeceraCN.length == 0) {
                 cabeceraCN.push({
                     DocDate: DocDateDev,
                     DocDueDate: DocDueDateDev,
@@ -606,7 +606,7 @@ const devolucionCompletaController = async (req, res) => {
                     DocTotal: DocTotalDev,
                     DocCurrency: DocCurrencyDev,
                     Reference1: docEntryDev,// DocEntry de la devolucion
-                    Reference2: docEntry??'',// DocEntry de la factura
+                    Reference2: docEntry ?? '',// DocEntry de la factura
                     Comments: CommentsDev,
                     JournalMemo: JournalMemoDev,
                     PaymentGroupCode,
@@ -625,7 +625,7 @@ const devolucionCompletaController = async (req, res) => {
             }
 
             DocumentLinesCN.push(newLineDev)
-            numDev +=numDev
+            numDev += numDev
         }
 
         const bodyCreditNotes = {
@@ -655,21 +655,21 @@ const devolucionCompletaController = async (req, res) => {
 
 const pruebaController = async (req, res) => {
     try {
-        const {id, docEntryFact} = req.query
+        const { id, docEntryFact } = req.query
         const devolucionDetalle = await obtenerDevolucionDetalle(id)
         const cabeceraCN = []
         const DocumentLinesCN = []
         let numDev = 0
-        for(const lineDevolucion of devolucionDetalle){
-            const {DocDate: DocDateDev, DocDueDate: DocDueDateDev,NumAtCard, DocTotal: DocTotalDev,
+        for (const lineDevolucion of devolucionDetalle) {
+            const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
                 ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
                 ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
-             } = lineDevolucion
-            if(cabeceraCN.length==0){
+            } = lineDevolucion
+            if (cabeceraCN.length == 0) {
                 cabeceraCN.push({
                     DocDate: DocDateDev,
                     DocDueDate: DocDueDateDev,
@@ -678,7 +678,7 @@ const pruebaController = async (req, res) => {
                     DocTotal: DocTotalDev,
                     DocCurrency: DocCurrencyDev,
                     Reference1: id,// DocEntry de la devolucion
-                    Reference2: docEntryFact??'',// DocEntry de la factura
+                    Reference2: docEntryFact ?? '',// DocEntry de la factura
                     Comments: CommentsDev,
                     JournalMemo: JournalMemoDev,
                     PaymentGroupCode,
@@ -697,7 +697,7 @@ const pruebaController = async (req, res) => {
             }
 
             DocumentLinesCN.push(newLineDev)
-            numDev +=numDev
+            numDev += numDev
         }
 
         const bodyCreditNotes = {
@@ -712,7 +712,7 @@ const pruebaController = async (req, res) => {
             bodyCreditNotes,
             devolucionDetalle,
         })
-        
+
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `error en el controlador pruebaController. ${error.message || ''}` })
@@ -722,12 +722,52 @@ const pruebaController = async (req, res) => {
 const getAllAlmacenesController = async (req, res) => {
     try {
         const almacenes = await getAllAlmacenes()
-        return res.json( almacenes )
+        return res.json(almacenes)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({
             mensaje: `Error en getAllAlmacenesController controller: ${error.message}`
         })
+    }
+}
+
+const devolucionExcepcionalController = async (req, res) => {
+    try {
+        const {
+            DocEntry,
+            BaseEntry,
+            Cuf,
+            DocDate,
+            DocDueDate,
+            id_sap,
+            Almacen,
+            Detalle
+        } = req.body
+
+        console.log({
+            DocEntry,
+            BaseEntry,
+            Cuf,
+            DocDate,
+            DocDueDate,
+            id_sap,
+            Almacen,
+            Detalle
+        })
+        
+        return res.json({
+            DocEntry,
+            BaseEntry,
+            Cuf,
+            DocDate,
+            DocDueDate,
+            id_sap,
+            Almacen,
+            Detalle
+        })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
 
@@ -746,5 +786,6 @@ module.exports = {
     detalleVentasController,
     devolucionCompletaController,
     pruebaController,
+    devolucionExcepcionalController,
     getAllAlmacenesController
 }
