@@ -496,21 +496,18 @@ const devolucionCompletaController = async (req, res) => {
             return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
         }
         const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
+        
         if (batchEntrega.length == 0) {
-            return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega })
+            return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega, entregas })
         }
         let batchNumbers = []
         let newDocumentLines = []
+        let numRet = 0
         for (const line of entregas) {
             let newLine = {}
-            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, ...restLine } = line;
+            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,AccountCode, ...restLine } = line;
             const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
             console.log({ batch: batchData })
-            if (batchData.message) {
-                endTime = Date.now();
-                // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `${batchData.message || 'Error en obtenerEntregaDetalleDevolucion'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
-                return res.status(400).json({ mensaje: `${batchData.message || 'Error en obtenerEntregaDetalleDevolucion'}` })
-            }
             if (batchData && batchData.length > 0) {
                 // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
                 let new_quantity = 0
@@ -540,7 +537,9 @@ const devolucionCompletaController = async (req, res) => {
                     ItemCode,
                     WarehouseCode: Almacen,
                     Quantity: new_quantity / UnitsOfMeasurment,
-                    LineNum,
+                    LineNum: numRet,
+                    TaxCode: "IVA_NC",
+                    AccountCode: "6210103",
                     ...restLine,
                     BatchNumbers: batchNumbers
                 };
@@ -549,13 +548,9 @@ const devolucionCompletaController = async (req, res) => {
                 console.log({ newLine })
 
                 newDocumentLines.push(newLine)
+                numRet += 1
             }
-
         }
-        // console.log('rest data------------------------------------------------------------')
-        // console.log({ restData })
-
-
         const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega } = entregas[0]
 
         const finalData = {
@@ -585,6 +580,11 @@ const devolucionCompletaController = async (req, res) => {
 
         const docEntryDev = responceReturn.orderNumber
         const devolucionDetalle = await obtenerDevolucionDetalle(docEntryDev)
+
+        if(devolucionDetalle.length==0){
+            return res.status(400).json({mensaje: `No se encontro ninguna devolucion para ${docEntryDev}`,docEntryDev, responceReturn, finalDataEntrega})
+        }
+
         const cabeceraCN = []
         const DocumentLinesCN = []
         let numDev = 0
@@ -620,12 +620,14 @@ const devolucionCompletaController = async (req, res) => {
                 BaseLine: LineNumDev,
                 BaseType: 16,
                 BaseEntry: docEntryDev,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
-                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev
+                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, 
+                AccountCode: '6210103', 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, 
+                TaxCode: 'IVA_NC'
             }
 
             DocumentLinesCN.push(newLineDev)
-            numDev += numDev
+            numDev += 1
         }
 
         const bodyCreditNotes = {
@@ -634,12 +636,20 @@ const devolucionCompletaController = async (req, res) => {
         }
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
-        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Exito en la devolucion`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+        if(responseCreditNote.status > 299){
+            return res.json({mensaje: responseCreditNote.errorMessage,
+                bodyCreditNotes,
+                devolucionDetalle,
+                idReturn: responceReturn.orderNumber,
+                finalDataEntrega
+            })
+        }
+
+        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Exito en la devolucion`, ``, "inventario/devolucion-completa", process.env.PRD)
         return res.json({
-            responseCreditNote,
-            bodyCreditNotes,
-            devolucionDetalle,
+            idCreditNote: responseCreditNote.orderNumber,
             idReturn: responceReturn.orderNumber,
+            bodyCreditNotes,
             finalDataEntrega
         })
 
@@ -647,7 +657,7 @@ const devolucionCompletaController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `${error.message || 'Error en devolucionCompletaController'}`, `Catch controller devolucionCompletaController`, "inventario/devolucion-completa", process.env.PRD)
+        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `${error.message || 'Error en devolucionCompletaController'}`, `Catch controller devolucionCompletaController`, "inventario/devolucion-completa", process.env.PRD)
 
         return res.status(500).json({ mensaje: `Error en el controlador devolucionCompletaController. ${error.message || ''}` })
     }

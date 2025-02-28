@@ -255,7 +255,7 @@ const obtenerEntregaDetalle = async (id) => {
 
     } catch (error) {
         console.error('Error en obtenerEntregaDetalle:', error.message);
-        return { message: `Error en obtenerEntregaDetalle: ${error.message || ''}` }
+        throw { message: `Error en obtenerEntregaDetalle: ${error.message || ''}` }
     }
 }
 
@@ -271,7 +271,7 @@ const obtenerDevolucionDetalle = async (id) => {
 
     } catch (error) {
         console.error('Error en obtenerDevolucionDetalle:', error.message);
-        return { message: `Error en obtenerDevolucionDetalle: ${error.message || ''}` }
+        throw { message: `Error en obtenerDevolucionDetalle: ${error.message || ''}` }
     }
 }
 
