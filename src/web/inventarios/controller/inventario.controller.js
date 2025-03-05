@@ -5,8 +5,9 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     entregaDetallerFactura, detalleParaDevolucion, obtenerEntregaDetalle: obtenerEntregaDetalleDevolucion,
     obtenerDevolucionDetalle,
     getAllAlmacenes,
-    entregaDetalleToProsin } = require("./hana.controller")
-const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes } = require("./sld.controller")
+    entregaDetalleToProsin,
+    searchArticulos } = require("./hana.controller")
+const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad } = require("../../facturacion_module/controller/hana.controller")
@@ -461,6 +462,7 @@ const detalleVentasController = async (req, res) => {
             }
             detalle.push(rest)
         })
+        detalle.sort((a, b) => a.LineNum - b.LineNum);
         const venta = { ...cabecera[0], detalle }
         return res.json(venta)
     } catch (error) {
@@ -504,10 +506,22 @@ const devolucionCompletaController = async (req, res) => {
         }
         let batchNumbers = []
         let newDocumentLines = []
+        let cabeceraReturn = []
         let numRet = 0
         for (const line of entregas) {
             let newLine = {}
-            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,AccountCode, ...restLine } = line;
+            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
+                AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,
+                ...restLine } = line;
+            if(cabeceraReturn.length==0){
+                cabeceraReturn.push({
+                    U_NIT, U_RAZSOC, 
+                    U_UserCode, 
+                    CardCode: cardCodeEntrega, 
+                    U_B_cufd: U_B_cufEntr,
+                    Series: 352
+                })
+            }
             const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
             console.log({ batch: batchData })
             if (batchData && batchData.length > 0) {
@@ -522,7 +536,7 @@ const devolucionCompletaController = async (req, res) => {
 
                 //console.log({ batchData })
                 batchNumbers = batchData.map(batch => ({
-                    BaseLineNumber: LineNum,
+                    BaseLineNumber: numRet,
                     BatchNumber: batch.BatchNum,
                     Quantity: Number(batch.OutQtyL).toFixed(6),
                     ItemCode: batch.ItemCode
@@ -553,16 +567,12 @@ const devolucionCompletaController = async (req, res) => {
                 numRet += 1
             }
         }
-        const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega } = entregas[0]
+        const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, U_B_cuf } = entregas[0]
 
         const finalData = {
             // DocDate,
             // DocDueDate,
-            Series: 352,
-            CardCode: CardCode || cardCodeEntrega,
-            U_NIT,
-            U_RAZSOC,
-            U_UserCode: id_sap,
+            ...cabeceraReturn[0],
             DocumentLines: newDocumentLines,
         }
 
@@ -632,6 +642,7 @@ const devolucionCompletaController = async (req, res) => {
                 BaseEntry: docEntryDev,
                 ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, 
                 AccountCode: '6210103', 
+                // AccountCode: AccountCodeDev,
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, 
                 TaxCode: 'IVA_GND'
             }
@@ -649,7 +660,15 @@ const devolucionCompletaController = async (req, res) => {
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
         if(responseCreditNote.status > 299){
-            return res.json({mensaje: responseCreditNote.errorMessage,
+            let mensaje = responseCreditNote.errorMessage
+            if(typeof mensaje != 'string' && mensaje.lang){
+                mensaje = mensaje.value
+            }
+
+            mensaje = `Error en creditNote: ${mensaje}`
+
+            return res.status(400).json({
+                mensaje,
                 bodyCreditNotes,
                 devolucionDetalle,
                 idReturn: responceReturn.orderNumber,
@@ -804,20 +823,19 @@ const devolucionExcepcionalController = async (req, res) => {
         if (batchEntrega.length == 0) {
             return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', DocEntry, batchEntrega, entregas })
         }
-        let batchNumbers = []
+        
         let newDocumentLines = []
         let numRet = 0
-        let numBatch = 0
+        // let numBatch = 0
         for (const line of entregas) {
-            const detalle = Detalle.find((item)=> item.ItemCode == line.ItemCode)
+          const detalle = Detalle.find((item)=> item.ItemCode == line.ItemCode)
           if(detalle){
             const {cantidad}=detalle
-            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,AccountCode, ...restLine } = line;
+            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,AccountCode, DocTotal: DocTotalEntr, GrossTotal: GrossTotalEntr, ...restLine } = line;
             
             const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
             console.log({ batch: batchData })
             if (batchData && batchData.length > 0) {
-                //TO-DO: UTILIZAR LA CANTIDAD DEL DETALLE 
                 let cantidaUnit = cantidad*Number(UnitsOfMeasurment)
                 let batchNumbers= []
                 for(const batch of batchData){
@@ -830,12 +848,12 @@ const devolucionExcepcionalController = async (req, res) => {
                     }
                     cantidaUnit = Number(cantidaUnit) - Number(batch.new_quantity)
                     batchNumbers.push({
-                        BaseLineNumber: numBatch,
+                        BaseLineNumber: numRet,
                         BatchNumber: batch.BatchNum,
                         Quantity: batch.new_quantity,
                         ItemCode: batch.ItemCode
                     })
-                    numBatch +=1
+                    // numBatch +=1
                 }
                 console.log('------------------------------------------------------------------------------------')
                 console.log({ UnitsOfMeasurment })
@@ -848,6 +866,7 @@ const devolucionExcepcionalController = async (req, res) => {
                 //     BaseEntry,
                 // }
                 
+                let GrossTotalEntrega = detalle.UnitPriceAfDi * cantidad
                 newLine = {
                     // ...data,
                     ItemCode,
@@ -856,6 +875,7 @@ const devolucionExcepcionalController = async (req, res) => {
                     LineNum: numRet,
                     TaxCode: "IVA_GND",
                     AccountCode: "6210103",
+                    GrossTotal: GrossTotalEntrega,
                     ...restLine,
                     BatchNumbers: batchNumbers
                 };
@@ -868,7 +888,7 @@ const devolucionExcepcionalController = async (req, res) => {
             }
           }
         }
-        const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega } = entregas[0]
+        const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, U_B_cuf } = entregas[0]
 
         const finalData = {
             // DocDate,
@@ -877,6 +897,7 @@ const devolucionExcepcionalController = async (req, res) => {
             CardCode: CardCode || cardCodeEntrega,
             U_NIT,
             U_RAZSOC,
+            U_B_cufd: U_B_cuf,
             U_UserCode: id_sap,
             DocumentLines: newDocumentLines,
         }
@@ -964,7 +985,15 @@ const devolucionExcepcionalController = async (req, res) => {
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
         if(responseCreditNote.status > 299){
-            return res.json({mensaje: responseCreditNote.errorMessage,
+            let mensaje = responseCreditNote.errorMessage
+            if(typeof mensaje != 'string' && mensaje.lang){
+                mensaje = mensaje.value
+            }
+
+            mensaje = `Error en creditNote: ${mensaje}`
+
+            return res.status(400).json({
+                mensaje,
                 bodyCreditNotes,
                 devolucionDetalle,
                 idReturn: responceReturn.orderNumber,
@@ -990,6 +1019,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         const {
             DocEntry: docEntry,
             BaseEntry,
+            CardCode,
             Cuf,
             DocDate,
             DocDueDate,
@@ -1001,6 +1031,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         console.log({
             docEntry,
             BaseEntry,
+            CardCode,
             Cuf,
             DocDate,
             DocDueDate,
@@ -1038,72 +1069,83 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         if (batchEntrega.length == 0) {
             return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega })
         }
-        let batchNumbers = []
+
         let newDocumentLines = []
+        let numRet = 0
         for (const line of entregas) {
-            let newLine = {}
-            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, ...restLine } = line;
-            const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
-            console.log({ batch: batchData })
-            if (batchData.message) {
-                endTime = Date.now();
-                // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `${batchData.message || 'Error en obtenerEntregaDetalleDevolucion'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
-                return res.status(400).json({ mensaje: `${batchData.message || 'Error en obtenerEntregaDetalleDevolucion'}` })
+            const detalle = Detalle.find((item)=> item.ItemCode == line.ItemCode)
+            if(detalle){
+                const {cantidad}=detalle
+                const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,AccountCode, DocTotal: DocTotalEntr, GrossTotal: GrossTotalEntr, ...restLine } = line;
+                
+                const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
+                console.log({ batch: batchData })
+                if (batchData && batchData.length > 0) {
+                    let cantidaUnit = cantidad*Number(UnitsOfMeasurment)
+                    let batchNumbers= []
+                    for(const batch of batchData){
+                        if(cantidaUnit==0)
+                            break;
+                        if(cantidaUnit < Number(batch.OutQtyL)){
+                            batch.new_quantity = cantidaUnit
+                        }else{
+                            batch.new_quantity = Number(batch.OutQtyL)
+                        }
+                        cantidaUnit = Number(cantidaUnit) - Number(batch.new_quantity)
+                        batchNumbers.push({
+                            BaseLineNumber: numRet,
+                            BatchNumber: batch.BatchNum,
+                            Quantity: batch.new_quantity,
+                            ItemCode: batch.ItemCode
+                        })
+                        // numBatch +=1
+                    }
+                    console.log('------------------------------------------------------------------------------------')
+                    console.log({ UnitsOfMeasurment })
+                    console.log('------------------------------------------------------------------------------------')
+    
+    
+                    // const data = {
+                    //     BaseLine: LineNum,
+                    //     BaseType: 17,
+                    //     BaseEntry,
+                    // }
+                    
+                    let GrossTotalEntrega = detalle.UnitPriceAfDi * cantidad
+                    newLine = {
+                        // ...data,
+                        ItemCode,
+                        WarehouseCode: Almacen,
+                        Quantity: cantidad,
+                        LineNum: numRet,
+                        TaxCode: "IVA_GND",
+                        AccountCode: "6210103",
+                        GrossTotal: GrossTotalEntrega,
+                        ...restLine,
+                        BatchNumbers: batchNumbers
+                    };
+                    newLine = { ...newLine };
+                    console.log('------newLine-----')
+                    console.log({ newLine })
+    
+                    newDocumentLines.push(newLine)
+                    numRet += 1
+                }
             }
-            if (batchData && batchData.length > 0) {
-                // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
-                let new_quantity = 0
-                batchData.map((batch) => {
-                    new_quantity = Number(new_quantity) + Number(batch.OutQtyL)
-                })
-                console.log('------------------------------------------------------------------------------------')
-                console.log({ new_quantity, UnitsOfMeasurment })
-                console.log('------------------------------------------------------------------------------------')
-
-                //console.log({ batchData })
-                batchNumbers = batchData.map(batch => ({
-                    BaseLineNumber: LineNum,
-                    BatchNumber: batch.BatchNum,
-                    Quantity: Number(batch.OutQtyL).toFixed(6),
-                    ItemCode: batch.ItemCode
-                }))
-
-                // const data = {
-                //     BaseLine: LineNum,
-                //     BaseType: 17,
-                //     BaseEntry,
-                // }
-
-                newLine = {
-                    // ...data,
-                    ItemCode,
-                    WarehouseCode: Almacen,
-                    Quantity: new_quantity / UnitsOfMeasurment,
-                    LineNum,
-                    ...restLine,
-                    BatchNumbers: batchNumbers
-                };
-                newLine = { ...newLine };
-                console.log('------newLine-----')
-                console.log({ newLine })
-
-                newDocumentLines.push(newLine)
-            }
-
         }
         // console.log('rest data------------------------------------------------------------')
         // console.log({ restData })
 
-
-        const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega } = entregas[0]
+        const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, U_B_cuf } = entregas[0]
 
         const finalData = {
             // DocDate,
             // DocDueDate,
             Series: 352,
-            CardCode: cardCodeEntrega,
+            CardCode: CardCode || cardCodeEntrega,
             U_NIT,
             U_RAZSOC,
+            U_B_cufd: U_B_cuf,
             U_UserCode: id_sap,
             DocumentLines: newDocumentLines,
         }
@@ -1124,12 +1166,14 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         }
 
         const docEntryDev = responceReturn.orderNumber
+        console.log({docEntryDev})
         //*------------------------------------------------ DETALLE TO PROSIN
 
         const entregasFromProsin = await entregaDetalleToProsin(docEntryDev)
         console.log({ entregasFromProsin })
         if (!entregasFromProsin || entregasFromProsin.length == 0) {
-            return res.json({ mensaje: 'Error al obtener el detalle de la factura.' })
+            return res.status(400).json({ mensaje: 'Error al obtener el detalle de la factura.', 
+                finalDataEntrega, responceReturn, entregasFromProsin })
         }
         const {
             sucursal,
@@ -1165,12 +1209,13 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             detalle: []
         }
         Detalle.map((item) => {
+            const total = (item.devolucion) ? +item.cantidad*UnitPriceAfDi : +item.PriceAfDi
             dataToProsin.detalle.push({
                 producto: item.ItemCode,
                 cantidad: (item.devolucion) ? +item.cantidad : +item.Quantity,
                 precioUnitario: +item.UnitPrice,
                 montoDescuento: +item.Disc,
-                subTotal: +item.PriceAfDi,
+                subTotal: +total,
                 codigoDetalleTransaccion: (item.devolucion) ? 2 : 1
             })
         })
@@ -1182,7 +1227,9 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //*------------------------------------------------------------------------ PROSIN
         const responseProsin = await notaDebitoCredito(dataToProsin, user)
         if (responseProsin.data.estado !== 200) {
-            return res.status(400).json({ mensaje: `Error al intentar facturar la Nota Debito Credito. ${responseProsin.data.mensaje || ''}` })
+            return res.status(400).json({ 
+                mensaje: `Error al intentar facturar la Nota Debito Credito. ${responseProsin.data.mensaje || ''}`, 
+                finalDataEntrega, dataToProsin, entregasFromProsin, entregas })
         }
         //     "responseProsin": {
         //     "statusCode": 200,
@@ -1195,16 +1242,37 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //     "query": "https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito"
         // }
         //*------------------------------------------------------------------------ RESPONSE PROSIN
-        //*--------------------------------------------------------------------- OBTENER CON DOCENTRY DEV
+        const cufndc= responseProsin.data.cuf ////?
+        //---------------------------------------------------------------------PATCH RETURNS
+
+        const responsePatchReturns = await patchReturn({U_B_cuf: cufndc}, docEntryDev)
+
+        if(responsePatchReturns.status >299){
+            let mensaje = responsePatchReturns.errorMessage
+            if(typeof mensaje != 'string' && mensaje.lang){
+                mensaje = mensaje.value
+            }
+
+            mensaje = `Error en patchReturn: ${mensaje}`
+            return res.status(responceReturn.status).json({mensaje}, cufndc, docEntryDev,
+                finalDataEntrega,
+                dataToProsin
+             )
+        }
+
+        //*------------------------------------------------------------------ OBTENER CON DOCENTRY DEV
         const devolucionDetalle = await obtenerDevolucionDetalle(docEntryDev)
         const cabeceraCN = []
         const DocumentLinesCN = []
+        let DocumentAdditionalExpenses = []
         let numDev = 0
         for (const lineDevolucion of devolucionDetalle) {
             const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
             } = lineDevolucion
             if (cabeceraCN.length == 0) {
@@ -1216,7 +1284,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     DocTotal: DocTotalDev,
                     DocCurrency: DocCurrencyDev,
                     Reference1: docEntryDev,// DocEntry de la devolucion
-                    Reference2: docEntry ?? '',// DocEntry de la factura
+                    Reference2: DocEntry ?? '',// DocEntry de la factura
                     Comments: CommentsDev,
                     JournalMemo: JournalMemoDev,
                     PaymentGroupCode,
@@ -1225,22 +1293,53 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     U_UserCode
                 })
             }
+            if(DocumentAdditionalExpenses.length==0){
+                DocumentAdditionalExpenses = [
+                    { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_GND' },
+                    { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_GND' },
+                ]
+            }
+
             const newLineDev = {
                 LineNum: numDev,
                 BaseLine: LineNumDev,
-                ...restDev
+                BaseType: 16,
+                BaseEntry: docEntryDev,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, 
+                AccountCode: '6210103', 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, 
+                TaxCode: 'IVA_GND'
             }
 
             DocumentLinesCN.push(newLineDev)
-            numDev += numDev
+
+            numDev += 1
         }
 
         const bodyCreditNotes = {
             ...cabeceraCN[0],
-            DocumentLines: DocumentLinesCN
+            DocumentLines: DocumentLinesCN,
+            DocumentAdditionalExpenses
         }
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
+        if(responseCreditNote.status > 299){
+            let mensaje = responseCreditNote.errorMessage
+            if(typeof mensaje != 'string' && mensaje.lang){
+                mensaje = mensaje.value
+            }
+
+            mensaje = `Error en creditNote: ${mensaje}`
+
+            return res.status(400).json({
+                mensaje,
+                bodyCreditNotes,
+                devolucionDetalle,
+                idReturn: responceReturn.orderNumber,
+                finalDataEntrega
+            })
+        }
+        
         return res.json({
             entregasFromProsin,
             dataToProsin,
@@ -1249,9 +1348,21 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
+        return res.status(500).json({ mensaje: `Error en el controlador devolucionNotaDebitoCreditoController: ${error.message}` })
     }
 }
+
+const searchArticulosController = async (req, res) => {
+    try {
+        const {cadena} = req.body
+        const response = await searchArticulos(cadena)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador searchArticulosController: ${error.message}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -1269,5 +1380,6 @@ module.exports = {
     pruebaController,
     devolucionExcepcionalController,
     getAllAlmacenesController,
-    devolucionNotaDebitoCreditoController
+    devolucionNotaDebitoCreditoController,
+    searchArticulosController
 }

@@ -6,7 +6,7 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getArticuloByCode, setDescuentoEspecial, getAllDescuentosLinea, deleteDescuentoLinea,
     setDescuentoEspecialPorArticulo, obtenerTipos, obtenerDescuetosEspeciales,
     getIdsDescuentoEspecial, getDescuentosEspecialesById, getVendedores, getZonas, getAllTipos,
-    getZonasTiposPorVendedor, asignarZonasYTiposAVendedores } = require("./hana.controller")
+    getZonasTiposPorVendedor, asignarZonasYTiposAVendedores, deleteZonasYTiposAVendedores } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -642,6 +642,21 @@ const asignarZonasYTiposAVendedoresController = async (req, res) => {
     }
 }
 
+const deleteZonasYTiposAVendedoresController = async (req, res) => {
+    try {
+        const {id_vendedor, zona, tipo} = req.body
+        console.log({body: req.body})
+        const respond = await deleteZonasYTiposAVendedores(id_vendedor, zona, tipo)
+        if(respond.status != 200){
+            return res.status(400).json({mensaje: `${respond.message || ''}`})
+        }
+        return res.json(respond.result)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador deleteZonasYTiposAVendedoresController. ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -676,5 +691,6 @@ module.exports = {
     getZonasController,
     getAllTiposController,
     getZonasTiposPorVendedorController,
-    asignarZonasYTiposAVendedoresController
+    asignarZonasYTiposAVendedoresController,
+    deleteZonasYTiposAVendedoresController
 }

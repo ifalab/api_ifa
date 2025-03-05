@@ -219,9 +219,52 @@ const postCreditNotes = async (data) => {
   }
 };
 
+const patchReturn = async (data, id) => {
+  try {
+    // Verifica o genera una sesión
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+    console.log({ currentSession })
+
+    const url = `https://srvhana:50000/b1s/v1/Returns(${id})`;
+
+    // Configura los encabezados para la solicitud
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+    };
+    // Realiza la solicitud PATCH
+    const response = await axios.patch(url, { ...data }, {
+      httpsAgent: agent,
+      headers: headers
+    });
+    console.log({ responseReturns : response })
+
+    // Retorna la respuesta en caso de éxito
+    const status = response.status
+    const locationHeader = response.headers.location;
+    const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+    const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+    console.log('entrada habilitada')
+    // console.log({ location })
+    // console.log({response})
+    console.log({ status })
+    return { status, orderNumber, responseReturns };
+  } catch (error) {
+    // Centraliza el manejo de errores
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud PATCH';
+    console.error('Error en la solicitud PATCH Returns:', errorMessage);
+    // throw new Error(errorMessage);
+    return {
+      status: 400,
+      errorMessage}
+  }
+};
+
 module.exports = {
   postSalidaHabilitacion,
   postEntradaHabilitacion,
   postReturn,
-  postCreditNotes
+  postCreditNotes,
+  patchReturn
 };

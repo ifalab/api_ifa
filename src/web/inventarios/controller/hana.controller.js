@@ -325,6 +325,22 @@ const getAllAlmacenes = async () => {
     }
 }
 
+const searchArticulos= async (itemName) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') order by "ItemName" limit 15`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en searchArticulos:', error.message);
+        throw { 
+            message: `Error al procesar searchArticulos: ${error.message || ''}` 
+        }
+    }
+}
 
 module.exports = {
     clientesPorDimensionUno,
@@ -344,5 +360,6 @@ module.exports = {
     obtenerDevolucionDetalle,
     getAllAlmacenes,
     entregaDetalleToProsin,
-    pedidoDetallerFactura
+    pedidoDetallerFactura,
+    searchArticulos
 }
