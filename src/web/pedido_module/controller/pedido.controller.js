@@ -610,7 +610,7 @@ const pedidoLayoutController = async (req, res) => {
             Phone1,
             Address2,
             U_Zona,
-            JrnlMemo:  JrnlMemo || 'No definido',
+            JrnlMemo: JrnlMemo || 'No definido',
             detailsList,
         };
         // return res.json({data})
@@ -620,7 +620,7 @@ const pedidoLayoutController = async (req, res) => {
         const qrCode = await QRCode.toDataURL(data.BarCode.toString());
 
         // Renderizar la plantilla EJS a HTML
-        console.log({data})
+        console.log({ data })
         const html = await ejs.renderFile(path.join(__dirname, 'notaPedido', 'template.ejs'), { data, qrCode });
 
         // Configuración para html-pdf
@@ -795,6 +795,9 @@ const pedidoInstitucionController = async (req, res) => {
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
 
         const oferta = await getQuotation(BaseEntry)
+        if (oferta.status == 400) {
+            return res.status.json({ mensaje: `Error del SAP. ${oferta.errorMessage.value || 'No Definido'}` })
+        }
         return res.json(oferta.response)
 
         body.Series = 319;

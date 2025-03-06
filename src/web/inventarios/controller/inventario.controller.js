@@ -269,11 +269,11 @@ const postHabilitacionController = async (req, res) => {
         console.log({ lang: responseEntradaHabilitacion.lang })
         
         if (responseEntradaHabilitacion.value) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || ''}`, ``, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value|| ''}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
         }
         if (responseEntradaHabilitacion.errorMessage) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value|| 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: `Error del SAP en postEntradaHabilitacion. ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || 'No definido'}` });
         }
         grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitado con exito`, ``, "inventario/habilitacion", process.env.PRD)
@@ -460,7 +460,7 @@ const detalleVentasController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await detalleVentas(id)
-        console.log({ response })
+        // console.log({ response })
         let cabecera = []
         let detalle = []
         response.forEach((value) => {
