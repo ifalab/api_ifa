@@ -90,18 +90,16 @@ const apiFacturacionProsin = {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Nota Debido Credito de respuesta con error", 'tiempo de espera: '+`[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/NotaCreditoDebito", process.env.PRD)
             if (error.response) {
                 // Error específico de la API
-                throw {
-                    statusCode: error.response.status,
-                    message: error.response.data || 'Error en la solicitud NotaCreditoDebito POST',
-                    query: 'https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito'
+                return {
+                    statusCode: 400,
+                    message: error.response.data || 'Error en la solicitud NotaCreditoDebito POST'
                 };
             }
 
             // Otros errores (como errores de red)
-            throw {
-                statusCode: 500,
+            return {
+                statusCode: 400,
                 message: error.message || 'Error desconocido en la solicitud NotaCreditoDebito POST',
-                query: 'https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito'
             };
         }
     },
