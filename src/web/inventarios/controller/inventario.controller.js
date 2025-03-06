@@ -1206,40 +1206,60 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             complemento: complemento || "",
             nombre,
             correo,
-            direccion,
-            numeroAutorizacionCuf: Cuf,
+            direccion: direccion || '',
+            numeroAutorizacionCuf: U_B_cuf,
             montoTotalDevuelto: +subTotal,
             usuario: user.USERNAME,
             fechaEmision,
             mediaPagina: true,
             detalle: []
         }
-        Detalle.map((item) => {
-            const total = (item.devolucion) ? +item.cantidad*item.UnitPriceAfDi : +item.PriceAfDi
+        let totalDevuelto = 0
+        entregas.map((item) => {
+            const entregaProsin = entregasFromProsin.find((item2)=> item2.producto == item.ItemCode)
+            if(entregaProsin){
+                const total = Number((+entregaProsin.cantidad * +entregaProsin.precioUnitario).toFixed(2))
+                dataToProsin.detalle.push({
+                    producto: entregaProsin.producto,
+                    descripcion: entregaProsin.descripcion,
+                    cantidad: +entregaProsin.cantidad,
+                    precioUnitario: +entregaProsin.precioUnitario,
+                    montoDescuento: +entregaProsin.montoDescuento,
+                    subTotal: total,
+                    codigoDetalleTransaccion: 2
+                })
+                totalDevuelto += Number(total)
+            }
+            const total = +item.GrossPrice * item.Quantity
             dataToProsin.detalle.push({
                 producto: item.ItemCode,
-                cantidad: (item.devolucion) ? +item.cantidad : +item.Quantity,
-                precioUnitario: +item.UnitPrice,
-                montoDescuento: +item.Disc,
-                subTotal: +total,
-                codigoDetalleTransaccion: (item.devolucion) ? 2 : 1
+                cantidad: +item.Quantity,
+                precioUnitario: +item.GrossPrice,
+                montoDescuento: +item.U_DESCLINEA, //not sure total - item.GrossTotal
+                subTotal: Number(total.toFixed(2)),
+                codigoDetalleTransaccion: 1
             })
         })
+        dataToProsin.montoTotalDevuelto = +totalDevuelto
         // return res.json({
         //     entregasFromProsin,
         //     dataToProsin,
-
+        //     entregas
         // })
         //*------------------------------------------------------------------------ PROSIN
         const responseProsin = await notaDebitoCredito(dataToProsin, user)
         if (responseProsin.statusCode >300) {
-            
+            let mensaje='Error al intentar facturar la Nota Debito Credito.'
+            if(responseProsin.message && responseProsin.message.errors){
+                mensaje += JSON.stringify(responseProsin.message.errors, null, 2)
+            }else{
+                mensaje += responseProsin.data.mensaje || ''
+            }
             return res.status(400).json({ 
-                mensaje: `Error al intentar facturar la Nota Debito Credito. ${responseProsin.data.mensaje || ''}`, 
-                finalDataEntrega, dataToProsin, entregasFromProsin, entregas })
+                mensaje, 
+                dataToProsin, entregasFromProsin, finalDataEntrega, entregas })
         }
         console.log({responseProsin})
-        
         //     "responseProsin": {
         //     "statusCode": 200,
         //     "data": {
@@ -1359,8 +1379,10 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             responseCreditNote
         })
     } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador devolucionNotaDebitoCreditoController: ${error.message}` })
+        console.log({ errorCatch:   JSON.stringify(error, null, 2) })
+        return res.status(500).json({ mensaje: `Error en el controlador devolucionNotaDebitoCreditoController: ${error.message}`,
+           
+        })
     }
 }
 
