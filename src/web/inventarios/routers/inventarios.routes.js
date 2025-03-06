@@ -7,6 +7,7 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
+const { grabarLog } = require('../../shared/controller/hana.controller');
 const router = Router()
 
 router.get('/cliente-dimension', [validarToken, validarCampos], clientePorDimensionUnoController)

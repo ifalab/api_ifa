@@ -581,7 +581,7 @@ const clientesInstituciones = async()=>{
             await connectHANA()
         }
         // const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES_INSTITUCIONES`
-        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "GroupCode"=105`
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "GroupCode"=105 OR "GroupCode"=106 `
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -802,5 +802,5 @@ module.exports = {
     detalleOfertaPendCadena,
     listaClienteEmpleado,
     clienteEmpleado,
-    obtenerArticulosVehiculo
+    obtenerArticulosVehiculo,
 }

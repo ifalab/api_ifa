@@ -77,11 +77,12 @@ const postHabilitacionController = async (req, res) => {
         // return res.json({ id: userLocal.user.ID })
 
         if (formulario.almacen == null) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `el inventario es obligatorio. ${formulario.almacen || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion",  `Error, el inventario es obligatorio. ${formulario.almacen || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
         } else {
             if (formulario.almacen.WhsCode) {
                 warehouseCode = formulario.almacen.WhsCode
+                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, el almacen es obligatorios`, ``, "inventario/habilitacion", process.env.PRD)
             } else {
                 return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
             }
@@ -110,14 +111,17 @@ const postHabilitacionController = async (req, res) => {
         for (const item of inventario) {
             console.log({ item })
             if (!item.articulo || item.articulo == null || item.articulo == '') {
+                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.articulo||'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'El codigo del articulo es obligatorio' })
             }
 
             if (!item.articuloDict || item.articuloDict == null || item.articuloDict == '') {
+                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.articuloDict||'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'El codigo del articulo EQUIVALENTE es obligatorio' })
             }
 
             if (!item.lote || item.lote == null || item.lote == '') {
+                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.lote||'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'El lote es obligatorio' })
                 break
             }
@@ -262,10 +266,14 @@ const postHabilitacionController = async (req, res) => {
         console.log({ responseEntradaHabilitacion })
         console.log({ value: responseEntradaHabilitacion.value })
         console.log({ lang: responseEntradaHabilitacion.lang })
-        grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${responseEntradaHabilitacion.value || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
+        
         if (responseEntradaHabilitacion.value) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || ''}`, ``, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || ''}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
+        }
+        if (responseEntradaHabilitacion.errorMessage) {
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error del SAP en postEntradaHabilitacion. ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || 'No definido'}` });
         }
         grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitado con exito`, ``, "inventario/habilitacion", process.env.PRD)
         return res.json(responseEntradaHabilitacion)

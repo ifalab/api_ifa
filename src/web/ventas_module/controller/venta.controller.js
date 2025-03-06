@@ -1139,6 +1139,8 @@ const obtenerArticulosVehiculoController = async (req, res) => {
     }
 }
 
+
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1186,5 +1188,5 @@ module.exports = {
     detalleOfertaCadenaPendController,
     listaClienteEmpleadosController,
     ClienteEmpleadosController,
-    obtenerArticulosVehiculoController
+    obtenerArticulosVehiculoController,
 };
