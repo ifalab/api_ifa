@@ -728,7 +728,7 @@ const asignarZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.PRD}.ifa_dm_agregar_zonasytipos_a_vendedores(${id_vendedor}, ${zona}, ${tipo})`;
+        const query = `call ${process.env.PRD}.ifa_dm_agregar_zonasytipos_a_vendedores(${tipo}, ${zona}, ${id_vendedor})`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -739,6 +739,27 @@ const asignarZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
         return {
             status: 400,
             message: `Error en asignarZonasYTiposAVendedores: ${error.message || ''}`
+        }
+    }
+}
+
+const deleteZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        
+        const query = `delete from ${process.env.PRD}."@IFA_VEND_ZONAS" where "U_CodZona"=${zona} and "U_TipoCliente"=${tipo} and "U_CodVendedor"=${id_vendedor}`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            result}
+    } catch (error) {
+        console.error('Error en deleteZonasYTiposAVendedores:', error);
+        return {
+            status: 400,
+            message: `Error en deleteZonasYTiposAVendedores: ${error.message || ''}`
         }
     }
 }
@@ -776,5 +797,6 @@ module.exports = {
     getAllTipos,
     getZonas,
     getZonasTiposPorVendedor,
-    asignarZonasYTiposAVendedores
+    asignarZonasYTiposAVendedores,
+    deleteZonasYTiposAVendedores
 }

@@ -44,7 +44,8 @@ const {
     detalleOfertaPendCadena,
     listaClienteEmpleado,
     clienteEmpleado,
-    obtenerArticulosVehiculo
+    obtenerArticulosVehiculo,
+    searchVendedores
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1139,7 +1140,19 @@ const obtenerArticulosVehiculoController = async (req, res) => {
     }
 }
 
-
+const searchVendedoresController = async (req, res) => {
+    try {
+        const {cadena} = req.body
+        const response = await searchVendedores(cadena)
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: response.message || 'Error en searchVendedores' })
+        }
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador searchVendedoresController: ${error.message}` })
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -1189,4 +1202,5 @@ module.exports = {
     listaClienteEmpleadosController,
     ClienteEmpleadosController,
     obtenerArticulosVehiculoController,
+    searchVendedoresController
 };

@@ -150,6 +150,9 @@
                 <p><strong>Cliente:</strong>
                     <%= data.CardCode %> - <%= data.CardName %>
                 </p>
+                <p><strong>Condición de pago:</strong>
+                    <%= data.PymntGroup %>
+                </p>
             </div>
         </div>
         <hr>
@@ -202,8 +205,9 @@
         </table>
         <div class="footer-text">
             <!-- <p><strong>Empleado:</strong> MEDLING ARDAYA JENNIFER</p> -->
-            <p><strong>Condición de pago:</strong>
-                <%= data.PymntGroup %>
+            
+            <p><strong>Glosa:</strong>
+                <%= data.JrnlMemo %>
             </p>
             <!-- <p><strong>Glosa:</strong> solicitado por correo ent. hoy en el trans de la tarde basado en pedidos de cliente 240006460.</p> -->
             <!-- <p><strong>Total en texto:</strong> Eleven Thousand Four Hundred Ninety-Five And 39/100 Bolivianos</p> -->

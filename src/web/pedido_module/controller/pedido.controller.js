@@ -549,7 +549,7 @@ const pedidoLayoutController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", 'Error de SAP al crear la nota de Pedido', `${response.query || ''}`, "pedido/pedido-layout", process.env.PRD)
             return res.status(400).json({ mensaje: 'Error de SAP al crear la nota de Pedido' });
         }
-        console.log({ response })
+        console.log({ response: response.result })
 
         const detailsList = [];
         const {
@@ -569,7 +569,7 @@ const pedidoLayoutController = async (req, res) => {
             Phone1,
             Address2,
             U_Zona,
-            U_Comentario,
+            JrnlMemo,
             ...restData
         } = response.result[0];
 
@@ -610,7 +610,7 @@ const pedidoLayoutController = async (req, res) => {
             Phone1,
             Address2,
             U_Zona,
-            U_Comentario,
+            JrnlMemo:  JrnlMemo || 'No definido',
             detailsList,
         };
         // return res.json({data})
@@ -620,6 +620,7 @@ const pedidoLayoutController = async (req, res) => {
         const qrCode = await QRCode.toDataURL(data.BarCode.toString());
 
         // Renderizar la plantilla EJS a HTML
+        console.log({data})
         const html = await ejs.renderFile(path.join(__dirname, 'notaPedido', 'template.ejs'), { data, qrCode });
 
         // Configuración para html-pdf

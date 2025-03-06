@@ -79,7 +79,7 @@ const apiFacturacionProsin = {
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Nota Debido Credito tiempo de respuesta con exito", 'tiempo de espera: '+`[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/NotaCreditoDebito", process.env.PRD)
             return {
-                statusCode: response.status,
+                statusCode: response.data.estado,
                 data: response.data,
                 query: 'https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito'
             };
@@ -92,14 +92,16 @@ const apiFacturacionProsin = {
                 // Error específico de la API
                 throw {
                     statusCode: error.response.status,
-                    message: error.response.data + ' _currentUrl: https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito' || 'Error en la solicitud NotaCreditoDebito POST',
+                    message: error.response.data || 'Error en la solicitud NotaCreditoDebito POST',
+                    query: 'https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito'
                 };
             }
 
             // Otros errores (como errores de red)
             throw {
                 statusCode: 500,
-                message: error.message + ' _currentUrl: https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito' || 'Error desconocido en la solicitud NotaCreditoDebito POST',
+                message: error.message || 'Error desconocido en la solicitud NotaCreditoDebito POST',
+                query: 'https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito'
             };
         }
     },

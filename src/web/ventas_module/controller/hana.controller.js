@@ -754,6 +754,25 @@ const obtenerArticulosVehiculo = async (cadena) => {
     }
 }
 
+const searchVendedores = async (cadena) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SlpName" like '%${cadena}%' or "SlpCode" like '%${cadena}%'`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en searchVendedores: ${error.message || ''}`
+        }
+    }
+}
+
 
 module.exports = {
     ventaPorSucursal,
@@ -803,4 +822,5 @@ module.exports = {
     listaClienteEmpleado,
     clienteEmpleado,
     obtenerArticulosVehiculo,
+    searchVendedores
 }

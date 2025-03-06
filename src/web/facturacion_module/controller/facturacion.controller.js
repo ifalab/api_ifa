@@ -2137,8 +2137,8 @@ const facturacionVehiculo = async (req, res) => {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
-        // const endTime = Date.now()
-        grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch Facturar Vehiculo. ${error.message || ''}, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar/vehiculo", process.env.PRD)
+        const endTime = Date.now()
+        // grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `Error en el controlador Facturar catch. ${error.message || ''}`, `catch Facturar Vehiculo. ${error.message || ''}, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar/vehiculo", process.env.PRD)
         return res.status(error.statusCode ?? 500).json({
             mensaje: `Error en el controlador Catch. ${error?.message || 'No definido'}`,
             sapMessage: `${error?.message || 'No definido'}`,

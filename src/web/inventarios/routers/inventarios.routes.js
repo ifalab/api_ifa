@@ -3,7 +3,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     detalleVentasController, devolucionCompletaController, pruebaController,
     getAllAlmacenesController,
     devolucionExcepcionalController,
-    devolucionNotaDebitoCreditoController
+    devolucionNotaDebitoCreditoController,
+    searchArticulosController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -26,5 +27,6 @@ router.post('/devolucion-excepcional', [validarToken, validarCampos], devolucion
 router.post('/devolucion-ndc', [validarToken, validarCampos], devolucionNotaDebitoCreditoController)
 router.get('/prueba', [validarToken, validarCampos], pruebaController)
 router.get('/all-almacenes', [validarToken, validarCampos],getAllAlmacenesController)
+router.post('/search-articulos', [validarToken, validarCampos],searchArticulosController)
 
 module.exports = router
