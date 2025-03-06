@@ -178,7 +178,6 @@ const pedidosFacturados = async (SucCode) => {
             await connectHANA();
         }
         const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
-        // const query = `CALL lab_ifa_prd.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result

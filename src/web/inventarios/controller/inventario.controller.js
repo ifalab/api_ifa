@@ -1054,6 +1054,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
 
         //----------------------
         const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
+        console.log({entregas})
         if (entregas.message) {
             endTime = Date.now()
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
@@ -1069,7 +1070,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         if (batchEntrega.length == 0) {
             return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega })
         }
-
+        console.log({batchEntrega})
         let newDocumentLines = []
         let numRet = 0
         for (const line of entregas) {
@@ -1100,10 +1101,9 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                         })
                         // numBatch +=1
                     }
-                    console.log('------------------------------------------------------------------------------------')
-                    console.log({ UnitsOfMeasurment })
-                    console.log('------------------------------------------------------------------------------------')
-    
+                    // console.log('------------------------------------------------------------------------------------')
+                    // console.log({ UnitsOfMeasurment })
+                    // console.log('------------------------------------------------------------------------------------')
     
                     // const data = {
                     //     BaseLine: LineNum,
@@ -1133,9 +1133,6 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 }
             }
         }
-        // console.log('rest data------------------------------------------------------------')
-        // console.log({ restData })
-
         const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, U_B_cuf } = entregas[0]
 
         const finalData = {
@@ -1162,7 +1159,8 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             if (mensaje.value)
                 mensaje = mensaje.value
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
+            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega,
+                entregas, batchEntrega })
         }
 
         const docEntryDev = responceReturn.orderNumber
@@ -1172,7 +1170,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         const entregasFromProsin = await entregaDetalleToProsin(docEntryDev)
         console.log({ entregasFromProsin })
         if (!entregasFromProsin || entregasFromProsin.length == 0) {
-            return res.status(400).json({ mensaje: 'Error al obtener el detalle de la factura.', 
+            return res.status(400).json({ mensaje: 'Error al obtener el detalle de la factura de prosin.', 
                 finalDataEntrega, responceReturn, entregasFromProsin })
         }
         const {
@@ -1209,7 +1207,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             detalle: []
         }
         Detalle.map((item) => {
-            const total = (item.devolucion) ? +item.cantidad*UnitPriceAfDi : +item.PriceAfDi
+            const total = (item.devolucion) ? +item.cantidad*item.UnitPriceAfDi : +item.PriceAfDi
             dataToProsin.detalle.push({
                 producto: item.ItemCode,
                 cantidad: (item.devolucion) ? +item.cantidad : +item.Quantity,
@@ -1226,11 +1224,14 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         // })
         //*------------------------------------------------------------------------ PROSIN
         const responseProsin = await notaDebitoCredito(dataToProsin, user)
-        if (responseProsin.data.estado !== 200) {
+        if (responseProsin.statusCode >300) {
+            
             return res.status(400).json({ 
                 mensaje: `Error al intentar facturar la Nota Debito Credito. ${responseProsin.data.mensaje || ''}`, 
                 finalDataEntrega, dataToProsin, entregasFromProsin, entregas })
         }
+        console.log({responseProsin})
+        
         //     "responseProsin": {
         //     "statusCode": 200,
         //     "data": {
@@ -1242,7 +1243,8 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //     "query": "https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito"
         // }
         //*------------------------------------------------------------------------ RESPONSE PROSIN
-        const cufndc= responseProsin.data.cuf ////?
+        const cufndc= responseProsin.data.datos.cuf ////?
+        console.log({cufndc})
         //---------------------------------------------------------------------PATCH RETURNS
 
         const responsePatchReturns = await patchReturn({U_B_cuf: cufndc}, docEntryDev)
@@ -1254,12 +1256,12 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             }
 
             mensaje = `Error en patchReturn: ${mensaje}`
-            return res.status(responceReturn.status).json({mensaje}, cufndc, docEntryDev,
+            return res.status(responceReturn.status).json({mensaje, cufndc, docEntryDev,
                 finalDataEntrega,
-                dataToProsin
-             )
+                dataToProsin}
+            )
         }
-
+        console.log('Patch return hecho con exito')
         //*------------------------------------------------------------------ OBTENER CON DOCENTRY DEV
         const devolucionDetalle = await obtenerDevolucionDetalle(docEntryDev)
         const cabeceraCN = []
@@ -1341,6 +1343,8 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         }
         
         return res.json({
+            finalDataEntrega,
+            docEntryDev,
             entregasFromProsin,
             dataToProsin,
             responseProsin,
