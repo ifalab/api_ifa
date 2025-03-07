@@ -18,7 +18,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     obtenerEntregaPorPedido,
     facturaPedidoInstituciones,
     obtenerPedidoDetalle,
-    obtenerDevoluciones } = require("./hana.controller")
+    obtenerDevoluciones, 
+    detalleDevolucion} = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -2388,6 +2389,23 @@ const obtenerDevolucionesController = async (req, res) => {
     }
 }
 
+const obtenerDevolucionDetallerController = async (req, res) => {
+    try {
+        const idReturn = req.query.idReturn
+        console.log({ idReturn })
+
+        const detalle = await detalleDevolucion(idReturn)
+        if(detalle.length == 0){
+            return res.status(400).json({ mensaje: 'Error al traer el detalle de la devolucion' })
+        }
+        const response = detalle[0]
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador: obtenerDevolucionDetalleController' })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2411,5 +2429,6 @@ module.exports = {
     facturacionInstitucionesController,
     facturacionVehiculo,
     cancelarParaRefacturarController,
-    obtenerDevolucionesController
+    obtenerDevolucionesController,
+    obtenerDevolucionDetallerController,
 }
