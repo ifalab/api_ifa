@@ -29,12 +29,12 @@ const cobranzaGeneralController = async (req, res) => {
 const cobranzasPorZonasController = async (req = request, res = response) => {
     const { username } = req.query;
     try {
-        if (!username && typeof username != "string")
+        console.log({username})
+        if (!username && typeof username != "string"){
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
             })
-
-
+        }
         const response = await cobranzaPorZona(username);
         if (!response) {
             return res.status(400).json({ mensaje: 'error al traer las cobranzas' })

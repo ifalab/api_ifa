@@ -773,6 +773,25 @@ const searchVendedores = async (cadena) => {
     }
 }
 
+const listaPrecioSuc = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_listas_precios_por_sucursal(${sucCode})`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en listaPrecioSuc: ${error.message || ''}`
+        }
+    }
+}
+
 
 module.exports = {
     ventaPorSucursal,
@@ -822,5 +841,6 @@ module.exports = {
     listaClienteEmpleado,
     clienteEmpleado,
     obtenerArticulosVehiculo,
-    searchVendedores
+    searchVendedores,
+    listaPrecioSuc,
 }

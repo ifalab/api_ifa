@@ -1236,7 +1236,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 cantidad: +item.Quantity,
                 precioUnitario: +item.GrossPrice,
                 montoDescuento: +item.U_DESCLINEA, //not sure total - item.GrossTotal
-                subTotal: Number(total.toFixed(2)),
+                subTotal: +item.GrossTotal,
                 codigoDetalleTransaccion: 1
             })
         })
