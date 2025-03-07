@@ -189,7 +189,7 @@ const entregaDetallerFactura = async (docentry, cuf, nrofactura, fecha) => {
 
     } catch (error) {
         console.error('Error en entregaDetallerFactura:', error.message);
-        return { message: 'Error al procesar la solicitud: entregaDetallerFactura', error }
+        return { message: `Error al procesar la solicitud: entregaDetallerFactura: ${error.message}`, error }
     }
 }
 
