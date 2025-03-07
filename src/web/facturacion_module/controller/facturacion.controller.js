@@ -2355,10 +2355,10 @@ const cancelarParaRefacturarController = async (req, res) => {
         return res.json({
             responseProsin: { ...responseProsin, cuf },
             reponseInvoice,
-            responceReturn,
             finalDataEntrega,
             batchEntrega,
-            entregas
+            entregas,
+            idReturn: responceReturn.orderNumber
         })
 
     } catch (error) {
