@@ -238,18 +238,17 @@ const patchReturn = async (data, id) => {
       httpsAgent: agent,
       headers: headers
     });
-    console.log({ responseReturns : response })
+    console.log({ responseReturnsPatch : response })
 
     // Retorna la respuesta en caso de éxito
-    const status = response.status
-    const locationHeader = response.headers.location;
-    const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
-    const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
-    console.log('entrada habilitada')
+    // const status = response.status
+    // const locationHeader = response.headers.location;
+    // const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+    // const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+    // console.log('entrada habilitada')
     // console.log({ location })
     // console.log({response})
-    console.log({ status })
-    return { status, orderNumber, responseReturns };
+    return response;
   } catch (error) {
     // Centraliza el manejo de errores
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud PATCH';

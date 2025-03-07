@@ -17,12 +17,15 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     entregasSinFacturas,
     obtenerEntregaPorPedido,
     facturaPedidoInstituciones,
-    obtenerPedidoDetalle } = require("./hana.controller")
+    obtenerPedidoDetalle,
+    obtenerDevoluciones } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
 const { grabarLog } = require('../../shared/controller/hana.controller');
+const {  obtenerEntregaDetalle: obtenerEntregaDetalleDevolucion } = require("../../inventarios/controller/hana.controller")
+const { postReturn } = require("../../inventarios/controller/sld.controller")
 
 const facturacionController = async (req, res) => {
     let body = {}
@@ -2155,6 +2158,236 @@ const facturacionVehiculo = async (req, res) => {
     }
 }
 
+const cancelarParaRefacturarController = async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const {
+            sucursal,
+            punto,
+            cuf,
+            descripcion,
+            motivoAnulacion,
+            tipoDocumento,
+            usuario,
+            mediaPagina,
+            docEntry,
+            id_sap,
+            DocDate, Almacen 
+        } = req.body
+        let responseProsin = {}
+        let endTime = Date.now();
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ user })
+        if (!cuf || cuf == '') {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
+        }
+        const estadoFacturaResponse = await spEstadoFactura(cuf)
+        if (estadoFacturaResponse.message) {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
+        }
+        let { estado } = estadoFacturaResponse[0]
+
+        if (estado) {
+            responseProsin = await anulacionFacturacion({
+                sucursal,
+                punto,
+                cuf,
+                descripcion,
+                motivoAnulacion,
+                tipoDocumento,
+                usuario,
+                mediaPagina,
+            }, user)
+
+            if (responseProsin.data.mensaje) {
+                const mess = responseProsin.data.mensaje.split('§')
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || responseProsin.data.mensaje || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+                return res.status(400).json({ mensaje: `${mess[1] || responseProsin.data.mensaje || 'Error de Prosin en anulacionFacturacion'}` })
+            }
+        }
+
+        if (!docEntry) {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Debe venir el doc entry CUF(${cuf})`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Debe venir el doc entry` })
+        }
+        const reponseInvoice = await cancelInvoice(docEntry)
+        if (reponseInvoice.value && !reponseInvoice.value.includes('Document is already closed')) {
+            const outputDir = path.join(__dirname, 'outputsAnulacion');
+            if (!fs.existsSync(outputDir)) {
+                fs.mkdirSync(outputDir);
+            }
+            const now = new Date();
+            const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+            const fileNameJson = path.join(outputDir, `reponseInvoiceAnulacion_${timestamp}.json`);
+            fs.writeFileSync(fileNameJson, JSON.stringify(docEntry, null, 2), 'utf8');
+            console.log(`Objeto reponseInvoice guardado en ${fileNameJson}`);
+
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, `https://srvhana:50000/b1s/v1/Invoices(id)/Cancel, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en cancel invoice: ${reponseInvoice.value || ''}` })
+        }
+
+        const responseEntregas = await obtenerEntregasPorFactura(docEntry)
+        if (responseEntregas.length == 0) {
+            endTime = Date.now();
+            // grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `No hay entregas de la factura`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id), [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `No hay entregas de la factura` })
+        }
+        if (responseEntregas.length > 1) {
+            // endTime = Date.now();
+            // grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `No hay entregas de la factura`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id), [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Existe más de una entrega en esta factura` })
+        }
+        if (responseEntregas.message) {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id) [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}` })
+        }        
+        // return res.json({responseEntregas})
+
+        const {BaseEntry} = responseEntregas[0]
+        const fechaFormater = new Date(DocDate)
+        const year = fechaFormater.getUTCFullYear();
+        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
+        const formater = `${year}${month}${day}`;
+        const entregas = await entregaDetallerFactura(BaseEntry, cuf, docEntry, formater)
+        if (entregas.message) {
+            endTime = Date.now()
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
+        }
+        if (entregas.length == 0) {
+            endTime = Date.now()
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
+        }
+        const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
+        
+        if (batchEntrega.length == 0) {
+            return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega, entregas })
+        }
+        let batchNumbers = []
+        let newDocumentLines = []
+        let cabeceraReturn = []
+        let numRet = 0
+        for (const line of entregas) {
+            let newLine = {}
+            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
+                AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,
+                ...restLine } = line;
+            if(cabeceraReturn.length==0){
+                cabeceraReturn.push({
+                    U_NIT, U_RAZSOC, 
+                    U_UserCode: id_sap, 
+                    CardCode: cardCodeEntrega, 
+                    U_B_cufd: U_B_cufEntr,
+                    Series: 352
+                })
+            }
+            const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
+            console.log({ batch: batchData })
+            if (batchData && batchData.length > 0) {
+                // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
+                let new_quantity = 0
+                batchData.map((batch) => {
+                    new_quantity = Number(new_quantity) + Number(batch.OutQtyL)
+                })
+                console.log('------------------------------------------------------------------------------------')
+                console.log({ new_quantity, UnitsOfMeasurment })
+                console.log('------------------------------------------------------------------------------------')
+
+                //console.log({ batchData })
+                batchNumbers = batchData.map(batch => ({
+                    BaseLineNumber: numRet,
+                    BatchNumber: batch.BatchNum,
+                    Quantity: Number(batch.OutQtyL).toFixed(6),
+                    ItemCode: batch.ItemCode
+                }))
+
+                const data = {
+                    BaseLine: LineNum,
+                    BaseType: 15,
+                    BaseEntry
+                }
+
+                newLine = {
+                    ...data,
+                    ItemCode,
+                    WarehouseCode: Almacen,
+                    Quantity: new_quantity / UnitsOfMeasurment,
+                    LineNum: numRet,
+                    TaxCode: "IVA_GND",
+                    AccountCode: "6210103",
+                    ...restLine,
+                    BatchNumbers: batchNumbers
+                };
+                newLine = { ...newLine };
+
+                newDocumentLines.push(newLine)
+                numRet += 1
+            }
+        }
+        const finalData = {
+            // DocDate,
+            // DocDueDate,
+            ...cabeceraReturn[0],
+            DocumentLines: newDocumentLines,
+        }
+
+        finalDataEntrega = finalData
+        // return res.json(finalDataEntrega)
+        const responceReturn = await postReturn(finalDataEntrega)
+        // return res.json({responceReturn, finalDataEntrega, newDocumentLines})
+
+        if (responceReturn.status > 300) {
+            console.log({ errorMessage: responceReturn.errorMessage })
+            let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
+            if (mensaje.value)
+                mensaje = mensaje.value
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
+        }
+        return res.json({
+            responseProsin: { ...responseProsin, cuf },
+            reponseInvoice,
+            responceReturn,
+            finalDataEntrega,
+            batchEntrega,
+            entregas
+        })
+
+    } catch (error) {
+        console.log({ error })
+
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ usuario })
+        let mensaje = `Error en el controlador cancelarParaRefacturarController: ${error.message || ''}`
+        console.log({ statuscode: error.statusCode })
+        const endTime = Date.now();
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje + `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, 'Catch de cancelarParaRefacturarController', "facturacion/cancel-to-prosin", process.env.PRD)
+
+        return res.status(error.statusCode ?? 500).json({ mensaje })
+    }
+}
+
+const obtenerDevolucionesController = async (req, res) => {
+    try {
+        const sucCode = req.query.sucCode
+        console.log({ sucCode })
+
+        const devoluciones = await obtenerDevoluciones(sucCode)
+        return res.json(devoluciones)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador: obtenerDevolucionesController' })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2176,5 +2409,7 @@ module.exports = {
     cancelarOrdenController,
     pedidosInstitucionesController,
     facturacionInstitucionesController,
-    facturacionVehiculo
+    facturacionVehiculo,
+    cancelarParaRefacturarController,
+    obtenerDevolucionesController
 }

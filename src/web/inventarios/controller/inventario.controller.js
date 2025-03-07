@@ -1228,6 +1228,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             const total = +item.GrossPrice * item.Quantity
             dataToProsin.detalle.push({
                 producto: item.ItemCode,
+                descripcion: item.ItemName,
                 cantidad: +item.Quantity,
                 precioUnitario: +item.GrossPrice,
                 montoDescuento: +item.U_DESCLINEA, //not sure total - item.GrossTotal

@@ -318,6 +318,22 @@ const obtenerPedidoDetalle = async (nro_ped) => {
     }
 }
 
+const obtenerDevoluciones = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_devoluciones(${sucCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerDevoluciones:', error.message);
+        return { message: `Error al procesar obtenerDevoluciones: ${error.message || ''}` }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -335,5 +351,6 @@ module.exports = {
     entregasSinFacturas,
     obtenerEntregaPorPedido,
     facturaPedidoInstituciones,
-    obtenerPedidoDetalle
+    obtenerPedidoDetalle,
+    obtenerDevoluciones
 }
