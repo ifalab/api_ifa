@@ -18,13 +18,14 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     obtenerEntregaPorPedido,
     facturaPedidoInstituciones,
     obtenerPedidoDetalle,
-    obtenerDevoluciones } = require("./hana.controller")
+    obtenerDevoluciones,
+    detalleDevolucion } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
 const { grabarLog } = require('../../shared/controller/hana.controller');
-const {  obtenerEntregaDetalle: obtenerEntregaDetalleDevolucion } = require("../../inventarios/controller/hana.controller")
+const { obtenerEntregaDetalle: obtenerEntregaDetalleDevolucion } = require("../../inventarios/controller/hana.controller")
 const { postReturn } = require("../../inventarios/controller/sld.controller")
 
 const facturacionController = async (req, res) => {
@@ -2011,22 +2012,22 @@ const facturacionVehiculo = async (req, res) => {
             numeroImei: "",
             numeroSerie: "",
         }))
-        
+
         const montoDetalle = detalle
-        .reduce((total, item) => total + item.subtotal, 0)
-        .toFixed(2); 
-        
+            .reduce((total, item) => total + item.subtotal, 0)
+            .toFixed(2);
+
         console.log(data);
         // const detalle =[{
-            //     producto: data[0].ItemCode,
-            //     descripcion: data[0].Dscription,
-            //     cantidad: +data[0].Quantity,
-            //     precioUnitario: +data[0].UnitPrice,
-            //     montoDescuento: +data[0].Disc,
-            //     subTotal: +(data[0].Quantity * data[0].UnitPrice).toFixed(2),
-            //     numeroImei: "",
-            //     numeroSerie: "",
-            // }]
+        //     producto: data[0].ItemCode,
+        //     descripcion: data[0].Dscription,
+        //     cantidad: +data[0].Quantity,
+        //     precioUnitario: +data[0].UnitPrice,
+        //     montoDescuento: +data[0].Disc,
+        //     subTotal: +(data[0].Quantity * data[0].UnitPrice).toFixed(2),
+        //     numeroImei: "",
+        //     numeroSerie: "",
+        // }]
         body = {
             sucursal: 0,
             punto: 0,
@@ -2052,7 +2053,7 @@ const facturacionVehiculo = async (req, res) => {
             mediaPagina: true,
             detalle: detalle
         }
-        
+
         // return res.status(200).json(body);
         const responseProsin = await facturacionProsin(body, user);
         const { data: dataProsin } = responseProsin
@@ -2135,8 +2136,8 @@ const facturacionVehiculo = async (req, res) => {
         endTime = Date.now()
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
         return res.json({ ...response, cuf })
-        
-    }catch (error) {
+
+    } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ user })
@@ -2172,7 +2173,7 @@ const cancelarParaRefacturarController = async (req, res) => {
             mediaPagina,
             docEntry,
             id_sap,
-            DocDate, Almacen 
+            DocDate, Almacen
         } = req.body
         let responseProsin = {}
         let endTime = Date.now();
@@ -2246,10 +2247,10 @@ const cancelarParaRefacturarController = async (req, res) => {
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id) [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}` })
-        }        
+        }
         // return res.json({responseEntregas})
 
-        const {BaseEntry} = responseEntregas[0]
+        const { BaseEntry } = responseEntregas[0]
         const fechaFormater = new Date(DocDate)
         const year = fechaFormater.getUTCFullYear();
         const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
@@ -2267,7 +2268,7 @@ const cancelarParaRefacturarController = async (req, res) => {
             return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
         }
         const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
-        
+
         if (batchEntrega.length == 0) {
             return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega, entregas })
         }
@@ -2280,11 +2281,11 @@ const cancelarParaRefacturarController = async (req, res) => {
             const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
                 AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,
                 ...restLine } = line;
-            if(cabeceraReturn.length==0){
+            if (cabeceraReturn.length == 0) {
                 cabeceraReturn.push({
-                    U_NIT, U_RAZSOC, 
-                    U_UserCode: id_sap, 
-                    CardCode: cardCodeEntrega, 
+                    U_NIT, U_RAZSOC,
+                    U_UserCode: id_sap,
+                    CardCode: cardCodeEntrega,
                     U_B_cufd: U_B_cufEntr,
                     Series: 352
                 })
@@ -2388,6 +2389,99 @@ const obtenerDevolucionesController = async (req, res) => {
     }
 }
 
+const obtenerDevolucionDetallerController = async (req, res) => {
+    try {
+        const idReturn = req.query.idReturn
+        console.log({ idReturn })
+
+        const detalle = await detalleDevolucion(idReturn)
+        if (detalle.length == 0) {
+            return res.status(400).json({ mensaje: 'Error al traer el detalle de la devolucion' })
+        }
+        const {
+            Series,
+            DocDate,
+            DocDueDate,
+            CardCode,
+            FederalTaxID,
+            DocTotal,
+            DocCurrency,
+            Comments,
+            JournalMemo,
+            PaymentGroupCode,
+            SalesPersonCode,
+            U_OSLP_ID,
+            U_TIPODOC,
+            U_TIPOCOM,
+            NumAtCard,
+            U_NIT,
+            U_RAZSOC,
+            U_B_cuf,
+            U_B_path,
+            U_B_em_date,
+            U_UserCode,
+        } = detalle[0]
+
+        let response = {
+            Series,
+            DocDate,
+            DocDueDate,
+            CardCode,
+            FederalTaxID,
+            DocTotal,
+            DocCurrency,
+            Comments,
+            JournalMemo,
+            PaymentGroupCode,
+            SalesPersonCode,
+            U_OSLP_ID,
+            U_TIPODOC,
+            U_TIPOCOM,
+            NumAtCard,
+            U_NIT,
+            U_RAZSOC,
+            U_B_cuf,
+            U_B_path,
+            U_B_em_date,
+            U_UserCode,
+            DocumentLines: []
+        }
+
+        detalle.map((item) => {
+            const {
+                Series,
+                DocDate,
+                DocDueDate,
+                CardCode,
+                FederalTaxID,
+                DocTotal,
+                DocCurrency,
+                Comments,
+                JournalMemo,
+                PaymentGroupCode,
+                SalesPersonCode,
+                U_OSLP_ID,
+                U_TIPODOC,
+                U_TIPOCOM,
+                NumAtCard,
+                U_NIT,
+                U_RAZSOC,
+                U_B_cuf,
+                U_B_path,
+                U_B_em_date,
+                U_UserCode,
+                ...rest
+             } = item
+             response.DocumentLines.push({...rest})
+        })
+        console.log({detalle})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador: obtenerDevolucionDetalleController' })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2411,5 +2505,6 @@ module.exports = {
     facturacionInstitucionesController,
     facturacionVehiculo,
     cancelarParaRefacturarController,
-    obtenerDevolucionesController
+    obtenerDevolucionesController,
+    obtenerDevolucionDetallerController,
 }

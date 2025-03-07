@@ -334,6 +334,23 @@ const obtenerDevoluciones = async (sucCode) => {
     }
 }
 
+
+const detalleDevolucion = async (idReturn) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_DEVOLUCION_DETALLE_TOORDER(${idReturn})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en detalleDevolucion:', error.message);
+        return { message: `Error al procesar detalleDevolucion: ${error.message || ''}` }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -352,5 +369,6 @@ module.exports = {
     obtenerEntregaPorPedido,
     facturaPedidoInstituciones,
     obtenerPedidoDetalle,
-    obtenerDevoluciones
+    obtenerDevoluciones,
+    detalleDevolucion
 }
