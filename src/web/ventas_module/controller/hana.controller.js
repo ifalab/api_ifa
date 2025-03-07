@@ -792,6 +792,25 @@ const listaPrecioSuc = async (sucCode) => {
     }
 }
 
+const listaPrecioInst= async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_listas_de_precios where "ListName" like '%LISTA INS%'`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en listaPrecioInst: ${error.message || ''}`
+        }
+    }
+}
+
 
 module.exports = {
     ventaPorSucursal,
@@ -843,4 +862,5 @@ module.exports = {
     obtenerArticulosVehiculo,
     searchVendedores,
     listaPrecioSuc,
+    listaPrecioInst,
 }

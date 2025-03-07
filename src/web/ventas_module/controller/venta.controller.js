@@ -46,7 +46,8 @@ const {
     clienteEmpleado,
     obtenerArticulosVehiculo,
     searchVendedores,
-    listaPrecioSuc
+    listaPrecioSuc,
+    listaPrecioInst
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1167,6 +1168,18 @@ const listaPrecioSucController = async (req, res) => {
     }
 }
 
+const listaPrecioInstController = async (req, res) => {
+    try {
+        
+        const response = await listaPrecioInst()
+        const lista = response.data
+        return res.json(lista)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1216,5 +1229,6 @@ module.exports = {
     ClienteEmpleadosController,
     obtenerArticulosVehiculoController,
     searchVendedoresController,
-    listaPrecioSucController
+    listaPrecioSucController,
+    listaPrecioInstController,
 };
