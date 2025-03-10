@@ -113,7 +113,7 @@ const descripcionArticulo = async (itemCode) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en descripcionArticulo')
+        throw new Error(`error en descripcionArticulo: ${error.message}`)
     }
 }
 

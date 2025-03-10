@@ -7,7 +7,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getAllAlmacenes,
     entregaDetalleToProsin,
     searchArticulos } = require("./hana.controller")
-const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn } = require("./sld.controller")
+const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn, 
+    getCreditNote } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad } = require("../../facturacion_module/controller/hana.controller")
@@ -307,7 +308,7 @@ const descripcionArticuloController = async (req, res) => {
         return res.json({ ItemName: response[0].ItemName })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+        return res.status(500).json({ mensaje: `Error en descripcionArticuloController: ${error.message}` })
     }
 }
 
@@ -873,7 +874,7 @@ const devolucionExcepcionalController = async (req, res) => {
                 let GrossTotalEntrega = detalle.UnitPriceAfDi * cantidad
                 newLine = {
                     // ...data,
-                    ItemCode,
+                    ItemCode: detalle.newItemCode,
                     WarehouseCode: Almacen,
                     Quantity: cantidad,
                     LineNum: numRet,
@@ -907,9 +908,9 @@ const devolucionExcepcionalController = async (req, res) => {
         }
 
         finalDataEntrega = finalData
-        // return res.json(finalDataEntrega)
+        // return res.json({finalDataEntrega, entregas, batchEntrega})
+        
         const responceReturn = await postReturn(finalDataEntrega)
-        // return res.json({responceReturn, finalDataEntrega, newDocumentLines})
 
         if (responceReturn.status > 300) {
             console.log({ errorMessage: responceReturn.errorMessage })
@@ -1733,6 +1734,71 @@ const searchArticulosController = async (req, res) => {
     }
 }
 
+const getCreditNoteController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response = await getCreditNote(id)
+        console.log({id, responseGetCreditNote:response})
+        const { DocEntry,
+            DocNum,
+            DocDate,
+            CardCode,
+            CardName,
+            DocTotal, DocumentLines} = response
+
+        let detalle = []
+        let baseEntry = 0
+        DocumentLines.forEach((item)=>{
+            const {
+                LineNum,
+                ItemCode,
+                ItemDescription,
+                Quantity,
+                Price,
+                PriceAfterVAT,
+                DiscountPercent,
+                WarehouseCode,
+                MeasureUnit,
+                BaseEntry, 
+                GrossTotal,
+                GrossPrice,
+                UnitPrice
+            } = item
+            if(baseEntry==0){
+                baseEntry=BaseEntry
+            }
+            detalle.push({
+                LineNum,
+                ItemCode,
+                ItemDescription,
+                Quantity,
+                Price,
+                PriceAfterVAT,
+                DiscountPercent,
+                WarehouseCode,
+                MeasureUnit,
+                GrossTotal,
+                GrossPrice,
+                UnitPrice: +UnitPrice.toFixed(2)
+            })
+        })
+        const result = {
+            DocEntry,
+            DocNum,
+            DocDate,
+            CardCode,
+            CardName,
+            DocTotal,
+            BaseEntry: baseEntry,
+            DocumentLines: detalle
+        }
+        return res.json(result)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getCreditNoteController: ${error.message}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -1752,5 +1818,6 @@ module.exports = {
     getAllAlmacenesController,
     devolucionNotaDebitoCreditoController,
     searchArticulosController,
-    devolucionDebitoCreditoCompletaController
+    devolucionDebitoCreditoCompletaController,
+    getCreditNoteController
 }
