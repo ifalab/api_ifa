@@ -6,7 +6,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     obtenerDevolucionDetalle,
     getAllAlmacenes,
     entregaDetalleToProsin,
-    searchArticulos } = require("./hana.controller")
+    searchArticulos, 
+    facturasClienteLoteItemCodeGenesis} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
@@ -1751,7 +1752,7 @@ const facturasClienteLoteItemCodeGenesisController = async (req, res) => {
         const itemCode = req.query.itemCode
         const cardCode = req.query.cardCode
         const batchNum = req.query.batchNum
-        const response = await facturasClienteLoteItemCode(itemCode, cardCode, batchNum)
+        const response = await facturasClienteLoteItemCodeGenesis(itemCode, cardCode, batchNum)
         return res.json(response)
     } catch (error) {
         console.log({ error })
