@@ -2173,7 +2173,8 @@ const cancelarParaRefacturarController = async (req, res) => {
             mediaPagina,
             docEntry,
             id_sap,
-            DocDate, Almacen
+            DocDate, Almacen,
+            glosa
         } = req.body
         let responseProsin = {}
         let endTime = Date.now();
@@ -2276,10 +2277,11 @@ const cancelarParaRefacturarController = async (req, res) => {
         let newDocumentLines = []
         let cabeceraReturn = []
         let numRet = 0
+        let orderNumber = 0
         for (const line of entregas) {
             let newLine = {}
             const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
-                AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,
+                AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, Comments, 
                 ...restLine } = line;
             if (cabeceraReturn.length == 0) {
                 cabeceraReturn.push({
@@ -2289,6 +2291,7 @@ const cancelarParaRefacturarController = async (req, res) => {
                     U_B_cufd: U_B_cufEntr,
                     Series: 352
                 })
+                orderNumber = base3
             }
             const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
             console.log({ batch: batchData })
@@ -2313,9 +2316,8 @@ const cancelarParaRefacturarController = async (req, res) => {
                 const data = {
                     BaseLine: LineNum,
                     BaseType: 15,
-                    BaseEntry
+                    BaseEntry: base3
                 }
-
                 newLine = {
                     ...data,
                     ItemCode,
@@ -2324,6 +2326,7 @@ const cancelarParaRefacturarController = async (req, res) => {
                     LineNum: numRet,
                     TaxCode: "IVA_GND",
                     AccountCode: "6210103",
+                    Comments: glosa,
                     ...restLine,
                     BatchNumbers: batchNumbers
                 };
@@ -2354,13 +2357,16 @@ const cancelarParaRefacturarController = async (req, res) => {
             return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
         }
         //? cancel orden
-        const { orderNumber } = responceReturn
+        const responsePedido = await pedidosPorEntrega(BaseEntry)
         console.log('---------------------------------------------ORDER NUMBER')
+        console.log({orderNumberAntes: orderNumber})
+        orderNumber= responsePedido[0].BaseEntry
+        console.log({orderNumberDespues: orderNumber})
         const resCancel = await cancelOrder(orderNumber)
         console.log(JSON.stringify({ resCancel }, null, 2))
         if (resCancel.status == 400) {
             grabarLog(user.USERCODE, user.USERNAME, "Cancelacion orden desde facturacion", `Error en cancelOrder: ${resCancel.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancelar-orden", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error en cancelOrder: ${resCancel.errorMessage.value || ''}` })
+            return res.status(400).json({ mensaje: `Error en cancelOrder: ${resCancel.errorMessage.value || ''}`, orderNumber, finalDataEntrega, entregas })
         }
 
         return res.json({

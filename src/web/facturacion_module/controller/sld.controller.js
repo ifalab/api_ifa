@@ -222,7 +222,7 @@ const cancelOrder = async (id) => {
             headers: headers,
             timeout: REQUEST_TIMEOUT
         });
-        console.log(sapResponse)
+        // console.log(sapResponse)
         return { data: sapResponse.data, status: 200 }
     } catch (error) {
         console.log("Error sld controller cancelOrder", { error })
