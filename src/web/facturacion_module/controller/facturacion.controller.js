@@ -2353,12 +2353,23 @@ const cancelarParaRefacturarController = async (req, res) => {
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
         }
+        //? cancel orden
+        const { orderNumber } = responceReturn
+        console.log('---------------------------------------------ORDER NUMBER')
+        const resCancel = await cancelOrder(orderNumber)
+        console.log(JSON.stringify({ resCancel }, null, 2))
+        if (resCancel.status == 400) {
+            grabarLog(user.USERCODE, user.USERNAME, "Cancelacion orden desde facturacion", `Error en cancelOrder: ${resCancel.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancelar-orden", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en cancelOrder: ${resCancel.errorMessage.value || ''}` })
+        }
+
         return res.json({
             responseProsin: { ...responseProsin, cuf },
             reponseInvoice,
             finalDataEntrega,
             batchEntrega,
             entregas,
+            resCancel,
             idReturn: responceReturn.orderNumber
         })
 
@@ -2471,10 +2482,10 @@ const obtenerDevolucionDetallerController = async (req, res) => {
                 U_B_em_date,
                 U_UserCode,
                 ...rest
-             } = item
-             response.DocumentLines.push({...rest})
+            } = item
+            response.DocumentLines.push({ ...rest })
         })
-        console.log({detalle})
+        console.log({ detalle })
         return res.json(response)
     } catch (error) {
         console.log({ error })
