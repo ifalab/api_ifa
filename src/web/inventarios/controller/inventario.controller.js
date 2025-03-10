@@ -78,12 +78,12 @@ const postHabilitacionController = async (req, res) => {
         // return res.json({ id: userLocal.user.ID })
 
         if (formulario.almacen == null) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion",  `Error, el inventario es obligatorio. ${formulario.almacen || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, el inventario es obligatorio. ${formulario.almacen || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
         } else {
             if (formulario.almacen.WhsCode) {
                 warehouseCode = formulario.almacen.WhsCode
-                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, el almacen es obligatorios`, ``, "inventario/habilitacion", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, el almacen es obligatorio`, ``, "inventario/habilitacion", process.env.PRD)
             } else {
                 return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
             }
@@ -112,17 +112,17 @@ const postHabilitacionController = async (req, res) => {
         for (const item of inventario) {
             console.log({ item })
             if (!item.articulo || item.articulo == null || item.articulo == '') {
-                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.articulo||'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.articulo || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'El codigo del articulo es obligatorio' })
             }
 
             if (!item.articuloDict || item.articuloDict == null || item.articuloDict == '') {
-                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.articuloDict||'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.articuloDict || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'El codigo del articulo EQUIVALENTE es obligatorio' })
             }
 
             if (!item.lote || item.lote == null || item.lote == '') {
-                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.lote||'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, El codigo del articulo es obligatorio. ${item.lote || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'El lote es obligatorio' })
                 break
             }
@@ -267,13 +267,13 @@ const postHabilitacionController = async (req, res) => {
         console.log({ responseEntradaHabilitacion })
         console.log({ value: responseEntradaHabilitacion.value })
         console.log({ lang: responseEntradaHabilitacion.lang })
-        
+
         if (responseEntradaHabilitacion.value) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value|| ''}`, ``, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value || ''}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
         }
         if (responseEntradaHabilitacion.errorMessage) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value|| 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: `Error del SAP en postEntradaHabilitacion. ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || 'No definido'}` });
         }
         grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitado con exito`, ``, "inventario/habilitacion", process.env.PRD)
@@ -506,7 +506,7 @@ const devolucionCompletaController = async (req, res) => {
             return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
         }
         const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
-        
+
         if (batchEntrega.length == 0) {
             return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega, entregas })
         }
@@ -519,11 +519,11 @@ const devolucionCompletaController = async (req, res) => {
             const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
                 AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,
                 ...restLine } = line;
-            if(cabeceraReturn.length==0){
+            if (cabeceraReturn.length == 0) {
                 cabeceraReturn.push({
-                    U_NIT, U_RAZSOC, 
-                    U_UserCode: id_sap, 
-                    CardCode: cardCodeEntrega, 
+                    U_NIT, U_RAZSOC,
+                    U_UserCode: id_sap,
+                    CardCode: cardCodeEntrega,
                     U_B_cufd: U_B_cufEntr,
                     Series: 352
                 })
@@ -609,8 +609,8 @@ const devolucionCompletaController = async (req, res) => {
             const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev,
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
             } = lineDevolucion
@@ -632,7 +632,7 @@ const devolucionCompletaController = async (req, res) => {
                     U_UserCode
                 })
             }
-            if(DocumentAdditionalExpenses.length==0){
+            if (DocumentAdditionalExpenses.length == 0) {
                 DocumentAdditionalExpenses = [
                     { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_GND' },
                     { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_GND' },
@@ -644,10 +644,10 @@ const devolucionCompletaController = async (req, res) => {
                 BaseLine: LineNumDev,
                 BaseType: 16,
                 BaseEntry: docEntryDev,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, 
-                AccountCode: '6210103', 
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev,
+                AccountCode: '6210103',
                 // AccountCode: AccountCodeDev,
-                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev,
                 TaxCode: 'IVA_GND'
             }
 
@@ -663,9 +663,9 @@ const devolucionCompletaController = async (req, res) => {
         }
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
-        if(responseCreditNote.status > 299){
+        if (responseCreditNote.status > 299) {
             let mensaje = responseCreditNote.errorMessage
-            if(typeof mensaje != 'string' && mensaje.lang){
+            if (typeof mensaje != 'string' && mensaje.lang) {
                 mensaje = mensaje.value
             }
 
@@ -709,8 +709,8 @@ const pruebaController = async (req, res) => {
             const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev,
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
             } = lineDevolucion
@@ -737,7 +737,7 @@ const pruebaController = async (req, res) => {
                 BaseLine: LineNumDev,
                 BaseType: 16,
                 BaseEntry: id,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev,
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev
             }
 
@@ -823,74 +823,74 @@ const devolucionExcepcionalController = async (req, res) => {
             return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
         }
         const batchEntrega = await obtenerEntregaDetalleDevolucion(DocEntry);
-        
+
         if (batchEntrega.length == 0) {
             return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', DocEntry, batchEntrega, entregas })
         }
-        
+
         let newDocumentLines = []
         let numRet = 0
         // let numBatch = 0
         for (const line of entregas) {
-          const detalle = Detalle.find((item)=> item.ItemCode == line.ItemCode)
-          if(detalle){
-            const {cantidad}=detalle
-            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,AccountCode, DocTotal: DocTotalEntr, GrossTotal: GrossTotalEntr, ...restLine } = line;
-            
-            const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
-            console.log({ batch: batchData })
-            if (batchData && batchData.length > 0) {
-                let cantidaUnit = cantidad*Number(UnitsOfMeasurment)
-                let batchNumbers= []
-                for(const batch of batchData){
-                    if(cantidaUnit==0)
-                        break;
-                    if(cantidaUnit < Number(batch.OutQtyL)){
-                        batch.new_quantity = cantidaUnit
-                    }else{
-                        batch.new_quantity = Number(batch.OutQtyL)
+            const detalle = Detalle.find((item) => item.ItemCode == line.ItemCode)
+            if (detalle) {
+                const { cantidad } = detalle
+                const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode, AccountCode, DocTotal: DocTotalEntr, GrossTotal: GrossTotalEntr, ...restLine } = line;
+
+                const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
+                console.log({ batch: batchData })
+                if (batchData && batchData.length > 0) {
+                    let cantidaUnit = cantidad * Number(UnitsOfMeasurment)
+                    let batchNumbers = []
+                    for (const batch of batchData) {
+                        if (cantidaUnit == 0)
+                            break;
+                        if (cantidaUnit < Number(batch.OutQtyL)) {
+                            batch.new_quantity = cantidaUnit
+                        } else {
+                            batch.new_quantity = Number(batch.OutQtyL)
+                        }
+                        cantidaUnit = Number(cantidaUnit) - Number(batch.new_quantity)
+                        batchNumbers.push({
+                            BaseLineNumber: numRet,
+                            BatchNumber: batch.BatchNum,
+                            Quantity: batch.new_quantity,
+                            ItemCode: batch.ItemCode
+                        })
+                        // numBatch +=1
                     }
-                    cantidaUnit = Number(cantidaUnit) - Number(batch.new_quantity)
-                    batchNumbers.push({
-                        BaseLineNumber: numRet,
-                        BatchNumber: batch.BatchNum,
-                        Quantity: batch.new_quantity,
-                        ItemCode: batch.ItemCode
-                    })
-                    // numBatch +=1
+                    console.log('------------------------------------------------------------------------------------')
+                    console.log({ UnitsOfMeasurment })
+                    console.log('------------------------------------------------------------------------------------')
+
+
+                    // const data = {
+                    //     BaseLine: LineNum,
+                    //     BaseType: 17,
+                    //     BaseEntry,
+                    // }
+
+                    let GrossTotalEntrega = detalle.UnitPriceAfDi * cantidad
+                    newLine = {
+                        // ...data,
+                        ItemCode,
+                        WarehouseCode: Almacen,
+                        Quantity: cantidad,
+                        LineNum: numRet,
+                        TaxCode: "IVA_GND",
+                        AccountCode: "6210103",
+                        GrossTotal: GrossTotalEntrega,
+                        ...restLine,
+                        BatchNumbers: batchNumbers
+                    };
+                    newLine = { ...newLine };
+                    console.log('------newLine-----')
+                    console.log({ newLine })
+
+                    newDocumentLines.push(newLine)
+                    numRet += 1
                 }
-                console.log('------------------------------------------------------------------------------------')
-                console.log({ UnitsOfMeasurment })
-                console.log('------------------------------------------------------------------------------------')
-
-
-                // const data = {
-                //     BaseLine: LineNum,
-                //     BaseType: 17,
-                //     BaseEntry,
-                // }
-                
-                let GrossTotalEntrega = detalle.UnitPriceAfDi * cantidad
-                newLine = {
-                    // ...data,
-                    ItemCode,
-                    WarehouseCode: Almacen,
-                    Quantity: cantidad,
-                    LineNum: numRet,
-                    TaxCode: "IVA_GND",
-                    AccountCode: "6210103",
-                    GrossTotal: GrossTotalEntrega,
-                    ...restLine,
-                    BatchNumbers: batchNumbers
-                };
-                newLine = { ...newLine };
-                console.log('------newLine-----')
-                console.log({ newLine })
-
-                newDocumentLines.push(newLine)
-                numRet += 1
             }
-          }
         }
         const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, U_B_cuf } = entregas[0]
 
@@ -935,8 +935,8 @@ const devolucionExcepcionalController = async (req, res) => {
             const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev,
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
             } = lineDevolucion
@@ -958,7 +958,7 @@ const devolucionExcepcionalController = async (req, res) => {
                     U_UserCode
                 })
             }
-            if(DocumentAdditionalExpenses.length==0){
+            if (DocumentAdditionalExpenses.length == 0) {
                 DocumentAdditionalExpenses = [
                     { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_GND' },
                     { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_GND' },
@@ -970,9 +970,9 @@ const devolucionExcepcionalController = async (req, res) => {
                 BaseLine: LineNumDev,
                 BaseType: 16,
                 BaseEntry: docEntryDev,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, 
-                AccountCode: '6210103', 
-                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, 
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev,
+                AccountCode: '6210103',
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev,
                 TaxCode: 'IVA_GND'
             }
 
@@ -988,9 +988,9 @@ const devolucionExcepcionalController = async (req, res) => {
         }
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
-        if(responseCreditNote.status > 299){
+        if (responseCreditNote.status > 299) {
             let mensaje = responseCreditNote.errorMessage
-            if(typeof mensaje != 'string' && mensaje.lang){
+            if (typeof mensaje != 'string' && mensaje.lang) {
                 mensaje = mensaje.value
             }
 
@@ -1058,7 +1058,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
 
         //----------------------
         const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
-        console.log({entregas})
+        console.log({ entregas })
         if (entregas.message) {
             endTime = Date.now()
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
@@ -1074,26 +1074,26 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         if (batchEntrega.length == 0) {
             return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega })
         }
-        console.log({batchEntrega})
+        console.log({ batchEntrega })
         let newDocumentLines = []
         let numRet = 0
         for (const line of entregas) {
-            const detalle = Detalle.find((item)=> item.ItemCode == line.ItemCode)
-            if(detalle){
-                const {cantidad}=detalle
-                const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,AccountCode, DocTotal: DocTotalEntr, GrossTotal: GrossTotalEntr, ...restLine } = line;
-                
+            const detalle = Detalle.find((item) => item.ItemCode == line.ItemCode)
+            if (detalle) {
+                const { cantidad } = detalle
+                const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode, AccountCode, DocTotal: DocTotalEntr, GrossTotal: GrossTotalEntr, ...restLine } = line;
+
                 const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
                 console.log({ batch: batchData })
                 if (batchData && batchData.length > 0) {
-                    let cantidaUnit = cantidad*Number(UnitsOfMeasurment)
-                    let batchNumbers= []
-                    for(const batch of batchData){
-                        if(cantidaUnit==0)
+                    let cantidaUnit = cantidad * Number(UnitsOfMeasurment)
+                    let batchNumbers = []
+                    for (const batch of batchData) {
+                        if (cantidaUnit == 0)
                             break;
-                        if(cantidaUnit < Number(batch.OutQtyL)){
+                        if (cantidaUnit < Number(batch.OutQtyL)) {
                             batch.new_quantity = cantidaUnit
-                        }else{
+                        } else {
                             batch.new_quantity = Number(batch.OutQtyL)
                         }
                         cantidaUnit = Number(cantidaUnit) - Number(batch.new_quantity)
@@ -1108,13 +1108,13 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     // console.log('------------------------------------------------------------------------------------')
                     // console.log({ UnitsOfMeasurment })
                     // console.log('------------------------------------------------------------------------------------')
-    
+
                     // const data = {
                     //     BaseLine: LineNum,
                     //     BaseType: 17,
                     //     BaseEntry,
                     // }
-                    
+
                     let GrossTotalEntrega = detalle.UnitPriceAfDi * cantidad
                     newLine = {
                         // ...data,
@@ -1131,7 +1131,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     newLine = { ...newLine };
                     console.log('------newLine-----')
                     console.log({ newLine })
-    
+
                     newDocumentLines.push(newLine)
                     numRet += 1
                 }
@@ -1163,19 +1163,23 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             if (mensaje.value)
                 mensaje = mensaje.value
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega,
-                entregas, batchEntrega })
+            return res.status(400).json({
+                mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega,
+                entregas, batchEntrega
+            })
         }
 
         const docEntryDev = responceReturn.orderNumber
-        console.log({docEntryDev})
+        console.log({ docEntryDev })
         //*------------------------------------------------ DETALLE TO PROSIN
 
         const entregasFromProsin = await entregaDetalleToProsin(docEntryDev)
         console.log({ entregasFromProsin })
         if (!entregasFromProsin || entregasFromProsin.length == 0) {
-            return res.status(400).json({ mensaje: 'Error al obtener el detalle de la factura de prosin.', 
-                finalDataEntrega, responceReturn, entregasFromProsin })
+            return res.status(400).json({
+                mensaje: 'Error al obtener el detalle de la factura de prosin.',
+                finalDataEntrega, responceReturn, entregasFromProsin
+            })
         }
         const {
             sucursal,
@@ -1211,8 +1215,8 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         }
         let totalDevuelto = 0
         entregas.map((item) => {
-            const entregaProsin = entregasFromProsin.find((item2)=> item2.producto == item.ItemCode)
-            if(entregaProsin){
+            const entregaProsin = entregasFromProsin.find((item2) => item2.producto == item.ItemCode)
+            if (entregaProsin) {
                 const total = Number((+entregaProsin.cantidad * +entregaProsin.precioUnitario).toFixed(2))
                 dataToProsin.detalle.push({
                     producto: entregaProsin.producto,
@@ -1244,18 +1248,19 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         // })
         //*------------------------------------------------------------------------ PROSIN
         const responseProsin = await notaDebitoCredito(dataToProsin, user)
-        if (responseProsin.statusCode >300) {
-            let mensaje='Error al intentar facturar la Nota Debito Credito.'
-            if(responseProsin.message && responseProsin.message.errors){
+        if (responseProsin.statusCode > 300) {
+            let mensaje = 'Error al intentar facturar la Nota Debito Credito.'
+            if (responseProsin.message && responseProsin.message.errors) {
                 mensaje += JSON.stringify(responseProsin.message.errors, null, 2)
-            }else{
+            } else {
                 mensaje += responseProsin.data.mensaje || ''
             }
-            return res.status(400).json({ 
-                mensaje, 
-                dataToProsin, entregasFromProsin, finalDataEntrega, entregas })
+            return res.status(400).json({
+                mensaje,
+                dataToProsin, entregasFromProsin, finalDataEntrega, entregas
+            })
         }
-        console.log({responseProsin})
+        console.log({ responseProsin })
         //     "responseProsin": {
         //     "statusCode": 200,
         //     "data": {
@@ -1267,22 +1272,24 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //     "query": "https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito"
         // }
         //*------------------------------------------------------------------------ RESPONSE PROSIN
-        const cufndc= responseProsin.data.datos.cuf ////?
-        console.log({cufndc})
+        const cufndc = responseProsin.data.datos.cuf ////?
+        console.log({ cufndc })
         //---------------------------------------------------------------------PATCH RETURNS
 
-        const responsePatchReturns = await patchReturn({U_B_cuf: cufndc}, docEntryDev)
+        const responsePatchReturns = await patchReturn({ U_B_cuf: cufndc }, docEntryDev)
 
-        if(responsePatchReturns.status >299){
+        if (responsePatchReturns.status > 299) {
             let mensaje = responsePatchReturns.errorMessage
-            if(typeof mensaje != 'string' && mensaje.lang){
+            if (typeof mensaje != 'string' && mensaje.lang) {
                 mensaje = mensaje.value
             }
 
             mensaje = `Error en patchReturn: ${mensaje}`
-            return res.status(responceReturn.status).json({mensaje, cufndc, docEntryDev,
+            return res.status(responceReturn.status).json({
+                mensaje, cufndc, docEntryDev,
                 finalDataEntrega,
-                dataToProsin}
+                dataToProsin
+            }
             )
         }
         console.log('Patch return hecho con exito')
@@ -1296,8 +1303,8 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev,
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
             } = lineDevolucion
@@ -1319,7 +1326,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     U_UserCode
                 })
             }
-            if(DocumentAdditionalExpenses.length==0){
+            if (DocumentAdditionalExpenses.length == 0) {
                 DocumentAdditionalExpenses = [
                     { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_GND' },
                     { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_GND' },
@@ -1331,9 +1338,9 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 BaseLine: LineNumDev,
                 BaseType: 16,
                 BaseEntry: docEntryDev,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, 
-                AccountCode: '6210103', 
-                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, 
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev,
+                AccountCode: '6210103',
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev,
                 TaxCode: 'IVA_GND'
             }
 
@@ -1349,9 +1356,9 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         }
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
-        if(responseCreditNote.status > 299){
+        if (responseCreditNote.status > 299) {
             let mensaje = responseCreditNote.errorMessage
-            if(typeof mensaje != 'string' && mensaje.lang){
+            if (typeof mensaje != 'string' && mensaje.lang) {
                 mensaje = mensaje.value
             }
 
@@ -1365,7 +1372,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 finalDataEntrega
             })
         }
-        
+
         return res.json({
             finalDataEntrega,
             docEntryDev,
@@ -1375,9 +1382,10 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             responseCreditNote
         })
     } catch (error) {
-        console.log({ errorCatch:   JSON.stringify(error, null, 2) })
-        return res.status(500).json({ mensaje: `Error en el controlador devolucionNotaDebitoCreditoController: ${error.message}`,
-           
+        console.log({ errorCatch: JSON.stringify(error, null, 2) })
+        return res.status(500).json({
+            mensaje: `Error en el controlador devolucionNotaDebitoCreditoController: ${error.message}`,
+
         })
     }
 }
@@ -1411,7 +1419,7 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
             return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
         }
         const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
-        
+
         if (batchEntrega.length == 0) {
             return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega, entregas })
         }
@@ -1424,11 +1432,11 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
             const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
                 AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,
                 ...restLine } = line;
-            if(cabeceraReturn.length==0){
+            if (cabeceraReturn.length == 0) {
                 cabeceraReturn.push({
-                    U_NIT, U_RAZSOC, 
-                    U_UserCode: id_sap, 
-                    CardCode: cardCodeEntrega, 
+                    U_NIT, U_RAZSOC,
+                    U_UserCode: id_sap,
+                    CardCode: cardCodeEntrega,
                     U_B_cufd: U_B_cufEntr,
                     Series: 352
                 })
@@ -1507,8 +1515,10 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
         const entregasFromProsin = await entregaDetalleToProsin(docEntryDev)
         console.log({ entregasFromProsin })
         if (!entregasFromProsin || entregasFromProsin.length == 0) {
-            return res.status(400).json({ mensaje: 'Error al obtener el detalle de la factura de prosin.', 
-                finalDataEntrega, responceReturn, entregasFromProsin })
+            return res.status(400).json({
+                mensaje: 'Error al obtener el detalle de la factura de prosin.',
+                finalDataEntrega, responceReturn, entregasFromProsin
+            })
         }
         const {
             sucursal,
@@ -1572,18 +1582,19 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
         // })
         //*------------------------------------------------------------------------ PROSIN
         const responseProsin = await notaDebitoCredito(dataToProsin, user)
-        if (responseProsin.statusCode >300) {
-            let mensaje='Error al intentar facturar la Nota Debito Credito.'
-            if(responseProsin.message && responseProsin.message.errors){
+        if (responseProsin.statusCode > 300) {
+            let mensaje = 'Error al intentar facturar la Nota Debito Credito.'
+            if (responseProsin.message && responseProsin.message.errors) {
                 mensaje += JSON.stringify(responseProsin.message.errors, null, 2)
-            }else{
+            } else {
                 mensaje += responseProsin.data.mensaje || ''
             }
-            return res.status(400).json({ 
-                mensaje, 
-                dataToProsin, entregasFromProsin, docEntryDev, finalDataEntrega, entregas })
+            return res.status(400).json({
+                mensaje,
+                dataToProsin, entregasFromProsin, docEntryDev, finalDataEntrega, entregas
+            })
         }
-        console.log({responseProsin})
+        console.log({ responseProsin })
         //     "responseProsin": {
         //     "statusCode": 200,
         //     "data": {
@@ -1595,22 +1606,24 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
         //     "query": "https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito"
         // }
         //*------------------------------------------------------------------------ RESPONSE PROSIN
-        const cufndc= responseProsin.data.datos.cuf ////?
-        console.log({cufndc})
+        const cufndc = responseProsin.data.datos.cuf ////?
+        console.log({ cufndc })
         //---------------------------------------------------------------------PATCH RETURNS
 
-        const responsePatchReturns = await patchReturn({U_B_cuf: cufndc}, docEntryDev)
+        const responsePatchReturns = await patchReturn({ U_B_cuf: cufndc }, docEntryDev)
 
-        if(responsePatchReturns.status >299){
+        if (responsePatchReturns.status > 299) {
             let mensaje = responsePatchReturns.errorMessage
-            if(typeof mensaje != 'string' && mensaje.lang){
+            if (typeof mensaje != 'string' && mensaje.lang) {
                 mensaje = mensaje.value
             }
 
             mensaje = `Error en patchReturn: ${mensaje}`
-            return res.status(responceReturn.status).json({mensaje, cufndc, docEntryDev,
+            return res.status(responceReturn.status).json({
+                mensaje, cufndc, docEntryDev,
                 finalDataEntrega,
-                dataToProsin}
+                dataToProsin
+            }
             )
         }
         console.log('Patch return hecho con exito')
@@ -1630,8 +1643,8 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
             const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
                 PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev,
                 GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
                 ...restDev
             } = lineDevolucion
@@ -1653,7 +1666,7 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
                     U_UserCode
                 })
             }
-            if(DocumentAdditionalExpenses.length==0){
+            if (DocumentAdditionalExpenses.length == 0) {
                 DocumentAdditionalExpenses = [
                     { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_GND' },
                     { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_GND' },
@@ -1665,10 +1678,10 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
                 BaseLine: LineNumDev,
                 BaseType: 16,
                 BaseEntry: docEntryDev,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, 
-                AccountCode: '6210103', 
+                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev,
+                AccountCode: '6210103',
                 // AccountCode: AccountCodeDev,
-                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, 
+                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev,
                 TaxCode: 'IVA_GND'
             }
 
@@ -1684,9 +1697,9 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
         }
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
-        if(responseCreditNote.status > 299){
+        if (responseCreditNote.status > 299) {
             let mensaje = responseCreditNote.errorMessage
-            if(typeof mensaje != 'string' && mensaje.lang){
+            if (typeof mensaje != 'string' && mensaje.lang) {
                 mensaje = mensaje.value
             }
 
@@ -1723,13 +1736,262 @@ const devolucionDebitoCreditoCompletaController = async (req, res) => {
 
 const searchArticulosController = async (req, res) => {
     try {
-        const {cadena} = req.body
+        const { cadena } = req.body
         const cadenS = cadena.toUpperCase()
         const response = await searchArticulos(cadenS)
         return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador searchArticulosController: ${error.message}` })
+    }
+}
+
+const facturasClienteLoteItemCodeGenesisController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const cardCode = req.query.cardCode
+        const batchNum = req.query.batchNum
+        const response = await facturasClienteLoteItemCode(itemCode, cardCode, batchNum)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const devolucionNDCGenesisController = async (req, res) => {
+    try {
+        const startTime = Date.now();
+        const {
+            DocEntry: docEntry,
+            Cuf,
+            BaseEntry,
+            id_sap,
+            DocDate,
+            Almacen } = req.body
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        if (!docEntry || docEntry <= 0) {
+            return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
+        }
+
+        return res.json({
+            DocEntry: docEntry,
+            Cuf,
+            BaseEntry,
+            id_sap,
+            DocDate,
+            Almacen
+        })
+        console.log({
+
+        })
+        const fechaFormater = new Date(DocDate)
+        const year = fechaFormater.getUTCFullYear();
+        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
+        const formater = `${year}${month}${day}`;
+        const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
+
+        // if (entregas.message) {
+        //     endTime = Date.now()
+        //     // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+        //     return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
+        // }
+        // if (entregas.length == 0) {
+        //     endTime = Date.now()
+        //     // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+        //     return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
+        // }
+        // const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
+
+        // if (batchEntrega.length == 0) {
+        //     return res.status(400).json({ mensaje: 'no hay batchs para el body del portReturn', docEntry, batchEntrega, entregas })
+        // }
+        // let batchNumbers = []
+        // let newDocumentLines = []
+        // let cabeceraReturn = []
+        // let numRet = 0
+        // for (const line of entregas) {
+        //     let newLine = {}
+        //     const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
+        //         AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,
+        //         ...restLine } = line;
+        //     if(cabeceraReturn.length==0){
+        //         cabeceraReturn.push({
+        //             U_NIT, U_RAZSOC, 
+        //             U_UserCode: id_sap, 
+        //             CardCode: cardCodeEntrega, 
+        //             U_B_cufd: U_B_cufEntr,
+        //             Series: 352
+        //         })
+        //     }
+        //     const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
+        //     console.log({ batch: batchData })
+        //     if (batchData && batchData.length > 0) {
+        //         // return res.status(404).json({ message: `No se encontraron datos de batch para los parámetros proporcionados en la línea con ItemCode: ${ItemCode}`, batch: batchData ,LineNum});
+        //         let new_quantity = 0
+        //         batchData.map((batch) => {
+        //             new_quantity = Number(new_quantity) + Number(batch.OutQtyL)
+        //         })
+        //         console.log('------------------------------------------------------------------------------------')
+        //         console.log({ new_quantity, UnitsOfMeasurment })
+        //         console.log('------------------------------------------------------------------------------------')
+
+        //         //console.log({ batchData })
+        //         batchNumbers = batchData.map(batch => ({
+        //             BaseLineNumber: numRet,
+        //             BatchNumber: batch.BatchNum,
+        //             Quantity: Number(batch.OutQtyL).toFixed(6),
+        //             ItemCode: batch.ItemCode
+        //         }))
+
+        //         // const data = {
+        //         //     BaseLine: LineNum,
+        //         //     BaseType: 17,
+        //         //     BaseEntry,
+        //         // }
+
+        //         newLine = {
+        //             // ...data,
+        //             ItemCode,
+        //             WarehouseCode: Almacen,
+        //             Quantity: new_quantity / UnitsOfMeasurment,
+        //             LineNum: numRet,
+        //             TaxCode: "IVA_GND",
+        //             AccountCode: "6210103",
+        //             ...restLine,
+        //             BatchNumbers: batchNumbers
+        //         };
+        //         newLine = { ...newLine };
+        //         console.log('------newLine-----')
+        //         console.log({ newLine })
+
+        //         newDocumentLines.push(newLine)
+        //         numRet += 1
+        //     }
+        // }
+        // const finalData = {
+        //     // DocDate,
+        //     // DocDueDate,
+        //     ...cabeceraReturn[0],
+        //     DocumentLines: newDocumentLines,
+        // }
+
+        // finalDataEntrega = finalData
+        // // return res.json(finalDataEntrega)
+        // const responceReturn = await postReturn(finalDataEntrega)
+        // // return res.json({responceReturn, finalDataEntrega, newDocumentLines})
+
+        // if (responceReturn.status > 300) {
+        //     console.log({ errorMessage: responceReturn.errorMessage })
+        //     let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
+        //     if (mensaje.value)
+        //         mensaje = mensaje.value
+        //     // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
+        //     return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
+        // }
+
+        // const docEntryDev = responceReturn.orderNumber
+        // const devolucionDetalle = await obtenerDevolucionDetalle(docEntryDev)
+
+        // // if(devolucionDetalle.length==0){
+        // //     return res.status(400).json({mensaje: `No se encontro ninguna devolucion para ${docEntryDev}`,docEntryDev, responceReturn, finalDataEntrega})
+        // // }
+
+        // const cabeceraCN = []
+        // const DocumentLinesCN = []
+        // let DocumentAdditionalExpenses = []
+        // let numDev = 0
+        // for (const lineDevolucion of devolucionDetalle) {
+        //     const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
+        //         CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
+        //         PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
+        //         ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2,ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+        //         ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev, 
+        //         GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
+        //         ...restDev
+        //     } = lineDevolucion
+        //     if (cabeceraCN.length == 0) {
+        //         cabeceraCN.push({
+        //             DocDate: DocDateDev,
+        //             DocDueDate: DocDueDateDev,
+        //             CardCode: CardCodeDev,
+        //             NumAtCard,
+        //             DocTotal: DocTotalDev,
+        //             DocCurrency: DocCurrencyDev,
+        //             Reference1: docEntryDev,// DocEntry de la devolucion
+        //             Reference2: docEntry ?? '',// DocEntry de la factura
+        //             Comments: CommentsDev,
+        //             JournalMemo: JournalMemoDev,
+        //             PaymentGroupCode,
+        //             SalesPersonCode,
+        //             Series: 361,
+        //             U_UserCode
+        //         })
+        //     }
+        //     if(DocumentAdditionalExpenses.length==0){
+        //         DocumentAdditionalExpenses = [
+        //             { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_GND' },
+        //             { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_GND' },
+        //         ]
+        //     }
+
+        //     const newLineDev = {
+        //         LineNum: numDev,
+        //         BaseLine: LineNumDev,
+        //         BaseType: 16,
+        //         BaseEntry: docEntryDev,
+        //         ItemCode: ItemCodeDev, Quantity: QuantityDev,WarehouseCode: WarehouseCodeDev, 
+        //         AccountCode: '6210103', 
+        //         // AccountCode: AccountCodeDev,
+        //         GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, 
+        //         TaxCode: 'IVA_GND'
+        //     }
+
+        //     DocumentLinesCN.push(newLineDev)
+
+        //     numDev += 1
+        // }
+
+        // const bodyCreditNotes = {
+        //     ...cabeceraCN[0],
+        //     DocumentLines: DocumentLinesCN,
+        //     DocumentAdditionalExpenses
+        // }
+        // const responseCreditNote = await postCreditNotes(bodyCreditNotes)
+
+        // if(responseCreditNote.status > 299){
+        //     let mensaje = responseCreditNote.errorMessage
+        //     if(typeof mensaje != 'string' && mensaje.lang){
+        //         mensaje = mensaje.value
+        //     }
+
+        //     mensaje = `Error en creditNote: ${mensaje}`
+
+        //     return res.status(400).json({
+        //         mensaje,
+        //         bodyCreditNotes,
+        //         devolucionDetalle,
+        //         idReturn: responceReturn.orderNumber,
+        //         finalDataEntrega
+        //     })
+        // }
+
+        // // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Exito en la devolucion`, ``, "inventario/devolucion-completa", process.env.PRD)
+        // return res.json({
+        //     idCreditNote: responseCreditNote.orderNumber,
+        //     idReturn: responceReturn.orderNumber,
+        //     bodyCreditNotes,
+        //     finalDataEntrega
+        // })
+
+
+    } catch (error) {
+        console.log({ error })
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `${error.message || 'Error en devolucionCompletaController'}`, `Catch controller devolucionCompletaController`, "inventario/devolucion-completa", process.env.PRD)
+
+        return res.status(500).json({ mensaje: `Error en el controlador devolucionCompletaController. ${error.message || ''}` })
     }
 }
 
@@ -1752,5 +2014,7 @@ module.exports = {
     getAllAlmacenesController,
     devolucionNotaDebitoCreditoController,
     searchArticulosController,
-    devolucionDebitoCreditoCompletaController
+    devolucionNDCGenesisController,
+    devolucionDebitoCreditoCompletaController,
+    facturasClienteLoteItemCodeGenesisController,
 }

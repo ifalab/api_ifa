@@ -89,6 +89,7 @@ const postSalidaHabilitacion = async (data) => {
 const postEntradaHabilitacion = async (data) => {
   try {
     // Verifica o genera una sesión
+    console.log(JSON.stringify({ data }, null, 2))
     const currentSession = await connectSLD();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
@@ -128,7 +129,7 @@ const postEntradaHabilitacion = async (data) => {
   } catch (error) {
     // Centraliza el manejo de errores
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
-    console.error('Error en la solicitud POST para Salida de Inventario:', errorMessage);
+    console.error('Error en la solicitud POST para postEntradaHabilitacion:', errorMessage);
     // throw new Error(errorMessage);
     return errorMessage
   }
@@ -153,7 +154,7 @@ const postReturn = async (data) => {
       httpsAgent: agent,
       headers: headers
     });
-    console.log({ responseReturns : response })
+    console.log({ responseReturns: response })
 
     // Retorna la respuesta en caso de éxito
     const status = response.status
@@ -172,7 +173,8 @@ const postReturn = async (data) => {
     // throw new Error(errorMessage);
     return {
       status: 400,
-      errorMessage}
+      errorMessage
+    }
   }
 };
 
@@ -195,27 +197,28 @@ const postCreditNotes = async (data) => {
       httpsAgent: agent,
       headers: headers
     });
-    console.log({ responseCreditNotes : response })
+    console.log({ responseCreditNotes: response })
 
     // Retorna la respuesta en caso de éxito
     const status = response.status
     const locationHeader = response.headers.location;
     const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
     const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
-    console.log({orderNumber})
+    console.log({ orderNumber })
     // console.log({ location })
     // console.log({response})
     console.log({ status })
     return { status, orderNumber };
   } catch (error) {
     // Centraliza el manejo de errores
-    console.log({errorCreditNotes: error})
+    console.log({ errorCreditNotes: error })
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST CreditNotes';
     console.error('Error en la solicitud POST CreditNotes:', errorMessage);
     // throw new Error(errorMessage);
     return {
       status: 400,
-      errorMessage}
+      errorMessage
+    }
   }
 };
 
@@ -238,7 +241,7 @@ const patchReturn = async (data, id) => {
       httpsAgent: agent,
       headers: headers
     });
-    console.log({ responseReturnsPatch : response })
+    console.log({ responseReturnsPatch: response })
 
     // Retorna la respuesta en caso de éxito
     // const status = response.status
@@ -256,7 +259,8 @@ const patchReturn = async (data, id) => {
     // throw new Error(errorMessage);
     return {
       status: 400,
-      errorMessage}
+      errorMessage
+    }
   }
 };
 

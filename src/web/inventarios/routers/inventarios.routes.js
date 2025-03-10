@@ -5,7 +5,9 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     devolucionExcepcionalController,
     devolucionNotaDebitoCreditoController,
     searchArticulosController,
-    devolucionDebitoCreditoCompletaController
+    devolucionDebitoCreditoCompletaController,
+    devolucionNDCGenesisController,
+    facturasClienteLoteItemCodeGenesisController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -30,5 +32,7 @@ router.get('/prueba', [validarToken, validarCampos], pruebaController)
 router.get('/all-almacenes', [validarToken, validarCampos],getAllAlmacenesController)
 router.post('/search-articulos', [validarToken, validarCampos],searchArticulosController)
 router.post('/devolucion-ndc-completa', [validarToken, validarCampos], devolucionDebitoCreditoCompletaController)
+router.post('/devolucion-ndc-genesis', [validarToken, validarCampos], devolucionNDCGenesisController)
+router.get('/facturas-cliente-lote-itemcode-genesis', [validarToken, validarCampos], facturasClienteLoteItemCodeGenesisController)
 
 module.exports = router
