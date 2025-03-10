@@ -6,11 +6,14 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     devolucionNotaDebitoCreditoController,
     searchArticulosController,
     devolucionDebitoCreditoCompletaController,
-    getCreditNoteController
+    getCreditNoteController,
+    devolucionNDCGenesisController,
+    facturasClienteLoteItemCodeGenesisController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const { grabarLog } = require('../../shared/controller/hana.controller');
+const checkToken = require('../../../middleware/authMiddleware');
 const router = Router()
 
 router.get('/cliente-dimension', [validarToken, validarCampos], clientePorDimensionUnoController)
@@ -21,6 +24,7 @@ router.post('/descripcion-articulo', [validarToken, validarCampos], descripcionA
 router.get('/fecha-prueba', fechaVenLoteController)
 router.post('/habilitacion-diccionario', [validarToken, validarCampos], habilitacionDiccionarioController)
 router.get('/stock-disponible', [validarToken, validarCampos], stockDisponibleController)
+router.get('/stock-disponible-ifa', [checkToken, validarCampos], stockDisponibleController)
 router.get('/stock-disponible-ifavet', [validarToken, validarCampos], stockDisponibleIfavetController)
 router.get('/facturas-cliente-lote-itemcode', [validarToken, validarCampos], facturasClienteLoteItemCodeController)
 router.get('/detalle-ventas', [validarToken, validarCampos], detalleVentasController)
@@ -31,6 +35,8 @@ router.get('/prueba', [validarToken, validarCampos], pruebaController)
 router.get('/all-almacenes', [validarToken, validarCampos],getAllAlmacenesController)
 router.post('/search-articulos', [validarToken, validarCampos],searchArticulosController)
 router.post('/devolucion-ndc-completa', [validarToken, validarCampos], devolucionDebitoCreditoCompletaController)
+router.post('/devolucion-ndc-genesis', [validarToken, validarCampos], devolucionNDCGenesisController)
+router.get('/facturas-cliente-lote-itemcode-genesis', [validarToken, validarCampos], facturasClienteLoteItemCodeGenesisController)
 router.get('/credit-note', [validarToken, validarCampos], getCreditNoteController)
 
 module.exports = router
