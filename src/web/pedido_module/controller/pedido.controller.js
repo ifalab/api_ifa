@@ -235,48 +235,8 @@ const findZonasXVendedorController = async (req, res) => {
 }
 
 const crearOrderController = async (req, res) => {
-    let body = req.body
+    const body = req.body
     try {
-        const {CardCode,DocDate} = body
-        
-        const cliente = await clientePorCardCode(CardCode)
-        if(!cliente || cliente.length == 0){
-            return res.status(404).json({mensaje:'El cliente no existe'})
-        }
-        const paymentCode = cliente[0].GroupNum
-        const DocDue = await getDocDueDate(DocDate,paymentCode)
-        if(!DocDue || DocDue.length == 0){
-            return res.status(404).json({mensaje:`No se pudo calcular el DocDueDate, revise el DocDate`})
-        }
-        const docDueData = DocDue[0].DocDueDate
-        body.PaymentGroupCode = paymentCode
-        body.DocDueDate = docDueData
-        body.Series = 319
-        let docLines = body.DocumentLines
-        let newDocLines = []
-        for (const element of docLines) {
-            const {ItemCode} = element
-            if(!ItemCode || ItemCode == ''){
-                return res.status(404).json({mensaje:`El Item No es valido: ${ItemCode}`})
-            }
-            const itemData = await articuloPorItemCode(ItemCode)
-            if(!itemData || itemData.length == 0){
-                return res.status(404).json({mensaje:`El Item No fue encontrado: ${ItemCode}`})
-            }
-            const {SalUnitMsr} = itemData
-            const newData = {
-                ...element,
-                WarehouseCode:'800-01',
-                AccountCode:'4110101',
-                TaxCode:'IVA',
-                MeasureUnit:SalUnitMsr
-            }
-
-            newDocLines.push({...newData})
-        }
-        body.DocumentLines = newDocLines
-        // return res.json(body)
-        console.log(JSON.stringify({body},null,2))
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const docLine = body.DocumentLines
@@ -318,6 +278,100 @@ const crearOrderController = async (req, res) => {
         console.log({ usuario })
         const message = `Error en el controlador crearOrderController: ${error.message || ''}`
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${message || ''}`, '', "pedido/crear-orden", process.env.PRD)
+
+        return res.status(500).json({ message })
+    }
+}
+
+const crearOrderIfaController = async (req, res) => {
+    let body = req.body
+    try {
+        const { CardCode, DocDate } = body
+
+        const cliente = await clientePorCardCode(CardCode)
+        if (!cliente || cliente.length == 0) {
+            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `El cliente no existe: ${CardCode || 'No Definido'}`, `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode" = '${CardCode || 'No Definido'}'`, "pedido/crear-orden", process.env.PRD)
+            return res.status(404).json({ mensaje: 'El cliente no existe' })
+        }
+        const paymentCode = cliente[0].GroupNum
+        const DocDue = await getDocDueDate(DocDate, paymentCode)
+        if (!DocDue || DocDue.length == 0) {
+            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `No se pudo calcular el DocDueDate`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            return res.status(404).json({ mensaje: `No se pudo calcular el DocDueDate, revise el DocDate` })
+        }
+        const docDueData = DocDue[0].DocDueDate
+        body.PaymentGroupCode = paymentCode
+        body.Comments = body.Comments + ' PEDIDO DESDE EL ENDPOINT PUBLICO'
+        body.DocDueDate = docDueData
+        body.Series = 319
+        let docLines = body.DocumentLines
+        let newDocLines = []
+        for (const element of docLines) {
+            const { ItemCode } = element
+            if (!ItemCode || ItemCode == '') {
+                grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `El Item No es valido: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+                return res.status(404).json({ mensaje: `El Item No es valido: ${ItemCode}` })
+            }
+            const itemData = await articuloPorItemCode(ItemCode)
+            if (!itemData || itemData.length == 0) {
+                grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `El Item No fue encontrado: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+                return res.status(404).json({ mensaje: `El Item No fue encontrado: ${ItemCode}` })
+            }
+            const { SalUnitMsr } = itemData
+            const newData = {
+                ...element,
+                WarehouseCode: cliente[0].DftWhsCode,
+                AccountCode: '4110101',
+                TaxCode: 'IVA',
+                MeasureUnit: SalUnitMsr
+            }
+
+            newDocLines.push({ ...newData })
+        }
+        body.DocumentLines = newDocLines
+        // return res.json(body)
+        console.log(JSON.stringify({ body }, null, 2))
+        const alprazolamCode = '102-004-028'
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const docLine = body.DocumentLines
+        let alprazolamContains = false
+        let otherContains = false
+        docLine.map((item) => {
+            if (item.ItemCode == alprazolamCode) {
+                alprazolamContains = true
+            } else {
+                otherContains = true
+            }
+        })
+        // return
+        if (alprazolamContains && otherContains) {
+            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
+        }
+        console.log(JSON.stringify({ docLine, alprazolamContains, otherContains }, null, 2))
+        // return
+        console.log(JSON.stringify({ body }, null, 2))
+        const ordenResponse = await postOrden(body)
+
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        console.log(JSON.stringify(ordenResponse, null, 2))
+        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        if (ordenResponse.status == 400) {
+            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+        }
+
+
+        console.log({ usuario })
+        grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+
+        return res.json({ ...ordenResponse })
+    } catch (error) {
+        console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ usuario })
+        const message = `Error en el controlador crearOrderController: ${error.message || ''}`
+        grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `${message || ''}`, '', "pedido/crear-orden", process.env.PRD)
 
         return res.status(500).json({ message })
     }
@@ -586,6 +640,7 @@ const pedidoLayoutController = async (req, res) => {
         const delivery = req.query.delivery;
         console.log({ delivery })
         const response = await pedidoLayout(delivery)
+        console.log({ response })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         // return res.json({response})
         if (response.result.length == 0) {
@@ -1146,5 +1201,6 @@ module.exports = {
     articuloDiccionarioController,
     stockInstitucionPorArticuloController,
     pedidoOfertaInstitucionesController,
-    listaNegraDescuentosController
+    listaNegraDescuentosController,
+    crearOrderIfaController,
 }
