@@ -14,6 +14,7 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     stockInstitucionPorArticuloController,
     pedidoOfertaInstitucionesController,
     listaNegraDescuentosController } = require('../controller/pedido.controller')
+const checkToken = require('../../../middleware/authMiddleware')
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
@@ -27,6 +28,7 @@ router.get('/sugerido-zona', [validarToken, validarCampos], sugeridosXZonaContro
 router.get('/sugerido-cliente', [validarToken, validarCampos], sugeridosXClienteController)
 router.get('/zonas-vendedor', [validarToken, validarCampos], findZonasXVendedorController)
 router.post('/crear-orden', [validarToken, validarCampos], crearOrderController)
+router.post('/crear-orden-ifa', [checkToken, validarCampos], crearOrderController)
 router.post('/crear-orden-cad', [validarToken, validarCampos], crearOrderCadenaController)
 router.post('/crear-oferta', [validarToken, validarCampos], crearOrderController)
 router.get('/white-list', [validarToken, validarCampos], whiteListController)

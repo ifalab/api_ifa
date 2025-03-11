@@ -384,6 +384,36 @@ const listaNegraDescuentos = async () => {
     }
 }
 
+const clientePorCardCode = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode" = '${cardCode}'`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en listaNegraDescuentos:', error.message);
+        throw { message: `Error al procesar clientePorCardCode: ${error.message}` }
+    }
+}
+
+const articuloPorItemCode= async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos WHERE "ItemCode" = '${itemCode}'`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en listaNegraDescuentos:', error.message);
+        throw { message: `Error al procesar articuloPorItemCode: ${error.message}` }
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -407,5 +437,7 @@ module.exports = {
     getAllArticulos,
     articuloDiccionario,
     stockInstitucionPorArticulo,
-    listaNegraDescuentos
+    listaNegraDescuentos,
+    clientePorCardCode,
+    articuloPorItemCode,
 }

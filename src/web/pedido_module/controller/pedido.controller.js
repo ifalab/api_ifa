@@ -21,7 +21,9 @@ const { findClientePorVendedor,
     getAllArticulos,
     articuloDiccionario,
     stockInstitucionPorArticulo,
-    listaNegraDescuentos
+    listaNegraDescuentos,
+    clientePorCardCode,
+    articuloPorItemCode
 } = require("./hana.controller");
 const { postOrden, postQuotations, patchQuotations, getQuotation } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -30,6 +32,7 @@ const path = require('path');
 const ejs = require('ejs');
 const pdf = require('html-pdf');
 const { detalleOfertaCadena } = require("../../ventas_module/controller/hana.controller");
+const { getDocDueDate } = require("../../../controllers/hanaController");
 
 const clientesVendedorController = async (req, res) => {
     try {
@@ -232,8 +235,48 @@ const findZonasXVendedorController = async (req, res) => {
 }
 
 const crearOrderController = async (req, res) => {
-    const body = req.body
+    let body = req.body
     try {
+        const {CardCode,DocDate} = body
+        
+        const cliente = await clientePorCardCode(CardCode)
+        if(!cliente || cliente.length == 0){
+            return res.status(404).json({mensaje:'El cliente no existe'})
+        }
+        const paymentCode = cliente[0].GroupNum
+        const DocDue = await getDocDueDate(DocDate,paymentCode)
+        if(!DocDue || DocDue.length == 0){
+            return res.status(404).json({mensaje:`No se pudo calcular el DocDueDate, revise el DocDate`})
+        }
+        const docDueData = DocDue[0].DocDueDate
+        body.PaymentGroupCode = paymentCode
+        body.DocDueDate = docDueData
+        body.Series = 319
+        let docLines = body.DocumentLines
+        let newDocLines = []
+        for (const element of docLines) {
+            const {ItemCode} = element
+            if(!ItemCode || ItemCode == ''){
+                return res.status(404).json({mensaje:`El Item No es valido: ${ItemCode}`})
+            }
+            const itemData = await articuloPorItemCode(ItemCode)
+            if(!itemData || itemData.length == 0){
+                return res.status(404).json({mensaje:`El Item No fue encontrado: ${ItemCode}`})
+            }
+            const {SalUnitMsr} = itemData
+            const newData = {
+                ...element,
+                WarehouseCode:'800-01',
+                AccountCode:'4110101',
+                TaxCode:'IVA',
+                MeasureUnit:SalUnitMsr
+            }
+
+            newDocLines.push({...newData})
+        }
+        body.DocumentLines = newDocLines
+        // return res.json(body)
+        console.log(JSON.stringify({body},null,2))
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const docLine = body.DocumentLines
