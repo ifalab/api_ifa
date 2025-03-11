@@ -8,7 +8,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     devolucionDebitoCreditoCompletaController,
     getCreditNoteController,
     devolucionNDCGenesisController,
-    facturasClienteLoteItemCodeGenesisController
+    facturasClienteLoteItemCodeGenesisController,
+    stockDisponiblePorSucursalController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -38,5 +39,6 @@ router.post('/devolucion-ndc-completa', [validarToken, validarCampos], devolucio
 router.post('/devolucion-ndc-genesis', [validarToken, validarCampos], devolucionNDCGenesisController)
 router.get('/facturas-cliente-lote-itemcode-genesis', [validarToken, validarCampos], facturasClienteLoteItemCodeGenesisController)
 router.get('/credit-note', [validarToken, validarCampos], getCreditNoteController)
+router.post('/stock-disponible-sucursal', [validarToken, validarCampos], stockDisponiblePorSucursalController)
 
 module.exports = router

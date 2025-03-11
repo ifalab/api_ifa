@@ -2349,6 +2349,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         // return res.json({responceReturn, finalDataEntrega, newDocumentLines})
 
         if (responceReturn.status > 300) {
+            console.log({resReturnStatus: responceReturn.status})
             console.log({ errorMessage: responceReturn.errorMessage })
             let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
             if (mensaje.value)

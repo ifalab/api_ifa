@@ -1073,6 +1073,57 @@ const listaNegraDescuentosController = async (req, res) => {
     }
 }
 
+const pedidosPorVendedorFacturadosOrdenadoController = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log(id)
+
+        const pedidos = await pedidosPorVendedorFacturados(id)
+        if (pedidos.lang)
+            return res.status(400).json({ mensaje: pedidos.value })
+
+        const cabeceras = []
+        pedidos.forEach((pedido)=>{
+            const {SucCode,
+                SucName,
+                ZoneCode,
+                ZoneName,
+                CardCode,
+                CardName,
+                SlpCodeCli,
+                SlpNameCli,
+                DocTotal, ...rest} = pedido
+            const cabecera = cabeceras.find((cab)=> cab.CardCode == CardCode)
+            if(cabecera){
+                console.log('existe', {cabecera})
+                cabecera.Cantidad= Number(cabecera.Cantidad)+1
+                cabecera.Total= Number(cabecera.Total)+Number(DocTotal)
+                cabecera.Detalle.push({...rest, DocTotal})
+            }else{
+                console.log('nuevo')
+                cabeceras.push({
+                    SucCode,
+                    SucName,
+                    ZoneCode,
+                    ZoneName,
+                    CardCode,
+                    CardName,
+                    Cantidad: 1,
+                    SlpCodeCli,
+                    SlpNameCli,
+                    Total: +DocTotal,
+                    Detalle: [{...rest, DocTotal}]
+                })
+            }
+        })
+        console.log({cabeceras})
+        return res.json(cabeceras)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador:pedidosPorVendedorFacturadosOrdenadoController: ${error.message}` })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -1103,5 +1154,6 @@ module.exports = {
     articuloDiccionarioController,
     stockInstitucionPorArticuloController,
     pedidoOfertaInstitucionesController,
-    listaNegraDescuentosController
+    listaNegraDescuentosController,
+    pedidosPorVendedorFacturadosOrdenadoController
 }

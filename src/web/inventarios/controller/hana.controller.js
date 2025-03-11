@@ -93,12 +93,12 @@ const inventarioValorado = async () => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select 'SANTA CRUZ' "SucName", "WhsCode", "PrcName" "LineItemName", "PrcName2" "SublineItemName", "ItemCode", 10 "Quantity", "ComlPrice", "LineTotalComl" from "${process.env.PRD}".ifa_inv_inventario_kardex limit 10`
+        const query = `select * from "${process.env.PRD}".ifa_inv_inventario_kardex limit 10`
         const result = executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en inventarioValorado ')
+        throw new Error(`Error en inventarioValorado: ${error.message}`)
     }
 
 }
@@ -357,6 +357,20 @@ const searchArticulos= async (itemName) => {
     }
 }
 
+const stockDisponiblePorSucursal = async (sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_inv_stock_disponible_sucursal('${sucursal}')`
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de stockDisponiblePorSucursal: ${error.message}`)
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -377,5 +391,6 @@ module.exports = {
     entregaDetalleToProsin,
     pedidoDetallerFactura,
     searchArticulos,
-    facturasClienteLoteItemCodeGenesis
+    facturasClienteLoteItemCodeGenesis,
+    stockDisponiblePorSucursal
 }

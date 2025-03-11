@@ -47,7 +47,9 @@ const {
     obtenerArticulosVehiculo,
     searchVendedores,
     listaPrecioSuc,
-    listaPrecioInst
+    listaPrecioInst,
+    cantidadVentasPorZonasVendedor,
+    cantidadVentasPorZonasMesAnt
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1180,6 +1182,66 @@ const listaPrecioInstController = async (req, res) => {
     }
 }
 
+const cantidadVentasPorZonaController = async (req = request, res = response) => {
+    try {
+        const { username, line, groupBy } = req.body;
+        console.log({username, line, groupBy})
+        if (!username && typeof username != "string") {
+            return res.status(400).json({
+                mensaje: 'Ingrese un username valido'
+            })
+        }
+        console.log({
+            username, line, groupBy
+        })
+        const response = await cantidadVentasPorZonasVendedor(username, line, groupBy);
+        console.log({response})
+        const data = response.map(r => ({
+            ...r,
+            cumplimiento: r.Quota == 0 ? 0 : r.Sales / r.Quota
+        }))
+        console.log({data})
+        return res.status(200).json({
+            response: data,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en cantidadVentasPorZonaController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `Error en cantidadVentasPorZonaController: ${err.message}` })
+    }
+}
+
+const cantidadVentasPorZonaMesAnteriosController = async (req = request, res = response) => {
+    try {
+        const { username, line, groupBy } = req.body;
+        console.log({username, line, groupBy})
+        if (!username && typeof username != "string") {
+            return res.status(400).json({
+                mensaje: 'Ingrese un username valido'
+            })
+        }
+        console.log({
+            username, line, groupBy
+        })
+        const response = await cantidadVentasPorZonasMesAnt(username, line, groupBy);
+        console.log({response})
+        const data = response.map(r => ({
+            ...r,
+            cumplimiento: r.Quota == 0 ? 0 : r.Sales / r.Quota
+        }))
+        console.log({data})
+        return res.status(200).json({
+            response: data,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en cantidadVentasPorZonaMesAnteriosController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `Error en cantidadVentasPorZonaMesAnteriosController: ${err.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1231,4 +1293,6 @@ module.exports = {
     searchVendedoresController,
     listaPrecioSucController,
     listaPrecioInstController,
+    cantidadVentasPorZonaController,
+    cantidadVentasPorZonaMesAnteriosController
 };

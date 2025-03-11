@@ -811,6 +811,31 @@ const listaPrecioInst= async () => {
     }
 }
 
+const cantidadVentasPorZonasVendedor = async (username, line, groupBy) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA('${username}','${line}','${groupBy}');`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en cantidadVentasPorZonasVendedor: ', err.message);
+        throw new Error(`Error al procesar la solicitud cantidadVentasPorZonasVendedor: ${err.message}`);
+    }
+}
+
+const cantidadVentasPorZonasMesAnt = async (username, line, groupBy) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT('${username}','${line}','${groupBy}');`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud cantidadVentasPorZonasMesAnt: ${err.message}`);
+    }
+}
 
 module.exports = {
     ventaPorSucursal,
@@ -863,4 +888,6 @@ module.exports = {
     searchVendedores,
     listaPrecioSuc,
     listaPrecioInst,
+    cantidadVentasPorZonasVendedor,
+    cantidadVentasPorZonasMesAnt
 }

@@ -7,7 +7,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getAllAlmacenes,
     entregaDetalleToProsin,
     searchArticulos, 
-    facturasClienteLoteItemCodeGenesis} = require("./hana.controller")
+    facturasClienteLoteItemCodeGenesis,
+    stockDisponiblePorSucursal} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn, 
     getCreditNote } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega } = require("../../facturacion_module/controller/sld.controller")
@@ -297,7 +298,7 @@ const inventarioValoradoController = async (req, res) => {
         return res.json({ inventario })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en inventarioValoradoController' })
+        return res.status(500).json({ mensaje: `Error en inventarioValoradoController: ${error.message}` })
     }
 }
 
@@ -909,7 +910,7 @@ const devolucionExcepcionalController = async (req, res) => {
         }
 
         finalDataEntrega = finalData
-        // return res.json({finalDataEntrega, entregas, batchEntrega})
+        return res.json({finalDataEntrega, entregas, batchEntrega})
         
         const responceReturn = await postReturn(finalDataEntrega)
 
@@ -2062,6 +2063,34 @@ const getCreditNoteController = async (req, res) => {
     }
 }
 
+const stockDisponiblePorSucursalController = async (req, res) => {
+    try {
+        const {sucursales}= req.body
+        console.log({sucursales})
+        
+        const stock = await stockDisponible();
+        const toCamelCase = (str) =>
+            str
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
+                .replace(/\.$/, '')
+
+        const formattedStock = stock.map(item => {
+            const formattedItem = {};
+            Object.keys(item).forEach(key => {
+                const newKey = toCamelCase(key);
+                formattedItem[newKey] = item[key];
+            });
+            return formattedItem;
+        });
+
+        return res.json({ stock: formattedStock });
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en stockDisponiblePorSucursalController: ${error.message}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -2084,5 +2113,6 @@ module.exports = {
     devolucionNDCGenesisController,
     devolucionDebitoCreditoCompletaController,
     facturasClienteLoteItemCodeGenesisController,
-    getCreditNoteController
+    getCreditNoteController,
+    stockDisponiblePorSucursalController
 }

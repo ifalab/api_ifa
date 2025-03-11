@@ -223,7 +223,7 @@ const pedidosPorVendedorFacturados = async (id) => {
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
-        throw new Error('Error al procesar la solicitud: pedidosPorVendedorFacturados');
+        throw new Error(`Error al procesar la solicitud: pedidosPorVendedorFacturados: ${error.message}`);
     }
 }
 
