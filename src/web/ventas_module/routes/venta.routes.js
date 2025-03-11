@@ -50,6 +50,7 @@ const {
     searchVendedoresController,
     listaPrecioSucController,
     listaPrecioInstController,
+    ventasPedidoPorSlpCodeController,
     cantidadVentasPorZonaController,
     cantidadVentasPorZonaMesAnteriosController
 } = require('../controller/venta.controller')
@@ -114,6 +115,7 @@ router.post('/search-vendedores', [validarToken, validarCampos],searchVendedores
 
 router.get('/lista-precio-suc', [validarToken, validarCampos], listaPrecioSucController)
 router.get('/lista-precio-inst', [validarToken, validarCampos], listaPrecioInstController)
+router.get('/reporte-ventas-vendedor', [validarToken, validarCampos], ventasPedidoPorSlpCodeController)
 
 router.post('/cant-ventas-zona', [validarToken, validarCampos], cantidadVentasPorZonaController)
 router.post('/cant-ventas-zona-mes-ant', [validarToken, validarCampos], cantidadVentasPorZonaMesAnteriosController)

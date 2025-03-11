@@ -48,6 +48,7 @@ const {
     searchVendedores,
     listaPrecioSuc,
     listaPrecioInst,
+    ventasPedidoPorVendedor,
     cantidadVentasPorZonasVendedor,
     cantidadVentasPorZonasMesAnt
 } = require("./hana.controller")
@@ -1182,6 +1183,20 @@ const listaPrecioInstController = async (req, res) => {
     }
 }
 
+const ventasPedidoPorSlpCodeController = async (req, res) => {
+    try {
+        const slpCode = req.query.slpCode
+        const starDate =req.query.starDate
+        const endDate =req.query.endDate
+        const response = await ventasPedidoPorVendedor(slpCode,starDate,endDate)
+        const data = response.data
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
 const cantidadVentasPorZonaController = async (req = request, res = response) => {
     try {
         const { username, line, groupBy } = req.body;
@@ -1293,6 +1308,7 @@ module.exports = {
     searchVendedoresController,
     listaPrecioSucController,
     listaPrecioInstController,
+    ventasPedidoPorSlpCodeController,
     cantidadVentasPorZonaController,
     cantidadVentasPorZonaMesAnteriosController
 };

@@ -798,6 +798,7 @@ const listaPrecioInst= async () => {
             await connectHANA()
         }
         const query = `select * from ${process.env.PRD}.ifa_dm_listas_de_precios where "ListName" like '%LISTA INS%'`
+        console.log({query})
         const result = await executeQuery(query)
         return {
             status: 200,
@@ -811,6 +812,24 @@ const listaPrecioInst= async () => {
     }
 }
 
+const ventasPedidoPorVendedor = async(slpCode,starDate,endDate)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_ven_pedidos WHERE "SlpCode" = ${slpCode} AND "DocDate" BETWEEN '${starDate}' AND '${endDate}';`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en ventasPedidoPorVendedor: ${error.message || ''}`
+        }
+    }
+}
 const cantidadVentasPorZonasVendedor = async (username, line, groupBy) => {
     try {
         if (!connection) {
@@ -888,6 +907,7 @@ module.exports = {
     searchVendedores,
     listaPrecioSuc,
     listaPrecioInst,
+    ventasPedidoPorVendedor,
     cantidadVentasPorZonasVendedor,
     cantidadVentasPorZonasMesAnt
 }
