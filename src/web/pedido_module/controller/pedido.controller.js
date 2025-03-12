@@ -418,7 +418,7 @@ const crearOrderCadenaController = async (req, res) => {
         if (!docEntry) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error no existe el doc entry en la peticion.`, '', "pedido/crear-orden-cad", process.env.PRD)
             return res.status(400).json({ message: `Error no existe el doc entry en la peticion.` })
-        } else if (DocumentLines != []) {
+        } else if (DocumentLines.length>0) {
             const detalle = await detalleOfertaCadena(+docEntry)
             let newDocTotal = grossTotal
             detalle.data.map((item) => {
@@ -449,7 +449,6 @@ const crearOrderCadenaController = async (req, res) => {
         }
 
         // await new Promise(resolve => setTimeout(resolve, 1000));
-        const detalle = await detalleOfertaCadena(+docEntry)
         const {
             Series,
             CardCode,
@@ -465,6 +464,7 @@ const crearOrderCadenaController = async (req, res) => {
             SalesPersonCode,
             U_OSLP_ID,
             U_UserCode,
+            Comments
         } = body
         const ordenBody = {
             Series,
@@ -472,7 +472,6 @@ const crearOrderCadenaController = async (req, res) => {
             FederalTaxID,
             DocDate,
             DocDueDate,
-            JournalMemo,
             PaymentGroupCode,
             U_NIT,
             U_RAZSOC,
@@ -480,8 +479,12 @@ const crearOrderCadenaController = async (req, res) => {
             SalesPersonCode,
             U_OSLP_ID,
             U_UserCode,
+            Comments,
+            JournalMemo
         }
         // let DocTotal = 0
+        
+        const detalle = await detalleOfertaCadena(+docEntry)
         if (!detalle) {
             return res.status(400).json({ mensaje: 'Hubo un error al intentar obtener el detalle de la orden.' })
         }

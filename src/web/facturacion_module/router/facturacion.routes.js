@@ -13,7 +13,8 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     facturacionVehiculo,
     cancelarParaRefacturarController,
     obtenerDevolucionesController,
-    obtenerDevolucionDetallerController
+    obtenerDevolucionDetallerController,
+    ofertaDelPedidoController
  } = require('../controller/facturacion.controller')
 const router = Router()
 
@@ -44,5 +45,6 @@ router.post('/facturar/vehiculo', [validarToken, validarCampos], facturacionVehi
 router.post('/cancel-refacturar', [validarToken, validarCampos], cancelarParaRefacturarController)
 router.get('/devoluciones', [validarToken, validarCampos], obtenerDevolucionesController)
 router.get('/devolucion-detalle', [validarToken, validarCampos], obtenerDevolucionDetallerController)
+router.get('/prueba', [validarToken, validarCampos], ofertaDelPedidoController)
 
 module.exports = router

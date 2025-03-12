@@ -351,6 +351,37 @@ const detalleDevolucion = async (idReturn) => {
     }
 }
 
+const ofertaDelPedido = async (DocEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "BaseEntry" from ${process.env.PRD}.ifa_ven_pedidos_detalle where "DocEntry"=${DocEntry} group by "BaseEntry"`;
+        // const query = `select * from ${process.env.PRD}.ifa_ven_pedidos_detalle limit 20`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en ofertaDelPedido:', error.message);
+        return { message: `Error al procesar ofertaDelPedido: ${error.message || ''}` }
+    }
+}
+
+const obtenerGroupCode = async (CardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "GroupCode" from ${process.env.PRD}.ifa_dm_clientes where "CardCode"='${CardCode}' group by "GroupCode"`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result[0]
+    } catch (error) {
+        console.error('Error en ofertaDelPedido:', error.message);
+        return { message: `Error al procesar ofertaDelPedido: ${error.message || ''}` }
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -370,5 +401,7 @@ module.exports = {
     facturaPedidoInstituciones,
     obtenerPedidoDetalle,
     obtenerDevoluciones,
-    detalleDevolucion
+    detalleDevolucion,
+    ofertaDelPedido,
+    obtenerGroupCode
 }

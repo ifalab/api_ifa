@@ -2065,10 +2065,10 @@ const getCreditNoteController = async (req, res) => {
 
 const stockDisponiblePorSucursalController = async (req, res) => {
     try {
-        const {sucursales}= req.body
-        console.log({sucursales})
-        
-        const stock = await stockDisponible();
+        const {sucursal}= req.body
+        console.log({sucursal})
+        let stocks=[]
+        const stock = await stockDisponiblePorSucursal(sucursal);
         const toCamelCase = (str) =>
             str
                 .toLowerCase()
@@ -2083,6 +2083,8 @@ const stockDisponiblePorSucursalController = async (req, res) => {
             });
             return formattedItem;
         });
+        console.log('type of stock',typeof formattedStock)
+
 
         return res.json({ stock: formattedStock });
     } catch (error) {
