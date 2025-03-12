@@ -20,8 +20,10 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     obtenerPedidoDetalle,
     obtenerDevoluciones,
     detalleDevolucion,
-    clienteByCardName } = require("./hana.controller")
-const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
+    clienteByCardName,
+    ofertaDelPedido, obtenerGroupCode } = require("./hana.controller")
+const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, 
+    cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
@@ -2286,7 +2288,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         let newDocumentLines = []
         let cabeceraReturn = []
         let numRet = 0
-        let orderNumber = 0
+        let CardCode =''
         for (const line of entregas) {
             let newLine = {}
             const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
@@ -2300,7 +2302,7 @@ const cancelarParaRefacturarController = async (req, res) => {
                     U_B_cufd: U_B_cufEntr,
                     Series: 352
                 })
-                orderNumber = base3
+                CardCode = cardCodeEntrega
             }
             const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
             console.log({ batch: batchData })
@@ -2366,27 +2368,50 @@ const cancelarParaRefacturarController = async (req, res) => {
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
         }
-        //? cancel orden
-        const responsePedido = await pedidosPorEntrega(BaseEntry)
+        
         console.log('---------------------------------------------ORDER NUMBER')
-        console.log({ orderNumberAntes: orderNumber })
-        orderNumber = responsePedido[0].BaseEntry
-        console.log({ orderNumberDespues: orderNumber })
-        const resCancel = await cancelOrder(orderNumber)
-        console.log(JSON.stringify({ resCancel }, null, 2))
-        if (resCancel.status == 400) {
-            grabarLog(user.USERCODE, user.USERNAME, "Cancelacion orden desde facturacion", `Error en cancelOrder: ${resCancel.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancelar-orden", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error en cancelOrder: ${resCancel.errorMessage.value || ''}`, orderNumber, finalDataEntrega, entregas })
+        const responsePedido = await pedidosPorEntrega(BaseEntry)
+
+        let orderNumber= responsePedido[0].BaseEntry
+        console.log({orderNumberDespues: orderNumber})
+        
+        const responseOferta = await ofertaDelPedido(orderNumber)
+
+        const resCancelOrden = await cancelOrder(orderNumber)
+        console.log(JSON.stringify({ resCancelOrden }, null, 2))
+        if (resCancelOrden.status == 400) {
+            grabarLog(user.USERCODE, user.USERNAME, "Cancelacion para Refacturacion", `Error en cancelOrder: ${resCancelOrden.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancelar-refacturar", process.env.DBSAPPRD)
+            return res.status(400).json({ mensaje: `Error en cancelOrder: ${resCancelOrden.errorMessage.value || ''}`, orderNumber, finalDataEntrega, entregas })
+        }
+        //------------------------------------------------CLOSE OFERTA
+        
+        let resCancelOferta
+        const groupCode = await obtenerGroupCode(CardCode)
+        if(groupCode.GroupCode == 100){
+            if(responseOferta.length>0){
+                const idOferta = responseOferta[0].BaseEntry
+                console.log({idOferta})
+                if(idOferta!=null){
+                    resCancelOferta = await closeQuotations(idOferta)
+                    if (resCancelOferta.status == 400 && resCancelOferta.errorMessage.value != "Document is already closed.") {
+                        console.log({errorMessage: resCancelOferta.errorMessage})
+                        grabarLog(user.USERCODE, user.USERNAME, "Cancelacion para Refacturacion", `Error en cerrar la Oferta: ${resCancelOferta.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Quotations(id)/Close', "facturacion/cancelar-refacturar", process.env.DBSAPPRD)
+                        return res.status(400).json({ mensaje: `Error en cerrar la oferta: ${resCancelOferta.errorMessage.value || ''}`, orderNumber, resCancelOrden, responceReturn,finalDataEntrega, entregas })
+                    }
+                }
+            }
         }
 
+        grabarLog(user.USERCODE, user.USERNAME, "Cancelacion para Refacturacion","Exito en la cancelacion para refcaturacion",'',"facturacion/cancelar-refacturar", process.env.PRD )
         return res.json({
             responseProsin: { ...responseProsin, cuf },
             reponseInvoice,
             finalDataEntrega,
             batchEntrega,
             entregas,
-            resCancel,
-            idReturn: responceReturn.orderNumber
+            resCancelOrden,
+            idReturn: responceReturn.orderNumber,
+            resCancelOferta
         })
 
     } catch (error) {
@@ -2395,7 +2420,6 @@ const cancelarParaRefacturarController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
         let mensaje = `Error en el controlador cancelarParaRefacturarController: ${error.message || ''}`
-        console.log({ statuscode: error.statusCode })
         const endTime = Date.now();
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura", mensaje + `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, 'Catch de cancelarParaRefacturarController', "facturacion/cancel-to-prosin", process.env.PRD)
 
@@ -2525,6 +2549,22 @@ const clientesByCardNameController = async (req, res) => {
     }
 }
 
+const ofertaDelPedidoController = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log({ id })
+
+        // const response = await ofertaDelPedido(id)
+        // const response = await closeQuotations(id)
+        const response =  await obtenerGroupCode(id)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `error en el controlador: obtenerDevolucionesController: ${error.message}` })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2551,4 +2591,5 @@ module.exports = {
     obtenerDevolucionesController,
     obtenerDevolucionDetallerController,
     clientesByCardNameController,
+    ofertaDelPedidoController
 }

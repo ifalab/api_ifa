@@ -226,7 +226,30 @@ const cancelOrder = async (id) => {
         return { data: sapResponse.data, status: 200 }
     } catch (error) {
         console.log("Error sld controller cancelOrder", { error })
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        const errorMessage = error.response?.data?.error?.message || error.message || error.error.message || 'Error desconocido en la solicitud POST';
+        return { errorMessage, status: 400 }
+    }
+}
+
+const closeQuotations = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/Quotations(${id})/Close`
+        const sapResponse = await axios.post(url, {}, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        
+        return { data: sapResponse.data, status: 200 }
+    } catch (error) {
+        console.log("Error sld controller closeQuotations", { error })
+        const errorMessage = error.response?.data?.error?.message || error.message || error.error.message || 'Error desconocido en la solicitud POST';
         return { errorMessage, status: 400, }
     }
 }
@@ -238,5 +261,6 @@ module.exports = {
     facturacionByIdSld,
     cancelInvoice,
     cancelDeliveryNotes,
-    cancelOrder
+    cancelOrder,
+    closeQuotations
 }
