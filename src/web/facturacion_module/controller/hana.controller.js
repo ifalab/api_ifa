@@ -334,7 +334,6 @@ const obtenerDevoluciones = async (sucCode) => {
     }
 }
 
-
 const detalleDevolucion = async (idReturn) => {
     try {
         if (!connection) {
@@ -351,6 +350,21 @@ const detalleDevolucion = async (idReturn) => {
     }
 }
 
+const clienteByCardName = async (cardName) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "CardName" like '%${cardName}%' limit 30`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en detalleDevolucion:', error.message);
+        return { message: `Error al procesar clienteByCardName: ${error.message || ''}` }
+    }
+}
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -370,5 +384,6 @@ module.exports = {
     facturaPedidoInstituciones,
     obtenerPedidoDetalle,
     obtenerDevoluciones,
-    detalleDevolucion
+    detalleDevolucion,
+    clienteByCardName
 }

@@ -290,13 +290,13 @@ const crearOrderIfaController = async (req, res) => {
 
         const cliente = await clientePorCardCode(CardCode)
         if (!cliente || cliente.length == 0) {
-            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `El cliente no existe: ${CardCode || 'No Definido'}`, `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode" = '${CardCode || 'No Definido'}'`, "pedido/crear-orden", process.env.PRD)
+            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El cliente no existe: ${CardCode || 'No Definido'}`, `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode" = '${CardCode || 'No Definido'}'`, "pedido/crear-orden-ifa", process.env.PRD)
             return res.status(404).json({ mensaje: 'El cliente no existe' })
         }
         const paymentCode = cliente[0].GroupNum
         const DocDue = await getDocDueDate(DocDate, paymentCode)
         if (!DocDue || DocDue.length == 0) {
-            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `No se pudo calcular el DocDueDate`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `No se pudo calcular el DocDueDate`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
             return res.status(404).json({ mensaje: `No se pudo calcular el DocDueDate, revise el DocDate` })
         }
         const docDueData = DocDue[0].DocDueDate
@@ -309,12 +309,12 @@ const crearOrderIfaController = async (req, res) => {
         for (const element of docLines) {
             const { ItemCode } = element
             if (!ItemCode || ItemCode == '') {
-                grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `El Item No es valido: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+                grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El Item No es valido: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
                 return res.status(404).json({ mensaje: `El Item No es valido: ${ItemCode}` })
             }
             const itemData = await articuloPorItemCode(ItemCode)
             if (!itemData || itemData.length == 0) {
-                grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `El Item No fue encontrado: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+                grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El Item No fue encontrado: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
                 return res.status(404).json({ mensaje: `El Item No fue encontrado: ${ItemCode}` })
             }
             const { SalUnitMsr } = itemData
@@ -345,7 +345,7 @@ const crearOrderIfaController = async (req, res) => {
         })
         // return
         if (alprazolamContains && otherContains) {
-            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden", process.env.PRD)
+            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden-ifa", process.env.PRD)
             return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
         }
         console.log(JSON.stringify({ docLine, alprazolamContains, otherContains }, null, 2))
@@ -357,13 +357,13 @@ const crearOrderIfaController = async (req, res) => {
         console.log(JSON.stringify(ordenResponse, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         if (ordenResponse.status == 400) {
-            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden ifa", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
             return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
         }
 
 
         console.log({ usuario })
-        grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+        grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden ifa", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
 
         return res.json({ ...ordenResponse })
     } catch (error) {
@@ -371,7 +371,7 @@ const crearOrderIfaController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
         const message = `Error en el controlador crearOrderController: ${error.message || ''}`
-        grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden", `${message || ''}`, '', "pedido/crear-orden", process.env.PRD)
+        grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden ifa", `${message || ''}`, '', "pedido/crear-orden-ifa", process.env.PRD)
 
         return res.status(500).json({ message })
     }
@@ -398,7 +398,7 @@ const crearOrderCadenaController = async (req, res) => {
         })
         // return
         if (alprazolamContains && otherContains) {
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
 
         }
@@ -536,18 +536,18 @@ const crearOrderCadenaController = async (req, res) => {
         const ordenResponse = await postOrden(ordenBody)
         console.log(ordenResponse)
         if (ordenResponse.status == 400) {
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
             return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
         }
         console.log({ usuario })
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
         return res.json({ ...ordenResponse })
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
         const message = `Error en el controlador crearOrderController: ${error.message || ''}`
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${message || ''}`, '', "pedido/crear-orden", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `${message || ''}`, '', "pedido/crear-orden-cad", process.env.PRD)
 
         return res.status(500).json({ message })
     }
@@ -558,7 +558,7 @@ const crearOfertaVentaController = async (req, res) => {
     try {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        // console.log(JSON.stringify(body, null, 2))
+        console.log(JSON.stringify(body, null, 2))
         // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear oferta", `${mensaje}, ${body}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
         const response = await postQuotations(body)

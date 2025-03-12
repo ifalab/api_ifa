@@ -19,7 +19,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     facturaPedidoInstituciones,
     obtenerPedidoDetalle,
     obtenerDevoluciones,
-    detalleDevolucion } = require("./hana.controller")
+    detalleDevolucion,
+    clienteByCardName } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, cancelOrder } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -63,6 +64,8 @@ const facturacionController = async (req, res) => {
         else if (solicitud.result.length == 1) {
             //return res.json({solicitud})
             deliveryData = solicitud.result[0].DocEntry
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se consulto obtenerEntregaDetalle,  deliveryData: ${deliveryData || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE( ${deliveryData || ''})`, process.env.PRD)
             deliveryBody = await obtenerEntregaDetalle(deliveryData)
             console.log('1 solicitud tiene mas de uno')
             // console.log({ solicitud, deliveryData })
@@ -76,6 +79,8 @@ const facturacionController = async (req, res) => {
         if (!deliveryBody) {
 
             // const { data } = await facturacionById(id)
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se al consulto facturacionByIdSld,  id: ${id || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "https://srvhana:50000/b1s/v1/Orders(${id})", process.env.PRD)
             const facturacion = await facturacionByIdSld(id)
             console.log('2 facturacion ')
             console.log({ facturacion })
@@ -179,8 +184,9 @@ const facturacionController = async (req, res) => {
             // return res.json({ ...finalDataEntrega })
             console.log('FINAL ENTREGA------------------------------------------------------------')
             console.log({ finalDataEntrega })
-            // return res.json({finalDataEntrega, newData, restData})
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se envio postEntrega,  CardCode: ${finalDataEntrega.CardCode || ''}, U_UserCode: ${finalDataEntrega.U_UserCode || ''}, U_NIT: ${finalDataEntrega.U_NIT || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `https://srvhana:50000/b1s/v1/DeliveryNotes`, process.env.PRD)
             deliveryBody = await postEntrega(finalDataEntrega)
             if (deliveryBody.lang) {
 
@@ -297,6 +303,8 @@ const facturacionController = async (req, res) => {
             // Formatear la fecha en YYYYMMDD
             const formater = `${year}${month}${day}`;
             //TODO ------------------------------------------------------------ PATCH ENTREGA
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se envio al patchEntrega,  cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             const responsePatchEntrega = await patchEntrega(deliveryData, {
                 U_B_cuf: `${cuf}`,
                 U_B_em_date: `${formater}`,
@@ -1454,18 +1462,19 @@ const cancelarOrdenController = async (req, res) => {
 
 const pedidosInstitucionesController = async (req, res) => {
     try {
-        // const {listWhsCode} = req.body
-        // let responses = []
-        // for(const whsCode of listWhsCode){
-        //     const data = await facturaPedidoInstituciones()
-        //     for(const pedido of data){
-        //         if(pedido.GroupName == 'INSTITUCIONES')
-        //             responses.push(pedido)
-        //     }
-        // }
-        // return res.json({data: responses})
-        const data = await facturaPedidoInstituciones()
-        return res.json({ data })
+        const { listWhsCode } = req.body
+        let responses = []
+        for (const whsCode of listWhsCode) {
+            const data = await facturaPedidoInstituciones()
+            for (const pedido of data) {
+                if (pedido.GroupName == 'INSTITUCIONES' && pedido.SucCode == whsCode) {
+                    responses.push(pedido)
+                }
+            }
+        }
+        return res.json({ data: responses })
+        // const data = await facturaPedidoInstituciones()
+        // return res.json({ data })
     } catch (error) {
         console.log('error en pedidosInstitucionesController')
         console.log({ error })
@@ -2281,7 +2290,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         for (const line of entregas) {
             let newLine = {}
             const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
-                AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, Comments, 
+                AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, Comments,
                 ...restLine } = line;
             if (cabeceraReturn.length == 0) {
                 cabeceraReturn.push({
@@ -2349,7 +2358,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         // return res.json({responceReturn, finalDataEntrega, newDocumentLines})
 
         if (responceReturn.status > 300) {
-            console.log({resReturnStatus: responceReturn.status})
+            console.log({ resReturnStatus: responceReturn.status })
             console.log({ errorMessage: responceReturn.errorMessage })
             let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
             if (mensaje.value)
@@ -2360,9 +2369,9 @@ const cancelarParaRefacturarController = async (req, res) => {
         //? cancel orden
         const responsePedido = await pedidosPorEntrega(BaseEntry)
         console.log('---------------------------------------------ORDER NUMBER')
-        console.log({orderNumberAntes: orderNumber})
-        orderNumber= responsePedido[0].BaseEntry
-        console.log({orderNumberDespues: orderNumber})
+        console.log({ orderNumberAntes: orderNumber })
+        orderNumber = responsePedido[0].BaseEntry
+        console.log({ orderNumberDespues: orderNumber })
         const resCancel = await cancelOrder(orderNumber)
         console.log(JSON.stringify({ resCancel }, null, 2))
         if (resCancel.status == 400) {
@@ -2421,6 +2430,7 @@ const obtenerDevolucionDetallerController = async (req, res) => {
             DocDate,
             DocDueDate,
             CardCode,
+            CardName,
             FederalTaxID,
             DocTotal,
             DocCurrency,
@@ -2445,6 +2455,7 @@ const obtenerDevolucionDetallerController = async (req, res) => {
             DocDate,
             DocDueDate,
             CardCode,
+            CardName,
             FederalTaxID,
             DocTotal,
             DocCurrency,
@@ -2471,6 +2482,7 @@ const obtenerDevolucionDetallerController = async (req, res) => {
                 DocDate,
                 DocDueDate,
                 CardCode,
+                CardName,
                 FederalTaxID,
                 DocTotal,
                 DocCurrency,
@@ -2500,6 +2512,19 @@ const obtenerDevolucionDetallerController = async (req, res) => {
     }
 }
 
+const clientesByCardNameController = async (req, res) => {
+    try {
+        const cardName = req.query.cardName
+        const response = await clienteByCardName(cardName.toUpperCase())
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'error en el controlador'
+        })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2525,4 +2550,5 @@ module.exports = {
     cancelarParaRefacturarController,
     obtenerDevolucionesController,
     obtenerDevolucionDetallerController,
+    clientesByCardNameController,
 }
