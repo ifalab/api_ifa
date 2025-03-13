@@ -22,7 +22,7 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     detalleDevolucion,
     clienteByCardName,
     ofertaDelPedido, obtenerGroupCode } = require("./hana.controller")
-const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega, 
+const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
@@ -290,7 +290,7 @@ const facturacionController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
         }
-
+        //? si existe el cuf:
         if (responseGenesis.length != 0) {
 
             const dataGenesis = responseGenesis[0]
@@ -387,6 +387,7 @@ const facturacionController = async (req, res) => {
             return res.json({ ...response, cuf })
 
         } else {
+            //? si no existe el cuf:
             endTime = Date.now()
             let dataToProsin = {}
             const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
@@ -411,7 +412,7 @@ const facturacionController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `error no hay datos en CORREO. codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
             }
-
+            dataToProsin.usuario = user.USERNAME || 'No definido'
             const responseProsin = await facturacionProsin(dataToProsin, user)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
@@ -1239,6 +1240,7 @@ const facturacionEntregaController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `error no hay datos en CORREO codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No hay datos en CORREO del cliente`, bodyFinalFactura })
             }
+            body.usuario = user.USERNAME || 'No definido'
             const responseProsin = await facturacionProsin(body, user)
             //return res.json({ bodyFinalFactura, responseProsin, deliveryData })
             console.log({ responseProsin })
@@ -1854,7 +1856,7 @@ const facturacionInstitucionesController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturar Instituciones", `error no hay datos en CORREO. codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
             }
-
+            dataToProsin.usuario = user.USERNAME || 'No definido'
             const responseProsin = await facturacionProsin(dataToProsin, user)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
@@ -2066,6 +2068,7 @@ const facturacionVehiculo = async (req, res) => {
         }
 
         // return res.status(200).json(body);
+        body.usuario = user.USERNAME || 'No definido'
         const responseProsin = await facturacionProsin(body, user);
         const { data: dataProsin } = responseProsin
         console.log({ dataProsin })
@@ -2288,7 +2291,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         let newDocumentLines = []
         let cabeceraReturn = []
         let numRet = 0
-        let CardCode =''
+        let CardCode = ''
         for (const line of entregas) {
             let newLine = {}
             const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
@@ -2368,13 +2371,13 @@ const cancelarParaRefacturarController = async (req, res) => {
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error en postReturn: ${mensaje}`, `postInvoice()`, "inventario/devolucion-completa", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, finalDataEntrega })
         }
-        
+
         console.log('---------------------------------------------ORDER NUMBER')
         const responsePedido = await pedidosPorEntrega(BaseEntry)
 
-        let orderNumber= responsePedido[0].BaseEntry
-        console.log({orderNumberDespues: orderNumber})
-        
+        let orderNumber = responsePedido[0].BaseEntry
+        console.log({ orderNumberDespues: orderNumber })
+
         const responseOferta = await ofertaDelPedido(orderNumber)
 
         const resCancelOrden = await cancelOrder(orderNumber)
@@ -2384,25 +2387,25 @@ const cancelarParaRefacturarController = async (req, res) => {
             return res.status(400).json({ mensaje: `Error en cancelOrder: ${resCancelOrden.errorMessage.value || ''}`, orderNumber, finalDataEntrega, entregas })
         }
         //------------------------------------------------CLOSE OFERTA
-        
+
         let resCancelOferta
         const groupCode = await obtenerGroupCode(CardCode)
-        if(groupCode.GroupCode == 100){
-            if(responseOferta.length>0){
+        if (groupCode.GroupCode == 100) {
+            if (responseOferta.length > 0) {
                 const idOferta = responseOferta[0].BaseEntry
-                console.log({idOferta})
-                if(idOferta!=null){
+                console.log({ idOferta })
+                if (idOferta != null) {
                     resCancelOferta = await closeQuotations(idOferta)
                     if (resCancelOferta.status == 400 && resCancelOferta.errorMessage.value != "Document is already closed.") {
-                        console.log({errorMessage: resCancelOferta.errorMessage})
+                        console.log({ errorMessage: resCancelOferta.errorMessage })
                         grabarLog(user.USERCODE, user.USERNAME, "Cancelacion para Refacturacion", `Error en cerrar la Oferta: ${resCancelOferta.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Quotations(id)/Close', "facturacion/cancelar-refacturar", process.env.DBSAPPRD)
-                        return res.status(400).json({ mensaje: `Error en cerrar la oferta: ${resCancelOferta.errorMessage.value || ''}`, orderNumber, resCancelOrden, responceReturn,finalDataEntrega, entregas })
+                        return res.status(400).json({ mensaje: `Error en cerrar la oferta: ${resCancelOferta.errorMessage.value || ''}`, orderNumber, resCancelOrden, responceReturn, finalDataEntrega, entregas })
                     }
                 }
             }
         }
 
-        grabarLog(user.USERCODE, user.USERNAME, "Cancelacion para Refacturacion","Exito en la cancelacion para refcaturacion",'',"facturacion/cancelar-refacturar", process.env.PRD )
+        grabarLog(user.USERCODE, user.USERNAME, "Cancelacion para Refacturacion", "Exito en la cancelacion para refcaturacion", '', "facturacion/cancelar-refacturar", process.env.PRD)
         return res.json({
             responseProsin: { ...responseProsin, cuf },
             reponseInvoice,
@@ -2556,7 +2559,7 @@ const ofertaDelPedidoController = async (req, res) => {
 
         // const response = await ofertaDelPedido(id)
         // const response = await closeQuotations(id)
-        const response =  await obtenerGroupCode(id)
+        const response = await obtenerGroupCode(id)
 
         return res.json(response)
     } catch (error) {
