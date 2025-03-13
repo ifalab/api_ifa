@@ -2002,6 +2002,7 @@ const getCreditNoteController = async (req, res) => {
     try {
         const {id} = req.query
         const response = await getCreditNote(id)
+        // return res.json(response)
         console.log({id, responseGetCreditNote:response})
         const { DocEntry,
             DocNum,
@@ -2018,8 +2019,8 @@ const getCreditNoteController = async (req, res) => {
                 ItemCode,
                 ItemDescription,
                 Quantity,
-                Price,
-                PriceAfterVAT,
+                // Price,
+                // PriceAfterVAT,
                 DiscountPercent,
                 WarehouseCode,
                 MeasureUnit,
@@ -2036,8 +2037,8 @@ const getCreditNoteController = async (req, res) => {
                 ItemCode,
                 ItemDescription,
                 Quantity,
-                Price,
-                PriceAfterVAT,
+                // Price,
+                // PriceAfterVAT,
                 DiscountPercent,
                 WarehouseCode,
                 MeasureUnit,
