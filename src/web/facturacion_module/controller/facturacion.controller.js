@@ -24,7 +24,7 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     ofertaDelPedido, obtenerGroupCode } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
-const { spObtenerCUF, spEstadoFactura } = require('./sql_genesis.controller');
+const { spObtenerCUF, spEstadoFactura, listaFacturasSfl } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
 const { grabarLog } = require('../../shared/controller/hana.controller');
@@ -2568,6 +2568,19 @@ const ofertaDelPedidoController = async (req, res) => {
     }
 }
 
+const reporteFacturasSiatController = async (req, res) => {
+    try {
+        const datenow = new Date();
+        const formattedDate = `${datenow.getDate().toString().padStart(2, '0')}-${(datenow.getMonth() + 1).toString().padStart(2, '0')}-${datenow.getFullYear()}`;
+        console.log({formattedDate})
+        const response = await listaFacturasSfl(1, formattedDate, formattedDate);
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2594,5 +2607,6 @@ module.exports = {
     obtenerDevolucionesController,
     obtenerDevolucionDetallerController,
     clientesByCardNameController,
-    ofertaDelPedidoController
+    ofertaDelPedidoController,
+    reporteFacturasSiatController
 }

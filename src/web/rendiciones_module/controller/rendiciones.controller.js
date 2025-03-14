@@ -1193,6 +1193,8 @@ const actualizarCCRendController = async (req, res) => {
     }
 }
 
+
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,

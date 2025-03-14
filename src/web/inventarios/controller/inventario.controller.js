@@ -2257,7 +2257,8 @@ const devolucionMalEstadoController = async (req, res) => {
             U_UserCode: id_sap,
             DocumentLines: newDocumentLinesReturn,
         }
-        console.log({bodyReturn})
+        console.log(JSON.stringify({bodyReturn},null,2))
+        // return res.status(400).json()
         const responceReturn = await postReturn(bodyReturn)
         console.log({responceReturn})
 
