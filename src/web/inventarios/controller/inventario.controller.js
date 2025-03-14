@@ -9,7 +9,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     searchArticulos,
     facturasClienteLoteItemCodeGenesis,
     stockDisponiblePorSucursal,
-    clientesBySucCode } = require("./hana.controller")
+    clientesBySucCode, getClienteByCardCode } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega } = require("../../facturacion_module/controller/sld.controller")
@@ -2327,7 +2327,7 @@ const clientesDevMalEstado = async (req, res) => {
     try {
         const { listSucCode } = req.body
         let listClients = []
-        const clientes = await clientesBySucCode(100)
+        const clientes = await clientesBySucCode()
         listSucCode.map((sucursal) => {
             const filter = clientes.filter(client => client.SucCode === sucursal)
             listClients = [...listClients, ...filter]
@@ -2337,7 +2337,18 @@ const clientesDevMalEstado = async (req, res) => {
         console.log({ error })
         return res
     }
-
+}
+const getClienteByCardCodeController = async (req, res) => {
+    try {
+        const { cardCode } = req.query
+        const cliente = await getClienteByCardCode(cardCode)
+        if(cliente.length==0)
+            return res.status(400).json({mensaje: `No existe cliente con el codigo: ${cardCode}`})
+        return res.json(cliente[0])
+    } catch (error) {
+        console.log({ error })
+        return res
+    }
 }
 
 module.exports = {
@@ -2366,5 +2377,6 @@ module.exports = {
     stockDisponiblePorSucursalController,
     getAllCreditNotesController,
     devolucionMalEstadoController,
-    clientesDevMalEstado
+    clientesDevMalEstado,
+    getClienteByCardCodeController
 }

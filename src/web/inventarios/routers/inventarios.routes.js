@@ -12,7 +12,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     stockDisponiblePorSucursalController,
     getAllCreditNotesController,
     devolucionMalEstadoController,
-    clientesDevMalEstado
+    clientesDevMalEstado,
+    getClienteByCardCodeController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -46,5 +47,6 @@ router.post('/stock-disponible-sucursal', [validarToken, validarCampos], stockDi
 router.get('/credit-notes', [validarToken, validarCampos], getAllCreditNotesController)
 router.post('/dev-mal-estado', [validarToken, validarCampos], devolucionMalEstadoController)
 router.post('/clientes-dev-mal-estado', [validarToken, validarCampos], clientesDevMalEstado)
+router.get('/get-cliente', [validarToken, validarCampos], getClienteByCardCodeController)
 
 module.exports = router

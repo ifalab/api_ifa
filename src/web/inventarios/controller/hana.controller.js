@@ -378,7 +378,9 @@ const clientesBySucCode = async () => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "GroupCode" <> 105 and "GroupCode" <> 106`
+        const query = `SELECT 
+        *
+        FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "GroupCode" <> 105 and "GroupCode" <> 106`
         console.log({query})
         const result = executeQuery(query)
         return result
@@ -387,7 +389,22 @@ const clientesBySucCode = async () => {
         throw new Error(`Error de clientesBySucCode: ${error.message}`)
     }
 }
-
+const getClienteByCardCode = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT 
+        *
+        FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getClienteByCardCode: ${error.message}`)
+    }
+}
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -410,5 +427,6 @@ module.exports = {
     searchArticulos,
     facturasClienteLoteItemCodeGenesis,
     stockDisponiblePorSucursal,
-    clientesBySucCode
+    clientesBySucCode,
+    getClienteByCardCode
 }
