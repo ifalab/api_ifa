@@ -254,12 +254,12 @@ const setPrecioCadenaController = async (req, res) => {
         for(const line of body.items){
             const response = await setPrecioCadena(line.PriceList, line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
             if(response.status!=200){
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Error: ${response.message || 'setPrecioCadena()'} `, ``, "datos-maestros/set-precio-cadena", process.env.PRD)
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Error: ${response.message || 'setPrecioCadena()'} `, `call ifa_dm_agregar_precios`, "datos-maestros/set-precio-cadena", process.env.PRD)
                 return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioCadena'}`})
             }
             lista.push(response.data)
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Precios oficiales grabados con exito`, ``, "datos-maestros/set-precio-cadena", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Precios oficiales grabados con exito`, `call ifa_dm_agregar_precios`, "datos-maestros/set-precio-cadena", process.env.PRD)
         return res.json(lista)
     } catch (error) {
         console.log({ error })
