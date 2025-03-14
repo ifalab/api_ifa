@@ -282,7 +282,42 @@ const getCreditNote = async (id) => {
     });
     console.log({ responseCreditNotes : response })
 
-    return response.data;
+    return {
+      status: 200,
+      data: response.data
+    };
+  } catch (error) {
+    console.log({errorCreditNotes: error})
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Get CreditNote';
+    console.error('Error en la solicitud Get CreditNote:', errorMessage);
+    // throw new Error(errorMessage);
+    return {
+      status: 400,
+      errorMessage}
+  }
+};
+
+const getCreditNotes = async () => {
+  try {
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+
+    const url = `https://srvhana:50000/b1s/v1/CreditNotes?$orderby=DocDate desc&$top=20`;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+    };
+    const response = await axios.get(url, {
+      httpsAgent: agent,
+      headers: headers
+    });
+    console.log({ responseCreditNotes : response })
+
+    return {
+      status: 200,
+      data: response.data.value
+    }
   } catch (error) {
     console.log({errorCreditNotes: error})
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Get CreditNotes';
@@ -300,5 +335,6 @@ module.exports = {
   postReturn,
   postCreditNotes,
   patchReturn,
-  getCreditNote
+  getCreditNote,
+  getCreditNotes
 };

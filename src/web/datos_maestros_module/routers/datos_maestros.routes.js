@@ -12,7 +12,7 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     setDescuentoEspecialPorArticuloController, obtenerTiposController, obtenerDescuetosEspecialesController, 
     getIdsDescuentoEspecialController, getDescuentosEspecialesByIdController, getVendedoresController,
     getZonasController, getAllTiposController, getZonasTiposPorVendedorController, asignarZonasYTiposAVendedoresController,
-    deleteZonasYTiposAVendedoresController
+    deleteZonasYTiposAVendedoresController, getDescuentosEspecialesLineaController, deleteDescuentosEspecialesLineaController
  } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller')
 const router = Router()
@@ -52,5 +52,7 @@ router.get('/all-tipos', [validarToken, validarCampos], getAllTiposController)
 router.get('/zonasytipos-vendedor', [validarToken, validarCampos], getZonasTiposPorVendedorController)
 router.post('/zonasytipos-vendedor', [validarToken, validarCampos], asignarZonasYTiposAVendedoresController)
 router.post('/delete-zonaytipo', [validarToken, validarCampos], deleteZonasYTiposAVendedoresController)
+router.get('/get-espc-linea', [validarToken, validarCampos], getDescuentosEspecialesLineaController)
+router.get('/delete-espc-linea', [validarToken, validarCampos], deleteDescuentosEspecialesLineaController)
 
 module.exports = router

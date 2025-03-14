@@ -6,7 +6,8 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getArticuloByCode, setDescuentoEspecial, getAllDescuentosLinea, deleteDescuentoLinea,
     setDescuentoEspecialPorArticulo, obtenerTipos, obtenerDescuetosEspeciales,
     getIdsDescuentoEspecial, getDescuentosEspecialesById, getVendedores, getZonas, getAllTipos,
-    getZonasTiposPorVendedor, asignarZonasYTiposAVendedores, deleteZonasYTiposAVendedores } = require("./hana.controller")
+    getZonasTiposPorVendedor, asignarZonasYTiposAVendedores, deleteZonasYTiposAVendedores, 
+    getDescuentosEspecialesLinea, deleteDescuentosEspecialesLinea } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 
@@ -657,6 +658,42 @@ const deleteZonasYTiposAVendedoresController = async (req, res) => {
     }
 }
 
+const getDescuentosEspecialesLineaController = async (req, res) => {
+    try {
+        const {cardCode} = req.query
+        const respond = await getDescuentosEspecialesLinea(cardCode)
+        respond.forEach(value=>{
+            value.Id = value.Code
+            delete value.Code; 
+        })
+        /* */
+        return res.json(respond)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getDescuentosEspecialesLineaController. ${error.message || ''}` })
+    }
+}
+
+const deleteDescuentosEspecialesLineaController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const respond = await deleteDescuentosEspecialesLinea(id)
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+
+        if(respond.status==400){
+            grabarLog(usuario.USERCODE, usuario.USERNAME, `Descuentos Especiales Linea`, `Error al eliminar descuentos especiales: ${respond.message || ''}`, respond.query|| '',`datos-maestros/delete-espc-linea`, process.env.PRD)
+            return res.status(400).json({mensaje:`${respond.message || 'Error desconocido en deleteDescuentosEspecialesLinea'}`})
+        }
+
+        grabarLog(usuario.USERCODE, usuario.USERNAME, `Descuentos Especiales Linea`, `Exito al eliminar el descuento especial por linea de id: ${id}. ${respond.result}`, respond.query|| '',`datos-maestros/delete-espc-linea`, process.env.PRD)
+        return res.json(respond.result)
+    } catch (error) {
+        console.log({ error })
+        grabarLog(usuario.USERCODE, usuario.USERNAME, `Descuentos Especiales Linea`, `Error al eliminar descuentos especiales: ${error.message || ''}`, '',`datos-maestros/delete-espc-linea`, process.env.PRD)
+        return res.status(500).json({ mensaje: `Error en el controlador deleteDescuentosEspecialesLineaController. ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -692,5 +729,7 @@ module.exports = {
     getAllTiposController,
     getZonasTiposPorVendedorController,
     asignarZonasYTiposAVendedoresController,
-    deleteZonasYTiposAVendedoresController
+    deleteZonasYTiposAVendedoresController,
+    getDescuentosEspecialesLineaController,
+    deleteDescuentosEspecialesLineaController
 }

@@ -764,6 +764,49 @@ const deleteZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
     }
 }
 
+const getDescuentosEspecialesLinea = async(cardCode)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_CRM_DESCUENTOS_POR_LINEA WHERE CURRENT_DATE BETWEEN "FromDate" AND "ToDate" AND "CardCode" = '${cardCode}'`;
+        // const query = `SELECT * FROM LAB_IFA_PRD.IFA_CRM_DESCUENTOS_POR_LINEA WHERE CURRENT_DATE BETWEEN "FromDate" AND "ToDate" AND "CardCode" = '${cardCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDescuentosEspecialesLinea:', error);
+        throw {
+            status: 400,
+            message: `Error en getDescuentosEspecialesLinea: ${error.message || ''}`
+        }
+    }
+}
+
+const deleteDescuentosEspecialesLinea = async(id)=>{
+    let query =''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `CALL ${process.env.PRD}.ifa_dm_eliminar_descuentos_especiales_por_linea(${id})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en deleteDescuentosEspecialesLinea:', error);
+        return {
+            status: 400,
+            message: `Error en deleteDescuentosEspecialesLinea: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -798,5 +841,7 @@ module.exports = {
     getZonas,
     getZonasTiposPorVendedor,
     asignarZonasYTiposAVendedores,
-    deleteZonasYTiposAVendedores
+    deleteZonasYTiposAVendedores,
+    getDescuentosEspecialesLinea,
+    deleteDescuentosEspecialesLinea
 }
