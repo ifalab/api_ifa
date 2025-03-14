@@ -954,8 +954,14 @@ const listaArticuloCadenasController = async (req, res) => {
 
 const clientesInstitucionesController = async (req, res) => {
     try {
+        const { listSucCode } = req.body
+        let clientesResponse = []
         const clientes = await clientesInstituciones()
-        return res.json(clientes)
+        listSucCode.map((suCode) => {
+            const filter = clientes.filter(unCliente => unCliente.SucCode === suCode)
+            clientesResponse = [...clientesResponse, ...filter]
+        })
+        return res.json(clientesResponse)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}`, error })
@@ -1120,7 +1126,7 @@ const ClienteEmpleadosController = async (req, res) => {
         if (response.status == 400) {
             return res.status(400).json({ mensaje: response.message || 'Error en listaClienteEmpleados' })
         }
-        console.log({response})
+        console.log({ response })
         if (response.data.length == 0) {
             return res.status(400).json({ mensaje: `No se encontro el usuario con el carCode: ${cardCode}` })
         }
@@ -1133,7 +1139,7 @@ const ClienteEmpleadosController = async (req, res) => {
 
 const obtenerArticulosVehiculoController = async (req, res) => {
     try {
-        const {cadena} = req.body
+        const { cadena } = req.body
         const response = await obtenerArticulosVehiculo(cadena)
         if (response.status == 400) {
             return res.status(400).json({ mensaje: response.message || 'Error en obtenerArticulosVehiculo' })
@@ -1147,7 +1153,7 @@ const obtenerArticulosVehiculoController = async (req, res) => {
 
 const searchVendedoresController = async (req, res) => {
     try {
-        const {cadena} = req.body
+        const { cadena } = req.body
         const response = await searchVendedores(cadena)
         if (response.status == 400) {
             return res.status(400).json({ mensaje: response.message || 'Error en searchVendedores' })
@@ -1173,7 +1179,7 @@ const listaPrecioSucController = async (req, res) => {
 
 const listaPrecioInstController = async (req, res) => {
     try {
-        
+
         const response = await listaPrecioInst()
         const lista = response.data
         return res.json(lista)
@@ -1186,9 +1192,9 @@ const listaPrecioInstController = async (req, res) => {
 const ventasPedidoPorSlpCodeController = async (req, res) => {
     try {
         const slpCode = req.query.slpCode
-        const starDate =req.query.starDate
-        const endDate =req.query.endDate
-        const response = await ventasPedidoPorVendedor(slpCode,starDate,endDate)
+        const starDate = req.query.starDate
+        const endDate = req.query.endDate
+        const response = await ventasPedidoPorVendedor(slpCode, starDate, endDate)
         const data = response.data
         return res.json(data)
     } catch (error) {
@@ -1200,7 +1206,7 @@ const ventasPedidoPorSlpCodeController = async (req, res) => {
 const cantidadVentasPorZonaController = async (req = request, res = response) => {
     try {
         const { username, line, groupBy } = req.body;
-        console.log({username, line, groupBy})
+        console.log({ username, line, groupBy })
         if (!username && typeof username != "string") {
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
@@ -1210,12 +1216,12 @@ const cantidadVentasPorZonaController = async (req = request, res = response) =>
             username, line, groupBy
         })
         const response = await cantidadVentasPorZonasVendedor(username, line, groupBy);
-        console.log({response})
+        console.log({ response })
         const data = response.map(r => ({
             ...r,
             cumplimiento: r.Quota == 0 ? 0 : r.Sales / r.Quota
         }))
-        console.log({data})
+        console.log({ data })
         return res.status(200).json({
             response: data,
             mensaje: "Todas las zonas del usuario"
@@ -1230,7 +1236,7 @@ const cantidadVentasPorZonaController = async (req = request, res = response) =>
 const cantidadVentasPorZonaMesAnteriosController = async (req = request, res = response) => {
     try {
         const { username, line, groupBy } = req.body;
-        console.log({username, line, groupBy})
+        console.log({ username, line, groupBy })
         if (!username && typeof username != "string") {
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
@@ -1240,12 +1246,12 @@ const cantidadVentasPorZonaMesAnteriosController = async (req = request, res = r
             username, line, groupBy
         })
         const response = await cantidadVentasPorZonasMesAnt(username, line, groupBy);
-        console.log({response})
+        console.log({ response })
         const data = response.map(r => ({
             ...r,
             cumplimiento: r.Quota == 0 ? 0 : r.Sales / r.Quota
         }))
-        console.log({data})
+        console.log({ data })
         return res.status(200).json({
             response: data,
             mensaje: "Todas las zonas del usuario"

@@ -99,7 +99,7 @@ router.get('/detalle-oferta-cadena', [validarToken, validarCampos], detalleOfert
 router.get('/detalle-oferta-cadena-pend', [validarToken, validarCampos], detalleOfertaCadenaPendController)
 router.get('/oferta-unidad-medida', [validarToken, validarCampos], unidadMedidaController)
 router.get('/lista-articulo-cadenas', [validarToken, validarCampos], listaArticuloCadenasController)
-router.get('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
+router.post('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
 router.get('/cliente-institucion-by-cardcode', [validarToken, validarCampos],clienteInstitucionByCardCodeController)
 router.post('/vendedor-sucursal', [validarToken, validarCampos],vendedoresPorSucursalController)
 router.get('/ofertas-instituciones', [validarToken, validarCampos],obtenerOfertasInstitucionesController)

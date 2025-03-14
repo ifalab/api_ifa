@@ -332,6 +332,7 @@ const getAllAlmacenes = async () => {
             await connectHANA();
         }
         const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
+        console.log({query})
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -363,11 +364,27 @@ const stockDisponiblePorSucursal = async (sucursal) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.ifa_lapp_inv_stock_disponible_sucursal('${sucursal}')`
+        console.log({query})
         const result = executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
         throw new Error(`Error de stockDisponiblePorSucursal: ${error.message}`)
+    }
+}
+
+const clientesBySucCode = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "GroupCode" <> 105 and "GroupCode" <> 106`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de clientesBySucCode: ${error.message}`)
     }
 }
 
@@ -392,5 +409,6 @@ module.exports = {
     pedidoDetallerFactura,
     searchArticulos,
     facturasClienteLoteItemCodeGenesis,
-    stockDisponiblePorSucursal
+    stockDisponiblePorSucursal,
+    clientesBySucCode
 }

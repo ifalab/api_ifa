@@ -6,10 +6,11 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     obtenerDevolucionDetalle,
     getAllAlmacenes,
     entregaDetalleToProsin,
-    searchArticulos, 
+    searchArticulos,
     facturasClienteLoteItemCodeGenesis,
-    stockDisponiblePorSucursal} = require("./hana.controller")
-const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn, 
+    stockDisponiblePorSucursal,
+    clientesBySucCode } = require("./hana.controller")
+const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
@@ -867,28 +868,28 @@ const devolucionExcepcionalController = async (req, res) => {
                     console.log('------------------------------------------------------------------------------------')
 
 
-                // const data = {
-                //     BaseLine: LineNum,
-                //     BaseType: 17,
-                //     BaseEntry,
-                // }
-                
-                let GrossTotalEntrega = detalle.UnitPriceAfDi * cantidad
-                newLine = {
-                    // ...data,
-                    ItemCode: detalle.newItemCode,
-                    WarehouseCode: Almacen,
-                    Quantity: cantidad,
-                    LineNum: numRet,
-                    TaxCode: "IVA_GND",
-                    AccountCode: "6210103",
-                    GrossTotal: GrossTotalEntrega,
-                    ...restLine,
-                    BatchNumbers: batchNumbers
-                };
-                newLine = { ...newLine };
-                console.log('------newLine-----')
-                console.log({ newLine })
+                    // const data = {
+                    //     BaseLine: LineNum,
+                    //     BaseType: 17,
+                    //     BaseEntry,
+                    // }
+
+                    let GrossTotalEntrega = detalle.UnitPriceAfDi * cantidad
+                    newLine = {
+                        // ...data,
+                        ItemCode: detalle.newItemCode,
+                        WarehouseCode: Almacen,
+                        Quantity: cantidad,
+                        LineNum: numRet,
+                        TaxCode: "IVA_GND",
+                        AccountCode: "6210103",
+                        GrossTotal: GrossTotalEntrega,
+                        ...restLine,
+                        BatchNumbers: batchNumbers
+                    };
+                    newLine = { ...newLine };
+                    console.log('------newLine-----')
+                    console.log({ newLine })
 
                     newDocumentLines.push(newLine)
                     numRet += 1
@@ -910,8 +911,8 @@ const devolucionExcepcionalController = async (req, res) => {
         }
 
         finalDataEntrega = finalData
-        return res.json({finalDataEntrega, entregas, batchEntrega})
-        
+        return res.json({ finalDataEntrega, entregas, batchEntrega })
+
         const responceReturn = await postReturn(finalDataEntrega)
 
         if (responceReturn.status > 300) {
@@ -2000,20 +2001,20 @@ const devolucionNDCGenesisController = async (req, res) => {
 
 const getCreditNoteController = async (req, res) => {
     try {
-        const {id} = req.query
+        const { id } = req.query
         const response = await getCreditNote(id)
         // return res.json(response)
-        console.log({id, responseGetCreditNote:response})
+        console.log({ id, responseGetCreditNote: response })
         const { DocEntry,
             DocNum,
             DocDate,
             CardCode,
             CardName,
-            DocTotal, DocumentLines} = response
+            DocTotal, DocumentLines } = response
 
         let detalle = []
         let baseEntry = 0
-        DocumentLines.forEach((item)=>{
+        DocumentLines.forEach((item) => {
             const {
                 LineNum,
                 ItemCode,
@@ -2024,13 +2025,13 @@ const getCreditNoteController = async (req, res) => {
                 DiscountPercent,
                 WarehouseCode,
                 MeasureUnit,
-                BaseEntry, 
+                BaseEntry,
                 GrossTotal,
                 GrossPrice,
                 UnitPrice
             } = item
-            if(baseEntry==0){
-                baseEntry=BaseEntry
+            if (baseEntry == 0) {
+                baseEntry = BaseEntry
             }
             detalle.push({
                 LineNum,
@@ -2066,9 +2067,9 @@ const getCreditNoteController = async (req, res) => {
 
 const stockDisponiblePorSucursalController = async (req, res) => {
     try {
-        const {sucursal}= req.body
-        console.log({sucursal})
-        let stocks=[]
+        const { sucursal } = req.body
+        console.log({ sucursal })
+        let stocks = []
         const stock = await stockDisponiblePorSucursal(sucursal);
         const toCamelCase = (str) =>
             str
@@ -2084,7 +2085,7 @@ const stockDisponiblePorSucursalController = async (req, res) => {
             });
             return formattedItem;
         });
-        console.log('type of stock',typeof formattedStock)
+        console.log('type of stock', typeof formattedStock)
 
 
         return res.json({ stock: formattedStock });
@@ -2092,6 +2093,23 @@ const stockDisponiblePorSucursalController = async (req, res) => {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en stockDisponiblePorSucursalController: ${error.message}` })
     }
+}
+
+const clientesDevMalEstado = async (req, res) => {
+    try {
+        const { listSucCode } = req.body
+        let listClients = []
+        const clientes = await clientesBySucCode(100)
+        listSucCode.map((sucursal) => {
+            const filter = clientes.filter(client => client.SucCode === sucursal)
+            listClients = [...listClients, ...filter]
+        })
+        return res.json(listClients)
+    } catch (error) {
+        console.log({ error })
+        return res
+    }
+
 }
 
 module.exports = {
@@ -2117,5 +2135,6 @@ module.exports = {
     devolucionDebitoCreditoCompletaController,
     facturasClienteLoteItemCodeGenesisController,
     getCreditNoteController,
-    stockDisponiblePorSucursalController
+    stockDisponiblePorSucursalController,
+    clientesDevMalEstado
 }
