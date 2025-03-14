@@ -275,14 +275,13 @@ const detalleVentas = async (id) => {
     }
 }
 
-
 const detalleParaDevolucion = async (docEntry) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
-        const query = `call LAB_IFA_PRD.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
+        // const query = `call LAB_IFA_PRD.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
