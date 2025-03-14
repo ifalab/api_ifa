@@ -197,6 +197,8 @@ const createAsientoContableController = async (req, res) => {
             voucher,
             cuenta
         } = req.body
+        
+        
         const tipoCambio = await tipoDeCambio()
         const usdRate = tipoCambio[0]
         const usd = +usdRate.Rate
@@ -247,6 +249,7 @@ const createAsientoContableController = async (req, res) => {
             Memo: glosa,
             Indicator: indicador,
             Reference: reference,
+            Reference3:cheque,
             JournalEntryLines
         }
 
