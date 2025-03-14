@@ -2243,9 +2243,17 @@ const devolucionMalEstadoController = async (req, res) => {
                     ItemCode: batch.ItemCode
                 }))
             }
-            const newLineEntrega = newLine
-            newLineEntrega.BatchNumbers=batchNumbersEntrega
-            newLineEntrega.WarehouseCode=AlmacenSalida
+            const newLineEntrega = {
+                ItemCode,
+                WarehouseCode: AlmacenSalida,
+                Quantity: Cantidad,
+                LineNum: numRet,
+                TaxCode: "IVA_GND",
+                AccountCode: "6210103",
+                // GrossTotal,
+                // GrossPrice: Precio,
+                BatchNumbers: batchNumbersEntrega
+            };
             console.log({newLineEntrega})
             newDocumentLinesEntrega.push(newLineEntrega)
             numRet += 1
