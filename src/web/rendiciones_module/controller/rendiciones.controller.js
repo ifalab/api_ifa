@@ -1179,6 +1179,7 @@ const actualizarCCRendController = async (req, res) => {
         if (!new_cuenta_cc) {
             return res.status(400).json({ mensaje: 'debe venir una cuenta CC' })
         }
+        console.log({id, idRend, new_cuenta_cc})
         const responseHana = await actualizarCCRendicion(id, idRend, new_cuenta_cc)
         const { response } = responseHana[0]
         console.log({ response })
