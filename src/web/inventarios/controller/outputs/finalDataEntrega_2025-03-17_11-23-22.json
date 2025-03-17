@@ -1,0 +1,20 @@
+{
+  "Series": 353,
+  "CardCode": "C001526",
+  "U_UserCode": 16,
+  "U_B_cufd": "4661A21FEE5860B9A2788591EBAA135526B66FCBD62CE11AB6FAE8E74",
+  "DocumentLines": [
+    {
+      "ItemCode": "101-009-001",
+      "WarehouseCode": "100-01",
+      "Quantity": 1,
+      "LineNum": 0,
+      "TaxCode": "IVA_GND",
+      "AccountCode": "6210103",
+      "GrossTotal": 62.8,
+      "GrossPrice": 31.4,
+      "U_DESCLINEA": 2.51,
+      "BatchNumbers": []
+    }
+  ]
+}

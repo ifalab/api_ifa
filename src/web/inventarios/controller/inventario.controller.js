@@ -915,7 +915,7 @@ const devolucionExcepcionalController = async (req, res) => {
 
         finalDataEntrega = finalData
         // return res.json({finalDataEntrega, entregas, batchEntrega})
-        
+
         const responceReturn = await postReturn(finalDataEntrega)
 
         if (responceReturn.status > 300) {
@@ -2006,17 +2006,17 @@ const getCreditNoteController = async (req, res) => {
     try {
         const { id } = req.query
         const response = await getCreditNote(id)
-        if(response.status==400){
-            return res.status(400).json({mensaje: `${response.errorMessage.value || response.errorMessage || 'error desconocido de getCreditNote'}`})
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: `${response.errorMessage.value || response.errorMessage || 'error desconocido de getCreditNote'}` })
         }
-        
-        console.log({id, responseGetCreditNote:response})
+
+        console.log({ id, responseGetCreditNote: response })
         const { DocEntry,
             DocNum,
             DocDate,
             CardCode,
             CardName,
-            DocTotal, DocumentLines} = response.data
+            DocTotal, DocumentLines } = response.data
 
         let detalle = []
         let baseEntry = 0
@@ -2073,8 +2073,8 @@ const getCreditNoteController = async (req, res) => {
 
 const stockDisponiblePorSucursalController = async (req, res) => {
     try {
-        const {sucursal}= req.body
-        console.log({sucursal})
+        const { sucursal } = req.body
+        console.log({ sucursal })
         const stock = await stockDisponiblePorSucursal(sucursal);
         const toCamelCase = (str) =>
             str
@@ -2100,7 +2100,7 @@ const stockDisponiblePorSucursalController = async (req, res) => {
     }
 }
 
-const getMonthDifference=(start, end)=>{
+const getMonthDifference = (start, end) => {
     const yearDiff = end.getFullYear() - start.getFullYear();
     const monthDiff = end.getMonth() - start.getMonth();
 
@@ -2110,73 +2110,75 @@ const getMonthDifference=(start, end)=>{
 const getAllCreditNotesController = async (req, res) => {
     try {
         const response = await getCreditNotes()
-        if(response.status==400){
-            return res.status(400).json({mensaje: `Error en obtener credit notes`, 
-                errorMessage: response.errorMessage})
+        if (response.status == 400) {
+            return res.status(400).json({
+                mensaje: `Error en obtener credit notes`,
+                errorMessage: response.errorMessage
+            })
         }
 
-        console.log({responseGetCreditNotes:response})
+        console.log({ responseGetCreditNotes: response })
         let result = []
         // const todaysDate= new Date()
-        for(const lineResponse of response.data){
+        for (const lineResponse of response.data) {
             const { DocEntry,
                 DocNum,
                 DocDate,
                 CardCode,
                 CardName,
-                DocTotal, DocumentLines} = lineResponse
-            
+                DocTotal, DocumentLines } = lineResponse
+
             // const dateThem = new Date(DocDate)
             // const months = getMonthDifference(dateThem, todaysDate)
 
             // if(months<3){
-                let detalle = []
-                let baseEntry = 0
-                DocumentLines.forEach((item)=>{
-                    const {
-                        LineNum,
-                        ItemCode,
-                        ItemDescription,
-                        Quantity,
-                        // Price,
-                        // PriceAfterVAT,
-                        DiscountPercent,
-                        WarehouseCode,
-                        MeasureUnit,
-                        BaseEntry, 
-                        GrossTotal,
-                        GrossPrice,
-                        // UnitPrice
-                    } = item
-                    if(baseEntry==0){
-                        baseEntry=BaseEntry
-                    }
-                    detalle.push({
-                        LineNum,
-                        ItemCode,
-                        ItemDescription,
-                        Quantity,
-                        // Price,
-                        // PriceAfterVAT,
-                        DiscountPercent: Math.round(DiscountPercent),
-                        WarehouseCode,
-                        MeasureUnit,
-                        GrossTotal,
-                        GrossPrice: +GrossPrice.toFixed(2),
-                        // UnitPrice: +UnitPrice.toFixed(2)
-                    })
-                })
-                const lineResult = {
-                    DocEntry,
-                    DocNum,
-                    DocDate,
-                    CardCode,
-                    CardName,
-                    DocTotal,
-                    BaseEntry: baseEntry,
-                    DocumentLines: detalle
+            let detalle = []
+            let baseEntry = 0
+            DocumentLines.forEach((item) => {
+                const {
+                    LineNum,
+                    ItemCode,
+                    ItemDescription,
+                    Quantity,
+                    // Price,
+                    // PriceAfterVAT,
+                    DiscountPercent,
+                    WarehouseCode,
+                    MeasureUnit,
+                    BaseEntry,
+                    GrossTotal,
+                    GrossPrice,
+                    // UnitPrice
+                } = item
+                if (baseEntry == 0) {
+                    baseEntry = BaseEntry
                 }
-                result.push(lineResult)
+                detalle.push({
+                    LineNum,
+                    ItemCode,
+                    ItemDescription,
+                    Quantity,
+                    // Price,
+                    // PriceAfterVAT,
+                    DiscountPercent: Math.round(DiscountPercent),
+                    WarehouseCode,
+                    MeasureUnit,
+                    GrossTotal,
+                    GrossPrice: +GrossPrice.toFixed(2),
+                    // UnitPrice: +UnitPrice.toFixed(2)
+                })
+            })
+            const lineResult = {
+                DocEntry,
+                DocNum,
+                DocDate,
+                CardCode,
+                CardName,
+                DocTotal,
+                BaseEntry: baseEntry,
+                DocumentLines: detalle
+            }
+            result.push(lineResult)
             // }
         }
         return res.json(result)
@@ -2189,15 +2191,15 @@ const getAllCreditNotesController = async (req, res) => {
 const devolucionMalEstadoController = async (req, res) => {
     try {
         const { Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap } = req.body
-        console.log({Devoluciones, AlmacenIngreso, CardCode, id_sap})
+        console.log({ Devoluciones, AlmacenIngreso, CardCode, id_sap })
         let numRet = 0
-        let newDocumentLinesReturn=[]
-        let newDocumentLinesEntrega=[]
-        for(const devolucion of Devoluciones){
-            const {ItemCode, Lote, Cantidad, Precio, UnidadMedida} = devolucion
-            console.log({ItemCode, Lote, Cantidad, Precio, UnidadMedida})
+        let newDocumentLinesReturn = []
+        let newDocumentLinesEntrega = []
+        for (const devolucion of Devoluciones) {
+            const { ItemCode, Lote, Cantidad, Precio, UnidadMedida } = devolucion
+            console.log({ ItemCode, Lote, Cantidad, Precio, UnidadMedida })
             let batchNumbers = []
-            const cantidadBatch=Cantidad*UnidadMedida
+            const cantidadBatch = Cantidad * UnidadMedida
             batchNumbers.push({
                 BaseLineNumber: numRet,
                 BatchNumber: Lote,
@@ -2230,7 +2232,7 @@ const devolucionMalEstadoController = async (req, res) => {
                 // grabarLog(user.USERCODE, user.USERNAME, "Dovolucion Mal Estado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-mal-estado", process.env.PRD)
                 return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
             }
-            if (batchData && batchData.length > 0){
+            if (batchData && batchData.length > 0) {
                 let new_quantity = 0
                 batchData.map((item) => {
                     new_quantity += Number(item.Quantity).toFixed(6)
@@ -2257,7 +2259,7 @@ const devolucionMalEstadoController = async (req, res) => {
                 GrossPrice: Precio,
                 BatchNumbers: batchNumbersEntrega
             };
-            console.log({newLineEntrega})
+            console.log({ newLineEntrega })
             newDocumentLinesEntrega.push(newLineEntrega)
             numRet += 1
         }
@@ -2268,10 +2270,10 @@ const devolucionMalEstadoController = async (req, res) => {
             U_UserCode: id_sap,
             DocumentLines: newDocumentLinesReturn,
         }
-        console.log(JSON.stringify({bodyReturn},null,2))
+        console.log(JSON.stringify({ bodyReturn }, null, 2))
         // return res.status(400).json()
         const responceReturn = await postReturn(bodyReturn)
-        console.log({responceReturn})
+        console.log({ responceReturn })
 
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
 
@@ -2288,11 +2290,11 @@ const devolucionMalEstadoController = async (req, res) => {
         //     bodyReturn
         // })
         const docEntryDev = responceReturn.orderNumber
-        console.log({docEntryDev})
-        newDocumentLinesEntrega.map((item)=>{
+        console.log({ docEntryDev })
+        newDocumentLinesEntrega.map((item) => {
             item.BaseEntry = docEntryDev
         })
-        
+
         const bodyEntrega = {
             Series: 353,
             CardCode: CardCode,
@@ -2315,17 +2317,17 @@ const devolucionMalEstadoController = async (req, res) => {
             console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
-            return res.status(400).json({ 
-                mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`, 
+            return res.status(400).json({
+                mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
                 idReturn: responceReturn.orderNumber,
                 bodyReturn,
                 responseEntrega,
                 bodyEntrega
             })
         }
-    
+
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Exito en la devolucion`, ``, "inventario/dev-mal-estado", process.env.PRD)
-        
+
         return res.json({
             responceReturn,
             idReturn: responceReturn.orderNumber,
@@ -2361,8 +2363,8 @@ const getClienteByCardCodeController = async (req, res) => {
     try {
         const { cardCode } = req.query
         const cliente = await getClienteByCardCode(cardCode)
-        if(cliente.length==0)
-            return res.status(400).json({mensaje: `No existe cliente con el codigo: ${cardCode}`})
+        if (cliente.length == 0)
+            return res.status(400).json({ mensaje: `No existe cliente con el codigo: ${cardCode}` })
         return res.json(cliente[0])
     } catch (error) {
         console.log({ error })
@@ -2372,40 +2374,45 @@ const getClienteByCardCodeController = async (req, res) => {
 
 const devolucionPorValoradoController = async (req, res) => {
     let allResponseReturn = []
-    let allResponseEntrega=[]
-    let allResponseCreditNote=[]
+    let allResponseEntrega = []
+    let allResponseCreditNote = []
     try {
-        const { facturas, id_sap, AlmacenIngreso, AlmacenSalida }=req.body
+        const { facturas, id_sap, AlmacenIngreso, AlmacenSalida, CardCode } = req.body
         // return res.json({facturas, id_sap, AlmacenIngreso, AlmacenSalida})
-        for(const factura of facturas){
-            const { CardCode,
+        //? salida
+        for (const factura of facturas) {
+            const {
                 Cuf,
                 DocEntry,
-                detalle}=factura
+                detalle,
+            } = factura
 
             console.log(`----------FACTURA ${DocEntry}----------`)
             let numRet = 0
-            let newDocumentLinesReturn=[]
-            let newDocumentLinesEntrega=[]
-            for(const devolucion of detalle){
-                const {ItemCode,
+            let newDocumentLinesReturn = []
+            let newDocumentLinesEntrega = []
+            for (const devolucion of detalle) {
+                const {
+                    ItemCode,
                     Cantidad,
                     UnitPrice,
                     Total,
-                    U_DESCLINEA} = devolucion
-                    
+                    U_DESCLINEA,
+                } = devolucion
+
                 let batchNumbers = []
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
                 console.log({ batch: batchData })
                 if (batchData.message) {
                     endTime = Date.now();
                     // grabarLog(user.USERCODE, user.USERNAME, "Dovolucion Mal Estado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-mal-estado", process.env.PRD)
-                    return res.status(400).json({ 
+                    return res.status(400).json({
                         mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`,
                         allResponseReturn, allResponseCreditNote,
-                        allResponseEntrega })
+                        allResponseEntrega
+                    })
                 }
-                if (batchData && batchData.length > 0){
+                if (batchData && batchData.length > 0) {
                     let new_quantity = 0
                     batchData.map((item) => {
                         new_quantity += Number(item.Quantity).toFixed(6)
@@ -2449,21 +2456,54 @@ const devolucionPorValoradoController = async (req, res) => {
                     U_DESCLINEA,
                     BatchNumbers: batchNumbers
                 };
-                console.log({newLineEntrega})
+                console.log({ newLineEntrega })
                 newDocumentLinesEntrega.push(newLineEntrega)
                 numRet += 1
             }
 
             const bodyReturn = {
-                Series: 352,
+                Series: 353,
                 CardCode: CardCode,
                 U_UserCode: id_sap,
                 U_B_cufd: Cuf,
                 DocumentLines: newDocumentLinesReturn,
             }
-            console.log({bodyReturn})
+            console.log('body enterga -----------------------------------------------')
+            console.log(JSON.stringify({ bodyEntrega: bodyReturn }, null, 2))
+            //? ----------------------------------------------------------------      entrega .
+            const responseEntrega = await postEntrega(bodyReturn)
+            allResponseEntrega.push(responseEntrega)
+            if (responseEntrega.lang) {
+                const outputDir = path.join(__dirname, 'outputs');
+                if (!fs.existsSync(outputDir)) {
+                    fs.mkdirSync(outputDir);
+                }
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+                // Generar el nombre del archivo con el timestamp
+                const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
+                fs.writeFileSync(fileNameJson, JSON.stringify(bodyReturn, null, 2), 'utf8');
+                console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
+                endTime = Date.now();
+                // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
+                return res.status(400).json({
+                    mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}. Nro Factura: ${DocEntry}`,
+                    responseEntrega,
+                    bodyEntrega:bodyReturn,
+                    bodyReturn,
+                    allResponseEntrega,
+                    allResponseReturn,
+                    allResponseCreditNote
+                })
+            }
+            //? ----------------------------------------------------------------      return .
+            console.log('body enterga -----------------------------------------------')
+            bodyReturn.Series = 352
+            console.log(JSON.stringify({ bodyReturn }, null, 2))
+            
             const responceReturn = await postReturn(bodyReturn)
-            console.log({responceReturn})
+            console.log({ responceReturn })
 
             const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
             allResponseReturn.push(responceReturn)
@@ -2473,12 +2513,13 @@ const devolucionPorValoradoController = async (req, res) => {
                 if (mensaje.value)
                     mensaje = mensaje.value
                 grabarLog(user.USERCODE, user.USERNAME, "Inventario DevolucionValorado", `Error en postReturn: ${mensaje}. Nro Factura ${DocEntry}`, `postReturn()`, "inventario/dev-valorado", process.env.PRD)
-                return res.status(400).json({ 
-                    mensaje: `Error en postReturn: ${mensaje}. Nro Factura: ${DocEntry}`, 
-                    bodyReturn, 
+                return res.status(400).json({
+                    mensaje: `Error en postReturn: ${mensaje}. Nro Factura: ${DocEntry}`,
+                    bodyReturn,
                     allResponseReturn,
-                    allResponseCreditNote, 
-                    allResponseEntrega })
+                    allResponseCreditNote,
+                    allResponseEntrega
+                })
             }
             const docEntryDev = responceReturn.orderNumber
             //---------------Credit notes
@@ -2565,41 +2606,9 @@ const devolucionPorValoradoController = async (req, res) => {
                     allResponseEntrega
                 })
             }
-            
-            const bodyEntrega = {
-                Series: 353,
-                CardCode: CardCode,
-                U_UserCode: id_sap,
-                DocumentLines: newDocumentLinesEntrega,
-            }
-            const responseEntrega = await postEntrega(bodyEntrega)
-            allResponseEntrega.push(responseEntrega)
-            if (responseEntrega.lang) {
-                const outputDir = path.join(__dirname, 'outputs');
-                if (!fs.existsSync(outputDir)) {
-                    fs.mkdirSync(outputDir);
-                }
-                const now = new Date();
-                const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
 
-                // Generar el nombre del archivo con el timestamp
-                const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
-                fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
-                console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
-                endTime = Date.now();
-                // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
-                return res.status(400).json({ 
-                    mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}. Nro Factura: ${DocEntry}`, 
-                    responseEntrega,
-                    bodyEntrega,
-                    bodyReturn,
-                    bodyCreditNotes,
-                    allResponseEntrega,
-                    allResponseReturn,
-                    allResponseCreditNote
-                })
-            }
-        
+
+
         }
 
         // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Exito en la devolucion`, ``, "inventario/dev-mal-estado", process.env.PRD)
@@ -2612,7 +2621,7 @@ const devolucionPorValoradoController = async (req, res) => {
         // const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ error })
         // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Error en el devolucionPorValoradoController: ${error.message || ''}`, `catch del controller devolucionMalEstadoController`, "inventario/dev-mal-estado", process.env.PRD)
-        return res.status(500).json({ 
+        return res.status(500).json({
             mensaje: `Error en en controlador devolucionPorValoradoController: ${error.message}`,
             allResponseReturn,
             allResponseCreditNote,
@@ -2623,14 +2632,14 @@ const devolucionPorValoradoController = async (req, res) => {
 
 const detalleFacturasController = async (req, res) => {
     try {
-        const {docEntries} = req.body
-        let results={}
-        for(const docEntry of docEntries){
+        const { docEntries } = req.body
+        let results = {}
+        for (const docEntry of docEntries) {
             const response = await detalleVentas(docEntry.DocEntry)
-            console.log({response})
-            results[docEntry.DocEntry]=response
+            console.log({ response })
+            results[docEntry.DocEntry] = response
         }
-        
+
         return res.json(results)
     } catch (error) {
         console.log({ error })
