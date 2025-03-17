@@ -49,6 +49,6 @@ router.get('/credit-notes', [validarToken, validarCampos], getAllCreditNotesCont
 router.post('/dev-mal-estado', [validarToken, validarCampos], devolucionMalEstadoController)
 router.post('/clientes-dev-mal-estado', [validarToken, validarCampos], clientesDevMalEstado)
 router.get('/get-cliente', [validarToken, validarCampos], getClienteByCardCodeController)
-router.get('/dev-valorado', [validarToken, validarCampos], devolucionPorValoradoController)
+router.post('/dev-valorado', [validarToken, validarCampos], devolucionPorValoradoController)
 
 module.exports = router

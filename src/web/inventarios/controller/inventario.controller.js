@@ -2366,6 +2366,7 @@ const devolucionPorValoradoController = async (req, res) => {
     let allResponseCreditNote=[]
     try {
         const { facturas, id_sap, AlmacenIngreso, AlmacenSalida }=req.body
+        // return res.json({facturas, id_sap, AlmacenIngreso, AlmacenSalida})
         for(const factura of facturas){
             const { CardCode,
                 Cuf,
