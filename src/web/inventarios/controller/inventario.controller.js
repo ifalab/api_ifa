@@ -2213,8 +2213,8 @@ const devolucionMalEstadoController = async (req, res) => {
                 LineNum: numRet,
                 TaxCode: "IVA_GND",
                 AccountCode: "6210103",
-                // GrossTotal,
-                // GrossPrice: Precio,
+                GrossTotal,
+                GrossPrice: Precio,
                 BatchNumbers: batchNumbers
             };
             console.log('------newLine-----')
@@ -2244,14 +2244,17 @@ const devolucionMalEstadoController = async (req, res) => {
                 }))
             }
             const newLineEntrega = {
+                BaseEntry: 0,
+                BaseType: 16,
+                BaseLine: numRet,
                 ItemCode,
                 WarehouseCode: AlmacenSalida,
                 Quantity: Cantidad,
                 LineNum: numRet,
                 TaxCode: "IVA_GND",
                 AccountCode: "6210103",
-                // GrossTotal,
-                // GrossPrice: Precio,
+                GrossTotal,
+                GrossPrice: Precio,
                 BatchNumbers: batchNumbersEntrega
             };
             console.log({newLineEntrega})
@@ -2284,6 +2287,11 @@ const devolucionMalEstadoController = async (req, res) => {
         //     idReturn: responceReturn.orderNumber,
         //     bodyReturn
         // })
+        const docEntryDev = responceReturn.orderNumber
+        console.log({docEntryDev})
+        newDocumentLinesEntrega.map((item)=>{
+            item.BaseEntry = docEntryDev
+        })
         
         const bodyEntrega = {
             Series: 353,
@@ -2319,8 +2327,10 @@ const devolucionMalEstadoController = async (req, res) => {
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Exito en la devolucion`, ``, "inventario/dev-mal-estado", process.env.PRD)
         
         return res.json({
+            responceReturn,
             idReturn: responceReturn.orderNumber,
             bodyReturn,
+            responseEntrega,
             idEntrega: responseEntrega.deliveryN44umber,
             bodyEntrega
         })
@@ -2371,13 +2381,13 @@ const devolucionPorValoradoController = async (req, res) => {
             const { CardCode,
                 Cuf,
                 DocEntry,
-                Detalle}=factura
+                detalle}=factura
 
             console.log(`----------FACTURA ${DocEntry}----------`)
             let numRet = 0
             let newDocumentLinesReturn=[]
             let newDocumentLinesEntrega=[]
-            for(const devolucion of Detalle){
+            for(const devolucion of detalle){
                 const {ItemCode,
                     Cantidad,
                     UnitPrice,
@@ -2611,6 +2621,23 @@ const devolucionPorValoradoController = async (req, res) => {
     }
 }
 
+const detalleFacturasController = async (req, res) => {
+    try {
+        const {docEntries} = req.body
+        let results={}
+        for(const docEntry of docEntries){
+            const response = await detalleVentas(docEntry.DocEntry)
+            console.log({response})
+            results[docEntry.DocEntry]=response
+        }
+        
+        return res.json(results)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `error en el controlador detalleFacturasController. ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -2639,5 +2666,7 @@ module.exports = {
     devolucionMalEstadoController,
     clientesDevMalEstado,
     getClienteByCardCodeController,
-    devolucionPorValoradoController
+    devolucionPorValoradoController,
+    detalleFacturasController,
+    detalleFacturasController
 }
