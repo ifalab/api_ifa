@@ -60,11 +60,23 @@ const { postInventoryTransferRequests } = require("./sld.controller");
 
 const ventasPorSucursalController = async (req, res) => {
     try {
-        const response = await ventaPorSucursal()
+        const { listSuc } = req.body
+        const responseData = await ventaPorSucursal()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
 
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
@@ -81,11 +93,23 @@ const ventasPorSucursalController = async (req, res) => {
 
 const ventasNormalesController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasNormales()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasNormales()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -100,12 +124,25 @@ const ventasNormalesController = async (req, res) => {
 
 const ventasCadenasController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasCadena()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasCadena()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
+
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
         }
@@ -119,11 +156,23 @@ const ventasCadenasController = async (req, res) => {
 
 const ventasInstitucionesController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasInstitucion()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasInstitucion()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -138,11 +187,23 @@ const ventasInstitucionesController = async (req, res) => {
 
 const ventasIFAVETController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasIfaVet()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasIfaVet()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -157,11 +218,24 @@ const ventasIFAVETController = async (req, res) => {
 
 const ventasMasivoController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+
+        const responseData = await ventasMasivo()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasMasivo()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -228,11 +302,23 @@ const ventasUsuarioController = async (req, res) => {
 
 const ventasPorSucursalControllerMesAnterior = async (req, res) => {
     try {
-        const response = await ventaPorSucursalMesAnterior()
+        const { listSuc } = req.body
+        const responseData = await ventaPorSucursalMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
 
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
@@ -249,11 +335,23 @@ const ventasPorSucursalControllerMesAnterior = async (req, res) => {
 
 const ventasNormalesControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasNormalesMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasNormalesMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -268,11 +366,23 @@ const ventasNormalesControllerMesAnterior = async (req, res) => {
 
 const ventasCadenasControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasCadenaMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasCadenaMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -287,11 +397,23 @@ const ventasCadenasControllerMesAnterior = async (req, res) => {
 
 const ventasInstitucionesControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasInstitucionMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasInstitucionMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -306,11 +428,23 @@ const ventasInstitucionesControllerMesAnterior = async (req, res) => {
 
 const ventasIFAVETControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasIfaVetMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasIfaVetMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -325,11 +459,22 @@ const ventasIFAVETControllerMesAnterior = async (req, res) => {
 
 const ventasMasivoControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasMasivoMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasMasivoMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -1036,6 +1181,16 @@ const crearSolicitudPlantaController = async (req, res) => {
             ToWarehouse,
             StockTransferLines,
         } = req.body
+        console.log(JSON.stringify({
+            Series,
+            Reference1,
+            Reference2,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            ToWarehouse,
+            StockTransferLines,
+        }, null, 2))
         const sapResponse = await postInventoryTransferRequests({
             Series,
             Reference1,

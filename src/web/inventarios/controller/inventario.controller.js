@@ -2073,32 +2073,27 @@ const getCreditNoteController = async (req, res) => {
 
 const stockDisponiblePorSucursalController = async (req, res) => {
     try {
-        const { listSucursales } = req.body
-        console.log({ listSucursales })
-        let stock = []
-        for (const sucursal of listSucursales) {
-            const stockSuc = await stockDisponiblePorSucursal(sucursal);
-            const toCamelCase = (str) =>
-                str
-                    .toLowerCase()
-                    .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
-                    .replace(/\.$/, '')
+        const { sucursal } = req.body
+        console.log({ sucursal })
+        const stock = await stockDisponiblePorSucursal(sucursal);
+        const toCamelCase = (str) =>
+            str
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
+                .replace(/\.$/, '')
 
-            const formattedStock = stockSuc.map(item => {
-                const formattedItem = {};
-                Object.keys(item).forEach(key => {
-                    const newKey = toCamelCase(key);
-                    formattedItem[newKey] = item[key];
-                });
-                return formattedItem;
+        const formattedStock = stock.map(item => {
+            const formattedItem = {};
+            Object.keys(item).forEach(key => {
+                const newKey = toCamelCase(key);
+                formattedItem[newKey] = item[key];
             });
-            console.log('type of stock', typeof formattedStock)
-            stock = [...stock, ...formattedStock]
-        }
+            return formattedItem;
+        });
+        console.log('type of stock', typeof formattedStock)
 
 
-
-        return res.json({ stock });
+        return res.json({ stock: formattedStock });
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en stockDisponiblePorSucursalController: ${error.message}` })
@@ -2495,7 +2490,7 @@ const devolucionPorValoradoController = async (req, res) => {
                 return res.status(400).json({
                     mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}. Nro Factura: ${DocEntry}`,
                     responseEntrega,
-                    bodyEntrega: bodyReturn,
+                    bodyEntrega:bodyReturn,
                     bodyReturn,
                     allResponseEntrega,
                     allResponseReturn,
@@ -2506,7 +2501,7 @@ const devolucionPorValoradoController = async (req, res) => {
             console.log('body enterga -----------------------------------------------')
             bodyReturn.Series = 352
             console.log(JSON.stringify({ bodyReturn }, null, 2))
-
+            
             const responceReturn = await postReturn(bodyReturn)
             console.log({ responceReturn })
 
