@@ -1,0 +1,27 @@
+{
+  "Series": 352,
+  "CardCode": "C000744",
+  "U_UserCode": 0,
+  "U_B_cufd": "4661A21FEE5860B9A2788591EBAA135526B66FCBD62CE11AB6FAE8E74",
+  "DocumentLines": [
+    {
+      "ItemCode": "101-016-005",
+      "WarehouseCode": "100-01",
+      "Quantity": 2,
+      "LineNum": 0,
+      "TaxCode": "IVA_GND",
+      "AccountCode": "6210103",
+      "GrossTotal": 192.8,
+      "GrossPrice": 24.1,
+      "U_DESCLINEA": 144.6,
+      "BatchNumbers": [
+        {
+          "BaseLineNumber": 0,
+          "BatchNumber": "72405",
+          "Quantity": "2.000000",
+          "ItemCode": "101-016-005"
+        }
+      ]
+    }
+  ]
+}
