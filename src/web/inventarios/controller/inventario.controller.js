@@ -371,6 +371,59 @@ const stockDisponibleController = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
+
+const stockDisponibleIfaController = async (req, res) => {
+    try {
+        const stockData = await stockDisponible();
+        const toCamelCase = (str) =>
+            str
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
+                .replace(/\.$/, '')
+
+        const formattedStock = stockData.map(item => {
+            const formattedItem = {};
+            Object.keys(item).forEach(key => {
+                const newKey = toCamelCase(key);
+                formattedItem[newKey] = item[key];
+            });
+            return formattedItem;
+        });
+        let stock = []
+        formattedStock.map((item) => {
+            if (item.lineitemname != null && item.lineitemname === 'IFA') {
+                const {
+                    nro,
+                    lineitemname,
+                    sublineitemname,
+                    itemcode,
+                    sww,
+                    itemname,
+                    santaCruz,
+                    sczTransito,
+                    productoTerminado,
+                    total,
+                } = item
+                stock.push({
+                    nro,
+                    lineitemname,
+                    sublineitemname,
+                    itemcode,
+                    sww,
+                    itemname,
+                    santaCruz,
+                    sczTransito,
+                    productoTerminado,
+                    total,
+                })
+            }
+        })
+        return res.json({ stock });
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
 const habilitacionDiccionarioController = async (req, res) => {
     try {
         const cod = req.body.cod
@@ -707,14 +760,14 @@ const devolucionCompletaController = async (req, res) => {
 
 const pruebaController = async (req, res) => {
     try {
-        const { id} = req.query
+        const { id } = req.query
         const fechaFormater = new Date()
         const year = fechaFormater.getUTCFullYear();
         const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
         const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
         const formater = `${year}${month}${day}`;
         const entregaDetalle = await entregaDetallerFactura(id, '4661A21FEE5860B9A2788591EBAA135526B66FCBD62CE11AB6FAE8E74', '384872', formater)
-        
+
         return res.json({
             entregaDetalle
         })
@@ -2255,7 +2308,7 @@ const devolucionMalEstadoController = async (req, res) => {
             U_UserCode: id_sap,
             DocumentLines: newDocumentLinesEntrega,
         }
-        console.log({bodyEntrega})
+        console.log({ bodyEntrega })
         const responseEntrega = await postEntrega(bodyEntrega)
 
         if (responseEntrega.lang) {
@@ -2374,7 +2427,7 @@ const devolucionPorValoradoController = async (req, res) => {
                     batchData.map((item) => {
                         new_quantity += Number(item.Quantity).toFixed(6)
                     })
-                    
+
                     batchNumbers = batchData.map(batch => ({
                         BaseLineNumber: numRet,
                         BatchNumber: batch.BatchNum,
@@ -2496,7 +2549,7 @@ const devolucionPorValoradoController = async (req, res) => {
                 return res.status(400).json({
                     mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}. Nro Factura: ${DocEntry}`,
                     responseEntrega,
-                    bodyEntrega:bodyReturn,
+                    bodyEntrega: bodyReturn,
                     bodyReturn,
                     allResponseEntrega,
                     allResponseReturn,
@@ -2570,9 +2623,11 @@ const devolucionPorValoradoController = async (req, res) => {
 
             const responseInvoice = await postInvoice(responseHanaB)
             allResponseInvoice.push(responseInvoice)
-            if(responseInvoice.status == 400){
-                return res.status(400).json({mensaje:`Error en postInvoice: ${responseInvoice.errorMessage.value || 'No definido'}. Factura Nro: ${DocEntry}`, responseHanaB, bodyEntrega, bodyReturn,
-                 allResponseReturn, allResponseCreditNote, allResponseEntrega, allResponseInvoice})
+            if (responseInvoice.status == 400) {
+                return res.status(400).json({
+                    mensaje: `Error en postInvoice: ${responseInvoice.errorMessage.value || 'No definido'}. Factura Nro: ${DocEntry}`, responseHanaB, bodyEntrega, bodyReturn,
+                    allResponseReturn, allResponseCreditNote, allResponseEntrega, allResponseInvoice
+                })
             }
 
             // return res.json({bodyInvoice, responseHanaB, idInvoice: responseInvoice.idInvoice, bodyEntrega, bodyReturn})
@@ -2581,7 +2636,7 @@ const devolucionPorValoradoController = async (req, res) => {
             console.log('body return -----------------------------------------------')
             bodyReturn.Series = 352
             console.log(JSON.stringify({ bodyReturn }, null, 2))
-            
+
             const responceReturn = await postReturn(bodyReturn)
             console.log({ responceReturn })
 
@@ -2689,7 +2744,7 @@ const devolucionPorValoradoController = async (req, res) => {
                 })
             }
 
-            
+
         }
 
         // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Exito en la devolucion`, ``, "inventario/dev-mal-estado", process.env.PRD)
@@ -2760,5 +2815,6 @@ module.exports = {
     getClienteByCardCodeController,
     devolucionPorValoradoController,
     detalleFacturasController,
-    detalleFacturasController
+    detalleFacturasController,
+    stockDisponibleIfaController,
 }
