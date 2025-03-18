@@ -371,6 +371,59 @@ const stockDisponibleController = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
+
+const stockDisponibleIfaController = async (req, res) => {
+    try {
+        const stockData = await stockDisponible();
+        const toCamelCase = (str) =>
+            str
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9]+(.)/g, (match, chr) => chr.toUpperCase())
+                .replace(/\.$/, '')
+
+        const formattedStock = stockData.map(item => {
+            const formattedItem = {};
+            Object.keys(item).forEach(key => {
+                const newKey = toCamelCase(key);
+                formattedItem[newKey] = item[key];
+            });
+            return formattedItem;
+        });
+        let stock = []
+        formattedStock.map((item) => {
+            if (item.lineitemname != null && item.lineitemname === 'IFA') {
+                const {
+                    nro,
+                    lineitemname,
+                    sublineitemname,
+                    itemcode,
+                    sww,
+                    itemname,
+                    santaCruz,
+                    sczTransito,
+                    productoTerminado,
+                    total,
+                } = item
+                stock.push({
+                    nro,
+                    lineitemname,
+                    sublineitemname,
+                    itemcode,
+                    sww,
+                    itemname,
+                    santaCruz,
+                    sczTransito,
+                    productoTerminado,
+                    total,
+                })
+            }
+        })
+        return res.json({ stock });
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
 const habilitacionDiccionarioController = async (req, res) => {
     try {
         const cod = req.body.cod
@@ -2257,7 +2310,7 @@ const devolucionMalEstadoController = async (req, res) => {
             U_UserCode: id_sap,
             DocumentLines: newDocumentLinesEntrega,
         }
-        console.log({bodyEntrega})
+        console.log({ bodyEntrega })
         const responseEntrega = await postEntrega(bodyEntrega)
 
         if (responseEntrega.lang) {
@@ -2386,7 +2439,7 @@ const devolucionPorValoradoController = async (req, res) => {
                     batchData.map((item) => {
                         new_quantity += Number(item.Quantity).toFixed(6)
                     })
-                    
+
                     batchNumbers = batchData.map(batch => ({
                         BaseLineNumber: numRet,
                         BatchNumber: batch.BatchNum,
@@ -2993,5 +3046,6 @@ module.exports = {
     getClienteByCardCodeController,
     devolucionPorValoradoController,
     detalleFacturasController,
-    detalleFacturasController
+    detalleFacturasController,
+    stockDisponibleIfaController,
 }
