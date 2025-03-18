@@ -1,6 +1,7 @@
 const axios = require('axios');
 const https = require('https');
-const { obtenerEntregaDetalle } = require("./hana.controller")
+const { obtenerEntregaDetalle } = require("./hana.controller");
+const { Console } = require('console');
 
 const agent = new https.Agent({ rejectUnauthorized: false })
 
@@ -142,7 +143,7 @@ const postInvoice = async (body) => {
 
         const headers = {
             Cookie: `B1SESSION=${sessionSldId}`,
-            Prefer: 'return-no-content'
+            //Prefer: 'return-no-content'
         };
         const url = 'https://172.16.11.25:50000/b1s/v1/Invoices';
         const sapResponse = await axios.post(url, body, {
@@ -153,9 +154,12 @@ const postInvoice = async (body) => {
         const locationHeader = sapResponse.headers.location;
         const invoiceID = locationHeader.match(/\((\d+)\)$/);
         const idInvoice = invoiceID ? invoiceID[1] : 'Desconocido';
+
+        const data = sapResponse.data
+        console.log({dataInvoice: data})
         return { status: 200,
             // sapResponse,
-            idInvoice }
+            idInvoice, TransNum: data.TransNum }
     } catch (error) {
         console.log({ error })
         const errorMessage = error.response?.data?.error?.message|| error.message|| 'Error desconocido en la solicitud POST';

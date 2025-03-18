@@ -1,0 +1,195 @@
+{
+  "380238": {
+    "bodyEntrega": {
+      "Series": 353,
+      "CardCode": "C001526",
+      "U_UserCode": null,
+      "U_B_cufd": "4661A21FEE585E6803C1E506B6A4161E384C3E9ED978D0257B28E8E74",
+      "DocumentLines": [
+        {
+          "ItemCode": "101-008-002",
+          "WarehouseCode": "100-02",
+          "Quantity": 1,
+          "LineNum": 0,
+          "TaxCode": "IVA_GND",
+          "AccountCode": "6210103",
+          "GrossTotal": 19.97,
+          "GrossPrice": 20.8,
+          "U_DESCLINEA": 0.83,
+          "BatchNumbers": [
+            {
+              "BaseLineNumber": 0,
+              "BatchNumber": "1234",
+              "Quantity": "1.000000",
+              "ItemCode": "101-008-002"
+            }
+          ]
+        }
+      ]
+    },
+    "bodyInvoice": {
+      "Series": 360,
+      "DocDate": "2025-03-18",
+      "DocDueDate": "2025-04-18",
+      "CardCode": "C001526",
+      "FederalTaxID": "400618026",
+      "DocCurrency": "BS",
+      "Comments": "Factura desde WEB IFA basada en Entrega: 240035968",
+      "JournalMemo": "Factura nro: 380238 Cliente: C001526 Codigo Cuf: 4661A21FEE585E6803C1E506B6A4161E384C3E9ED978D0257B28E8E74",
+      "PaymentGroupCode": 2,
+      "SalesPersonCode": -1,
+      "U_TIPODOC": 7,
+      "U_TIPOCOM": 1,
+      "NumAtCard": 380238,
+      "U_NIT": "400618026",
+      "U_RAZSOC": "FARMACIA 26 DE FEBRERO S.R.L.",
+      "U_B_cuf": "4661A21FEE585E6803C1E506B6A4161E384C3E9ED978D0257B28E8E74",
+      "U_B_path": "https://siat.impuestos.gob.bo/consulta/QR?nit=1028625022&cuf=4661A21FEE585E6803C1E506B6A4161E384C3E9ED978D0257B28E8E74&numero=380238&t=1",
+      "U_B_em_date": "2025-03-18",
+      "ItemName": "IFASAN 10% X 30 ML LOCION",
+      "DocTotal": 19.97,
+      "U_OSLP_ID": "",
+      "U_UserCode": "",
+      "DocumentLines": [
+        {
+          "LineNum": 0,
+          "BaseType": 15,
+          "BaseEntry": 53128,
+          "BaseLine": 0,
+          "ItemCode": "101-008-002",
+          "Quantity": 1,
+          "GrossPrice": 20.8,
+          "GrossTotal": 19.97,
+          "WarehouseCode": "100-02",
+          "AccountCode": "4110101",
+          "TaxCode": "IVA",
+          "MeasureUnit": "CAJA X 1",
+          "UnitsOfMeasurment": 1,
+          "U_DESCLINEA": 0.83
+        }
+      ],
+      "DocumentAdditionalExpenses": [
+        {
+          "ExpenseCode": 8,
+          "LineTotal": 0.83,
+          "TaxCode": "IVA"
+        },
+        {
+          "ExpenseCode": 7,
+          "LineTotal": -0.83,
+          "TaxCode": "IVA"
+        },
+        {
+          "ExpenseCode": 2,
+          "LineTotal": 0.6,
+          "TaxCode": "IVA"
+        },
+        {
+          "ExpenseCode": 1,
+          "LineTotal": -0.6,
+          "TaxCode": "IVA"
+        }
+      ]
+    },
+    "bodyReturn": {
+      "Series": 352,
+      "CardCode": "C001526",
+      "U_UserCode": null,
+      "U_B_cufd": "4661A21FEE585E6803C1E506B6A4161E384C3E9ED978D0257B28E8E74",
+      "DocumentLines": [
+        {
+          "ItemCode": "101-008-002",
+          "WarehouseCode": "100-01",
+          "Quantity": 1,
+          "LineNum": 0,
+          "TaxCode": "IVA_GND",
+          "AccountCode": "6210103",
+          "GrossTotal": 19.97,
+          "GrossPrice": 20.8,
+          "U_DESCLINEA": 0.83,
+          "BatchNumbers": [
+            {
+              "BaseLineNumber": 0,
+              "BatchNumber": "122469",
+              "Quantity": "1.000000",
+              "ItemCode": "101-008-002"
+            }
+          ]
+        }
+      ]
+    },
+    "bodyCreditNotes": {
+      "DocDate": "2025-03-18",
+      "DocDueDate": "2025-04-18",
+      "CardCode": "C001526",
+      "NumAtCard": 0,
+      "DocTotal": "19.970000",
+      "DocCurrency": "BS",
+      "Reference1": "495",
+      "Reference2": 380238,
+      "Comments": "Factura desde WEB IFA basada en Entrega: 240000072",
+      "JournalMemo": "Factura nro: 0 Cliente: C001526 Codigo Cuf: 0",
+      "PaymentGroupCode": 2,
+      "SalesPersonCode": -1,
+      "Series": 361,
+      "U_UserCode": null,
+      "DocumentLines": [
+        {
+          "LineNum": 0,
+          "BaseLine": 0,
+          "BaseType": 16,
+          "BaseEntry": "495",
+          "ItemCode": "101-008-002",
+          "Quantity": "1.000000",
+          "WarehouseCode": "100-01",
+          "AccountCode": "6210103",
+          "GrossTotal": "19.970000",
+          "GrossPrice": "20.800000",
+          "MeasureUnit": "CAJA X 1",
+          "UnitsOfMeasurment": "1.000000",
+          "TaxCode": "IVA_GND"
+        }
+      ],
+      "DocumentAdditionalExpenses": [
+        {
+          "ExpenseCode": 10,
+          "LineTotal": 0.83,
+          "TaxCode": "IVA_GND"
+        },
+        {
+          "ExpenseCode": 9,
+          "LineTotal": -0.83,
+          "TaxCode": "IVA_GND"
+        }
+      ]
+    },
+    "bodyReconciliacion": {
+      "ReconDate": "2025-03-18",
+      "CardOrAccount": "coaCard",
+      "InternalReconciliationOpenTransRows": [
+        {
+          "ShortName": "C001526",
+          "TransId": 1174760,
+          "TransRowId": 0,
+          "SrcObjTyp": "14",
+          "SrcObjAbs": "6669",
+          "CreditOrDebit": "codCredit",
+          "ReconcileAmount": 19.97,
+          "CashDiscount": 0,
+          "Selected": "tYES"
+        },
+        {
+          "ShortName": "C001526",
+          "TransId": 1174757,
+          "TransRowId": 0,
+          "SrcObjTyp": "13",
+          "SrcObjAbs": "469218",
+          "CreditOrDebit": "codDebit",
+          "ReconcileAmount": 19.97,
+          "CashDiscount": 0,
+          "Selected": "tYES"
+        }
+      ]
+    }
+  }
+}

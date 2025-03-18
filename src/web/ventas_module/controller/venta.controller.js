@@ -50,7 +50,8 @@ const {
     listaPrecioInst,
     ventasPedidoPorVendedor,
     cantidadVentasPorZonasVendedor,
-    cantidadVentasPorZonasMesAnt
+    cantidadVentasPorZonasMesAnt,
+    insertarUbicacionCliente
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1418,6 +1419,23 @@ const cantidadVentasPorZonaMesAnteriosController = async (req = request, res = r
     }
 }
 
+const insertarUbicacionClienteController = async (req, res) => {
+    try {
+        const { cliente, latitud, longitud, id_vendedor_sap } = req.body;
+        const response = await insertarUbicacionCliente(cliente, latitud, longitud, id_vendedor_sap)
+
+        if(response.status==400){
+            return res.status(400).json({mensaje: `${response.message}`, response})
+        }
+
+        return res.json(response.data)
+    } catch (error) {
+        console.log('error en insertarUbicacionClienteController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en insertarUbicacionClienteController: ${ error.message }` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1471,5 +1489,6 @@ module.exports = {
     listaPrecioInstController,
     ventasPedidoPorSlpCodeController,
     cantidadVentasPorZonaController,
-    cantidadVentasPorZonaMesAnteriosController
+    cantidadVentasPorZonaMesAnteriosController,
+    insertarUbicacionClienteController
 };

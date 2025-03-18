@@ -38,7 +38,7 @@ router.get('/detalle-ventas', [validarToken, validarCampos], detalleVentasContro
 router.post('/devolucion-completa', [validarToken, validarCampos], devolucionCompletaController)
 router.post('/devolucion-excepcional', [validarToken, validarCampos], devolucionExcepcionalController)
 router.post('/devolucion-ndc', [validarToken, validarCampos], devolucionNotaDebitoCreditoController)
-router.get('/prueba', [validarToken, validarCampos], pruebaController)
+router.post('/prueba', [validarToken, validarCampos], pruebaController)
 router.get('/all-almacenes', [validarToken, validarCampos],getAllAlmacenesController)
 router.post('/search-articulos', [validarToken, validarCampos],searchArticulosController)
 router.post('/devolucion-ndc-completa', [validarToken, validarCampos], devolucionDebitoCreditoCompletaController)

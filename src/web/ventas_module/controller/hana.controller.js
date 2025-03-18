@@ -855,6 +855,25 @@ const cantidadVentasPorZonasMesAnt = async (username, line, groupBy) => {
     }
 }
 
+const insertarUbicacionCliente = async (cliente, latitud, longitud, id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `insert into LAB_IFA_LAPP.LAPP_UBICACION_CLIENTE (id_vendedor_sap, card_code, latitud, longitud) values (${id_sap}, '${cliente}', ${latitud}, ${longitud})`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en insertarUbicacionCliente: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -908,5 +927,6 @@ module.exports = {
     listaPrecioInst,
     ventasPedidoPorVendedor,
     cantidadVentasPorZonasVendedor,
-    cantidadVentasPorZonasMesAnt
+    cantidadVentasPorZonasMesAnt,
+    insertarUbicacionCliente
 }
