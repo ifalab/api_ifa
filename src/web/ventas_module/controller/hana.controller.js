@@ -855,6 +855,59 @@ const cantidadVentasPorZonasMesAnt = async (username, line, groupBy) => {
     }
 }
 
+const clienteByVendedor = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "SucCode"=${sucCode}`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud clienteByVendedor: ${err.message}`);
+    }
+}
+
+const lineas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_LINEAS`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud lineas: ${err.message}`);
+    }
+}
+
+const analisisVentas = async (CardCode,DimensionCCode,starDate,endDate) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_DATA.ANALISIS_DE_VENTAS WHERE "CardCode" = '${CardCode}' AND "DimensionCCode" = ${DimensionCCode} AND "Date" BETWEEN '${starDate}' AND '${endDate}'`;
+        // const query = `SELECT * FROM LAB_IFA_DATA.ANALISIS_DE_VENTAS LIMIT 15`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud lineas: ${err.message}`);
+    }
+}
+
+const clienteByCardCode = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud clienteByCardCode: ${err.message}`);
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -908,5 +961,9 @@ module.exports = {
     listaPrecioInst,
     ventasPedidoPorVendedor,
     cantidadVentasPorZonasVendedor,
-    cantidadVentasPorZonasMesAnt
+    cantidadVentasPorZonasMesAnt,
+    clienteByVendedor,
+    lineas,
+    analisisVentas,
+    clienteByCardCode,
 }

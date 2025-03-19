@@ -50,7 +50,11 @@ const {
     listaPrecioInst,
     ventasPedidoPorVendedor,
     cantidadVentasPorZonasVendedor,
-    cantidadVentasPorZonasMesAnt
+    cantidadVentasPorZonasMesAnt,
+    clienteByVendedor,
+    lineas,
+    analisisVentas,
+    clienteByCardCode
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1418,6 +1422,58 @@ const cantidadVentasPorZonaMesAnteriosController = async (req = request, res = r
     }
 }
 
+const clienteByVendedorController = async (req, res) => {
+    try {
+        const { listSuc } = req.body
+        let listClientes = []
+
+        for (const element of listSuc) {
+            const clientes = await clienteByVendedor(element)
+            listClientes = [...listClientes, ...clientes]
+        }
+
+        return res.json(listClientes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const lineasController = async (req, res) => {
+    try {
+        const lineaslist = await lineas()
+        return res.json(lineaslist)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en lineasController' })
+    }
+}
+
+const reporteVentasClienteLineas = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const dimensionCCode = req.query.dimensionCCode
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+        const analisis = await analisisVentas(cardCode, dimensionCCode, startDate, endDate)
+        return res.json(analisis)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const clienteByCardCodeController = async(req,res)=>{
+    try {
+        const cardCode = req.query.cardCode
+        const cliente = await clienteByCardCode(cardCode)
+        return res.json(cliente)
+    } catch (error) {
+        console.log({error})
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1471,5 +1527,9 @@ module.exports = {
     listaPrecioInstController,
     ventasPedidoPorSlpCodeController,
     cantidadVentasPorZonaController,
-    cantidadVentasPorZonaMesAnteriosController
+    cantidadVentasPorZonaMesAnteriosController,
+    clienteByVendedorController,
+    lineasController,
+    reporteVentasClienteLineas,
+    clienteByCardCodeController,
 };

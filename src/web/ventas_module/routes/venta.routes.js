@@ -52,7 +52,11 @@ const {
     listaPrecioInstController,
     ventasPedidoPorSlpCodeController,
     cantidadVentasPorZonaController,
-    cantidadVentasPorZonaMesAnteriosController
+    cantidadVentasPorZonaMesAnteriosController,
+    clienteByVendedorController,
+    lineasController,
+    reporteVentasClienteLineas,
+    clienteByCardCodeController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -119,5 +123,9 @@ router.get('/reporte-ventas-vendedor', [validarToken, validarCampos], ventasPedi
 
 router.post('/cant-ventas-zona', [validarToken, validarCampos], cantidadVentasPorZonaController)
 router.post('/cant-ventas-zona-mes-ant', [validarToken, validarCampos], cantidadVentasPorZonaMesAnteriosController)
+router.post('/clientes-by-vendedor', [validarToken, validarCampos], clienteByVendedorController)
+router.get('/lineas', [validarToken, validarCampos], lineasController)
+router.get('/reporte-ventas-cliente-lineas', [validarToken, validarCampos], reporteVentasClienteLineas)
+router.get('/cliente-by-cardcode', [validarToken, validarCampos], clienteByCardCodeController)
 
 module.exports = router
