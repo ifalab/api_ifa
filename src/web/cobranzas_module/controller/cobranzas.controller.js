@@ -6,7 +6,10 @@ const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
     detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo, getVendedores,
     getCobradores,
-    saldoDeudorIfavet
+    saldoDeudorIfavet,
+    getAllSublines,
+    getAllLines,
+    getVendedoresBySuc
 } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -1523,7 +1526,7 @@ const getCobradoresController = async (req, res) => {
     }
 }
 
-const getCobradoresBySucursalController = async (req, res) => {
+const getCobradoresBySucursalesController = async (req, res) => {
     try {
         const { listSucName } = req.body
         let response = []
@@ -1539,7 +1542,7 @@ const getCobradoresBySucursalController = async (req, res) => {
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        const mensaje = error.message || 'Error en el controlador getCobradoresController'
+        const mensaje = error.message || 'Error en el controlador getCobradoresBySucursalesController'
         return res.status(500).json({
             mensaje
         })
@@ -1553,6 +1556,49 @@ const saldoDeudorIfavetController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error al traer el saldo deudor de ifavet' })
+    }
+}
+
+const getCobradoresBySucursalController = async (req, res) => {
+    try {
+        const { sucCode } = req.query
+        let cobradores = await getVendedoresBySuc(sucCode)
+        
+        return res.json(cobradores)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getCobradoresBySucursalController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getAllSublinesController = async (req, res) => {
+    try {
+
+        let sublineas = await getAllSublines()
+        return res.json(sublineas)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getAllSublinesController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getAllLinesController = async (req, res) => {
+    try {
+
+        let sublineas = await getAllLines()
+        return res.json(sublineas)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getAllLinesController'
+        return res.status(500).json({
+            mensaje
+        })
     }
 }
 
@@ -1598,5 +1644,8 @@ module.exports = {
     cobranzaPorSucursalYTiposController,
     getCobradoresController,
     saldoDeudorIfavetController,
-    getCobradoresBySucursalController,
+    getCobradoresBySucursalesController,
+    getAllSublinesController,
+    getAllLinesController,
+    getCobradoresBySucursalController
 }

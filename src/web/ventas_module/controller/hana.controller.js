@@ -874,6 +874,21 @@ const insertarUbicacionCliente = async (cliente, latitud, longitud, id_sap) => {
     }
 }
 
+const obtenerClientesSinUbicacion = async (codVendedor) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_clientes_para_ubicacion_by_vendedor(${codVendedor})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en obtenerClientesSinUbicacion: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -928,5 +943,6 @@ module.exports = {
     ventasPedidoPorVendedor,
     cantidadVentasPorZonasVendedor,
     cantidadVentasPorZonasMesAnt,
-    insertarUbicacionCliente
+    insertarUbicacionCliente,
+    obtenerClientesSinUbicacion
 }

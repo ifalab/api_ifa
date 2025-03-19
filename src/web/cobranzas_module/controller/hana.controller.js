@@ -667,6 +667,54 @@ const saldoDeudorIfavet = async () => {
         }
     }
 }
+
+const getAllSublines= async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_SUBLINEAS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllSublines:', error.message);
+        throw { 
+            message: `Error al procesar getAllSublines: ${error.message || ''}` 
+        }
+    }
+}
+
+const getAllLines= async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_LINEAS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllLines:', error.message);
+        throw { 
+            message: `Error al procesar getAllLines: ${error.message || ''}` 
+        }
+    }
+}
+const getVendedoresBySuc = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SucCode"=${sucCode} and "SlpCode">0`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getVendedoresBySuc: ${error.message || ''}`)
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -708,5 +756,8 @@ module.exports = {
     cobranzaPorSucursalYTipo,
     getVendedores,
     getCobradores,
-    saldoDeudorIfavet
+    saldoDeudorIfavet,
+    getAllSublines,
+    getAllLines,
+    getVendedoresBySuc
 }

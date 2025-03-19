@@ -293,7 +293,8 @@ const actualizarDatosClienteController = async (req, res) => {
             ZoneCode,
             CreditLine,
             GroupCode,
-            LicTradNum
+            LicTradNum,
+            CardFName
         } = req.body
         console.log({body: req.body})
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -305,6 +306,7 @@ const actualizarDatosClienteController = async (req, res) => {
         response = await actualizarCliente(CardCode, `CreditLine`, '', CreditLine)
         response = await actualizarCliente(CardCode, `GroupCode`, '', GroupCode)
         response = await actualizarCliente(CardCode, `LicTradNum`, '', LicTradNum)
+        response = await actualizarCliente(CardCode, `CardFName`, CardFName, 0)
 
         if (response.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Datos Cliente", `Error: ${response.errorMessage || 'actualizarCliente()'} `, ``, "datos-maestros/actualizar-cliente", process.env.PRD)

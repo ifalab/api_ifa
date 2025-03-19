@@ -3,7 +3,10 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     detalleFacturaController, cobranzaPorSucursalesYTiposController, cobranzaPorSucursalYTiposController,
     getCobradoresController,
     saldoDeudorIfavetController,
-    getCobradoresBySucursalController
+    getCobradoresBySucursalesController,
+    getAllSublinesController,
+    getAllLinesController,
+    getCobradoresBySucursalController,
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -54,8 +57,10 @@ router.get('/detalle-factura',[validarToken, validarCampos],detalleFacturaContro
 router.post('/cob-sucursales-tipos',[validarToken, validarCampos],cobranzaPorSucursalesYTiposController)
 router.post('/cob-sucursal-tipos',[validarToken, validarCampos],cobranzaPorSucursalYTiposController)
 router.get('/get-cobradores',[validarToken, validarCampos],getCobradoresController)
-router.patch('/get-cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalController)
+router.patch('/get-cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalesController)
 router.get('/saldo-deudor-ifavet',[validarToken, validarCampos], saldoDeudorIfavetController)
-
+router.get('/sublineas',[validarToken, validarCampos], getAllSublinesController)
+router.get('/lineas',[validarToken, validarCampos], getAllLinesController)
+router.get('/cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalController)
 
 module.exports = router
