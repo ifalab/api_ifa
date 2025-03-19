@@ -53,6 +53,8 @@ const {
     ventasPedidoPorSlpCodeController,
     cantidadVentasPorZonaController,
     cantidadVentasPorZonaMesAnteriosController,
+    insertarUbicacionClienteController,
+    obtenerClientesSinUbicacionController,
     clienteByVendedorController,
     lineasController,
     reporteVentasClienteLineas,
@@ -127,5 +129,8 @@ router.post('/clientes-by-vendedor', [validarToken, validarCampos], clienteByVen
 router.get('/lineas', [validarToken, validarCampos], lineasController)
 router.get('/reporte-ventas-cliente-lineas', [validarToken, validarCampos], reporteVentasClienteLineas)
 router.get('/cliente-by-cardcode', [validarToken, validarCampos], clienteByCardCodeController)
+
+router.post('/ubicacion-cliente', [validarToken, validarCampos], insertarUbicacionClienteController)
+router.get('/clientes_sin_ubi', [validarToken, validarCampos], obtenerClientesSinUbicacionController)
 
 module.exports = router

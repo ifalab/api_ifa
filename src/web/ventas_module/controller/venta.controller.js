@@ -54,7 +54,9 @@ const {
     clienteByVendedor,
     lineas,
     analisisVentas,
-    clienteByCardCode
+    clienteByCardCode,
+    insertarUbicacionCliente,
+    obtenerClientesSinUbicacion
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1474,6 +1476,34 @@ const clienteByCardCodeController = async(req,res)=>{
     }
 }
 
+const insertarUbicacionClienteController = async (req, res) => {
+    try {
+        const { cliente, latitud, longitud, id_vendedor_sap } = req.body;
+        const response = await insertarUbicacionCliente(cliente, latitud, longitud, id_vendedor_sap)
+
+        if(response.status==400){
+            return res.status(400).json({mensaje: `${response.message}`, response})
+        }
+
+        return res.json(response.data)
+    } catch (error) {
+        console.log('error en insertarUbicacionClienteController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en insertarUbicacionClienteController: ${ error.message }` })
+    }
+}
+
+const obtenerClientesSinUbicacionController = async (req, res) => {
+    try {
+        const id_vendedor_sap = req.query.id_vendedor_sap
+        const response = await obtenerClientesSinUbicacion(id_vendedor_sap)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador obtenerClientesSinUbicacionController: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1528,6 +1558,8 @@ module.exports = {
     ventasPedidoPorSlpCodeController,
     cantidadVentasPorZonaController,
     cantidadVentasPorZonaMesAnteriosController,
+    insertarUbicacionClienteController,
+    obtenerClientesSinUbicacionController,
     clienteByVendedorController,
     lineasController,
     reporteVentasClienteLineas,

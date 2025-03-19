@@ -1,0 +1,31 @@
+{
+  "380238": {
+    "bodyEntrega": {
+      "Series": 353,
+      "CardCode": "C001526",
+      "U_UserCode": null,
+      "U_B_cufd": "4661A21FEE585E6803C1E506B6A4161E384C3E9ED978D0257B28E8E74",
+      "DocumentLines": [
+        {
+          "ItemCode": "101-008-002",
+          "WarehouseCode": "100-02",
+          "Quantity": 3,
+          "LineNum": 0,
+          "TaxCode": "IVA_GND",
+          "AccountCode": "6210103",
+          "GrossTotal": 59.9,
+          "GrossPrice": 20.8,
+          "U_DESCLINEA": 2.5,
+          "BatchNumbers": [
+            {
+              "BaseLineNumber": 0,
+              "BatchNumber": "1234",
+              "Quantity": "1.000000",
+              "ItemCode": "101-008-002"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
