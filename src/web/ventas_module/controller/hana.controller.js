@@ -999,7 +999,7 @@ module.exports = {
     clienteByVendedor,
     lineas,
     analisisVentas,
-    clienteByCardCode,,
+    clienteByCardCode,
     insertarUbicacionCliente,
     obtenerClientesSinUbicacion
 }
