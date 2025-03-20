@@ -714,6 +714,34 @@ const getVendedoresBySuc = async (sucCode) => {
         throw new Error(`error en getVendedoresBySuc: ${error.message || ''}`)
     }
 }
+const getYearToDayBySuc = async (sucCode, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_DATA.ytd_cobranzas_by_sucursal(${sucCode},'${dim2}','${fechaInicio1}', 
+       '${fechaFin1}', '${fechaInicio2}', '${fechaFin2}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getYearToDayBySuc: ${error.message || ''}`)
+    }
+}
+const getYearToDayByCobrador = async (cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_DATA.ytd_by_cobrador('${cobradorName}','${dim2}','${fechaInicio1}', 
+       '${fechaFin1}', '${fechaInicio2}', '${fechaFin2}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getYearToDayByCobrador: ${error.message || ''}`)
+    }
+}
 
 module.exports = {
     cobranzaGeneral,
@@ -759,5 +787,7 @@ module.exports = {
     saldoDeudorIfavet,
     getAllSublines,
     getAllLines,
-    getVendedoresBySuc
+    getVendedoresBySuc,
+    getYearToDayBySuc,
+    getYearToDayByCobrador
 }

@@ -9,7 +9,8 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     saldoDeudorIfavet,
     getAllSublines,
     getAllLines,
-    getVendedoresBySuc
+    getVendedoresBySuc,
+    getYearToDayBySuc, getYearToDayByCobrador
 } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -1602,6 +1603,27 @@ const getAllLinesController = async (req, res) => {
     }
 }
 
+const getYearToDayController = async (req, res) => {
+    try {
+        const {sucCode, cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2} = req.body
+        // let ytd = []
+        console.log({body: req.body})
+        let response
+        if(sucCode)
+            response = await getYearToDayBySuc(sucCode, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
+        else
+            response = await getYearToDayByCobrador(cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getYearToDayController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -1647,5 +1669,6 @@ module.exports = {
     getCobradoresBySucursalesController,
     getAllSublinesController,
     getAllLinesController,
-    getCobradoresBySucursalController
+    getCobradoresBySucursalController,
+    getYearToDayController
 }
