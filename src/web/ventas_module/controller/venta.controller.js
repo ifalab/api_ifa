@@ -1444,7 +1444,14 @@ const clienteByVendedorController = async (req, res) => {
 const lineasController = async (req, res) => {
     try {
         const lineaslist = await lineas()
-        return res.json(lineaslist)
+        let list = []
+        for (const element of lineaslist) {
+            list.push({
+                LineItemCode: +element.LineItemCode,
+                LineItemName: element.LineItemName
+            })
+        }
+        return res.json(list)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en lineasController' })
@@ -1458,20 +1465,33 @@ const reporteVentasClienteLineas = async (req, res) => {
         const startDate = req.query.startDate
         const endDate = req.query.endDate
         const analisis = await analisisVentas(cardCode, dimensionCCode, startDate, endDate)
-        return res.json(analisis)
+        let listAnalisis = []
+        for (const element of analisis) {
+            const { SalesNetTotal, ReturnedNetTotal, ...restData } = element
+            const ventaNeta =  Number(SalesNetTotal) - Number(ReturnedNetTotal)
+            listAnalisis.push({
+                ...element,
+                ventaNeta
+            })
+        }
+        return res.json(listAnalisis)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
 
-const clienteByCardCodeController = async(req,res)=>{
+const clienteByCardCodeController = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
         const cliente = await clienteByCardCode(cardCode)
-        return res.json(cliente)
+        if (cliente.length == 0) {
+            return res.status(404).json({ mensaje: 'Cliente no encontrado' })
+        }
+        const client = cliente[0]
+        return res.json(client)
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
     }
 }
@@ -1481,15 +1501,15 @@ const insertarUbicacionClienteController = async (req, res) => {
         const { cliente, latitud, longitud, id_vendedor_sap } = req.body;
         const response = await insertarUbicacionCliente(cliente, latitud, longitud, id_vendedor_sap)
 
-        if(response.status==400){
-            return res.status(400).json({mensaje: `${response.message}`, response})
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: `${response.message}`, response })
         }
 
         return res.json(response.data)
     } catch (error) {
         console.log('error en insertarUbicacionClienteController')
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en insertarUbicacionClienteController: ${ error.message }` })
+        return res.status(500).json({ mensaje: `Error en insertarUbicacionClienteController: ${error.message}` })
     }
 }
 
