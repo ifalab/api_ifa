@@ -742,6 +742,19 @@ const getYearToDayByCobrador = async (cobradorName, dim2, fechaInicio1, fechaFin
         throw new Error(`error en getYearToDayByCobrador: ${error.message || ''}`)
     }
 }
+const getYTDCobrador = async (sucCode,fechaInicio1, fechaFin1) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_DATA.ytd_of_cobradores_sucursal(${sucCode},'${fechaInicio1}', '${fechaFin1}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getYTDCobrador: ${error.message || ''}`)
+    }
+}
 
 module.exports = {
     cobranzaGeneral,
@@ -789,5 +802,6 @@ module.exports = {
     getAllLines,
     getVendedoresBySuc,
     getYearToDayBySuc,
-    getYearToDayByCobrador
+    getYearToDayByCobrador,
+    getYTDCobrador
 }

@@ -58,7 +58,9 @@ const {
     clienteByVendedorController,
     lineasController,
     reporteVentasClienteLineas,
-    clienteByCardCodeController
+    clienteByCardCodeController,
+    getYTDByVendedorController,
+    getYTDDelVendedorController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -132,5 +134,7 @@ router.get('/cliente-by-cardcode', [validarToken, validarCampos], clienteByCardC
 
 router.post('/ubicacion-cliente', [validarToken, validarCampos], insertarUbicacionClienteController)
 router.get('/clientes_sin_ubi', [validarToken, validarCampos], obtenerClientesSinUbicacionController)
+router.post('/ytd', [validarToken, validarCampos], getYTDByVendedorController)
+router.post('/ytd-vendedor', [validarToken, validarCampos], getYTDDelVendedorController)
 
 module.exports = router
