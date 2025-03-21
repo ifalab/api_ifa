@@ -58,12 +58,14 @@ const {
     clienteByVendedorController,
     lineasController,
     reporteVentasClienteLineas,
-    clienteByCardCodeController
+    clienteByCardCodeController,
+    clientesSinUbicacionSupervisorController,
+    allCampaignFilterController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { listaArticuloCadenas } = require('../controller/hana.controller')
+
 const router = Router()
 
 router.post('/sucursales', [validarToken, validarCampos], ventasPorSucursalController)
@@ -132,5 +134,9 @@ router.get('/cliente-by-cardcode', [validarToken, validarCampos], clienteByCardC
 
 router.post('/ubicacion-cliente', [validarToken, validarCampos], insertarUbicacionClienteController)
 router.get('/clientes_sin_ubi', [validarToken, validarCampos], obtenerClientesSinUbicacionController)
+router.get('/clientes-sin-ubi-sup', [validarToken, validarCampos], clientesSinUbicacionSupervisorController)
+router.get('/all-campaign-filter', [validarToken, validarCampos],  allCampaignFilterController)
+
+
 
 module.exports = router

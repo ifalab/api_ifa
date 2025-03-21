@@ -56,7 +56,9 @@ const {
     analisisVentas,
     clienteByCardCode,
     insertarUbicacionCliente,
-    obtenerClientesSinUbicacion
+    obtenerClientesSinUbicacion,
+    clientesSinUbicacionSupervisor,
+    allCampaignFilter
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1468,7 +1470,7 @@ const reporteVentasClienteLineas = async (req, res) => {
         let listAnalisis = []
         for (const element of analisis) {
             const { SalesNetTotal, ReturnedNetTotal, ...restData } = element
-            const ventaNeta =  Number(SalesNetTotal) - Number(ReturnedNetTotal)
+            const ventaNeta = Number(SalesNetTotal) - Number(ReturnedNetTotal)
             listAnalisis.push({
                 ...element,
                 ventaNeta
@@ -1523,6 +1525,82 @@ const obtenerClientesSinUbicacionController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en el controlador obtenerClientesSinUbicacionController: ${error.message}` })
     }
 }
+
+const clientesSinUbicacionSupervisorController = async (req, res) => {
+    try {
+        const clientes = await clientesSinUbicacionSupervisor()
+        return res.json(clientes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el controlador',
+            error,
+        })
+    }
+}
+
+const allCampaignFilterController = async (req, res) => {
+    try {
+        const idCampaign = req.query.idCampaign
+        const agrupar = req.query.agrupar
+        const codAgencia = req.query.codAgencia
+        const codVendedor = req.query.codVendedor
+        const codLinea = req.query.codLinea
+        const allCampaign = await allCampaignFilter(idCampaign, agrupar, codAgencia, codVendedor, codLinea)
+        
+        const processCampaign = processCampaignData(allCampaign)
+        return res.json(processCampaign)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el controlador',
+            error,
+        })
+    }
+}
+
+const processCampaignData = (data) => {
+    const result = {};
+    const uniqueItems = {};
+    const allPeriods = new Set();
+
+    // Recorrer la lista original para recolectar los periodos y agrupar los datos
+    data.forEach(({ SucName, ZoneName, LineItemName, SalesPerson, SubLineItemName, ItemCode, ItemName, SalesQuantity, QuotaSalesQuantity, Period }) => {
+        const periodKey = `Period${Period.replace('-', '')}`;
+        allPeriods.add(periodKey);
+
+        if (!uniqueItems[ItemCode]) {
+            uniqueItems[ItemCode] = {
+                SucName,
+                ZoneName,
+                SalesPerson,
+                LineItemName,
+                SubLineItemName,
+                ItemCode,
+                ItemName,
+            };
+        }
+
+        if (!uniqueItems[ItemCode][periodKey]) {
+            uniqueItems[ItemCode][periodKey] = { SalesQuantity: 0, QuotaSalesQuantity: 0 };
+        }
+
+        uniqueItems[ItemCode][periodKey].SalesQuantity += parseFloat(SalesQuantity);
+        uniqueItems[ItemCode][periodKey].QuotaSalesQuantity += QuotaSalesQuantity;
+    });
+
+    // Asegurar que todos los artículos tienen todos los periodos
+    Object.values(uniqueItems).forEach((item) => {
+        allPeriods.forEach((period) => {
+            if (!item[period]) {
+                item[period] = { SalesQuantity: 0, QuotaSalesQuantity: 0 };
+            }
+        });
+    });
+
+    return Object.values(uniqueItems);
+};
+
 
 module.exports = {
     ventasPorSucursalController,
@@ -1584,4 +1662,6 @@ module.exports = {
     lineasController,
     reporteVentasClienteLineas,
     clienteByCardCodeController,
+    clientesSinUbicacionSupervisorController,
+    allCampaignFilterController,
 };
