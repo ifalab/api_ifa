@@ -942,6 +942,50 @@ const clienteByCardCode = async (cardCode) => {
     }
 }
 
+const getYTDByVendedor = async (codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        /*
+            ytd_by_vendedor(
+                IN vendedorCode int,
+                IN dim2 int,
+                IN linea int,
+                IN sublinea int,
+                IN fechaInicio1 VARCHAR(8),
+                IN fechaFin1 VARCHAR(8),
+                IN fechaInicio2 VARCHAR(8),
+                IN fechaFin2 VARCHAR(8)
+            )
+        */
+        const query = `call LAB_IFA_DATA.ytd_by_vendedor(${codVendedor}, ${tipo}, ${linea}, ${sublinea},
+        '${fechaInicio1}', '${fechaFin1}', '${fechaInicio2}', '${fechaFin2}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDByVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const getYTDDelVendedor = async (sucCode, linea, sublinea, fechaInicio1, fechaFin1) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_DATA.ytd_of_vendedores_sucursal(${sucCode}, ${linea}, ${sublinea},
+        '${fechaInicio1}', '${fechaFin1}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDDelVendedor: ${error.message || ''}`
+        }
+    }
+}
+
 const clientesSinUbicacionSupervisor = async()=>{
     try {
         if (!connection) {
@@ -1030,4 +1074,6 @@ module.exports = {
     obtenerClientesSinUbicacion,
     clientesSinUbicacionSupervisor,
     allCampaignFilter,
+    getYTDByVendedor,
+    getYTDDelVendedor,
 }
