@@ -58,7 +58,7 @@ const {
     insertarUbicacionCliente,
     obtenerClientesSinUbicacion,
     getYTDByVendedor,
-    getYTDDelVendedor
+    getYTDDelVendedor, getYTDDelVendedorMonto, getYTDMontoByVendedor
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1552,6 +1552,32 @@ const getYTDDelVendedorController = async (req, res) => {
     }
 }
 
+const getYTDMontoByVendedorController = async (req, res) => {
+    try {
+        const {codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2} = req.body
+        console.log({body: req.body})
+        const response = await getYTDMontoByVendedor(codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const getYTDDelVendedorMontoController = async (req, res) => {
+    try {
+        const {sucCode, linea, sublinea, fechaInicio1, fechaFin1} = req.body
+        console.log({body: req.body})
+        const response = await getYTDDelVendedorMonto(sucCode, linea, sublinea, fechaInicio1, fechaFin1)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getYTDDelVendedorMontoController: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1613,5 +1639,6 @@ module.exports = {
     reporteVentasClienteLineas,
     clienteByCardCodeController,
     getYTDByVendedorController,
-    getYTDDelVendedorController
+    getYTDDelVendedorController,
+    getYTDDelVendedorMontoController, getYTDMontoByVendedorController
 };
