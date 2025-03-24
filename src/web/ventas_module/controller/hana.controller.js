@@ -986,6 +986,32 @@ const getYTDDelVendedor = async (sucCode, linea, sublinea, fechaInicio1, fechaFi
     }
 }
 
+const clientesSinUbicacionSupervisor = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "Longitude"='0' OR "Latitude"='0'`;
+        return await executeQuery(query);
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la solicitud clienteByCardCode: ${error.message}`);
+    }
+}
+
+const allCampaignFilter=async(idCampaign, agrupar,codAgencia,codVendedor,codLinea)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_analisis_campanha(${idCampaign},${agrupar},${codAgencia},${codVendedor},${codLinea})`;
+        return await executeQuery(query);
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la solicitud allCampaignFilter: ${error.message}`);
+    }
+}
+
 const getYTDMontoByVendedor = async (codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
     try {
         if (!connection) {
@@ -1078,6 +1104,8 @@ module.exports = {
     clienteByCardCode,
     insertarUbicacionCliente,
     obtenerClientesSinUbicacion,
+    clientesSinUbicacionSupervisor,
+    allCampaignFilter,
     getYTDByVendedor,
     getYTDDelVendedor,
     getYTDDelVendedorMonto,
