@@ -1012,6 +1012,38 @@ const allCampaignFilter=async(idCampaign, agrupar,codAgencia,codVendedor,codLine
     }
 }
 
+const getYTDMontoByVendedor = async (codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_DATA.ytd_monto_by_vendedor(${codVendedor}, ${tipo}, ${linea}, ${sublinea},
+        '${fechaInicio1}', '${fechaFin1}', '${fechaInicio2}', '${fechaFin2}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDMontoByVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const getYTDDelVendedorMonto = async (sucCode, linea, sublinea, fechaInicio1, fechaFin1) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_DATA.ytd_monto_of_vendedores_sucursal(${sucCode}, ${linea}, ${sublinea},
+        '${fechaInicio1}', '${fechaFin1}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDDelVendedorMonto: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1076,4 +1108,6 @@ module.exports = {
     allCampaignFilter,
     getYTDByVendedor,
     getYTDDelVendedor,
+    getYTDDelVendedorMonto,
+    getYTDMontoByVendedor
 }

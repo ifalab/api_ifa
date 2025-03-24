@@ -64,7 +64,7 @@ const {
     clientesSinUbicacionSupervisorController,
     allCampaignFilterController,
     getYTDByVendedorController,
-    getYTDDelVendedorController,
+    getYTDDelVendedorController, getYTDDelVendedorMontoController, getYTDMontoByVendedorController,
     createCampaignController
 } = require('../controller/venta.controller')
 
@@ -152,5 +152,7 @@ router.post('/create-campaign',[
 
 router.post('/ytd', [validarToken, validarCampos], getYTDByVendedorController)
 router.post('/ytd-vendedor', [validarToken, validarCampos,], getYTDDelVendedorController)
+router.post('/ytd-vendedor-monto', [validarToken, validarCampos], getYTDDelVendedorMontoController)
+router.post('/ytd-monto', [validarToken, validarCampos], getYTDMontoByVendedorController)
 
 module.exports = router
