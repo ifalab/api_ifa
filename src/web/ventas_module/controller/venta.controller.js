@@ -1,4 +1,7 @@
 const { request, response } = require("express")
+const fs = require('fs')
+const XLSX = require('xlsx');
+const path = require('path');
 const {
     ventaPorSucursal,
     ventasNormales,
@@ -1530,8 +1533,8 @@ const obtenerClientesSinUbicacionController = async (req, res) => {
 
 const getYTDByVendedorController = async (req, res) => {
     try {
-        const {codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2} = req.body
-        console.log({body: req.body})
+        const { codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2 } = req.body
+        console.log({ body: req.body })
         const response = await getYTDByVendedor(codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
 
         return res.json(response)
@@ -1543,8 +1546,8 @@ const getYTDByVendedorController = async (req, res) => {
 
 const getYTDDelVendedorController = async (req, res) => {
     try {
-        const {sucCode, linea, sublinea, fechaInicio1, fechaFin1} = req.body
-        console.log({body: req.body})
+        const { sucCode, linea, sublinea, fechaInicio1, fechaFin1 } = req.body
+        console.log({ body: req.body })
         const response = await getYTDDelVendedor(sucCode, linea, sublinea, fechaInicio1, fechaFin1)
 
         return res.json(response)
@@ -1575,7 +1578,7 @@ const allCampaignFilterController = async (req, res) => {
         const codVendedor = req.query.codVendedor
         const codLinea = req.query.codLinea
         const allCampaign = await allCampaignFilter(idCampaign, agrupar, codAgencia, codVendedor, codLinea)
-        
+
         const processCampaign = processCampaignData(allCampaign)
         return res.json(processCampaign)
     } catch (error) {
@@ -1627,7 +1630,37 @@ const processCampaignData = (data) => {
     });
 
     return Object.values(uniqueItems);
-};
+}
+
+const createCampaignController = async (req, res) => {
+    try {
+
+        if (!req.file) {
+            console.log({ files: req.file });
+            return res.status(400).json({
+                mensaje: 'Archivo no obtenido',
+                file: req.file
+            });
+        }
+        
+        const { path, originalname } = req.file;
+        const filePath = req.file.path;
+        const workbook = XLSX.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        return res.json({
+            jsonData,
+        });
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'error en el controlador',
+            error
+        })
+    }
+}
 
 
 module.exports = {
@@ -1693,5 +1726,6 @@ module.exports = {
     clientesSinUbicacionSupervisorController,
     allCampaignFilterController,
     getYTDByVendedorController,
-    getYTDDelVendedorController
+    getYTDDelVendedorController,
+    createCampaignController
 };

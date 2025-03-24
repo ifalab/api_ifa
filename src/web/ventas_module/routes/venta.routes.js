@@ -1,4 +1,6 @@
 const { Router } = require('express')
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 const {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -62,11 +64,13 @@ const {
     clientesSinUbicacionSupervisorController,
     allCampaignFilterController,
     getYTDByVendedorController,
-    getYTDDelVendedorController
+    getYTDDelVendedorController,
+    createCampaignController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
-const { validarCampos } = require('../../../middleware/validar_campos.middleware')
+const { validarCampos } = require('../../../middleware/validar_campos.middleware');
+const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
 
 const router = Router()
 
@@ -138,9 +142,15 @@ router.post('/ubicacion-cliente', [validarToken, validarCampos], insertarUbicaci
 router.get('/clientes_sin_ubi', [validarToken, validarCampos], obtenerClientesSinUbicacionController)
 router.get('/clientes-sin-ubi-sup', [validarToken, validarCampos], clientesSinUbicacionSupervisorController)
 router.get('/all-campaign-filter', [validarToken, validarCampos],  allCampaignFilterController)
+router.post('/create-campaign',[
+    validarToken,
+    validarCampos,
+    upload.single('archivo'),
+    validarArchivoExcel,
+],createCampaignController)
 
 
 router.post('/ytd', [validarToken, validarCampos], getYTDByVendedorController)
-router.post('/ytd-vendedor', [validarToken, validarCampos], getYTDDelVendedorController)
+router.post('/ytd-vendedor', [validarToken, validarCampos,], getYTDDelVendedorController)
 
 module.exports = router

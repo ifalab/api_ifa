@@ -56,7 +56,7 @@ const dmClientes = async () => {
         console.log({ error })
         console.error('Error en dmClientes:', error.message);
         return {
-            status:400,
+            status: 400,
             message: `Error en dmClientes: ${error.message || ''}`
         }
     }
@@ -76,7 +76,7 @@ const dmClientesPorCardCode = async (cardCode) => {
         console.log({ error })
         console.error('Error en dmClientesPorCardCode:', error.message);
         throw {
-            status:400,
+            status: 400,
             message: `Error en dmClientesPorCardCode: ${error.message || ''}`
         }
     }
@@ -95,7 +95,7 @@ const dmTiposDocumentos = async () => {
         console.log({ error })
         console.error('Error en dmTiposDocumentos:', error.message);
         return {
-            status:400,
+            status: 400,
             message: `Error en dmTiposDocumentos: ${error.message || ''}`
         }
     }
@@ -111,11 +111,12 @@ const getListaPreciosOficiales = async () => {
         const result = await executeQuery(query)
         return {
             status: 200,
-            data: result}
+            data: result
+        }
     } catch (error) {
         console.error('Error en getListaPreciosOficiales:', error);
         return {
-            status:400,
+            status: 400,
             message: `Error en getListaPreciosOficiales: ${error.message || ''}`
         }
     }
@@ -131,11 +132,12 @@ const setPrecioOficial = async (itemCode, precio, id_vend_sap, glosa) => {
         const result = await executeQuery(query)
         return {
             status: 200,
-            data: result}
+            data: result
+        }
     } catch (error) {
         console.error('Error en setPrecioOficial:', error);
         return {
-            status:400,
+            status: 400,
             message: `Error en setPrecioOficial: ${error.message || ''}`
         }
     }
@@ -152,12 +154,13 @@ const getSucursales = async () => {
         const result = await executeQuery(query)
         return {
             status: 200,
-            data: result}
+            data: result
+        }
     } catch (error) {
         console.log({ error })
         console.error('Error en getSucursales:', error.message);
         return {
-            status:400,
+            status: 400,
             message: `Error en getSucursales: ${error.message || ''}`
         }
     }
@@ -174,12 +177,13 @@ const getAreasPorSucursal = async (sucCode) => {
         const result = await executeQuery(query)
         return {
             status: 200,
-            data: result}
+            data: result
+        }
     } catch (error) {
         console.log({ error })
         console.error('Error en getAreasPorSucursal:', error.message);
         return {
-            status:400,
+            status: 400,
             message: `Error en getAreasPorSucursal: ${error.message || ''}`
         }
     }
@@ -191,21 +195,22 @@ const getZonasPorArea = async (areaCode) => {
             await connectHANA();
         }
         let query;
-        if(areaCode==0){
+        if (areaCode == 0) {
             query = `select * from ${process.env.PRD}.ifa_dm_zonas`;
-        }else{
+        } else {
             query = `select * from ${process.env.PRD}.ifa_dm_zonas where "AreaCode"=${areaCode}`;
         }
         console.log({ query })
         const result = await executeQuery(query)
         return {
             status: 200,
-            data: result}
+            data: result
+        }
     } catch (error) {
         console.log({ error })
         console.error('Error en getZonasPorArea:', error.message);
         return {
-            status:400,
+            status: 400,
             message: `Error en getZonasPorArea: ${error.message || ''}`
         }
     }
@@ -216,21 +221,22 @@ const getZonasPorSucursal = async (code) => {
             await connectHANA();
         }
         let query;
-        if(code==0){
+        if (code == 0) {
             query = `select * from ${process.env.PRD}.ifa_dm_zonas`;
-        }else{
+        } else {
             query = `select * from ${process.env.PRD}.ifa_dm_zonas where "SucCode"=${code}`;
         }
         console.log({ query })
         const result = await executeQuery(query)
         return {
             status: 200,
-            data: result}
+            data: result
+        }
     } catch (error) {
         console.log({ error })
         console.error('Error en getZonasPorArea:', error.message);
         return {
-            status:400,
+            status: 400,
             message: `Error en getZonasPorArea: ${error.message || ''}`
         }
     }
@@ -246,11 +252,12 @@ const getListaPreciosByIdCadenas = async (id) => {
         const result = await executeQuery(query)
         return {
             status: 200,
-            data: result}
+            data: result
+        }
     } catch (error) {
         console.error('Error en getListaPreciosByIdCadenas:', error);
         return {
-            status:400,
+            status: 400,
             message: `Error en getListaPreciosByIdCadenas: ${error.message || ''}`
         }
     }
@@ -266,18 +273,19 @@ const setPrecioCadena = async (listCode, itemCode, precio, id_vend_sap, glosa) =
         const result = await executeQuery(query)
         return {
             status: 200,
-            data: result}
+            data: result
+        }
     } catch (error) {
         console.error('Error en setPrecioItem:', error);
         return {
-            status:400,
+            status: 400,
             message: `Error en setPrecioItem: ${error.message || ''}`
         }
     }
 }
 
-const actualizarCliente= async(cardCode, columna, str, num)=>{
-    let query=''
+const actualizarCliente = async (cardCode, columna, str, num) => {
+    let query = ''
     try {
         if (!connection) {
             await connectHANA();
@@ -285,7 +293,7 @@ const actualizarCliente= async(cardCode, columna, str, num)=>{
         query = `call ${process.env.PRD}.ifa_dm_update_cliente('${cardCode}','${columna}','${str}',${num});`;
         console.log({ query })
         const result = await executeQuery(query)
-        console.log({resultActualizarCliente: result})
+        console.log({ resultActualizarCliente: result })
         return {
             status: 200,
             data: result,
@@ -301,8 +309,8 @@ const actualizarCliente= async(cardCode, columna, str, num)=>{
     }
 }
 
-const descuentoOfertasPorLinea= async(lineaItem, desc, fechaInicial, fechaFinal, id_sap)=>{
-    let query=''
+const descuentoOfertasPorLinea = async (lineaItem, desc, fechaInicial, fechaFinal, id_sap) => {
+    let query = ''
     try {
         if (!connection) {
             await connectHANA();
@@ -326,7 +334,7 @@ const descuentoOfertasPorLinea= async(lineaItem, desc, fechaInicial, fechaFinal,
     }
 }
 
-const getAllLineas= async()=>{
+const getAllLineas = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -345,26 +353,26 @@ const getAllLineas= async()=>{
     }
 }
 
-const setDescuentoOfertasPorCantidad= async(row, itemCode,cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del)=>{
-    let query=''
+const setDescuentoOfertasPorCantidad = async (row, itemCode, cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del) => {
+    let query = ''
     try {
         if (!connection) {
             await connectHANA();
         }
-        
+
         query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos_detalle(${row},'${itemCode}',${cantMin}, ${cantMax}, ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap}, '${del}');`;
         console.log({ query })
         const result = await executeQuery(query)
         console.log(result)
-        if(typeof result === 'number')
+        if (typeof result === 'number')
             return {
-                status: 200, 
+                status: 200,
                 message: '',
                 data: result,
                 query
             }
         return {
-            status: result[0].response || 200, 
+            status: result[0].response || 200,
             message: result[0].message || '',
             data: result,
             query
@@ -379,7 +387,7 @@ const setDescuentoOfertasPorCantidad= async(row, itemCode,cantMin, cantMax, desc
     }
 }
 
-const getArticulos = async(lineCode)=>{
+const getArticulos = async (lineCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -397,7 +405,7 @@ const getArticulos = async(lineCode)=>{
     }
 }
 
-const findCliente = async(buscar)=>{
+const findCliente = async (buscar) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -415,7 +423,7 @@ const findCliente = async(buscar)=>{
     }
 }
 
-const getIdDescuentosCantidad = async(itemCode)=>{
+const getIdDescuentosCantidad = async (itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -433,7 +441,7 @@ const getIdDescuentosCantidad = async(itemCode)=>{
     }
 }
 
-const getDescuentosCantidad = async(docNum,itemCode)=>{
+const getDescuentosCantidad = async (docNum, itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -451,7 +459,7 @@ const getDescuentosCantidad = async(docNum,itemCode)=>{
     }
 }
 
-const getArticuloByCode = async(code)=>{
+const getArticuloByCode = async (code) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -469,13 +477,13 @@ const getArticuloByCode = async(code)=>{
     }
 }
 
-const setDescuentoEspecial= async(cardCode, lineCode, desc, fechaInicial, fechaFinal, id_sap)=>{
-    let query=''
+const setDescuentoEspecial = async (cardCode, lineCode, desc, fechaInicial, fechaFinal, id_sap) => {
+    let query = ''
     try {
         if (!connection) {
             await connectHANA();
         }
-        
+
         query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales('${cardCode}',${lineCode}, ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap});`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -495,7 +503,7 @@ const setDescuentoEspecial= async(cardCode, lineCode, desc, fechaInicial, fechaF
     }
 }
 
-const getAllDescuentosLinea = async()=>{
+const getAllDescuentosLinea = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -513,7 +521,7 @@ const getAllDescuentosLinea = async()=>{
     }
 }
 
-const deleteDescuentoLinea = async(id, lineaItemCode, id_sap)=>{
+const deleteDescuentoLinea = async (id, lineaItemCode, id_sap) => {
     let query = ''
     try {
         if (!connection) {
@@ -523,7 +531,7 @@ const deleteDescuentoLinea = async(id, lineaItemCode, id_sap)=>{
         console.log({ query })
         const result = await executeQuery(query)
         return {
-            status:200,
+            status: 200,
             data: result,
             query
         }
@@ -537,8 +545,8 @@ const deleteDescuentoLinea = async(id, lineaItemCode, id_sap)=>{
     }
 }
 
-const setDescuentoEspecialPorArticulo= async(row, cardCode, itemCode, cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del)=>{
-    let query=''
+const setDescuentoEspecialPorArticulo = async (row, cardCode, itemCode, cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del) => {
+    let query = ''
     try {
         if (!connection) {
             await connectHANA();
@@ -551,23 +559,23 @@ const setDescuentoEspecialPorArticulo= async(row, cardCode, itemCode, cantMin, c
     IN fechafin DATE,
     IN usuario INT,
     IN rownum int,
-	IN mini int,
-	IN maxi int,
-	IN deleterow varchar(30)
+    IN mini int,
+    IN maxi int,
+    IN deleterow varchar(30)
         */
         query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_especiales_articulos('${cardCode}','${itemCode}', ${desc}, '${fechaInicial}', '${fechaFinal}',${id_sap},${row}, ${cantMin}, ${cantMax}, '${del}');`;
         console.log({ query })
         const result = await executeQuery(query)
-        console.log({result})
-        if(typeof result === 'number')
+        console.log({ result })
+        if (typeof result === 'number')
             return {
-                status: 200, 
+                status: 200,
                 message: 'Item actualizado con exito',
                 data: result,
                 query
             }
         return {
-            status: result[0].response || 200, 
+            status: result[0].response || 200,
             message: result[0].message || '',
             data: result,
             query
@@ -614,7 +622,7 @@ const obtenerDescuetosEspeciales = async () => {
 }
 
 
-const getIdsDescuentoEspecial = async(cardCode,itemCode)=>{
+const getIdsDescuentoEspecial = async (cardCode, itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -632,7 +640,7 @@ const getIdsDescuentoEspecial = async(cardCode,itemCode)=>{
     }
 }
 
-const getDescuentosEspecialesById= async(docNum,itemCode, cardCode)=>{
+const getDescuentosEspecialesById = async (docNum, itemCode, cardCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -650,7 +658,7 @@ const getDescuentosEspecialesById= async(docNum,itemCode, cardCode)=>{
     }
 }
 
-const getVendedores= async()=>{
+const getVendedores = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -668,7 +676,7 @@ const getVendedores= async()=>{
     }
 }
 
-const getAllTipos= async()=>{
+const getAllTipos = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -686,7 +694,7 @@ const getAllTipos= async()=>{
     }
 }
 
-const getZonas= async()=>{
+const getZonas = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -704,7 +712,7 @@ const getZonas= async()=>{
     }
 }
 
-const getZonasTiposPorVendedor= async(id_vendedor)=>{
+const getZonasTiposPorVendedor = async (id_vendedor) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -723,7 +731,7 @@ where "SlpCodeCli" = ${id_vendedor}`;
         }
     }
 }
-const asignarZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
+const asignarZonasYTiposAVendedores = async (id_vendedor, zona, tipo) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -733,7 +741,8 @@ const asignarZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
         const result = await executeQuery(query)
         return {
             status: 200,
-            result}
+            result
+        }
     } catch (error) {
         console.error('Error en asignarZonasYTiposAVendedores:', error);
         return {
@@ -743,18 +752,19 @@ const asignarZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
     }
 }
 
-const deleteZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
+const deleteZonasYTiposAVendedores = async (id_vendedor, zona, tipo) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const query = `delete from ${process.env.PRD}."@IFA_VEND_ZONAS" where "U_CodZona"=${zona} and "U_TipoCliente"=${tipo} and "U_CodVendedor"=${id_vendedor}`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
             status: 200,
-            result}
+            result
+        }
     } catch (error) {
         console.error('Error en deleteZonasYTiposAVendedores:', error);
         return {
@@ -764,7 +774,7 @@ const deleteZonasYTiposAVendedores= async(id_vendedor, zona, tipo)=>{
     }
 }
 
-const getDescuentosEspecialesLinea = async(cardCode)=>{
+const getDescuentosEspecialesLinea = async (cardCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -783,13 +793,36 @@ const getDescuentosEspecialesLinea = async(cardCode)=>{
     }
 }
 
-const deleteDescuentosEspecialesLinea = async(id)=>{
-    let query =''
+const deleteDescuentosEspecialesLinea = async (id) => {
+    let query = ''
     try {
         if (!connection) {
             await connectHANA();
         }
         query = `CALL ${process.env.PRD}.ifa_dm_eliminar_descuentos_especiales_por_linea(${id})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en deleteDescuentosEspecialesLinea:', error);
+        return {
+            status: 400,
+            message: `Error en deleteDescuentosEspecialesLinea: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
+const articuloByItemCode = async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode"= '${itemCode}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -843,5 +876,6 @@ module.exports = {
     asignarZonasYTiposAVendedores,
     deleteZonasYTiposAVendedores,
     getDescuentosEspecialesLinea,
-    deleteDescuentosEspecialesLinea
+    deleteDescuentosEspecialesLinea,
+    articuloByItemCode,
 }
