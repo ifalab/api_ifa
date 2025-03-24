@@ -13,7 +13,10 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     articuloDiccionarioController,
     stockInstitucionPorArticuloController,
     pedidoOfertaInstitucionesController,
-    listaNegraDescuentosController } = require('../controller/pedido.controller')
+    listaNegraDescuentosController,
+    pedidosPorVendedorFacturadosOrdenadoController, 
+    crearOrderIfaController} = require('../controller/pedido.controller')
+const checkToken = require('../../../middleware/authMiddleware')
 const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
@@ -27,6 +30,7 @@ router.get('/sugerido-zona', [validarToken, validarCampos], sugeridosXZonaContro
 router.get('/sugerido-cliente', [validarToken, validarCampos], sugeridosXClienteController)
 router.get('/zonas-vendedor', [validarToken, validarCampos], findZonasXVendedorController)
 router.post('/crear-orden', [validarToken, validarCampos], crearOrderController)
+router.post('/crear-orden-ifa', [checkToken, validarCampos], crearOrderIfaController)
 router.post('/crear-orden-cad', [validarToken, validarCampos], crearOrderCadenaController)
 router.post('/crear-oferta', [validarToken, validarCampos], crearOrderController)
 router.get('/white-list', [validarToken, validarCampos], whiteListController)
@@ -45,5 +49,7 @@ router.get('/articulos', [validarToken, validarCampos], getAllArticulosControlle
 router.post('/articulo-diccionario', [validarToken, validarCampos], articuloDiccionarioController)
 router.get('/stock-institucion', [validarToken, validarCampos], stockInstitucionPorArticuloController)
 router.get('/lista-negra-desc', [validarToken, validarCampos], listaNegraDescuentosController)
+
+router.get('/facturados-vendedor-ord', [validarToken, validarCampos], pedidosPorVendedorFacturadosOrdenadoController)
 
 module.exports = router

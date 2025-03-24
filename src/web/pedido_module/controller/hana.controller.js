@@ -223,7 +223,7 @@ const pedidosPorVendedorFacturados = async (id) => {
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
-        throw new Error('Error al procesar la solicitud: pedidosPorVendedorFacturados');
+        throw new Error(`Error al procesar la solicitud: pedidosPorVendedorFacturados: ${error.message}`);
     }
 }
 
@@ -323,7 +323,7 @@ const getAllArticulos= async (itemName) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where upper("ItemName") LIKE '%${itemName}%' and "ItmsGrpCod" = 105 order by "ItemName" limit 15`;
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') and "ItmsGrpCod" = 105 and "validFor"='Y' order by "ItemName" limit 15`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -384,6 +384,36 @@ const listaNegraDescuentos = async () => {
     }
 }
 
+const clientePorCardCode = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode" = '${cardCode}'`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en listaNegraDescuentos:', error.message);
+        throw { message: `Error al procesar clientePorCardCode: ${error.message}` }
+    }
+}
+
+const articuloPorItemCode= async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos WHERE "ItemCode" = '${itemCode}'`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en listaNegraDescuentos:', error.message);
+        throw { message: `Error al procesar articuloPorItemCode: ${error.message}` }
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -407,5 +437,7 @@ module.exports = {
     getAllArticulos,
     articuloDiccionario,
     stockInstitucionPorArticulo,
-    listaNegraDescuentos
+    listaNegraDescuentos,
+    clientePorCardCode,
+    articuloPorItemCode,
 }

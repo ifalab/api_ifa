@@ -641,6 +641,26 @@ const concepComercialById = async(id)=>{
     }
 }
 
+
+const busquedaProd = async (parametro) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarCCRendicion EXECUTE')
+        const query = `select "AcctCode", "AcctName" from ${process.env.PRD}.ifa_dm_cuentas where "Postable" = 'Y' and ("AcctCode" like '6%' or "AcctCode" like '21%')  and (concat("AcctName","AcctCode") like '%${parametro}%')order by "AcctCode" limit 40`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo actualizar la cuenta CC`
+        }
+
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -671,4 +691,5 @@ module.exports = {
     concepComercialById,
     actualizarCCRendicion,
     actualizarGlosaPRDGastos,
+    busquedaProd,
 }

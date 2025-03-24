@@ -93,12 +93,12 @@ const inventarioValorado = async () => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select 'SANTA CRUZ' "SucName", "WhsCode", "PrcName" "LineItemName", "PrcName2" "SublineItemName", "ItemCode", 10 "Quantity", "ComlPrice", "LineTotalComl" from "${process.env.PRD}".ifa_inv_inventario_kardex limit 10`
+        const query = `select * from "${process.env.PRD}".ifa_inv_inventario_kardex limit 10`
         const result = executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en inventarioValorado ')
+        throw new Error(`Error en inventarioValorado: ${error.message}`)
     }
 
 }
@@ -113,7 +113,7 @@ const descripcionArticulo = async (itemCode) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en descripcionArticulo')
+        throw new Error(`error en descripcionArticulo: ${error.message}`)
     }
 }
 
@@ -189,7 +189,7 @@ const entregaDetallerFactura = async (docentry, cuf, nrofactura, fecha) => {
 
     } catch (error) {
         console.error('Error en entregaDetallerFactura:', error.message);
-        return { message: 'Error al procesar la solicitud: entregaDetallerFactura', error }
+        return { message: `Error al procesar la solicitud: entregaDetallerFactura: ${error.message}`, error }
     }
 }
 
@@ -243,6 +243,21 @@ const facturasClienteLoteItemCode = async (itemcode, cardCode, batchNum) => {
     }
 }
 
+const facturasClienteLoteItemCodeGenesis = async (itemcode, cardCode, batchNum) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `call ${process.env.PRD}.IFA_FAC_FACTURAS_X_CLIENTE_LOTE_ARTICULO('${itemcode}','${cardCode}','${batchNum}')`
+        const query = `call ${process.env.PRD}.IFA_FAC_FACTURAS_X_CLIENTE_LOTE_ARTICULO('${itemcode}','${cardCode}',${+batchNum})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+    }
+}
+
 const detalleVentas = async (id) => {
     try {
         if (!connection) {
@@ -260,14 +275,13 @@ const detalleVentas = async (id) => {
     }
 }
 
-
 const detalleParaDevolucion = async (docEntry) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
-        const query = `call LAB_IFA_PRD.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
+        // const query = `call LAB_IFA_PRD.ifa_lapp_ven_obtener_detalle_para_devolucion(${docEntry})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -317,6 +331,7 @@ const getAllAlmacenes = async () => {
             await connectHANA();
         }
         const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
+        console.log({query})
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -325,7 +340,70 @@ const getAllAlmacenes = async () => {
     }
 }
 
+const searchArticulos= async (itemName) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') order by "ItemName" limit 15`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en searchArticulos:', error.message);
+        throw { 
+            message: `Error al procesar searchArticulos: ${error.message || ''}` 
+        }
+    }
+}
 
+const stockDisponiblePorSucursal = async (sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_inv_stock_disponible_sucursal('${sucursal}')`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de stockDisponiblePorSucursal: ${error.message}`)
+    }
+}
+
+const clientesBySucCode = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT 
+        *
+        FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "GroupCode" <> 105 and "GroupCode" <> 106`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de clientesBySucCode: ${error.message}`)
+    }
+}
+const getClienteByCardCode = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT 
+        *
+        FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getClienteByCardCode: ${error.message}`)
+    }
+}
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -344,5 +422,10 @@ module.exports = {
     obtenerDevolucionDetalle,
     getAllAlmacenes,
     entregaDetalleToProsin,
-    pedidoDetallerFactura
+    pedidoDetallerFactura,
+    searchArticulos,
+    facturasClienteLoteItemCodeGenesis,
+    stockDisponiblePorSucursal,
+    clientesBySucCode,
+    getClienteByCardCode
 }

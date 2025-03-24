@@ -89,6 +89,7 @@ const postSalidaHabilitacion = async (data) => {
 const postEntradaHabilitacion = async (data) => {
   try {
     // Verifica o genera una sesión
+    console.log(JSON.stringify({ data }, null, 2))
     const currentSession = await connectSLD();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
@@ -128,7 +129,7 @@ const postEntradaHabilitacion = async (data) => {
   } catch (error) {
     // Centraliza el manejo de errores
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
-    console.error('Error en la solicitud POST para Salida de Inventario:', errorMessage);
+    console.error('Error en la solicitud POST para postEntradaHabilitacion:', errorMessage);
     // throw new Error(errorMessage);
     return errorMessage
   }
@@ -153,7 +154,7 @@ const postReturn = async (data) => {
       httpsAgent: agent,
       headers: headers
     });
-    console.log({ responseReturns : response })
+    console.log({ responseReturns: response })
 
     // Retorna la respuesta en caso de éxito
     const status = response.status
@@ -164,7 +165,7 @@ const postReturn = async (data) => {
     // console.log({ location })
     // console.log({response})
     console.log({ status })
-    return { status, orderNumber };
+    return { status, orderNumber};
   } catch (error) {
     // Centraliza el manejo de errores
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
@@ -172,7 +173,8 @@ const postReturn = async (data) => {
     // throw new Error(errorMessage);
     return {
       status: 400,
-      errorMessage}
+      errorMessage
+    }
   }
 };
 
@@ -188,30 +190,108 @@ const postCreditNotes = async (data) => {
     // Configura los encabezados para la solicitud
     const headers = {
       Cookie: `B1SESSION=${sessionSldId}`,
-      Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+      //Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
     };
     // Realiza la solicitud POST
     const response = await axios.post(url, { ...data }, {
       httpsAgent: agent,
       headers: headers
     });
-    console.log({ responseCreditNotes : response })
+    console.log({ responseCreditNotes: response })
 
     // Retorna la respuesta en caso de éxito
     const status = response.status
     const locationHeader = response.headers.location;
     const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
     const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
-    console.log({orderNumber})
+    console.log({ orderNumber })
+
+    const datos = response.data
     // console.log({ location })
-    // console.log({response})
+    console.log({datos})
     console.log({ status })
-    return { status, orderNumber };
+    return { status, orderNumber, TransNum: datos.TransNum };
   } catch (error) {
     // Centraliza el manejo de errores
-    console.log({errorCreditNotes: error})
+    console.log({ errorCreditNotes: error })
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST CreditNotes';
     console.error('Error en la solicitud POST CreditNotes:', errorMessage);
+    // throw new Error(errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
+  }
+};
+
+const patchReturn = async (data, id) => {
+  try {
+    // Verifica o genera una sesión
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+    console.log({ currentSession })
+
+    const url = `https://srvhana:50000/b1s/v1/Returns(${id})`;
+
+    // Configura los encabezados para la solicitud
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+    };
+    // Realiza la solicitud PATCH
+    const response = await axios.patch(url, { ...data }, {
+      httpsAgent: agent,
+      headers: headers
+    });
+    console.log({ responseReturnsPatch: response })
+
+    // Retorna la respuesta en caso de éxito
+    // const status = response.status
+    // const locationHeader = response.headers.location;
+    // const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+    // const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+    // console.log('entrada habilitada')
+    // console.log({ location })
+    // console.log({response})
+    return response;
+  } catch (error) {
+    // Centraliza el manejo de errores
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud PATCH';
+    console.error('Error en la solicitud PATCH Returns:', errorMessage);
+    // throw new Error(errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
+  }
+};
+
+const getCreditNote = async (id) => {
+  try {
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+
+    console.log({id})
+    const url = `https://srvhana:50000/b1s/v1/CreditNotes(${id})`;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+    };
+    const response = await axios.get(url, {
+      httpsAgent: agent,
+      headers: headers
+    });
+    console.log({ responseCreditNotes : response })
+
+    return {
+      status: 200,
+      data: response.data
+    };
+  } catch (error) {
+    console.log({errorCreditNotes: error})
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Get CreditNote';
+    console.error('Error en la solicitud Get CreditNote:', errorMessage);
     // throw new Error(errorMessage);
     return {
       status: 400,
@@ -219,9 +299,89 @@ const postCreditNotes = async (data) => {
   }
 };
 
+const getCreditNotes = async () => {
+  try {
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+
+    const url = `https://srvhana:50000/b1s/v1/CreditNotes?$orderby=DocDate desc&$top=20`;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+    };
+    const response = await axios.get(url, {
+      httpsAgent: agent,
+      headers: headers
+    });
+    console.log({ responseCreditNotes : response })
+
+    return {
+      status: 200,
+      data: response.data.value
+    }
+  } catch (error) {
+    console.log({errorCreditNotes: error})
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Get CreditNotes';
+    console.error('Error en la solicitud Get CreditNotes:', errorMessage);
+    // throw new Error(errorMessage);
+    return {
+      status: 400,
+      errorMessage}
+  }
+};
+
+
+const postReconciliacion = async (data) => {
+  try {
+    // Verifica o genera una sesión
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+    // console.log({ currentSession })
+
+    const url = `https://srvhana:50000/b1s/v1/InternalReconciliations`;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content'
+    };
+    // Realiza la solicitud POST
+    const response = await axios.post(url, { ...data }, {
+      httpsAgent: agent,
+      headers: headers
+    });
+    console.log({ responseReconciliacion: response })
+
+    // Retorna la respuesta en caso de éxito
+    const status = response.status
+    const locationHeader = response.headers.location;
+    const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+    const idReconciliacion = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+    console.log({ idReconciliacion })
+    // console.log({ location })
+    // console.log({response})
+    console.log({ status })
+    return { status, idReconciliacion };
+  } catch (error) {
+    // Centraliza el manejo de errores
+    console.log({ errorCreditNotes: error })
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud postReconciliacion';
+    console.error('Error en la solicitud POST Reconciliacion:', errorMessage);
+    // throw new Error(errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
+  }
+};
+
 module.exports = {
   postSalidaHabilitacion,
   postEntradaHabilitacion,
   postReturn,
-  postCreditNotes
+  postCreditNotes,
+  patchReturn,
+  getCreditNote,
+  getCreditNotes,
+  postReconciliacion
 };

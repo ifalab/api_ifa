@@ -1,4 +1,7 @@
 const { request, response } = require("express")
+const fs = require('fs')
+const XLSX = require('xlsx');
+const path = require('path');
 const {
     ventaPorSucursal,
     ventasNormales,
@@ -44,7 +47,23 @@ const {
     detalleOfertaPendCadena,
     listaClienteEmpleado,
     clienteEmpleado,
-    obtenerArticulosVehiculo
+    obtenerArticulosVehiculo,
+    searchVendedores,
+    listaPrecioSuc,
+    listaPrecioInst,
+    ventasPedidoPorVendedor,
+    cantidadVentasPorZonasVendedor,
+    cantidadVentasPorZonasMesAnt,
+    clienteByVendedor,
+    lineas,
+    analisisVentas,
+    clienteByCardCode,
+    insertarUbicacionCliente,
+    obtenerClientesSinUbicacion,
+    clientesSinUbicacionSupervisor,
+    allCampaignFilter,
+    getYTDByVendedor,
+    getYTDDelVendedor, getYTDDelVendedorMonto, getYTDMontoByVendedor
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -54,11 +73,23 @@ const { postInventoryTransferRequests } = require("./sld.controller");
 
 const ventasPorSucursalController = async (req, res) => {
     try {
-        const response = await ventaPorSucursal()
+        const { listSuc } = req.body
+        const responseData = await ventaPorSucursal()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
 
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
@@ -75,11 +106,23 @@ const ventasPorSucursalController = async (req, res) => {
 
 const ventasNormalesController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasNormales()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasNormales()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -94,12 +137,25 @@ const ventasNormalesController = async (req, res) => {
 
 const ventasCadenasController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasCadena()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasCadena()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
+
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
         }
@@ -113,11 +169,23 @@ const ventasCadenasController = async (req, res) => {
 
 const ventasInstitucionesController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasInstitucion()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasInstitucion()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -132,11 +200,23 @@ const ventasInstitucionesController = async (req, res) => {
 
 const ventasIFAVETController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasIfaVet()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasIfaVet()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -151,11 +231,24 @@ const ventasIFAVETController = async (req, res) => {
 
 const ventasMasivoController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+
+        const responseData = await ventasMasivo()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasMasivo()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -222,11 +315,23 @@ const ventasUsuarioController = async (req, res) => {
 
 const ventasPorSucursalControllerMesAnterior = async (req, res) => {
     try {
-        const response = await ventaPorSucursalMesAnterior()
+        const { listSuc } = req.body
+        const responseData = await ventaPorSucursalMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
 
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
@@ -243,11 +348,23 @@ const ventasPorSucursalControllerMesAnterior = async (req, res) => {
 
 const ventasNormalesControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasNormalesMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasNormalesMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -262,11 +379,23 @@ const ventasNormalesControllerMesAnterior = async (req, res) => {
 
 const ventasCadenasControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasCadenaMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasCadenaMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -281,11 +410,23 @@ const ventasCadenasControllerMesAnterior = async (req, res) => {
 
 const ventasInstitucionesControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasInstitucionMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasInstitucionMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -300,11 +441,23 @@ const ventasInstitucionesControllerMesAnterior = async (req, res) => {
 
 const ventasIFAVETControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasIfaVetMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasIfaVetMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -319,11 +472,22 @@ const ventasIFAVETControllerMesAnterior = async (req, res) => {
 
 const ventasMasivoControllerMesAnterior = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await ventasMasivoMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await ventasMasivoMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -948,8 +1112,14 @@ const listaArticuloCadenasController = async (req, res) => {
 
 const clientesInstitucionesController = async (req, res) => {
     try {
+        const { listSucCode } = req.body
+        let clientesResponse = []
         const clientes = await clientesInstituciones()
-        return res.json(clientes)
+        listSucCode.map((suCode) => {
+            const filter = clientes.filter(unCliente => unCliente.SucCode === suCode)
+            clientesResponse = [...clientesResponse, ...filter]
+        })
+        return res.json(clientesResponse)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}`, error })
@@ -1024,6 +1194,16 @@ const crearSolicitudPlantaController = async (req, res) => {
             ToWarehouse,
             StockTransferLines,
         } = req.body
+        console.log(JSON.stringify({
+            Series,
+            Reference1,
+            Reference2,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            ToWarehouse,
+            StockTransferLines,
+        }, null, 2))
         const sapResponse = await postInventoryTransferRequests({
             Series,
             Reference1,
@@ -1114,7 +1294,7 @@ const ClienteEmpleadosController = async (req, res) => {
         if (response.status == 400) {
             return res.status(400).json({ mensaje: response.message || 'Error en listaClienteEmpleados' })
         }
-        console.log({response})
+        console.log({ response })
         if (response.data.length == 0) {
             return res.status(400).json({ mensaje: `No se encontro el usuario con el carCode: ${cardCode}` })
         }
@@ -1127,7 +1307,7 @@ const ClienteEmpleadosController = async (req, res) => {
 
 const obtenerArticulosVehiculoController = async (req, res) => {
     try {
-        const {cadena} = req.body
+        const { cadena } = req.body
         const response = await obtenerArticulosVehiculo(cadena)
         if (response.status == 400) {
             return res.status(400).json({ mensaje: response.message || 'Error en obtenerArticulosVehiculo' })
@@ -1136,6 +1316,376 @@ const obtenerArticulosVehiculoController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const searchVendedoresController = async (req, res) => {
+    try {
+        const { cadena } = req.body
+        const response = await searchVendedores(cadena)
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: response.message || 'Error en searchVendedores' })
+        }
+        return res.json(response.data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador searchVendedoresController: ${error.message}` })
+    }
+}
+
+const listaPrecioSucController = async (req, res) => {
+    try {
+        const sucCode = req.query.sucCode
+        const response = await listaPrecioSuc(sucCode)
+        const lista = response.data
+        return res.json(lista)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const listaPrecioInstController = async (req, res) => {
+    try {
+
+        const response = await listaPrecioInst()
+        const lista = response.data
+        return res.json(lista)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const ventasPedidoPorSlpCodeController = async (req, res) => {
+    try {
+        const slpCode = req.query.slpCode
+        const starDate = req.query.starDate
+        const endDate = req.query.endDate
+        const response = await ventasPedidoPorVendedor(slpCode, starDate, endDate)
+        const data = response.data
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const cantidadVentasPorZonaController = async (req = request, res = response) => {
+    try {
+        const { username, line, groupBy } = req.body;
+        console.log({ username, line, groupBy })
+        if (!username && typeof username != "string") {
+            return res.status(400).json({
+                mensaje: 'Ingrese un username valido'
+            })
+        }
+        console.log({
+            username, line, groupBy
+        })
+        const response = await cantidadVentasPorZonasVendedor(username, line, groupBy);
+        console.log({ response })
+        const data = response.map(r => ({
+            ...r,
+            cumplimiento: r.Quota == 0 ? 0 : r.Sales / r.Quota
+        }))
+        console.log({ data })
+        return res.status(200).json({
+            response: data,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en cantidadVentasPorZonaController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `Error en cantidadVentasPorZonaController: ${err.message}` })
+    }
+}
+
+const cantidadVentasPorZonaMesAnteriosController = async (req = request, res = response) => {
+    try {
+        const { username, line, groupBy } = req.body;
+        console.log({ username, line, groupBy })
+        if (!username && typeof username != "string") {
+            return res.status(400).json({
+                mensaje: 'Ingrese un username valido'
+            })
+        }
+        console.log({
+            username, line, groupBy
+        })
+        const response = await cantidadVentasPorZonasMesAnt(username, line, groupBy);
+        console.log({ response })
+        const data = response.map(r => ({
+            ...r,
+            cumplimiento: r.Quota == 0 ? 0 : r.Sales / r.Quota
+        }))
+        console.log({ data })
+        return res.status(200).json({
+            response: data,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en cantidadVentasPorZonaMesAnteriosController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `Error en cantidadVentasPorZonaMesAnteriosController: ${err.message}` })
+    }
+}
+
+const clienteByVendedorController = async (req, res) => {
+    try {
+        const { listSuc } = req.body
+        let listClientes = []
+
+        for (const element of listSuc) {
+            const clientes = await clienteByVendedor(element)
+            listClientes = [...listClientes, ...clientes]
+        }
+
+        return res.json(listClientes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const lineasController = async (req, res) => {
+    try {
+        const lineaslist = await lineas()
+        let list = []
+        for (const element of lineaslist) {
+            list.push({
+                LineItemCode: +element.LineItemCode,
+                LineItemName: element.LineItemName
+            })
+        }
+        return res.json(list)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en lineasController' })
+    }
+}
+
+const reporteVentasClienteLineas = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const dimensionCCode = req.query.dimensionCCode
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+        const analisis = await analisisVentas(cardCode, dimensionCCode, startDate, endDate)
+        let listAnalisis = []
+        for (const element of analisis) {
+            const { SalesNetTotal, ReturnedNetTotal, ...restData } = element
+            const ventaNeta = Number(SalesNetTotal) - Number(ReturnedNetTotal)
+            listAnalisis.push({
+                ...element,
+                ventaNeta
+            })
+        }
+        return res.json(listAnalisis)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const clienteByCardCodeController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const cliente = await clienteByCardCode(cardCode)
+        if (cliente.length == 0) {
+            return res.status(404).json({ mensaje: 'Cliente no encontrado' })
+        }
+        const client = cliente[0]
+        return res.json(client)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const insertarUbicacionClienteController = async (req, res) => {
+    try {
+        const { cliente, latitud, longitud, id_vendedor_sap } = req.body;
+        const response = await insertarUbicacionCliente(cliente, latitud, longitud, id_vendedor_sap)
+
+        if (response.status == 400) {
+            return res.status(400).json({ mensaje: `${response.message}`, response })
+        }
+
+        return res.json(response.data)
+    } catch (error) {
+        console.log('error en insertarUbicacionClienteController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en insertarUbicacionClienteController: ${error.message}` })
+    }
+}
+
+const obtenerClientesSinUbicacionController = async (req, res) => {
+    try {
+        const id_vendedor_sap = req.query.id_vendedor_sap
+        const response = await obtenerClientesSinUbicacion(id_vendedor_sap)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador obtenerClientesSinUbicacionController: ${error.message}` })
+    }
+}
+
+const getYTDByVendedorController = async (req, res) => {
+    try {
+        const { codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2 } = req.body
+        console.log({ body: req.body })
+        const response = await getYTDByVendedor(codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const getYTDDelVendedorController = async (req, res) => {
+    try {
+        const { sucCode, linea, sublinea, fechaInicio1, fechaFin1 } = req.body
+        console.log({ body: req.body })
+        const response = await getYTDDelVendedor(sucCode, linea, sublinea, fechaInicio1, fechaFin1)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getYTDDelVendedorController: ${error.message}` })
+    }
+}
+
+const clientesSinUbicacionSupervisorController = async (req, res) => {
+    try {
+        const clientes = await clientesSinUbicacionSupervisor()
+        return res.json(clientes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el controlador',
+            error,
+        })
+    }
+}
+
+const allCampaignFilterController = async (req, res) => {
+    try {
+        const idCampaign = req.query.idCampaign
+        const agrupar = req.query.agrupar
+        const codAgencia = req.query.codAgencia
+        const codVendedor = req.query.codVendedor
+        const codLinea = req.query.codLinea
+        const allCampaign = await allCampaignFilter(idCampaign, agrupar, codAgencia, codVendedor, codLinea)
+
+        const processCampaign = processCampaignData(allCampaign)
+        return res.json(processCampaign)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el controlador',
+            error,
+        })
+    }
+}
+
+const processCampaignData = (data) => {
+    const result = {};
+    const uniqueItems = {};
+    const allPeriods = new Set();
+
+    // Recorrer la lista original para recolectar los periodos y agrupar los datos
+    data.forEach(({ SucName, ZoneName, LineItemName, SalesPerson, SubLineItemName, ItemCode, ItemName, SalesQuantity, QuotaSalesQuantity, Period }) => {
+        const periodKey = `Period${Period.replace('-', '')}`;
+        allPeriods.add(periodKey);
+
+        if (!uniqueItems[ItemCode]) {
+            uniqueItems[ItemCode] = {
+                SucName,
+                ZoneName,
+                SalesPerson,
+                LineItemName,
+                SubLineItemName,
+                ItemCode,
+                ItemName,
+            };
+        }
+
+        if (!uniqueItems[ItemCode][periodKey]) {
+            uniqueItems[ItemCode][periodKey] = { SalesQuantity: 0, QuotaSalesQuantity: 0 };
+        }
+
+        uniqueItems[ItemCode][periodKey].SalesQuantity += parseFloat(SalesQuantity);
+        uniqueItems[ItemCode][periodKey].QuotaSalesQuantity += QuotaSalesQuantity;
+    });
+
+    // Asegurar que todos los artículos tienen todos los periodos
+    Object.values(uniqueItems).forEach((item) => {
+        allPeriods.forEach((period) => {
+            if (!item[period]) {
+                item[period] = { SalesQuantity: 0, QuotaSalesQuantity: 0 };
+            }
+        });
+    });
+
+    return Object.values(uniqueItems);
+}
+
+const createCampaignController = async (req, res) => {
+    try {
+
+        if (!req.file) {
+            console.log({ files: req.file });
+            return res.status(400).json({
+                mensaje: 'Archivo no obtenido',
+                file: req.file
+            });
+        }
+        
+        const { path, originalname } = req.file;
+        const filePath = req.file.path;
+        const workbook = XLSX.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        return res.json({
+            jsonData,
+        });
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'error en el controlador',
+            error
+        })
+    }
+}
+
+
+const getYTDMontoByVendedorController = async (req, res) => {
+    try {
+        const {codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2} = req.body
+        console.log({body: req.body})
+        const response = await getYTDMontoByVendedor(codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const getYTDDelVendedorMontoController = async (req, res) => {
+    try {
+        const {sucCode, linea, sublinea, fechaInicio1, fechaFin1} = req.body
+        console.log({body: req.body})
+        const response = await getYTDDelVendedorMonto(sucCode, linea, sublinea, fechaInicio1, fechaFin1)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getYTDDelVendedorMontoController: ${error.message}` })
     }
 }
 
@@ -1186,5 +1736,23 @@ module.exports = {
     detalleOfertaCadenaPendController,
     listaClienteEmpleadosController,
     ClienteEmpleadosController,
-    obtenerArticulosVehiculoController
+    obtenerArticulosVehiculoController,
+    searchVendedoresController,
+    listaPrecioSucController,
+    listaPrecioInstController,
+    ventasPedidoPorSlpCodeController,
+    cantidadVentasPorZonaController,
+    cantidadVentasPorZonaMesAnteriosController,
+    insertarUbicacionClienteController,
+    obtenerClientesSinUbicacionController,
+    clienteByVendedorController,
+    lineasController,
+    reporteVentasClienteLineas,
+    clienteByCardCodeController,
+    clientesSinUbicacionSupervisorController,
+    allCampaignFilterController,
+    getYTDByVendedorController,
+    getYTDDelVendedorController,
+    getYTDDelVendedorMontoController, getYTDMontoByVendedorController,
+    createCampaignController
 };

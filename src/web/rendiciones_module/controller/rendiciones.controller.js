@@ -5,7 +5,8 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     findAllCajasEmpleados,
     concepComercialById,
     actualizarCCRendicion,
-    actualizarGlosaPRDGastos
+    actualizarGlosaPRDGastos,
+    busquedaProd
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -98,7 +99,7 @@ const rendicionDetalladaController = async (req, res) => {
                 BENEFICIARIO,
                 COD_BENEFICIARIO,
                 DETALLE_CUENTA,
-                CUENTA_PRODUCTIVA:CUENTA_CC,
+                CUENTA_PRODUCTIVA: CUENTA_CC,
                 GLOSA_PRD
             }
             listaDetalles.push(data)
@@ -609,6 +610,7 @@ const sendToSapController = async (req, res) => {
     try {
         let listRecibos = []
         let listFacturas = []
+        let listFacturasND = []
         let listResHana = []
         let errores = []
 
@@ -644,6 +646,8 @@ const sendToSapController = async (req, res) => {
             } else {
                 if (new_tipo == 'F') {
                     listFacturas.push(item)
+                } else if (new_tipo == 'FND') {
+                    listFacturasND.push(item)
                 } else {
                     listRecibos.push(item)
                 }
@@ -654,7 +658,18 @@ const sendToSapController = async (req, res) => {
         const tipoCambio = await tipoDeCambioByFecha(fecha[0])
         const usdRate = tipoCambio[0]
         const usd = +usdRate.Rate
-        console.log({ usd })
+        console.log({
+            usd,
+            codEmp,
+            estado,
+            idRendicion,
+            transacId,
+            glosaRend,
+            fechaContabilizado,
+            listFacturas,
+            listRecibos,
+            listFacturasND
+         })
         // return res.json(usd)
 
         const { statusCode, data } = await sapService.sendRendiciones({
@@ -667,6 +682,7 @@ const sendToSapController = async (req, res) => {
             fechaContabilizado,
             listFacturas,
             listRecibos,
+            listFacturasND,
         });
 
         console.log({ data, statusCode })
@@ -680,9 +696,10 @@ const sendToSapController = async (req, res) => {
             fechaContabilizado,
             listFacturas,
             listRecibos,
+            listFacturasND,
         }, null, 2))
         console.log('DATOS de REND-----------------------------------------------------------')
-        console.log({statusCode, data})
+        console.log({ statusCode, data })
         // return res.json({ statusCode, data })
         if (data.status >= 400) {
             await Promise.all(listFacturas.map(async (item) => {
@@ -696,7 +713,7 @@ const sendToSapController = async (req, res) => {
                 listResHana.push(responseSap)
             }))
             return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, listResHana });
-        
+
         }
 
         await Promise.all(listFacturas.map(async (item) => {
@@ -788,8 +805,8 @@ const sendToSapController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta
-             } = item
-                
+            } = item
+
             const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
             listResHana.push(responseSap)
             const fecha = new_fecha.split('/')
@@ -1139,9 +1156,20 @@ const conceptoComercialByIdController = async (req, res) => {
     }
 }
 
+const buscarCuentaProdController= async (req, res) => {
+    try {
+        let parametro = req.query.parametro
+        const response = await busquedaProd(parametro.toUpperCase())
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
 const actualizarCCRendController = async (req, res) => {
     try {
-        const { id,idRend, new_cuenta_cc } = req.body
+        const { id, idRend, new_cuenta_cc } = req.body
         if (!id) {
             return res.status(400).json({ mensaje: 'debe existir un Id del Gasto' })
         }
@@ -1151,7 +1179,8 @@ const actualizarCCRendController = async (req, res) => {
         if (!new_cuenta_cc) {
             return res.status(400).json({ mensaje: 'debe venir una cuenta CC' })
         }
-        const responseHana = await actualizarCCRendicion(id,idRend, new_cuenta_cc)
+        console.log({id, idRend, new_cuenta_cc})
+        const responseHana = await actualizarCCRendicion(id, idRend, new_cuenta_cc)
         const { response } = responseHana[0]
         console.log({ response })
         if (response != 200) {
@@ -1163,6 +1192,8 @@ const actualizarCCRendController = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
+
+
 
 module.exports = {
     findAllAperturaController,
@@ -1192,4 +1223,5 @@ module.exports = {
     conceptoComercialByIdController,
     actualizarCCRendController,
     actualizarGlosaPRDGastoController,
+    buscarCuentaProdController,
 }

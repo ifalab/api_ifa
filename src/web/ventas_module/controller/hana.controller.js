@@ -580,8 +580,7 @@ const clientesInstituciones = async()=>{
         if (!connection) {
             await connectHANA()
         }
-        // const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES_INSTITUCIONES`
-        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "GroupCode"=105`
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "GroupCode"=105 OR "GroupCode"=106 `
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -740,7 +739,7 @@ const obtenerArticulosVehiculo = async (cadena) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" like '%IFA%' AND "SellItem"='N' AND (upper("ItemName") like '%${cadena}%' OR upper("ItemCode") like '%${cadena}%')`
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" like '%IFA%' AND "SellItem"='Y' AND (upper("ItemName") like '%${cadena}%' OR upper("ItemCode") like '%${cadena}%')`
         const result = await executeQuery(query)
         return {
             status: 200,
@@ -754,6 +753,296 @@ const obtenerArticulosVehiculo = async (cadena) => {
     }
 }
 
+const searchVendedores = async (cadena) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SlpName" like '%${cadena}%' or "SlpCode" like '%${cadena}%'`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en searchVendedores: ${error.message || ''}`
+        }
+    }
+}
+
+const listaPrecioSuc = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_listas_precios_por_sucursal(${sucCode})`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en listaPrecioSuc: ${error.message || ''}`
+        }
+    }
+}
+
+const listaPrecioInst= async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_listas_de_precios where "ListName" like '%LISTA INS%'`
+        console.log({query})
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en listaPrecioInst: ${error.message || ''}`
+        }
+    }
+}
+
+const ventasPedidoPorVendedor = async(slpCode,starDate,endDate)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_ven_pedidos WHERE "SlpCode" = ${slpCode} AND "DocDate" BETWEEN '${starDate}' AND '${endDate}';`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en ventasPedidoPorVendedor: ${error.message || ''}`
+        }
+    }
+}
+const cantidadVentasPorZonasVendedor = async (username, line, groupBy) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA('${username}','${line}','${groupBy}');`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en cantidadVentasPorZonasVendedor: ', err.message);
+        throw new Error(`Error al procesar la solicitud cantidadVentasPorZonasVendedor: ${err.message}`);
+    }
+}
+
+const cantidadVentasPorZonasMesAnt = async (username, line, groupBy) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT('${username}','${line}','${groupBy}');`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud cantidadVentasPorZonasMesAnt: ${err.message}`);
+    }
+}
+
+const insertarUbicacionCliente = async (cliente, latitud, longitud, id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `insert into LAB_IFA_LAPP.LAPP_UBICACION_CLIENTE (id_vendedor_sap, card_code, latitud, longitud) values (${id_sap}, '${cliente}', ${latitud}, ${longitud})`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en insertarUbicacionCliente: ${error.message || ''}`
+        }
+    }
+}
+
+const obtenerClientesSinUbicacion = async (codVendedor) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_clientes_para_ubicacion_by_vendedor(${codVendedor})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en obtenerClientesSinUbicacion: ${error.message || ''}`
+        }
+    }
+}
+
+const clienteByVendedor = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "SucCode"=${sucCode}`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud clienteByVendedor: ${err.message}`);
+    }
+}
+
+const lineas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_LINEAS`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud lineas: ${err.message}`);
+    }
+}
+
+const analisisVentas = async (CardCode,DimensionCCode,starDate,endDate) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_DATA.ANALISIS_DE_VENTAS WHERE "CardCode" = '${CardCode}' AND "DimensionCCode" = ${DimensionCCode} AND "Date" BETWEEN '${starDate}' AND '${endDate}'`;
+        // const query = `SELECT * FROM LAB_IFA_DATA.ANALISIS_DE_VENTAS LIMIT 15`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud lineas: ${err.message}`);
+    }
+}
+
+const clienteByCardCode = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud clienteByCardCode: ${err.message}`);
+    }
+}
+
+const getYTDByVendedor = async (codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        /*
+            ytd_by_vendedor(
+                IN vendedorCode int,
+                IN dim2 int,
+                IN linea int,
+                IN sublinea int,
+                IN fechaInicio1 VARCHAR(8),
+                IN fechaFin1 VARCHAR(8),
+                IN fechaInicio2 VARCHAR(8),
+                IN fechaFin2 VARCHAR(8)
+            )
+        */
+        const query = `call LAB_IFA_DATA.ytd_by_vendedor(${codVendedor}, ${tipo}, ${linea}, ${sublinea},
+        '${fechaInicio1}', '${fechaFin1}', '${fechaInicio2}', '${fechaFin2}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDByVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const getYTDDelVendedor = async (sucCode, linea, sublinea, fechaInicio1, fechaFin1) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_DATA.ytd_of_vendedores_sucursal(${sucCode}, ${linea}, ${sublinea},
+        '${fechaInicio1}', '${fechaFin1}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDDelVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const clientesSinUbicacionSupervisor = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "Longitude"='0' OR "Latitude"='0'`;
+        return await executeQuery(query);
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la solicitud clienteByCardCode: ${error.message}`);
+    }
+}
+
+const allCampaignFilter=async(idCampaign, agrupar,codAgencia,codVendedor,codLinea)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_analisis_campanha(${idCampaign},${agrupar},${codAgencia},${codVendedor},${codLinea})`;
+        return await executeQuery(query);
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la solicitud allCampaignFilter: ${error.message}`);
+    }
+}
+
+const getYTDMontoByVendedor = async (codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_DATA.ytd_monto_by_vendedor(${codVendedor}, ${tipo}, ${linea}, ${sublinea},
+        '${fechaInicio1}', '${fechaFin1}', '${fechaInicio2}', '${fechaFin2}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDMontoByVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const getYTDDelVendedorMonto = async (sucCode, linea, sublinea, fechaInicio1, fechaFin1) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_DATA.ytd_monto_of_vendedores_sucursal(${sucCode}, ${linea}, ${sublinea},
+        '${fechaInicio1}', '${fechaFin1}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDDelVendedorMonto: ${error.message || ''}`
+        }
+    }
+}
 
 module.exports = {
     ventaPorSucursal,
@@ -802,5 +1091,23 @@ module.exports = {
     detalleOfertaPendCadena,
     listaClienteEmpleado,
     clienteEmpleado,
-    obtenerArticulosVehiculo
+    obtenerArticulosVehiculo,
+    searchVendedores,
+    listaPrecioSuc,
+    listaPrecioInst,
+    ventasPedidoPorVendedor,
+    cantidadVentasPorZonasVendedor,
+    cantidadVentasPorZonasMesAnt,
+    clienteByVendedor,
+    lineas,
+    analisisVentas,
+    clienteByCardCode,
+    insertarUbicacionCliente,
+    obtenerClientesSinUbicacion,
+    clientesSinUbicacionSupervisor,
+    allCampaignFilter,
+    getYTDByVendedor,
+    getYTDDelVendedor,
+    getYTDDelVendedorMonto,
+    getYTDMontoByVendedor
 }

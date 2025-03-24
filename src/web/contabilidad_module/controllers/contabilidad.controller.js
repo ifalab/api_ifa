@@ -197,6 +197,10 @@ const createAsientoContableController = async (req, res) => {
             voucher,
             cuenta
         } = req.body
+        
+        const user = req.usuarioAutorizado
+        const idSap = user.ID_SAP || 0
+        // return res.json({user})
         const tipoCambio = await tipoDeCambio()
         const usdRate = tipoCambio[0]
         const usd = +usdRate.Rate
@@ -243,14 +247,17 @@ const createAsientoContableController = async (req, res) => {
         JournalEntryLines.push(firstAccount)
         JournalEntryLines.push(contraAccount)
         let data = {
+            U_UserCode:idSap,
             ReferenceDate: date,
             Memo: glosa,
             Indicator: indicador,
             Reference: reference,
+            Reference3:cheque,
             JournalEntryLines
         }
 
         console.log({ ...data })
+        // return res.json({data})
         const response = await asientoContable({
             ...data
         })

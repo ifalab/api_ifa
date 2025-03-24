@@ -1,19 +1,24 @@
 const { Router } = require('express')
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
-const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteController, 
-    dmTipoDocumentosController, getListaPreciosOficialesController, setPrecioOficialController, 
+const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteController,
+    dmTipoDocumentosController, getListaPreciosOficialesController, setPrecioOficialController,
     getSucursalesController, getAreasPorSucursalController, getZonasPorAreaController,
     getListaPreciosByIdCadenasController, setPrecioCadenaController, getZonasPorSucursalController,
-    actualizarDatosClienteController, descuentoOfertasPorLineaController, getAllLineasController, 
+    actualizarDatosClienteController, descuentoOfertasPorLineaController, getAllLineasController,
     setDescuentoOfertasPorCantidadController, getArticulosController, findClienteController,
     getDescuentosCantidadController, getIdDescuentosCantidadController, getArticuloByCodeController,
     setDescuentoEspecialController, getAllDescuentosLineaController, deleteDescuentoLineaController,
-    setDescuentoEspecialPorArticuloController, obtenerTiposController, obtenerDescuetosEspecialesController, 
+    setDescuentoEspecialPorArticuloController, obtenerTiposController, obtenerDescuetosEspecialesController,
     getIdsDescuentoEspecialController, getDescuentosEspecialesByIdController, getVendedoresController,
-    getZonasController, getAllTiposController, getZonasTiposPorVendedorController, asignarZonasYTiposAVendedoresController
- } = require('../controller/datos_maestros.controller')
-const { getSucursales } = require('../controller/hana.controller')
+    getZonasController, getAllTiposController, getZonasTiposPorVendedorController, asignarZonasYTiposAVendedoresController,
+    deleteZonasYTiposAVendedoresController, getDescuentosEspecialesLineaController, deleteDescuentosEspecialesLineaController,
+    cargarPreciosExcelController
+} = require('../controller/datos_maestros.controller')
+const { getSucursales } = require('../controller/hana.controller');
+const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
 const router = Router()
 
 router.get('/clientes', [validarToken, validarCampos], dmClientesController)
@@ -50,5 +55,10 @@ router.get('/zonas', [validarToken, validarCampos], getZonasController)
 router.get('/all-tipos', [validarToken, validarCampos], getAllTiposController)
 router.get('/zonasytipos-vendedor', [validarToken, validarCampos], getZonasTiposPorVendedorController)
 router.post('/zonasytipos-vendedor', [validarToken, validarCampos], asignarZonasYTiposAVendedoresController)
+router.post('/delete-zonaytipo', [validarToken, validarCampos], deleteZonasYTiposAVendedoresController)
+router.get('/get-espc-linea', [validarToken, validarCampos], getDescuentosEspecialesLineaController)
+router.get('/delete-espc-linea', [validarToken, validarCampos], deleteDescuentosEspecialesLineaController)
+
+router.post('/cargar-xsl-precios', [validarToken, validarCampos, upload.single('archivo'), validarArchivoExcel,], cargarPreciosExcelController)
 
 module.exports = router

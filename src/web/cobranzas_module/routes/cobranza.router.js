@@ -3,27 +3,32 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     detalleFacturaController, cobranzaPorSucursalesYTiposController, cobranzaPorSucursalYTiposController,
     getCobradoresController,
     saldoDeudorIfavetController,
-    getCobradoresBySucursalController
+    getCobradoresBySucursalesController,
+    getAllSublinesController,
+    getAllLinesController,
+    getCobradoresBySucursalController,
+    getYearToDayController,
+    getYTDCobradorController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
 
 router.get('/generales',[validarToken, validarCampos],cobranzaGeneralController)
-router.get('/sucursales',[validarToken, validarCampos],cobranzaPorSucursalController)
-router.get('/normales',[validarToken, validarCampos],cobranzaNormalesController)
-router.get('/cadenas',[validarToken, validarCampos],cobranzaCadenaController)
-router.get('/ifavet',[validarToken, validarCampos],cobranzaIfavetController)
-router.get('/masivos',[validarToken, validarCampos],cobranzaMasivosController)
-router.get('/instituciones',[validarToken, validarCampos],cobranzaInstitucionesController)
+router.post('/sucursales',[validarToken, validarCampos],cobranzaPorSucursalController)
+router.post('/normales',[validarToken, validarCampos],cobranzaNormalesController)
+router.post('/cadenas',[validarToken, validarCampos],cobranzaCadenaController)
+router.post('/ifavet',[validarToken, validarCampos],cobranzaIfavetController)
+router.post('/masivos',[validarToken, validarCampos],cobranzaMasivosController)
+router.post('/instituciones',[validarToken, validarCampos],cobranzaInstitucionesController)
 router.post('/supervisor',[validarToken, validarCampos],cobranzaPorSupervisorController)
 
-router.get('/sucursales-mes-anterior',[validarToken, validarCampos],cobranzaPorSucursalMesAnteriorController)
-router.get('/normales-mes-anterior',[validarToken, validarCampos],cobranzaNormalesMesAnteriorController)
-router.get('/cadenas-mes-anterior',[validarToken, validarCampos],cobranzaCadenaMesAnteriorController)
-router.get('/ifavet-mes-anterior',[validarToken, validarCampos],cobranzaIfavetMesAnteriorController)
-router.get('/masivos-mes-anterior',[validarToken, validarCampos],cobranzaMasivosMesAnteriorController)
-router.get('/instituciones-mes-anterior',[validarToken, validarCampos],cobranzaInstitucionesMesAnteriorController)
+router.post('/sucursales-mes-anterior',[validarToken, validarCampos],cobranzaPorSucursalMesAnteriorController)
+router.post('/normales-mes-anterior',[validarToken, validarCampos],cobranzaNormalesMesAnteriorController)
+router.post('/cadenas-mes-anterior',[validarToken, validarCampos],cobranzaCadenaMesAnteriorController)
+router.post('/ifavet-mes-anterior',[validarToken, validarCampos],cobranzaIfavetMesAnteriorController)
+router.post('/masivos-mes-anterior',[validarToken, validarCampos],cobranzaMasivosMesAnteriorController)
+router.post('/instituciones-mes-anterior',[validarToken, validarCampos],cobranzaInstitucionesMesAnteriorController)
 
 router.get('/cobranzas-zona',[validarToken, validarCampos], cobranzasPorZonasController)
 router.get('/cobranzas-zona-mes-ant',[validarToken, validarCampos], cobranzasPorZonasMesAntController)
@@ -54,8 +59,12 @@ router.get('/detalle-factura',[validarToken, validarCampos],detalleFacturaContro
 router.post('/cob-sucursales-tipos',[validarToken, validarCampos],cobranzaPorSucursalesYTiposController)
 router.post('/cob-sucursal-tipos',[validarToken, validarCampos],cobranzaPorSucursalYTiposController)
 router.get('/get-cobradores',[validarToken, validarCampos],getCobradoresController)
-router.patch('/get-cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalController)
+router.patch('/get-cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalesController)
 router.get('/saldo-deudor-ifavet',[validarToken, validarCampos], saldoDeudorIfavetController)
-
+router.get('/sublineas',[validarToken, validarCampos], getAllSublinesController)
+router.get('/lineas',[validarToken, validarCampos], getAllLinesController)
+router.get('/cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalController)
+router.post('/ytd',[validarToken, validarCampos], getYearToDayController)
+router.post('/ytd-cobrador',[validarToken, validarCampos], getYTDCobradorController)
 
 module.exports = router

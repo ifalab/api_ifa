@@ -178,7 +178,6 @@ const pedidosFacturados = async (SucCode) => {
             await connectHANA();
         }
         const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
-        // const query = `CALL lab_ifa_prd.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -319,6 +318,85 @@ const obtenerPedidoDetalle = async (nro_ped) => {
     }
 }
 
+const obtenerDevoluciones = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_devoluciones(${sucCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerDevoluciones:', error.message);
+        return { message: `Error al procesar obtenerDevoluciones: ${error.message || ''}` }
+    }
+}
+
+const detalleDevolucion = async (idReturn) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_DEVOLUCION_DETALLE_TOORDER(${idReturn})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en detalleDevolucion:', error.message);
+        return { message: `Error al procesar detalleDevolucion: ${error.message || ''}` }
+    }
+}
+
+const obtenerGroupCode = async (CardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "GroupCode" from ${process.env.PRD}.ifa_dm_clientes where "CardCode"='${CardCode}' group by "GroupCode"`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result[0]
+    } catch (error) {
+        console.error('Error en ofertaDelPedido:', error.message);
+        return { message: `Error al procesar ofertaDelPedido: ${error.message || ''}` }
+    }
+}
+
+const ofertaDelPedido = async (DocEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "BaseEntry" from ${process.env.PRD}.ifa_ven_pedidos_detalle where "DocEntry"=${DocEntry} group by "BaseEntry"`;
+        // const query = `select * from ${process.env.PRD}.ifa_ven_pedidos_detalle limit 20`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en ofertaDelPedido:', error.message);
+        return { message: `Error al procesar ofertaDelPedido: ${error.message || ''}` }
+    }
+}
+
+
+const clienteByCardName = async (cardName) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "CardName" like '%${cardName}%' limit 30`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en detalleDevolucion:', error.message);
+        return { message: `Error al procesar clienteByCardName: ${error.message || ''}` }
+    }
+}
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -336,5 +414,10 @@ module.exports = {
     entregasSinFacturas,
     obtenerEntregaPorPedido,
     facturaPedidoInstituciones,
-    obtenerPedidoDetalle
+    obtenerPedidoDetalle,
+    obtenerDevoluciones,
+    detalleDevolucion,
+    clienteByCardName,
+    ofertaDelPedido,
+    obtenerGroupCode,
 }

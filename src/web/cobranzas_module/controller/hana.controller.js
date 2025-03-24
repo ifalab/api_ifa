@@ -667,6 +667,95 @@ const saldoDeudorIfavet = async () => {
         }
     }
 }
+
+const getAllSublines= async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_SUBLINEAS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllSublines:', error.message);
+        throw { 
+            message: `Error al procesar getAllSublines: ${error.message || ''}` 
+        }
+    }
+}
+
+const getAllLines= async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_DM_LINEAS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllLines:', error.message);
+        throw { 
+            message: `Error al procesar getAllLines: ${error.message || ''}` 
+        }
+    }
+}
+const getVendedoresBySuc = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SucCode"=${sucCode} and "SlpCode">0`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getVendedoresBySuc: ${error.message || ''}`)
+    }
+}
+const getYearToDayBySuc = async (sucCode, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_DATA.ytd_cobranzas_by_sucursal(${sucCode},'${dim2}','${fechaInicio1}', 
+       '${fechaFin1}', '${fechaInicio2}', '${fechaFin2}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getYearToDayBySuc: ${error.message || ''}`)
+    }
+}
+const getYearToDayByCobrador = async (cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_DATA.ytd_by_cobrador('${cobradorName}','${dim2}','${fechaInicio1}', 
+       '${fechaFin1}', '${fechaInicio2}', '${fechaFin2}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getYearToDayByCobrador: ${error.message || ''}`)
+    }
+}
+const getYTDCobrador = async (sucCode,fechaInicio1, fechaFin1) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_DATA.ytd_of_cobradores_sucursal(${sucCode},'${fechaInicio1}', '${fechaFin1}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getYTDCobrador: ${error.message || ''}`)
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -708,5 +797,11 @@ module.exports = {
     cobranzaPorSucursalYTipo,
     getVendedores,
     getCobradores,
-    saldoDeudorIfavet
+    saldoDeudorIfavet,
+    getAllSublines,
+    getAllLines,
+    getVendedoresBySuc,
+    getYearToDayBySuc,
+    getYearToDayByCobrador,
+    getYTDCobrador
 }

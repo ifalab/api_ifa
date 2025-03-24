@@ -1,14 +1,21 @@
-const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos, 
-    getListaPreciosOficiales, setPrecioOficial, getSucursales, getAreasPorSucursal, 
+const fs = require('fs')
+const XLSX = require('xlsx');
+const path = require('path');
+
+const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
+    getListaPreciosOficiales, setPrecioOficial, getSucursales, getAreasPorSucursal,
     getZonasPorArea, getListaPreciosByIdCadenas, setPrecioCadena, getZonasPorSucursal,
     actualizarCliente, descuentoOfertasPorLinea, getAllLineas, setDescuentoOfertasPorCantidad,
     getArticulos, findCliente, getDescuentosCantidad, getIdDescuentosCantidad,
     getArticuloByCode, setDescuentoEspecial, getAllDescuentosLinea, deleteDescuentoLinea,
     setDescuentoEspecialPorArticulo, obtenerTipos, obtenerDescuetosEspeciales,
     getIdsDescuentoEspecial, getDescuentosEspecialesById, getVendedores, getZonas, getAllTipos,
-    getZonasTiposPorVendedor, asignarZonasYTiposAVendedores } = require("./hana.controller")
+    getZonasTiposPorVendedor, asignarZonasYTiposAVendedores, deleteZonasYTiposAVendedores,
+    getDescuentosEspecialesLinea, deleteDescuentosEspecialesLinea,
+    articuloByItemCode } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
+const { validateDataExcel } = require('./helpers');
 
 const dmClientesController = async (req, res) => {
     try {
@@ -34,7 +41,7 @@ const dmClientesPorCardCodeController = async (req, res) => {
         const cardCode = req.query.cardCode
         const cliente = await dmClientesPorCardCode(cardCode)
         // const usuario = req.usuarioAutorizado
-        console.log({cliente})
+        console.log({ cliente })
         if (!cliente[0]) {
             // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cliente por CardCode", `Error: No se encontro el cliente por el cardcode, se uso el cardcode: ${cardCode} `, ``, "datos-maestros/clientes-cardcode", process.env.PRD)
             return res.status(400).json({ mensaje: 'el cliente no existe' })
@@ -127,7 +134,7 @@ const dmUpdateClienteController = async (req, res) => {
 const dmTipoDocumentosController = async (req, res) => {
     try {
         const tipoDoc = await dmTiposDocumentos()
-        return res.json( tipoDoc )
+        return res.json(tipoDoc)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
@@ -137,13 +144,13 @@ const dmTipoDocumentosController = async (req, res) => {
 const getListaPreciosOficialesController = async (req, res) => {
     try {
         const lista = await getListaPreciosOficiales()
-        if(lista.status!=200){
-            return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosOficiales'}`})
+        if (lista.status != 200) {
+            return res.status(400).json({ mensaje: `${lista.message || 'Error en getListaPreciosOficiales'}` })
         }
         lista.data.forEach(element => {
             element.CreateDate = element.CreateDate.split(' ')[0]
         });
-        return res.json({precios: lista.data})
+        return res.json({ precios: lista.data })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosOficialesController: ${error.message || ''}` })
@@ -153,15 +160,15 @@ const getListaPreciosOficialesController = async (req, res) => {
 const setPrecioOficialController = async (req, res) => {
     try {
         const body = req.body
-        console.log({body})
+        console.log({ body })
         // return res.json({body})
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        let lista=[];
-        for(const line of body.items){
+        let lista = [];
+        for (const line of body.items) {
             const response = await setPrecioOficial(line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
-            if(response.status!=200){
+            if (response.status != 200) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error: ${response.message || 'setPrecioOficial()'} `, `call ifa_dm_agregar_precio_oficial()`, "datos-maestros/set-precio-item", process.env.PRD)
-                return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioOficial'}`})
+                return res.status(400).json({ mensaje: `${response.message || 'Error en setPrecioOficial'}` })
             }
             lista.push(response.data)
         }
@@ -178,13 +185,13 @@ const setPrecioOficialController = async (req, res) => {
 const getSucursalesController = async (req, res) => {
     try {
         const sucursales = await getSucursales()
-        if(sucursales.status!=200){
-            return res.status(400).json({mensaje: `${sucursales.message || 'Error en getSucursales'}`})
+        if (sucursales.status != 200) {
+            return res.status(400).json({ mensaje: `${sucursales.message || 'Error en getSucursales'}` })
         }
-        sucursales.data = sucursales.data.filter(element => 
+        sucursales.data = sucursales.data.filter(element =>
             element.SucCode != null
         );
-        return res.json({sucursales:sucursales.data})
+        return res.json({ sucursales: sucursales.data })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getSucursalesController: ${error.message || ''}` })
@@ -195,13 +202,13 @@ const getAreasPorSucursalController = async (req, res) => {
     try {
         const sucCode = req.query.code
         const areas = await getAreasPorSucursal(sucCode)
-        if(areas.status!=200){
-            return res.status(400).json({mensaje: `${areas.message || 'Error en getAreasPorSucursal'}`})
+        if (areas.status != 200) {
+            return res.status(400).json({ mensaje: `${areas.message || 'Error en getAreasPorSucursal'}` })
         }
         // areas.data = areas.data.filter(element => 
         //     element.SucCode != null
         // );
-        return res.json({areas:areas.data})
+        return res.json({ areas: areas.data })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getAreasPorSucursalController: ${error.message || ''}` })
@@ -212,13 +219,13 @@ const getZonasPorAreaController = async (req, res) => {
     try {
         const areaCode = req.query.code
         const zonas = await getZonasPorArea(areaCode)
-        if(zonas.status!=200){
-            return res.status(400).json({mensaje: `${zonas.message || 'Error en getZonasPorArea'}`})
+        if (zonas.status != 200) {
+            return res.status(400).json({ mensaje: `${zonas.message || 'Error en getZonasPorArea'}` })
         }
         // zonas.data = zonas.data.filter(element => 
         //     element.SucCode != null
         // );
-        return res.json({zonas:zonas.data})
+        return res.json({ zonas: zonas.data })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getZonasPorAreaController: ${error.message || ''}` })
@@ -230,13 +237,13 @@ const getListaPreciosByIdCadenasController = async (req, res) => {
         const listCode = req.query.listCode
         console.log(listCode)
         const lista = await getListaPreciosByIdCadenas(listCode)
-        if(lista.status!=200){
-            return res.status(400).json({mensaje: `${lista.message || 'Error en getListaPreciosByIdCadenas'}`})
+        if (lista.status != 200) {
+            return res.status(400).json({ mensaje: `${lista.message || 'Error en getListaPreciosByIdCadenas'}` })
         }
         lista.data.forEach(element => {
             element.CreateDate = element.CreateDate.split(' ')[0]
         });
-        return res.json({precios: lista.data})
+        return res.json({ precios: lista.data })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosByIdCadenasController: ${error.message || ''}` })
@@ -246,19 +253,19 @@ const getListaPreciosByIdCadenasController = async (req, res) => {
 const setPrecioCadenaController = async (req, res) => {
     try {
         const body = req.body
-        console.log({body})
+        console.log({ body })
         // return res.json({body})
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        let lista=[];
-        for(const line of body.items){
+        let lista = [];
+        for (const line of body.items) {
             const response = await setPrecioCadena(line.PriceList, line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
-            if(response.status!=200){
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Error: ${response.message || 'setPrecioCadena()'} `, ``, "datos-maestros/set-precio-cadena", process.env.PRD)
-                return res.status(400).json({mensaje: `${response.message || 'Error en setPrecioCadena'}`})
+            if (response.status != 200) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Error: ${response.message || 'setPrecioCadena()'} `, `call ifa_dm_agregar_precios`, "datos-maestros/set-precio-cadena", process.env.PRD)
+                return res.status(400).json({ mensaje: `${response.message || 'Error en setPrecioCadena'}` })
             }
             lista.push(response.data)
         }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Precios oficiales grabados con exito`, ``, "datos-maestros/set-precio-cadena", process.env.PRD)
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Cadenas", `Precios oficiales grabados con exito`, `call ifa_dm_agregar_precios`, "datos-maestros/set-precio-cadena", process.env.PRD)
         return res.json(lista)
     } catch (error) {
         console.log({ error })
@@ -272,10 +279,10 @@ const getZonasPorSucursalController = async (req, res) => {
     try {
         const areaCode = req.query.code
         const zonas = await getZonasPorSucursal(areaCode)
-        if(zonas.status!=200){
-            return res.status(400).json({mensaje: `${zonas.message || 'Error en getZonasPorSucursal'}`})
+        if (zonas.status != 200) {
+            return res.status(400).json({ mensaje: `${zonas.message || 'Error en getZonasPorSucursal'}` })
         }
-        return res.json({zonas:zonas.data})
+        return res.json({ zonas: zonas.data })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getZonasPorSucursalController: ${error.message || ''}` })
@@ -292,9 +299,10 @@ const actualizarDatosClienteController = async (req, res) => {
             ZoneCode,
             CreditLine,
             GroupCode,
-            LicTradNum
+            LicTradNum,
+            CardFName
         } = req.body
-        console.log({body: req.body})
+        console.log({ body: req.body })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
 
         let response = await actualizarCliente(CardCode, `U_B_dni_type`, U_B_dni_type, 0)
@@ -304,6 +312,7 @@ const actualizarDatosClienteController = async (req, res) => {
         response = await actualizarCliente(CardCode, `CreditLine`, '', CreditLine)
         response = await actualizarCliente(CardCode, `GroupCode`, '', GroupCode)
         response = await actualizarCliente(CardCode, `LicTradNum`, '', LicTradNum)
+        response = await actualizarCliente(CardCode, `CardFName`, CardFName, 0)
 
         if (response.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Actualizar Datos Cliente", `Error: ${response.errorMessage || 'actualizarCliente()'} `, ``, "datos-maestros/actualizar-cliente", process.env.PRD)
@@ -321,13 +330,13 @@ const actualizarDatosClienteController = async (req, res) => {
 
 const descuentoOfertasPorLineaController = async (req, res) => {
     try {
-        console.log({body: req.body})
-        const {lineaItem, desc, fechaInicial, fechaFinal, id_sap} = req.body
+        console.log({ body: req.body })
+        const { lineaItem, desc, fechaInicial, fechaFinal, id_sap } = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await descuentoOfertasPorLinea(lineaItem, desc, fechaInicial, fechaFinal, id_sap)
-        if(response.status!=200){
+        if (response.status != 200) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Linea", `Error: ${response.message || 'descuentoOfertasPorLinea()'} `, `${response.query || 'descuentoOfertasPorLinea'}`, "datos-maestros/descuento-linea", process.env.PRD)
-            return res.status(400).json({mensaje: `${response.message || 'Error en descuentoOfertasPorLinea'}`})
+            return res.status(400).json({ mensaje: `${response.message || 'Error en descuentoOfertasPorLinea'}` })
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Linea", `Exito en la actualizacion de descuentos por linea`, `${response.query || 'descuentoOfertasPorLinea'}`, "datos-maestros/descuento-linea", process.env.PRD)
         return res.json(response.data)
@@ -352,7 +361,7 @@ const getAllLineasController = async (req, res) => {
 
 const getArticulosController = async (req, res) => {
     try {
-        const lineCode= req.query.lineCode
+        const lineCode = req.query.lineCode
         const response = await getArticulos(lineCode)
         return res.json(response)
     } catch (error) {
@@ -363,17 +372,17 @@ const getArticulosController = async (req, res) => {
 
 const setDescuentoOfertasPorCantidadController = async (req, res) => {
     try {
-        const {body}=req
-        console.log({body})
-        let responses =[]            
+        const { body } = req
+        console.log({ body })
+        let responses = []
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        for(const descuento of body){
-            const {Row, ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete } = descuento
-            const response = await setDescuentoOfertasPorCantidad(Row,ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
+        for (const descuento of body) {
+            const { Row, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete } = descuento
+            const response = await setDescuentoOfertasPorCantidad(Row, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
             responses.push(response)
-            if(response.status!=200){
+            if (response.status != 200) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Error: ${response.message || 'setDescuentoOfertasPorCantidad()'} `, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-cantidad", process.env.PRD)
-                return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoOfertasPorCantidad'}`})
+                return res.status(400).json({ mensaje: `${response.message || 'Error en setDescuentoOfertasPorCantidad'}` })
             }
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Cantidad", `Exito en la actualizacion de descuentos por cantidad`, ``, "datos-maestros/descuento-cantidad", process.env.PRD)
@@ -389,10 +398,10 @@ const setDescuentoOfertasPorCantidadController = async (req, res) => {
 
 const findClienteController = async (req, res) => {
     try {
-        const body= req.body
-        console.log({body})
+        const body = req.body
+        console.log({ body })
         const buscar = body.buscar.toUpperCase()
-        console.log({buscar})
+        console.log({ buscar })
         const response = await findCliente(buscar)
         return res.json(response)
     } catch (error) {
@@ -403,7 +412,7 @@ const findClienteController = async (req, res) => {
 
 const getIdDescuentosCantidadController = async (req, res) => {
     try {
-        const itemCode= req.query.itemCode
+        const itemCode = req.query.itemCode
         const response = await getIdDescuentosCantidad(itemCode)
         console.log(response)
         response.sort((a, b) => a.Id - b.Id);
@@ -416,11 +425,11 @@ const getIdDescuentosCantidadController = async (req, res) => {
 
 const getDescuentosCantidadController = async (req, res) => {
     try {
-        const body= req.body
-        console.log({body})
+        const body = req.body
+        console.log({ body })
         const response = await getDescuentosCantidad(body.Id, body.ItemCode)
         // console.log(response)
-        response.forEach((value)=>{
+        response.forEach((value) => {
             value.ToDate = value.ToDate.split(' ')[0]
             value.FromDate = value.FromDate.split(' ')[0]
         })
@@ -435,13 +444,13 @@ const getDescuentosCantidadController = async (req, res) => {
 
 const getArticuloByCodeController = async (req, res) => {
     try {
-        const itemCode= req.query.itemCode
+        const itemCode = req.query.itemCode
         const response = await getArticuloByCode(itemCode)
         console.log(response)
-        if(response.length > 0)
+        if (response.length > 0)
             return res.json(response[0])
         else
-            return res.status(400).json({mensaje:'No existe item con ese codigo'})
+            return res.status(400).json({ mensaje: 'No existe item con ese codigo' })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getArticuloByCodeController: ${error.message || ''}` })
@@ -450,14 +459,14 @@ const getArticuloByCodeController = async (req, res) => {
 
 const setDescuentoEspecialController = async (req, res) => {
     try {
-        const {body}=req
-        console.log({body})
-        const {cardCode, lineaItem, desc, fechaInicial, fechaFinal, id_sap} = body 
+        const { body } = req
+        console.log({ body })
+        const { cardCode, lineaItem, desc, fechaInicial, fechaFinal, id_sap } = body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await setDescuentoEspecial(cardCode, lineaItem, desc, fechaInicial, fechaFinal, id_sap)
-        if(response.status!=200){
+        if (response.status != 200) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial", `Error: ${response.message || 'setDescuentoEspecial()'}`, `${response.query || 'setDescuentoEspecial'}`, "datos-maestros/descuento-especial", process.env.PRD)
-            return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoEspecial'}`})
+            return res.status(400).json({ mensaje: `${response.message || 'Error en setDescuentoEspecial'}` })
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial", `Exito en la actualizacion de descuento especial por linea`, `${response.query || 'setDescuentoEspecial'}`, "datos-maestros/descuento-especial", process.env.PRD)
         return res.json(response)
@@ -474,7 +483,7 @@ const getAllDescuentosLineaController = async (req, res) => {
     try {
         const response = await getAllDescuentosLinea()
         // console.log(response)
-        response.forEach((value)=>{
+        response.forEach((value) => {
             value.ToDate = value.ToDate.split(' ')[0]
             value.FromDate = value.FromDate.split(' ')[0]
         })
@@ -487,14 +496,14 @@ const getAllDescuentosLineaController = async (req, res) => {
 
 const deleteDescuentoLineaController = async (req, res) => {
     try {
-        const {id, lineItem, id_sap} = req.body
-        console.log({id, lineItem, id_sap})
+        const { id, lineItem, id_sap } = req.body
+        console.log({ id, lineItem, id_sap })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await deleteDescuentoLinea(id, lineItem, id_sap)
         console.log(response)
-        if(response.status !=200){
+        if (response.status != 200) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Oferta Linea", `Error: ${response.message || 'deleteDescuentoLinea()'}`, `${response.query || 'deleteDescuentoLinea'}`, "datos-maestros/delete-desc-linea", process.env.PRD)
-            return res.status(400).json({mensaje: response.message || 'Error desconocido en deleteDescuentoLinea'})
+            return res.status(400).json({ mensaje: response.message || 'Error desconocido en deleteDescuentoLinea' })
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Oferta Linea", `Exito al eliminar el descuento`, `${response.query || 'deleteDescuentoLinea'}`, "datos-maestros/delete-desc-linea", process.env.PRD)
         return res.json(response.data)
@@ -508,17 +517,17 @@ const deleteDescuentoLineaController = async (req, res) => {
 
 const setDescuentoEspecialPorArticuloController = async (req, res) => {
     try {
-        const {body}=req
-        console.log({body})
-        let responses =[]            
+        const { body } = req
+        console.log({ body })
+        let responses = []
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        for(const descuento of body){
-            const {Row, CardCode, ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete } = descuento
-            const response = await setDescuentoEspecialPorArticulo(Row, CardCode, ItemCode,CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
+        for (const descuento of body) {
+            const { Row, CardCode, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete } = descuento
+            const response = await setDescuentoEspecialPorArticulo(Row, CardCode, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
             responses.push(response)
-            if(response.status!=200){
+            if (response.status != 200) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial Cantidad", `Error: ${response.message || 'setDescuentoEspecialPorArticulo()'} `, `${response.query || 'setDescuentoEspecialPorArticulo'}`, "datos-maestros/desc-especial-articulo", process.env.PRD)
-                return res.status(400).json({mensaje: `${response.message || 'Error en setDescuentoEspecialPorArticulo'}`})
+                return res.status(400).json({ mensaje: `${response.message || 'Error en setDescuentoEspecialPorArticulo'}` })
             }
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Especial Cantidad", `Exito en la actualizacion de descuentos por cantidad`, ``, "datos-maestros/desc-especial-articulo", process.env.PRD)
@@ -555,8 +564,8 @@ const obtenerDescuetosEspecialesController = async (req, res) => {
 
 const getIdsDescuentoEspecialController = async (req, res) => {
     try {
-        const itemCode= req.query.itemCode
-        const cardCode= req.query.cardCode
+        const itemCode = req.query.itemCode
+        const cardCode = req.query.cardCode
         const response = await getIdsDescuentoEspecial(cardCode, itemCode)
         console.log(response)
         response.sort((a, b) => a.Id - b.Id);
@@ -569,11 +578,11 @@ const getIdsDescuentoEspecialController = async (req, res) => {
 
 const getDescuentosEspecialesByIdController = async (req, res) => {
     try {
-        const body= req.body
-        console.log({body})
+        const body = req.body
+        console.log({ body })
         const response = await getDescuentosEspecialesById(body.Id, body.ItemCode, body.CardCode)
         console.log(response)
-        response.forEach((value)=>{
+        response.forEach((value) => {
             value.ToDate = value.ToDate.split(' ')[0]
             value.FromDate = value.FromDate.split(' ')[0]
         })
@@ -629,16 +638,106 @@ const getZonasTiposPorVendedorController = async (req, res) => {
 
 const asignarZonasYTiposAVendedoresController = async (req, res) => {
     try {
-        const {id_vendedor, zona, tipo} = req.body
-        console.log({body: req.body})
+        const { id_vendedor, zona, tipo } = req.body
+        console.log({ body: req.body })
         const respond = await asignarZonasYTiposAVendedores(id_vendedor, zona, tipo)
-        if(respond.status != 200){
-            return res.status(400).json({mensaje: `${respond.message || ''}`})
+        if (respond.status != 200) {
+            return res.status(400).json({ mensaje: `${respond.message || ''}` })
         }
         return res.json(respond.result)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador asignarZonasYTiposAVendedoresController. ${error.message || ''}` })
+    }
+}
+
+const deleteZonasYTiposAVendedoresController = async (req, res) => {
+    try {
+        const { id_vendedor, zona, tipo } = req.body
+        console.log({ body: req.body })
+        const respond = await deleteZonasYTiposAVendedores(id_vendedor, zona, tipo)
+        if (respond.status != 200) {
+            return res.status(400).json({ mensaje: `${respond.message || ''}` })
+        }
+        return res.json(respond.result)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador deleteZonasYTiposAVendedoresController. ${error.message || ''}` })
+    }
+}
+
+const getDescuentosEspecialesLineaController = async (req, res) => {
+    try {
+        const { cardCode } = req.query
+        const respond = await getDescuentosEspecialesLinea(cardCode)
+        respond.forEach(value => {
+            value.Id = value.Code
+            delete value.Code;
+        })
+        /* */
+        return res.json(respond)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getDescuentosEspecialesLineaController. ${error.message || ''}` })
+    }
+}
+
+const deleteDescuentosEspecialesLineaController = async (req, res) => {
+    try {
+        const { id } = req.query
+        const respond = await deleteDescuentosEspecialesLinea(id)
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+
+        if (respond.status == 400) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, `Descuentos Especiales Linea`, `Error al eliminar descuentos especiales: ${respond.message || ''}`, respond.query || '', `datos-maestros/delete-espc-linea`, process.env.PRD)
+            return res.status(400).json({ mensaje: `${respond.message || 'Error desconocido en deleteDescuentosEspecialesLinea'}` })
+        }
+
+        grabarLog(usuario.USERCODE, usuario.USERNAME, `Descuentos Especiales Linea`, `Exito al eliminar el descuento especial por linea de id: ${id}. ${respond.result}`, respond.query || '', `datos-maestros/delete-espc-linea`, process.env.PRD)
+        return res.json(respond.result)
+    } catch (error) {
+        console.log({ error })
+        grabarLog(usuario.USERCODE, usuario.USERNAME, `Descuentos Especiales Linea`, `Error al eliminar descuentos especiales: ${error.message || ''}`, '', `datos-maestros/delete-espc-linea`, process.env.PRD)
+        return res.status(500).json({ mensaje: `Error en el controlador deleteDescuentosEspecialesLineaController. ${error.message || ''}` })
+    }
+}
+
+const cargarPreciosExcelController = async (req, res) => {
+    try {
+
+        let listErrors = []
+        if (!req.file) {
+            console.log({ files: req.file });
+            return res.status(400).json({
+                mensaje: 'Archivo no obtenido',
+                file: req.file
+            });
+        }
+
+        const { path, originalname } = req.file;
+        const filePath = req.file.path;
+        const workbook = XLSX.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        let idx = 0
+        for (const element of jsonData) {
+            const { ItemCode, ItemName } = element
+            const validate = validateDataExcel(jsonData, listErrors, idx)
+            listErrors = [...listErrors, ...validate]
+            ++idx   
+        }
+        // const response = await articuloByItemCode()
+        return res.json({
+            jsonData,
+        });
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'error en el controlador',
+            error
+        })
     }
 }
 
@@ -676,5 +775,9 @@ module.exports = {
     getZonasController,
     getAllTiposController,
     getZonasTiposPorVendedorController,
-    asignarZonasYTiposAVendedoresController
+    asignarZonasYTiposAVendedoresController,
+    deleteZonasYTiposAVendedoresController,
+    getDescuentosEspecialesLineaController,
+    deleteDescuentosEspecialesLineaController,
+    cargarPreciosExcelController
 }

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const https = require('https');
-const { obtenerEntregaDetalle } = require("./hana.controller")
+const { obtenerEntregaDetalle } = require("./hana.controller");
+const { Console } = require('console');
 
 const agent = new https.Agent({ rejectUnauthorized: false })
 
@@ -103,6 +104,35 @@ const patchEntrega = async (delivery, responseJson) => {
         }
     }
 };
+const getEntrega = async (id) => {
+
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/DeliveryNotes(${id})`;
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        return {
+            status: sapResponse.status,
+            statusText: sapResponse.statusText,
+            data: sapResponse.data
+        }
+
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Get';
+        console.error('Error en la solicitud get para Entrega:', error.response?.data || error.message);
+        return errorMessage
+    }
+};
+
 
 const postInvoice = async (body) => {
     try {
@@ -113,7 +143,7 @@ const postInvoice = async (body) => {
 
         const headers = {
             Cookie: `B1SESSION=${sessionSldId}`,
-            Prefer: 'return-no-content'
+            //Prefer: 'return-no-content'
         };
         const url = 'https://172.16.11.25:50000/b1s/v1/Invoices';
         const sapResponse = await axios.post(url, body, {
@@ -124,9 +154,12 @@ const postInvoice = async (body) => {
         const locationHeader = sapResponse.headers.location;
         const invoiceID = locationHeader.match(/\((\d+)\)$/);
         const idInvoice = invoiceID ? invoiceID[1] : 'Desconocido';
+
+        const data = sapResponse.data
+        console.log({dataInvoice: data})
         return { status: 200,
-            sapResponse,
-            idInvoice }
+            // sapResponse,
+            idInvoice, TransNum: data.TransNum }
     } catch (error) {
         console.log({ error })
         const errorMessage = error.response?.data?.error?.message|| error.message|| 'Error desconocido en la solicitud POST';
@@ -222,11 +255,34 @@ const cancelOrder = async (id) => {
             headers: headers,
             timeout: REQUEST_TIMEOUT
         });
-        console.log(sapResponse)
+        // console.log(sapResponse)
         return { data: sapResponse.data, status: 200 }
     } catch (error) {
         console.log("Error sld controller cancelOrder", { error })
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        const errorMessage = error.response?.data?.error?.message || error.message || error.error.message || 'Error desconocido en la solicitud POST';
+        return { errorMessage, status: 400 }
+    }
+}
+
+const closeQuotations = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/Quotations(${id})/Close`
+        const sapResponse = await axios.post(url, {}, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        
+        return { data: sapResponse.data, status: 200 }
+    } catch (error) {
+        console.log("Error sld controller closeQuotations", { error })
+        const errorMessage = error.response?.data?.error?.message || error.message || error.error.message || 'Error desconocido en la solicitud POST';
         return { errorMessage, status: 400, }
     }
 }
@@ -238,5 +294,7 @@ module.exports = {
     facturacionByIdSld,
     cancelInvoice,
     cancelDeliveryNotes,
-    cancelOrder
+    cancelOrder,
+    closeQuotations,
+    getEntrega
 }

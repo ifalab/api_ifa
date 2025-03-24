@@ -6,7 +6,11 @@ const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
     detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo, getVendedores,
     getCobradores,
-    saldoDeudorIfavet
+    saldoDeudorIfavet,
+    getAllSublines,
+    getAllLines,
+    getVendedoresBySuc,
+    getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador
 } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -29,12 +33,12 @@ const cobranzaGeneralController = async (req, res) => {
 const cobranzasPorZonasController = async (req = request, res = response) => {
     const { username } = req.query;
     try {
-        if (!username && typeof username != "string")
+        console.log({username})
+        if (!username && typeof username != "string"){
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
             })
-
-
+        }
         const response = await cobranzaPorZona(username);
         if (!response) {
             return res.status(400).json({ mensaje: 'error al traer las cobranzas' })
@@ -61,12 +65,23 @@ const cobranzasPorZonasController = async (req = request, res = response) => {
 
 const cobranzaPorSucursalController = async (req, res) => {
     try {
-        // const response = await cobranzaPorSucursal()
+        const { listSuc } = req.body
+        const responseData = await cobranzaPorSucursal()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaPorSucursal()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -83,12 +98,23 @@ const cobranzaPorSucursalController = async (req, res) => {
 
 const cobranzaNormalesController = async (req, res) => {
     try {
-        // const response = await cobranzaNormales()
+        const { listSuc } = req.body
+        const responseData = await cobranzaNormales()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaNormales()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -105,12 +131,23 @@ const cobranzaNormalesController = async (req, res) => {
 
 const cobranzaCadenaController = async (req, res) => {
     try {
-        // const response = await cobranzaNormales()
+        const { listSuc } = req.body
+        const responseData = await cobranzaCadenas()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaCadenas()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -127,12 +164,23 @@ const cobranzaCadenaController = async (req, res) => {
 
 const cobranzaIfavetController = async (req, res) => {
     try {
-        // const response = await cobranzaNormales()
+        const { listSuc } = req.body        
+        const responseData = await cobranzaIfavet()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaIfavet()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -149,12 +197,23 @@ const cobranzaIfavetController = async (req, res) => {
 
 const cobranzaPorSucursalMesAnteriorController = async (req, res) => {
     try {
-        // const response = await cobranzaPorSucursal()
+        const { listSuc } = req.body           
+        const responseData = await cobranzaPorSucursalMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaPorSucursalMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -171,12 +230,23 @@ const cobranzaPorSucursalMesAnteriorController = async (req, res) => {
 
 const cobranzaNormalesMesAnteriorController = async (req, res) => {
     try {
-        // const response = await cobranzaNormales()
+        const { listSuc } = req.body 
+        const responseData = await cobranzaNormalesMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaNormalesMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -193,12 +263,23 @@ const cobranzaNormalesMesAnteriorController = async (req, res) => {
 
 const cobranzaCadenaMesAnteriorController = async (req, res) => {
     try {
-        // const response = await cobranzaNormales()
+        const { listSuc } = req.body 
+        const responseData = await cobranzaCadenasMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaCadenasMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -215,12 +296,23 @@ const cobranzaCadenaMesAnteriorController = async (req, res) => {
 
 const cobranzaIfavetMesAnteriorController = async (req, res) => {
     try {
-
+        const { listSuc } = req.body 
+        const responseData = await cobranzaIfavetMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaIfavetMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -237,11 +329,23 @@ const cobranzaIfavetMesAnteriorController = async (req, res) => {
 
 const cobranzaMasivosController = async (req, res) => {
     try {
+        const { listSuc } = req.body
+        const responseData = await cobranzaMasivo()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaMasivo()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -258,12 +362,23 @@ const cobranzaMasivosController = async (req, res) => {
 
 const cobranzaInstitucionesController = async (req, res) => {
     try {
-
+        const { listSuc } = req.body
+        const responseData = await cobranzaInstituciones()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaInstituciones()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -280,12 +395,23 @@ const cobranzaInstitucionesController = async (req, res) => {
 
 const cobranzaMasivosMesAnteriorController = async (req, res) => {
     try {
-
+        const { listSuc } = req.body
+        const responseData = await cobranzaMasivoMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaMasivoMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -302,12 +428,23 @@ const cobranzaMasivosMesAnteriorController = async (req, res) => {
 
 const cobranzaInstitucionesMesAnteriorController = async (req, res) => {
     try {
-
+        const { listSuc } = req.body
+        const responseData = await cobranzaMasivoMesAnterior()
+        let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
-        const response = await cobranzaMasivoMesAnterior()
-        response.map((item) => {
-            totalPresupuesto += +item.Ppto
-            totalDocTotal += +item.DocTotal
+        responseData.map((item) => {
+
+            if (listSuc.length > 0) {
+                if (listSuc.includes(item.SucName)) {
+                    response.push(item)
+                    totalPresupuesto += +item.Ppto
+                    totalDocTotal += +item.DocTotal
+                }
+            } else {
+                response.push(item)
+                totalPresupuesto += +item.Ppto
+                totalDocTotal += +item.DocTotal
+            }
         })
         if (totalDocTotal > 0 && totalPresupuesto > 0) {
             totalCump = totalDocTotal / totalPresupuesto
@@ -1229,7 +1366,6 @@ const clientesPorSucursalController = async (req, res) => {
         const clientes = []
         for (const id_suc of idSucursales) {
             const clientessucursal = await clientesPorSucursal(id_suc)
-            console.log({ clientessucursal })
             if (clientessucursal.statusCode != 200) {
                 return res.status(clientessucursal.statusCode).json({ mensaje: clientessucursal.message || 'Error en clientesPorSucursal' })
             }
@@ -1391,7 +1527,7 @@ const getCobradoresController = async (req, res) => {
     }
 }
 
-const getCobradoresBySucursalController = async (req, res) => {
+const getCobradoresBySucursalesController = async (req, res) => {
     try {
         const { listSucName } = req.body
         let response = []
@@ -1407,7 +1543,7 @@ const getCobradoresBySucursalController = async (req, res) => {
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        const mensaje = error.message || 'Error en el controlador getCobradoresController'
+        const mensaje = error.message || 'Error en el controlador getCobradoresBySucursalesController'
         return res.status(500).json({
             mensaje
         })
@@ -1421,6 +1557,85 @@ const saldoDeudorIfavetController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error al traer el saldo deudor de ifavet' })
+    }
+}
+
+const getCobradoresBySucursalController = async (req, res) => {
+    try {
+        const { sucCode } = req.query
+        let cobradores = await getVendedoresBySuc(sucCode)
+        
+        return res.json(cobradores)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getCobradoresBySucursalController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getAllSublinesController = async (req, res) => {
+    try {
+
+        let sublineas = await getAllSublines()
+        return res.json(sublineas)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getAllSublinesController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getAllLinesController = async (req, res) => {
+    try {
+
+        let sublineas = await getAllLines()
+        return res.json(sublineas)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getAllLinesController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getYearToDayController = async (req, res) => {
+    try {
+        const {sucCode, cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2} = req.body
+        console.log({body: req.body})
+        let response
+        if(sucCode)
+            response = await getYearToDayBySuc(sucCode, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
+        else
+            response = await getYearToDayByCobrador(cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getYearToDayController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getYTDCobradorController = async (req, res) => {
+    try {
+        const {sucCode,fechaInicio1, fechaFin1} = req.body
+        console.log({body: req.body})
+        const response = await getYTDCobrador(sucCode,fechaInicio1, fechaFin1)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getYTDCobradorController'
+        return res.status(500).json({
+            mensaje
+        })
     }
 }
 
@@ -1466,5 +1681,10 @@ module.exports = {
     cobranzaPorSucursalYTiposController,
     getCobradoresController,
     saldoDeudorIfavetController,
+    getCobradoresBySucursalesController,
+    getAllSublinesController,
+    getAllLinesController,
     getCobradoresBySucursalController,
+    getYearToDayController,
+    getYTDCobradorController
 }
