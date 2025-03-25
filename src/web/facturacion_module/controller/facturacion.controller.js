@@ -2152,6 +2152,7 @@ const facturacionVehiculo = async (req, res) => {
                 body.direccion = ''
             }
             body.codigo_cliente_externo = cardCode
+            // body.identificacion = '9054853'
             const responseProsin = await facturacionProsin(body, user);
             const { data: dataProsin } = responseProsin
             console.log({ dataProsin })
@@ -2703,6 +2704,37 @@ const articulosExportacionController = async (req, res) => {
     }
 }
 
+const facturacionExportacion = async (req, res) => {
+    try {
+        const body = req.body
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador', error })
+    }
+}
+
+const crearPedidoExportacionController = async (req, res) => {
+    try {
+        const {
+            CardCode,
+            CardName,
+            WhsCode,
+            WhsName,
+            TransFrontNac,
+            SegFrontNac,
+            TransFrontInt,
+            SegFrontInt,
+            OtrosInt,
+            totalGastoNac,
+            totalGastoInt,
+            Incoterm,
+            items
+        } = req.body
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador', error })
+    }
+}
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2734,4 +2766,5 @@ module.exports = {
     clientesExportacionController,
     almacenesController,
     articulosExportacionController,
+    crearPedidoExportacionController,
 }
