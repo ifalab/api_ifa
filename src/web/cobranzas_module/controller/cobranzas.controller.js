@@ -10,7 +10,8 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getAllSublines,
     getAllLines,
     getVendedoresBySuc,
-    getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador
+    getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
+    cuentasParaBajaCobranza
 } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -943,7 +944,7 @@ const realizarCobroController = async (req, res) => {
         }
 
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", "Cobranza realizada con exito", `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
-        return res.json({ ...responseSap })
+        return res.json({ ...responseSap, body })
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -1639,6 +1640,52 @@ const getYTDCobradorController = async (req, res) => {
     }
 }
 
+const getPendientesBajaPorCobradorController = async (req, res) => {
+    try {
+        const {id} = req.query
+        let cobranzas = await getPendientesBajaPorCobrador(id)
+        return res.json(cobranzas)
+    } catch (error) {
+        console.log({ error })
+        const mensaje =  `${error.message||'Error en el controlador getPendientesBajaPorCobradorController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getCuentasParaBajaController = async (req, res) => {
+    try {
+        const response = await cuentasParaBajaCobranza()
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getCuentasParaBajaController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const darDeBajaController = async (req, res) => {
+    try {
+        const {body} = req.body
+        const responsePostIncomming =await postIncommingPayments(body)
+        if(responsePostIncomming.status==400){
+            const mensaje=responsePostIncomming.errorMessage
+            return res.status(400).json({mensaje: `${mensaje.value||mensaje||'Error de postIncommingPayments'}`, body})
+        }
+        return res.json({responsePostIncomming, body})
+    } catch (error) {
+        console.log({ error })
+        const mensaje =  `${error.message||'Error en el controlador darDeBajaController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -1686,5 +1733,6 @@ module.exports = {
     getAllLinesController,
     getCobradoresBySucursalController,
     getYearToDayController,
-    getYTDCobradorController
+    getYTDCobradorController, getPendientesBajaPorCobradorController,
+    darDeBajaController, getCuentasParaBajaController
 }

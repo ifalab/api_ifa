@@ -640,10 +640,11 @@ const getCobradores = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores
-                union all
-                select * from ${process.env.PRD}.ifa_dm_despachadores
-                order by "SlpCode"`
+        // const query = `select * from ${process.env.PRD}.ifa_dm_vendedores
+        //         union all
+        //         select * from ${process.env.PRD}.ifa_dm_despachadores
+        //         order by "SlpCode"`
+        const quer = `select * from ${process.env.PRD}.ifa_dm_cobradores`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -756,6 +757,34 @@ const getYTDCobrador = async (sucCode,fechaInicio1, fechaFin1) => {
     }
 }
 
+const getPendientesBajaPorCobrador = async (clpCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_cob_cobranzas_pendientes_de_baja(${clpCode})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getPendientesBajaPorCobrador: ${error.message || ''}`)
+    }
+}
+
+const cuentasParaBajaCobranza = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_DM_CUENTAS_PERMITIDAS_PARA_BAJA_COBRANZA`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en cuentasParaBajaCobranza: ${error.message || ''}`)
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -803,5 +832,6 @@ module.exports = {
     getVendedoresBySuc,
     getYearToDayBySuc,
     getYearToDayByCobrador,
-    getYTDCobrador
+    getYTDCobrador,
+    getPendientesBajaPorCobrador, cuentasParaBajaCobranza
 }

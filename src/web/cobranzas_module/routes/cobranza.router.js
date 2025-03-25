@@ -8,7 +8,8 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getAllLinesController,
     getCobradoresBySucursalController,
     getYearToDayController,
-    getYTDCobradorController
+    getYTDCobradorController, getPendientesBajaPorCobradorController, darDeBajaController,
+    getCuentasParaBajaController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -66,5 +67,8 @@ router.get('/lineas',[validarToken, validarCampos], getAllLinesController)
 router.get('/cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalController)
 router.post('/ytd',[validarToken, validarCampos], getYearToDayController)
 router.post('/ytd-cobrador',[validarToken, validarCampos], getYTDCobradorController)
+router.get('/pendientes-baja',[validarToken, validarCampos], getPendientesBajaPorCobradorController)
+router.post('/baja',[validarToken, validarCampos], darDeBajaController)
+router.get('/cuentas-baja',[validarToken, validarCampos], getCuentasParaBajaController)
 
 module.exports = router
