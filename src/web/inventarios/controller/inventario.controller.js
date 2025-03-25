@@ -2756,7 +2756,7 @@ const devolucionPorValoradoController = async (req, res) => {
                 let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
                 if (mensaje.value)
                     mensaje = mensaje.value
-                // grabarLog(user.USERCODE, user.USERNAME, "Inventario DevolucionValorado", `Error en postReturn: ${mensaje}. Nro Factura ${DocEntry}`, `postReturn()`, "inventario/dev-valorado", process.env.PRD)
+                // grabarLog(user.USERCODE, user.USERNAME, "Inventario alorado", `Error en postReturn: ${mensaje}. Nro Factura ${DocEntry}`, `postReturn()`, "inventario/dev-valorado", process.env.PRD)
                 return res.status(400).json({
                     mensaje: `Error en postReturn: ${mensaje}. Nro Factura: ${DocEntry}`,
                     bodyReturn,

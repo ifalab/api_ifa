@@ -397,6 +397,52 @@ const clienteByCardName = async (cardName) => {
         return { message: `Error al procesar clienteByCardName: ${error.message || ''}` }
     }
 }
+
+const clientesExportacion = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where "Currency" = 'USD' limit 50`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en clientesExportacion:', error.message);
+        return { message: `Error al procesar clientesExportacion: ${error.message || ''}` }
+    }
+}
+
+const getAllAlmacenes = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getAllAlmacenes ${error.message}`)
+    }
+}
+
+const articulosExportacion = async (parameter) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemName" LIKE '%${parameter}%' AND "SellItem" = 'Y' limit 50`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en articulosExportacion ${error.message}`)
+    }
+}
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -420,4 +466,7 @@ module.exports = {
     clienteByCardName,
     ofertaDelPedido,
     obtenerGroupCode,
+    clientesExportacion,
+    getAllAlmacenes,
+    articulosExportacion,
 }

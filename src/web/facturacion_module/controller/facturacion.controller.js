@@ -21,10 +21,13 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     obtenerDevoluciones,
     detalleDevolucion,
     clienteByCardName,
-    ofertaDelPedido, obtenerGroupCode } = require("./hana.controller")
+    ofertaDelPedido, obtenerGroupCode,
+    clientesExportacion,
+    getAllAlmacenes,
+    articulosExportacion } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
-const { spObtenerCUF, spEstadoFactura, listaFacturasSfl } = require('./sql_genesis.controller');
+const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
 const { grabarLog } = require('../../shared/controller/hana.controller');
@@ -2002,19 +2005,13 @@ const getLocalISOString = () => {
 
 const facturacionVehiculo = async (req, res) => {
     const startTime = Date.now();
-    const { nro_ped } = req.body;
+    const { nro_ped, cliente, cardCode } = req.body;
     const user = req.usuarioAutorizado
-    // const id_sap = user.ID_SAP
-    // console.log(user.USERNAME);
-
     const today = getLocalISOString();
-    // console.log(today); // Ejemplo: "2025-02-27T14:30:12.215"
 
     let body = {};
     try {
         const data = await obtenerPedidoDetalle(nro_ped);
-        // return res.status(200).json(data);
-        // console.log(data)
         const detalle = data.map(item => ({
             producto: item.ItemCode,
             cantidad: item.Quantity,
@@ -2029,29 +2026,18 @@ const facturacionVehiculo = async (req, res) => {
         const montoDetalle = detalle
             .reduce((total, item) => total + item.subtotal, 0)
             .toFixed(2);
-
         console.log(data);
-        // const detalle =[{
-        //     producto: data[0].ItemCode,
-        //     descripcion: data[0].Dscription,
-        //     cantidad: +data[0].Quantity,
-        //     precioUnitario: +data[0].UnitPrice,
-        //     montoDescuento: +data[0].Disc,
-        //     subTotal: +(data[0].Quantity * data[0].UnitPrice).toFixed(2),
-        //     numeroImei: "",
-        //     numeroSerie: "",
-        // }]
         body = {
             sucursal: 0,
             punto: 0,
             documento_via: `17-${nro_ped}`,
-            codigo_cliente_externo: "",
+            codigo_cliente_externo: cardCode,
             tipo_identificacion: 1,
             identificacion: data[0].LicTradNum,
             complemento: "",
-            nombre: user.USERNAME,
+            nombre: cliente,
             correo: data[0].E_Mail,
-            direccion: data[0].Address,
+            direccion: data[0].Address || '',
             codigo_excepcion: false,
             metodo_pago: 1,
             numeroTarjeta: "",
@@ -2067,89 +2053,195 @@ const facturacionVehiculo = async (req, res) => {
             detalle: detalle
         }
 
-        // return res.status(200).json(body);
         body.usuario = user.USERNAME || 'No definido'
-        const responseProsin = await facturacionProsin(body, user);
-        const { data: dataProsin } = responseProsin
-        console.log({ dataProsin })
-        // return res.status(200).json(responseProsin);
-        if (dataProsin && dataProsin.estado != 200) {
+        const via = `${body.documento_via}`
+        const dataCuf = await spObtenerCUFString(via)
+        if (dataCuf.message) {
             endTime = Date.now()
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${body.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
-            return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, body })
-        }
-        if (dataProsin.mensaje != null) {
-            endTime = Date.now()
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || ""}, codigo_cliente: ${body.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
-            return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, body })
+            grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `${dataCuf.message || 'Error en la consulta spObtenerCUF'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/Vehiculo", process.env.PRD)
+            return res.status(400).json({ mensaje: `${dataCuf.message || 'Error en la consulta spObtenerCUF'}`, dataCuf })
         }
 
-        const { cuf, factura } = responseProsin.data.datos;
+        if (dataCuf.length != 0) {
 
-        const fechaString = responseProsin.data.fecha;
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `${dataCuf.message || 'Se consulto spObtenerCuf con exito'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/Vehiculo", process.env.PRD)
 
-        const [dia, mes, anioHora] = fechaString.split("/");
-        const [anio] = anioHora.split(" ");
+            const dataGenesis = dataCuf[0]
+            const cuf = dataGenesis.cuf
+            const nroFactura = dataGenesis.factura
+            const fechaFormater = new Date(dataGenesis.fecha_emision)
+            const year = fechaFormater.getUTCFullYear();
+            const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0')
+            const day = String(fechaFormater.getUTCDate()).padStart(2, '0')
+            const formater = `${year}${month}${day}`;
+            const responseHana = await pedidoDetallerFactura(+nro_ped, cuf, +nroFactura, formater)
 
-        const formater = `${anio}${mes}${dia}`;
-        // console.log(formater);
-        const responseHana = await pedidoDetallerFactura(+nro_ped, cuf, +factura, formater)
+            const DocumentLinesHana = [];
+            let cabezeraHana = [];
+            let DocumentAdditionalExpenses = [];
 
-        const DocumentLinesHana = [];
-        let cabezeraHana = [];
+            for (const line of responseHana) {
+                const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                    ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                    DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
 
-        let DocumentAdditionalExpenses = [];
+                if (!cabezeraHana.length) {
+                    cabezeraHana = {
+                        ...result,
+                        DocTotal: Number(DocTotal),
+                        U_OSLP_ID: U_OSLP_ID || "",
+                        U_UserCode: U_UserCode || ""
+                    };
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                    ]
 
-        for (const line of responseHana) {
-            const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
-                ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-                DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
-
-            if (!cabezeraHana.length) {
-                cabezeraHana = {
-                    ...result,
-                    DocTotal: Number(DocTotal),
-                    U_OSLP_ID: U_OSLP_ID || "",
-                    U_UserCode: U_UserCode || ""
-                };
-                DocumentAdditionalExpenses = [
-                    { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
-                    { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
-                    { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
-                    { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
-                ]
-
+                }
+                DocumentLinesHana.push({
+                    LineNum,
+                    BaseType: 17,
+                    BaseEntry: nro_ped,
+                    BaseLine,
+                    ItemCode,
+                    Quantity: Number(Quantity),
+                    GrossPrice: Number(GrossPrice),
+                    GrossTotal: Number(GrossTotal),
+                    WarehouseCode,
+                    AccountCode,
+                    TaxCode,
+                    MeasureUnit,
+                    UnitsOfMeasurment: Number(UnitsOfMeasurment),
+                    U_DESCLINEA: Number(U_DESCLINEA)
+                })
             }
-            DocumentLinesHana.push({
-                LineNum, BaseType: `${17}-${nro_ped}`, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
-            })
-        }
 
-        const responseHanaB = {
-            ...cabezeraHana,
-            DocumentLines: DocumentLinesHana,
-            DocumentAdditionalExpenses
-        }
-        // return res.json({ responseHanaB })
-        const invoiceResponse = await postInvoice(responseHanaB)
-        console.log({ invoiceResponse })
-        // return res.json({ invoiceResponse })
-        if (invoiceResponse.status == 400) {
+            const responseHanaB = {
+                ...cabezeraHana,
+                DocumentLines: DocumentLinesHana,
+                DocumentAdditionalExpenses
+            }
+
+            const invoiceResponse = await postInvoice(responseHanaB)
+            console.log({ invoiceResponse })
+
+            if (invoiceResponse.status == 400) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}`, invoiceResponse })
+            }
+            const response = {
+                status: invoiceResponse.status || {},
+                statusText: invoiceResponse.statusText || {},
+                idInvoice: invoiceResponse.idInvoice,
+                delivery: +nro_ped,
+                cuf
+            }
+            console.log({ response })
             endTime = Date.now()
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
-            return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}` })
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            return res.json({ ...response, cuf })
+
+        } else {
+
+
+            if (!body.direccion) {
+                body.direccion = ''
+            }
+            body.codigo_cliente_externo = cardCode
+            const responseProsin = await facturacionProsin(body, user);
+            const { data: dataProsin } = responseProsin
+            console.log({ dataProsin })
+            if (dataProsin && dataProsin.estado != 200) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}, codigo_cliente: ${body.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, body })
+            }
+            if (dataProsin.mensaje != null) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error Prosin: ${dataProsin.mensaje || ""}, codigo_cliente: ${body.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, body })
+            }
+
+            const { cuf, factura } = responseProsin.data.datos;
+            const fechaString = responseProsin.data.fecha;
+            const [dia, mes, anioHora] = fechaString.split("/");
+            const [anio] = anioHora.split(" ");
+            const formater = `${anio}${mes}${dia}`;
+
+            const responseHana = await pedidoDetallerFactura(+nro_ped, cuf, +factura, formater)
+
+            const DocumentLinesHana = [];
+            let cabezeraHana = [];
+            let DocumentAdditionalExpenses = [];
+
+            for (const line of responseHana) {
+                const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                    ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                    DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+
+                if (!cabezeraHana.length) {
+                    cabezeraHana = {
+                        ...result,
+                        DocTotal: Number(DocTotal),
+                        U_OSLP_ID: U_OSLP_ID || "",
+                        U_UserCode: U_UserCode || ""
+                    };
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                    ]
+
+                }
+                DocumentLinesHana.push({
+                    LineNum,
+                    BaseType: 17,
+                    BaseEntry: nro_ped,
+                    BaseLine,
+                    ItemCode,
+                    Quantity: Number(Quantity),
+                    GrossPrice: Number(GrossPrice),
+                    GrossTotal: Number(GrossTotal),
+                    WarehouseCode,
+                    AccountCode,
+                    TaxCode,
+                    MeasureUnit,
+                    UnitsOfMeasurment: Number(UnitsOfMeasurment),
+                    U_DESCLINEA: Number(U_DESCLINEA)
+                })
+            }
+
+            const responseHanaB = {
+                ...cabezeraHana,
+                DocumentLines: DocumentLinesHana,
+                DocumentAdditionalExpenses
+            }
+
+            const invoiceResponse = await postInvoice(responseHanaB)
+            console.log({ invoiceResponse })
+            // return res.json({ invoiceResponse })
+            if (invoiceResponse.status == 400) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al procesar la solicitud postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}`, invoiceResponse })
+            }
+            const response = {
+                status: invoiceResponse.status || {},
+                statusText: invoiceResponse.statusText || {},
+                idInvoice: invoiceResponse.idInvoice,
+                delivery: +nro_ped,
+                cuf
+            }
+            console.log({ response })
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            return res.json({ ...response, cuf })
         }
-        const response = {
-            status: invoiceResponse.status || {},
-            statusText: invoiceResponse.statusText || {},
-            idInvoice: invoiceResponse.idInvoice,
-            delivery: +nro_ped,
-            cuf
-        }
-        console.log({ response })
-        endTime = Date.now()
-        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
-        return res.json({ ...response, cuf })
 
     } catch (error) {
         console.log({ error })
@@ -2572,9 +2664,39 @@ const reporteFacturasSiatController = async (req, res) => {
     try {
         const datenow = new Date();
         const formattedDate = `${datenow.getDate().toString().padStart(2, '0')}-${(datenow.getMonth() + 1).toString().padStart(2, '0')}-${datenow.getFullYear()}`;
-        console.log({formattedDate})
+        console.log({ formattedDate })
         const response = await listaFacturasSfl(1, formattedDate, formattedDate);
         return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
+const clientesExportacionController = async (req, res) => {
+    try {
+        const clientes = await clientesExportacion()
+        return res.json(clientes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+const almacenesController = async (req, res) => {
+    try {
+        const almacenes = await getAllAlmacenes()
+        return res.json(almacenes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
+const articulosExportacionController = async (req, res) => {
+    try {
+        const parameter = req.query.parameter
+        const articulos = await articulosExportacion(parameter.toUpperCase())
+        return res.json(articulos)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
@@ -2608,5 +2730,8 @@ module.exports = {
     obtenerDevolucionDetallerController,
     clientesByCardNameController,
     ofertaDelPedidoController,
-    reporteFacturasSiatController
+    reporteFacturasSiatController,
+    clientesExportacionController,
+    almacenesController,
+    articulosExportacionController,
 }

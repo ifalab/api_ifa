@@ -16,7 +16,10 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     obtenerDevolucionDetallerController,
     clientesByCardNameController,
     ofertaDelPedidoController,
-    reporteFacturasSiatController
+    reporteFacturasSiatController,
+    clientesExportacionController,
+    almacenesController,
+    articulosExportacionController
 } = require('../controller/facturacion.controller')
 const router = Router()
 
@@ -51,5 +54,8 @@ router.get('/cliente-by-cardname', [validarToken, validarCampos], clientesByCard
 router.get('/prueba', [validarToken, validarCampos], ofertaDelPedidoController)
 
 router.get('/reporte-factura-siat', [validarToken, validarCampos], reporteFacturasSiatController)
+router.get('/clientes-exportacion', [validarToken, validarCampos], clientesExportacionController)
+router.get('/almacenes', [validarToken, validarCampos], almacenesController)
+router.get('/articulos-exportacion', [validarToken, validarCampos], articulosExportacionController)
 
 module.exports = router
