@@ -3,6 +3,7 @@ const { findUserByUsercode } = require('../web/auth_module/controllers/hana.cont
 
 const validarToken = async (req, res, next) => {
     const token = req.header('token')
+    console.log(token);
     if (!token) {
         return res.status(401).json({
             mensaje: 'Usuario no autorizado, se requiere un token en el header (token)'

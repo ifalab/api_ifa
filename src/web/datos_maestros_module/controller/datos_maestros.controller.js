@@ -718,20 +718,80 @@ const cargarPreciosExcelController = async (req, res) => {
         const filePath = req.file.path;
         const workbook = XLSX.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
+        console.log(sheetName);
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const errorSet = new Set();
         let idx = 0
         for (const element of jsonData) {
-            const { ItemCode, ItemName } = element
-            const validate = validateDataExcel(jsonData, listErrors, idx)
-            listErrors = [...listErrors, ...validate]
+            const { ItemCode, ItemName, Precio, ListName, PriceList } = element
+            const validate = validateDataExcel({ItemCode, ItemName, Precio, ListName, PriceList}, listErrors, idx);
+
+            const response = await articuloByItemCode(ItemCode);
+            // console.log(response);
+            if (!response.result || response.result.length === 0) {
+                listErrors.push({
+                    PriceList,
+                    ListName,
+                    ItemCode,
+                    ItemName,
+                    Precio,
+                    error: `El artículo con código ${ItemCode} en la posición ${idx} no existe o es incorrecto.`,
+                });
+            }else {
+                const dbItem = response.result[0];
+
+                const dbItemName = dbItem.ItemName;
+                const excelItemName = ItemName;
+
+                if (dbItemName !== excelItemName) {
+                    listErrors.push({
+                        PriceList,
+                        ListName,
+                        ItemCode,
+                        ItemName,
+                        Precio,
+                        error: `El artículo con código ${ItemCode} en la posición ${idx} tiene un nombre incorrecto.`
+                    });
+                }
+                if (dbItem.validFor !== "Y") {
+                    listErrors.push({
+                        PriceList,
+                        ListName,
+                        ItemCode,
+                        ItemName,
+                        Precio,
+                        error: `El artículo con código ${ItemCode} en la posición ${idx} no es válido.`
+                    });
+                }
+            }
+            // console.log(response);
+            if (validate.length > 0) {
+                validate.forEach(error => errorSet.add(error)); 
+            }        
             ++idx   
         }
-        // const response = await articuloByItemCode()
-        return res.json({
-            jsonData,
-        });
+        listErrors = Array.from(errorSet); 
 
+        // console.log(listErrors);
+
+        if (listErrors.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(listErrors); 
+            const wb = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(wb, ws, 'Errores');
+   
+            const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+
+            // Establecer los encabezados para la descarga del archivo
+            res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.set('Content-Disposition', 'attachment; filename=errores.xlsx');
+            return res.end(excelBuffer);  // Enviar el archivo Excel
+        } else {
+            
+            return res.json({
+                mensaje: 'Archivo procesado correctamente, sin errores.'
+            });
+        }
     } catch (error) {
         console.log({ error })
         return res.status(500).json({
