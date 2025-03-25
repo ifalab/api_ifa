@@ -14,6 +14,20 @@ async function spObtenerCUF(nroDocumento) {
     }
 }
 
+async function spObtenerCUFString(nroDocumento) {
+    try {
+        const pool = await poolGenesisPromise;
+        console.log({pool})
+        console.log({nroDocumento:+nroDocumento})
+        const result = await pool.request().query(`exec spObtenerCUF '${nroDocumento}'`);
+        console.log('Resultados:', result.recordset);
+        return result.recordset
+    } catch (err) {
+        console.error('Error en la consulta:', err);
+        return {message: `Error en la consulta spObtenerCUF. ${err.message || ''}`}
+    }
+}
+
 async function spEstadoFactura(cuf) {
     try {
         const pool = await poolGenesisPromise;
@@ -60,5 +74,6 @@ module.exports = {
     spObtenerCUF,
     spEstadoFactura,
     listaFacturasSfl,
-    listaFacturasAnuladasSfl
+    listaFacturasAnuladasSfl,
+    spObtenerCUFString,
 }

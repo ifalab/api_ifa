@@ -27,7 +27,7 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     articulosExportacion } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
-const { spObtenerCUF, spEstadoFactura, listaFacturasSfl } = require('./sql_genesis.controller');
+const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
 const { grabarLog } = require('../../shared/controller/hana.controller');
@@ -2005,7 +2005,7 @@ const getLocalISOString = () => {
 
 const facturacionVehiculo = async (req, res) => {
     const startTime = Date.now();
-    const { nro_ped, cliente } = req.body;
+    const { nro_ped, cliente, cardCode } = req.body;
     const user = req.usuarioAutorizado
     const today = getLocalISOString();
 
@@ -2031,7 +2031,7 @@ const facturacionVehiculo = async (req, res) => {
             sucursal: 0,
             punto: 0,
             documento_via: `17-${nro_ped}`,
-            codigo_cliente_externo: "",
+            codigo_cliente_externo: cardCode,
             tipo_identificacion: 1,
             identificacion: data[0].LicTradNum,
             complemento: "",
@@ -2054,7 +2054,8 @@ const facturacionVehiculo = async (req, res) => {
         }
 
         body.usuario = user.USERNAME || 'No definido'
-        const dataCuf = await spObtenerCUF(body.documento_via)
+        const via = `${body.documento_via}`
+        const dataCuf = await spObtenerCUFString(via)
         if (dataCuf.message) {
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturar Vehiculos", `${dataCuf.message || 'Error en la consulta spObtenerCUF'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/Vehiculo", process.env.PRD)
@@ -2150,6 +2151,7 @@ const facturacionVehiculo = async (req, res) => {
             if (!body.direccion) {
                 body.direccion = ''
             }
+            body.codigo_cliente_externo = cardCode
             const responseProsin = await facturacionProsin(body, user);
             const { data: dataProsin } = responseProsin
             console.log({ dataProsin })
