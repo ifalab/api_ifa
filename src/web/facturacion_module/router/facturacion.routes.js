@@ -19,7 +19,8 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     reporteFacturasSiatController,
     clientesExportacionController,
     almacenesController,
-    articulosExportacionController
+    articulosExportacionController,
+    crearPedidoExportacionController
 } = require('../controller/facturacion.controller')
 const router = Router()
 
@@ -57,5 +58,6 @@ router.get('/reporte-factura-siat', [validarToken, validarCampos], reporteFactur
 router.get('/clientes-exportacion', [validarToken, validarCampos], clientesExportacionController)
 router.get('/almacenes', [validarToken, validarCampos], almacenesController)
 router.get('/articulos-exportacion', [validarToken, validarCampos], articulosExportacionController)
+router.post('/crear-pedido-exportacion', [validarToken, validarCampos], crearPedidoExportacionController)
 
 module.exports = router
