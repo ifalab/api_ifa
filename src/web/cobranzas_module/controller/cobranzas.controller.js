@@ -11,7 +11,7 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getAllLines,
     getVendedoresBySuc,
     getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
-    cuentasParaBajaCobranza
+    cuentasParaBajaCobranza, getBaja, getLayoutComprobanteContable
 } = require("./hana.controller")
 const { postIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -1644,6 +1644,11 @@ const getPendientesBajaPorCobradorController = async (req, res) => {
     try {
         const {id} = req.query
         let cobranzas = await getPendientesBajaPorCobrador(id)
+        cobranzas.map((item)=>{
+            item.TotalPending = +((+item.TotalPending).toFixed(2))
+            item.DocTotal = +((+item.DocTotal).toFixed(2))
+            item.AppliedToDate = +((+item.AppliedToDate).toFixed(2))
+        })
         return res.json(cobranzas)
     } catch (error) {
         console.log({ error })
@@ -1676,10 +1681,155 @@ const darDeBajaController = async (req, res) => {
             const mensaje=responsePostIncomming.errorMessage
             return res.status(400).json({mensaje: `${mensaje.value||mensaje||'Error de postIncommingPayments'}`, body})
         }
-        return res.json({responsePostIncomming, body})
+        console.log({responsePostIncomming})
+        return res.json({docEntry: responsePostIncomming.orderNumber})
     } catch (error) {
         console.log({ error })
         const mensaje =  `${error.message||'Error en el controlador darDeBajaController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const darVariasDeBajaController = async (req, res) => {
+    let responses=[]
+    try {
+        const {body} = req.body
+        for(const farmacia of body){
+            const {CardCode, CardName, ...rest}=farmacia
+            const responsePostIncomming =await postIncommingPayments(rest)
+            console.log({responsePostIncomming})
+            if(responsePostIncomming.status==400){
+                const mensaje=responsePostIncomming.errorMessage
+                return res.status(400).json(
+                    {mensaje: `${mensaje.value||mensaje||'Error de postIncommingPayments.'} Cliente del error: ${CardCode}- ${CardName}`, 
+                    farmacia, responses})
+            }
+            responses.push({CardCode, CardName, DocEntry: responsePostIncomming.orderNumber})
+        }
+        
+        console.log({responses})
+        return res.json({responses})
+    } catch (error) {
+        console.log({ error })
+        const mensaje =  `${error.message||'Error en el controlador darVariasDeBajaController'}`
+        return res.status(500).json({
+            mensaje, responses
+        })
+    }
+}
+
+const comprobanteContableController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const baja =await getBaja(id)
+        console.log({baja})
+        if(baja.length==0){
+            return res.status(400).json({mensaje: `No se encontro una baja con DocEntry: ${id}`})
+        }
+        const {TransId} = baja[0]
+
+        const layout = await getLayoutComprobanteContable(TransId)
+
+        let cabecera = []
+        let detalle=[]
+        let sumDebit=0; let sumSYSDeb=0; let sumCredit=0; let sumSYSCred=0
+        layout.forEach((line)=>{
+            const {TransId,
+                    RefDate,
+                    DueDate,
+                    TaxDate,
+                    Ref1,
+                    Ref2,
+                    Ref3,
+                    Memo,
+                    RateUsd,
+                    RateEur,
+                    Debit,
+                    Credit,
+                    SYSDeb,
+                    SYSCred,
+                    DocNumFiscal,
+                    BaseRef,
+                    NumAtCard,
+                    U_NAME,
+                    ...rest} = line
+            const fechaTax= formattedDataInvoice(TaxDate)
+            sumDebit += +Debit
+            sumSYSDeb += +SYSDeb
+            sumCredit += +Credit
+            sumSYSCred += +SYSCred
+
+            if(cabecera.length==0){
+                cabecera.push({
+                    TransId,
+                    RefDate,
+                    DueDate,
+                    TaxDate: fechaTax,
+                    Ref1,
+                    Ref2,
+                    Ref3,
+                    Memo,
+                    RateUsd: (+RateUsd).toFixed(2),
+                    RateEur: (+RateEur).toFixed(2),
+                    DocNumFiscal,
+                    BaseRef,
+                    NumAtCard,
+                    U_NAME
+                })
+            }
+            detalle.push({
+                Debit: (+Debit).toFixed(2),
+                Credit: (+Credit).toFixed(2),
+                SYSDeb: (+SYSDeb).toFixed(2),
+                SYSCred: (+SYSCred).toFixed(2),
+                ...rest})
+        })
+        cabecera[0].sumDebit= (+sumDebit).toFixed(2)
+        cabecera[0].sumSYSDeb=(+sumSYSDeb).toFixed(2)
+        cabecera[0].sumCredit=(+sumCredit).toFixed(2)
+        cabecera[0].sumSYSCred=(+sumSYSCred).toFixed(2)
+
+        let comprobante = {
+            ...cabecera[0], detalle
+        }
+        
+
+        // return res.json({comprobante, layout, baja})
+
+        const ejs = require('ejs');
+        const htmlTemplate = path.join(__dirname, './pdf/template-contable.ejs');
+        const htmlContent = await ejs.renderFile(htmlTemplate, {
+            comprobante
+        });
+
+
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+
+        await page.setContent(htmlContent, { waitUntil: 'load' });
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true
+        });
+
+        await browser.close();
+        console.log('PDF Buffer Size:', pdfBuffer.length);
+
+        const fileName = `${comprobante.TransId}_${new Date()}.pdf`.replace(' ', '').trim()
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${fileName}"`,
+            'Content-Length': pdfBuffer.length
+        });
+
+        return res.end(pdfBuffer);
+
+    } catch (error) {
+        console.log({ error })
+        const mensaje =  `${error.message||'Error en el controlador comprobanteContableController'}`
         return res.status(500).json({
             mensaje
         })
@@ -1734,5 +1884,6 @@ module.exports = {
     getCobradoresBySucursalController,
     getYearToDayController,
     getYTDCobradorController, getPendientesBajaPorCobradorController,
-    darDeBajaController, getCuentasParaBajaController
+    darDeBajaController, getCuentasParaBajaController, comprobanteContableController,
+    darVariasDeBajaController
 }
