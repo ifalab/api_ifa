@@ -823,7 +823,7 @@ const articuloByItemCode = async (itemCode) => {
             await connectHANA();
         }
         query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode"= '${itemCode}'`;
-        console.log({ query })
+        // console.log({ query })
         const result = await executeQuery(query)
         return {
             status: 200,
