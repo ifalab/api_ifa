@@ -33,7 +33,10 @@ const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
 const { grabarLog } = require('../../shared/controller/hana.controller');
 const { obtenerEntregaDetalle: obtenerEntregaDetalleDevolucion } = require("../../inventarios/controller/hana.controller")
-const { postReturn } = require("../../inventarios/controller/sld.controller")
+const { postReturn } = require("../../inventarios/controller/sld.controller");
+const { clientePorCardCode, articuloPorItemCode } = require('../../pedido_module/controller/hana.controller');
+const { getDocDueDate } = require('../../../controllers/hanaController');
+const { postOrden } = require('../../../movil/ventas_module/controller/sld.controller');
 
 const facturacionController = async (req, res) => {
     let body = {}
@@ -2153,6 +2156,7 @@ const facturacionVehiculo = async (req, res) => {
                 body.direccion = ''
             }
             body.codigo_cliente_externo = cardCode
+            // body.identificacion = '9054853'
             const responseProsin = await facturacionProsin(body, user);
             const { data: dataProsin } = responseProsin
             console.log({ dataProsin })
@@ -2714,6 +2718,141 @@ const getIncoterm = async (req, res) => {
     }
 }
 
+const facturacionExportacion = async (req, res) => {
+    try {
+        const body = req.body
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador', error })
+    }
+}
+
+const crearPedidoExportacionController = async (req, res) => {
+    try {
+        const {
+            CardCode,
+            CardName,
+            WhsCode,
+            WhsName,
+            DocDate,
+            TransFrontNac,
+            SegFrontNac,
+            LicTradNum,
+            TransFrontInt,
+            SegFrontInt,
+            OtrosInt,
+            totalGastoNac,
+            totalGastoInt,
+            Incoterm,
+            total,
+            items
+        } = req.body
+
+        const alprazolamCode = '102-004-028'
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+
+        const docLine = items
+        let alprazolamContains = false
+        let otherContains = false
+        docLine.map((item) => {
+            if (item.itemCode == alprazolamCode) {
+                alprazolamContains = true
+            } else {
+                otherContains = true
+            }
+        })
+
+        if (alprazolamContains && otherContains) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
+        }
+
+        let bodyToOrder = {}
+
+        const cliente = await clientePorCardCode(CardCode)
+        if (!cliente || cliente.length == 0) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `error El cliente no existe: ${CardCode || 'No Definido'}.`, '', "facturacion/crear-pedido-exportacion", process.env.PRD)
+            return res.status(404).json({ mensaje: 'El cliente no existe' })
+        }
+        const paymentCode = cliente[0].GroupNum
+        const DocDue = await getDocDueDate(DocDate, paymentCode)
+        if (!DocDue || DocDue.length == 0) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `No se pudo calcular el DocDueDate, revise el DocDate ${DocDue || 'No Definido'}.`, '', "facturacion/crear-pedido-exportacion", process.env.PRD)
+            return res.status(404).json({ mensaje: `No se pudo calcular el DocDueDate, revise el DocDate` })
+        }
+        const docDueData = DocDue[0].DocDueDate
+
+        bodyToOrder.Series = 319
+        bodyToOrder.DocDate = DocDate
+        bodyToOrder.DocDueDate = docDueData
+        bodyToOrder.CardCode = CardCode
+        bodyToOrder.FederalTaxID = LicTradNum
+        bodyToOrder.Comments = 'PEDIDO PARA EXPORTACION DESDE LA WEB'
+        bodyToOrder.JournalMemo = ''
+        bodyToOrder.PaymentGroupCode = paymentCode
+        bodyToOrder.U_NIT = LicTradNum
+        bodyToOrder.U_RAZSOC = LicTradNum
+        bodyToOrder.DocTotal = total
+        bodyToOrder.SalesPersonCode = ''
+        bodyToOrder.U_OSLP_ID = usuario.ID_SAP
+        bodyToOrder.U_UserCode = usuario.ID_VENDEDOR_SAP
+        bodyToOrder.DocumentLines = []
+
+        // if (bodyToOrder.U_OSLP_ID == null || !bodyToOrder.U_OSLP_ID) {
+        //     grabarLog(`${bodyToOrder.U_OSLP_ID  || 'No Definido'}`, 'Facturacion Exportacion', "crear-pedido-exportacion", `error , el ID SAP no esta definido`, 'https://srvhana:50000/b1s/v1/Orders', "facturacion/crear-pedido-exportacion", process.env.PRD)
+        //     return res.status(400).json({ mensaje: 'error el ID SAP es obligatorio' })
+        // }
+
+        let docLines = []
+        let idx = 0
+        for (const element of items) {
+            const { ItemCode } = element
+            if (!ItemCode || ItemCode == '') {
+                // grabarLog(`${ItemCode || 'No Definido'}`, 'Facturacion Exportacion', "crear-pedido-exportacion", `error El itemcode no es valido ${ItemCode||'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "facturacion/crear-pedido-exportacion", process.env.PRD)
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `error El itemcode no es valido ${ItemCode || 'No definido'}`, '', "facturacion/crear-pedido-exportacion", process.env.PRD)
+                return res.status(404).json({ mensaje: `El Item No es valido: ${ItemCode}` })
+            }
+
+            const itemData = await articuloPorItemCode(ItemCode)
+
+            if (!itemData || itemData.length == 0) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `error El Item No fue encontrado ${itemData || 'No definido'}`, '', "facturacion/crear-pedido-exportacion", process.env.PRD)
+                return res.status(404).json({ mensaje: `El Item No fue encontrado: ${itemData}` })
+            }
+            const { SalUnitMsr } = itemData
+            const { cantidad, precio, subtotal } = element
+            const newData = {
+                ItemCode,
+                Quantity: cantidad,
+                GrossPrice: precio,
+                GrossTotal: subtotal,
+                LineNum: idx,
+                WarehouseCode: WhsCode,
+                AccountCode: '4110101',
+                TaxCode: 'IVA_EXE',
+                MeasureUnit: SalUnitMsr,
+                U_DESCLINEA: 0
+            }
+
+            docLines.push({ ...newData })
+            idx++
+        }
+
+        bodyToOrder.DocumentLines = docLines
+        console.log('--------------------------------------------------------')
+        console.log(JSON.stringify(bodyToOrder, null, 2))
+        console.log('--------------------------------------------------------')
+        const ordenResponse = await postOrden(bodyToOrder)
+        if (ordenResponse.status == 400) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `Error en el proceso post orden ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "facturacion/crear-pedido-exportacion", process.env.PRD)
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+        }
+        return res.json({ ...ordenResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en el controlador', error })
+    }
+}
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2745,5 +2884,6 @@ module.exports = {
     clientesExportacionController,
     almacenesController,
     articulosExportacionController,
+    crearPedidoExportacionController,
     getIncoterm
 }

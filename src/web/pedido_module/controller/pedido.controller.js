@@ -296,7 +296,7 @@ const crearOrderIfaController = async (req, res) => {
         const paymentCode = cliente[0].GroupNum
         const DocDue = await getDocDueDate(DocDate, paymentCode)
         if (!DocDue || DocDue.length == 0) {
-            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `No se pudo calcular el DocDueDate`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
+            grabarLog(`${DocDue || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `No se pudo calcular el DocDueDate`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
             return res.status(404).json({ mensaje: `No se pudo calcular el DocDueDate, revise el DocDate` })
         }
         const docDueData = DocDue[0].DocDueDate
@@ -309,13 +309,13 @@ const crearOrderIfaController = async (req, res) => {
         for (const element of docLines) {
             const { ItemCode } = element
             if (!ItemCode || ItemCode == '') {
-                grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El Item No es valido: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
+                grabarLog(`${ItemCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El Item No es valido: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
                 return res.status(404).json({ mensaje: `El Item No es valido: ${ItemCode}` })
             }
             const itemData = await articuloPorItemCode(ItemCode)
             if (!itemData || itemData.length == 0) {
-                grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El Item No fue encontrado: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
-                return res.status(404).json({ mensaje: `El Item No fue encontrado: ${ItemCode}` })
+                grabarLog(`${itemData || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El Item No fue encontrado: ${itemData || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
+                return res.status(404).json({ mensaje: `El Item No fue encontrado: ${itemData}` })
             }
             const { SalUnitMsr } = itemData
             const newData = {

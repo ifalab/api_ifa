@@ -20,7 +20,8 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     clientesExportacionController,
     almacenesController,
     articulosExportacionController,
-    getIncoterm
+    getIncoterm,
+    crearPedidoExportacionController
 } = require('../controller/facturacion.controller')
 const router = Router()
 
@@ -58,6 +59,7 @@ router.get('/reporte-factura-siat', [validarToken, validarCampos], reporteFactur
 router.get('/clientes-exportacion', [validarToken, validarCampos], clientesExportacionController)
 router.get('/almacenes', [validarToken, validarCampos], almacenesController)
 router.get('/articulos-exportacion', [validarToken, validarCampos], articulosExportacionController)
+router.post('/crear-pedido-exportacion', [validarToken, validarCampos], crearPedidoExportacionController)
 
 router.get('/intercom', [validarToken, validarCampos], getIncoterm)
 
