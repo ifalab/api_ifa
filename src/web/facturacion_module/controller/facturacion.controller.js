@@ -24,7 +24,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     ofertaDelPedido, obtenerGroupCode,
     clientesExportacion,
     getAllAlmacenes,
-    articulosExportacion } = require("./hana.controller")
+    articulosExportacion,
+    pedidosExportacion } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -2785,6 +2786,7 @@ const crearPedidoExportacionController = async (req, res) => {
         bodyToOrder.SalesPersonCode = ''
         bodyToOrder.U_OSLP_ID = usuario.ID_SAP
         bodyToOrder.U_UserCode = usuario.ID_VENDEDOR_SAP
+        bodyToOrder.U_B_doctype = 3
         bodyToOrder.DocumentLines = []
 
         // if (bodyToOrder.U_OSLP_ID == null || !bodyToOrder.U_OSLP_ID) {
@@ -2831,6 +2833,7 @@ const crearPedidoExportacionController = async (req, res) => {
         console.log('--------------------------------------------------------')
         console.log(JSON.stringify(bodyToOrder, null, 2))
         console.log('--------------------------------------------------------')
+        return res.json({ bodyToOrder })
         const ordenResponse = await postOrden(bodyToOrder)
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `Error en el proceso post orden ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "facturacion/crear-pedido-exportacion", process.env.PRD)
@@ -2840,6 +2843,16 @@ const crearPedidoExportacionController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador', error })
+    }
+}
+
+const pedidosExportacionController = async (req, res) => {
+    try {
+        const pedidos = await pedidosExportacion()
+        return res.json(pedidos)
+    } catch (error) {
+        console.log({ error })
+        return res.json({ mensaje: 'Error en el controlador', error })
     }
 }
 module.exports = {
@@ -2874,4 +2887,5 @@ module.exports = {
     almacenesController,
     articulosExportacionController,
     crearPedidoExportacionController,
+    pedidosExportacionController
 }
