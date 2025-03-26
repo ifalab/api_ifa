@@ -362,7 +362,7 @@ const stockDisponiblePorSucursal = async (sucursal) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `call ${process.env.PRD}.ifa_lapp_inv_stock_disponible_sucursal('${sucursal}')`
+        const query = `call ${process.env.PRD}.ifa_lapp_inv_stock_disponible_sucursal(${sucursal})`
         console.log({query})
         const result = executeQuery(query)
         return result

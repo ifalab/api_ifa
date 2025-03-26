@@ -458,6 +458,21 @@ const intercom = async() => {
         throw new Error(`Error en intercom ${error.message}`)
     }
 }
+
+const pedidosExportacion = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_exportacion()`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en pedidosExportacion ${error.message}`)
+    }
+}
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -484,5 +499,6 @@ module.exports = {
     clientesExportacion,
     getAllAlmacenes,
     articulosExportacion,
+    pedidosExportacion,
     intercom
 }
