@@ -444,6 +444,21 @@ const articulosExportacion = async (parameter) => {
     }
 }
 
+const intercom = async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.INCOTERM`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en intercom ${error.message}`)
+    }
+}
+
 const pedidosExportacion = async () => {
     try {
         if (!connection) {
@@ -485,4 +500,5 @@ module.exports = {
     getAllAlmacenes,
     articulosExportacion,
     pedidosExportacion,
+    intercom
 }

@@ -25,7 +25,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     clientesExportacion,
     getAllAlmacenes,
     articulosExportacion,
-    pedidosExportacion } = require("./hana.controller")
+    pedidosExportacion, 
+    intercom} = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -2708,6 +2709,16 @@ const articulosExportacionController = async (req, res) => {
     }
 }
 
+const getIncoterm = async (req, res) => {
+    try {
+        const intercomList = await intercom()
+        return res.json(intercomList)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
 const facturacionExportacion = async (req, res) => {
     try {
         const body = req.body
@@ -2887,5 +2898,6 @@ module.exports = {
     almacenesController,
     articulosExportacionController,
     crearPedidoExportacionController,
-    pedidosExportacionController
+    pedidosExportacionController,
+    getIncoterm
 }
