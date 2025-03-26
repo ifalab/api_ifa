@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante de Pago</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: "Courier New", Courier, monospace;     
+            margin: 20px;
+            color: #333;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #4d4c4c;
+            margin: 10px 0;
+        }
+
+        h1 {
+            font-size: 28px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        p {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .total{
+            font-size: 16px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header img {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .detalle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .detalle-left {
+            width: 60%;
+            text-align: left;
+        }
+
+        .detalle-right {
+            width: 40%;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2px;
+        }
+
+        th, td {
+            padding: 2px;
+            text-align: center;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        th {
+            font-size: 15px;
+            font-weight: bold;
+            border-top: 1px solid black;
+            border-bottom: 1px solid black;
+        }
+
+        /* QR Code */
+        .qr-code {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .qr-code img {
+            width: 150px;
+            height: 150px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+        }
+        .footer-signatures {
+            margin-top: 55px;
+            /* margin: 0 5px; */
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            align-items: flex-end;
+        }
+
+        .footer-signatures div {
+            display: inline-block;
+            width: 20%;
+            margin: 0 5px;
+        }
+        .div-signature {
+            border-top: 1px solid black;
+            margin-top: 2rem;
+        }
+        tfoot{
+            font-weight: bold;
+            border-top: 0.5px solid black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <strong>LABORATORIOS IFA S.A.</strong>
+        <p>FECHA CONTABLE: <%= comprobante.TaxDate %></p>
+        <!-- Title -->
+        <h1>COMPROBANTE CONTABLE Nº <%= comprobante.DocNumFiscal %></h1>
+
+        <div style="font-weight: lighter;">
+            <p>TC Usd: <%= comprobante.RateUsd %></p>
+            <p>TC Eur.: <%= comprobante.RateEur %></p>
+            <p>Indicador: </p>
+        </div>
+
+        <!-- Comprobante Details -->
+        <DIV class="detalle-container">
+            <div class="detalle-left">
+                <p><strong>Origen del asiento:</strong> Cobranzas Nro. <%= comprobante.BaseRef %></p>
+                <p><strong>Tipo de asiento:</strong> Modulo</p>
+                <p><strong>Nro de documento fiscal base:</strong> <%= comprobante.NumAtCard %></p>
+            </div>
+            <div class="detalle-right">
+                <p><strong>Referencia 1:</strong> <%= comprobante.Ref1 %></p>
+                <p><strong>Referencia 2:</strong> <%= comprobante.Ref2 %></p>
+                <p><strong>Referencia 3:</strong> <%= comprobante.Ref3 %></p>
+                <p><strong>Referencia 4:</strong>  <%= comprobante.Voucher %></p> 
+            </div>
+        </DIV>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Cuenta - Socio N</th>
+                    <th>Nombre de cuenta de mayor</th>
+                    <th>Comentario</th>
+                    <th>Debe BS</th>
+                    <th>Haber BS</th>
+                    <th>Debe USD</th>
+                    <th>Haber USD</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% comprobante.detalle.forEach(factura => { %>
+                    <tr>
+                        <td><%= factura.Account %></td>
+                        <td><%= factura.AcctName %></td>
+                        <td><%= factura.LineMemo %></td>
+                        <td><%= factura.Debit %></td>
+                        <td><%= factura.Credit %></td>
+                        <td><%= factura.SYSDeb %></td>
+                        <td><%= factura.SYSCred %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td></td>
+                    <td></td>
+                  <td>Total</td>
+                  <td><%= comprobante.sumDebit %></td>
+                  <td><%= comprobante.sumCredit %></td>
+                  <td><%= comprobante.sumSYSDeb %></td>
+                  <td><%= comprobante.sumSYSCred %></td>
+                </tr>
+              </tfoot>
+        </table>
+
+        <!-- Totals and Memo -->
+        <p>Son <%= comprobante.sumDebit %> Bs.</p>
+        <p><strong>Glosa:</strong> <%= comprobante.Memo %></p>
+
+        <!-- Footer -->
+        <div class="footer-signatures">
+            <div>
+                <div style="align-items: center;"> <%= comprobante.U_NAME %></div>
+                <div class="div-signature" style="width: 100%;">AUTOR</div>
+            </div>
+            <div class="div-signature">REVISADO POR</div>
+            <div class="div-signature">APROBADO POR</div>
+            <div class="div-signature">RECIBIDO POR</div>
+        </div>
+    </div>
+</body>
+</html>

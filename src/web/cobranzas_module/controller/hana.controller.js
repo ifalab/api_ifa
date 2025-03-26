@@ -785,6 +785,34 @@ const cuentasParaBajaCobranza = async () => {
     }
 }
 
+const getBaja = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_cob_bajas_por_id(${docEntry})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getBaja: ${error.message || ''}`)
+    }
+}
+
+const getLayoutComprobanteContable = async (transId) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ACB_INV_LayOutCoomprobanteContablePR(${transId})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getLayoutComprobanteContable: ${error.message || ''}`)
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -833,5 +861,6 @@ module.exports = {
     getYearToDayBySuc,
     getYearToDayByCobrador,
     getYTDCobrador,
-    getPendientesBajaPorCobrador, cuentasParaBajaCobranza
+    getPendientesBajaPorCobrador, cuentasParaBajaCobranza,
+    getBaja,getLayoutComprobanteContable
 }
