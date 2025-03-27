@@ -1,4 +1,7 @@
 const { json } = require("express")
+const ejs = require('ejs');
+const QRCode = require('qrcode');
+const puppeteer = require('puppeteer');
 const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado,
     descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet,
     facturasClienteLoteItemCode, detalleVentas,
@@ -9,7 +12,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     searchArticulos,
     facturasClienteLoteItemCodeGenesis,
     stockDisponiblePorSucursal,
-    clientesBySucCode, getClienteByCardCode } = require("./hana.controller")
+    clientesBySucCode, getClienteByCardCode,
+    devolucionLayout } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega } = require("../../facturacion_module/controller/sld.controller")
@@ -2301,7 +2305,7 @@ const devolucionMalEstadoController = async (req, res) => {
         const docEntryDev = responceReturn.orderNumber
         console.log({ docEntryDev })
         newDocumentLinesEntrega.map((item) => {
-            item.BaseEntry = docEntryDev
+            item.BaseEntry = docEntryDev///
         })
 
         const bodyEntrega = {
@@ -2383,10 +2387,10 @@ const getClienteByCardCodeController = async (req, res) => {
 }
 
 const devolucionPorValoradoController = async (req, res) => {
-    let allResponseReturn = []
-    let allResponseEntrega = []
-    let allResponseCreditNote = []
+    let allResponseEntrega = [] //nuevo item
     let allResponseInvoice = []
+    let allResponseReturn = []
+    let allResponseCreditNote = []
     let allResponseReconciliacion = []
     let facturasCompletadas = []
     let allBodies = {}
@@ -2584,7 +2588,7 @@ const devolucionPorValoradoController = async (req, res) => {
                 Series: 353,
                 CardCode: CardCode,
                 U_UserCode: id_sap,
-                U_B_cufd: Cuf,
+                U_B_cufd: Cuf, //////
                 DocumentLines: newDocumentLinesEntrega,
             }
 
@@ -3016,6 +3020,121 @@ const detalleFacturasController = async (req, res) => {
     }
 }
 
+const imprimibleDevolucionController = async (req, res) => {
+    try {
+        const { id } = req.query
+        const user = req.usuarioAutorizado
+        const layout = await devolucionLayout(id)
+        console.log({ layout })
+        // return res.json({layout})
+
+        if (layout.length == 0) {
+            // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota entrega", `Error de SAP al crear la nota de entrega`, response.query, "facturacion/nota-entrega", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error de SAP, no hay devolcuion con el id: ${id}` });
+        }
+        const detailsList = [];
+        const {
+            BarCode,
+            DocNum,
+            USER_CODE,
+            U_NAME,
+            WhsCode,
+            WhsName,
+            DocDate,
+            DocDueDate,
+            CardCode,
+            CardName,
+            PymntGroup,
+            DocTotal,
+            DocTime,
+            Phone1,
+            Address2,
+            U_Zona,
+            U_Comentario,
+            Comments,
+            SlpName
+        } = layout[0];
+
+        layout.map((item) => {
+            const { ...restData } = item;
+            detailsList.push({ ...restData });
+        });
+        const docDueDate = DocDueDate;
+        console.log("Fecha completa:", docDueDate);
+        let time
+        // Extraer la hora usando una expresión regular
+        const timeMatch = docDueDate.match(/(\d{2}:\d{2})/);
+        if (timeMatch) {
+            time = timeMatch[0];
+            console.log("Hora extraída:", time);
+        }
+        time = `${DocTime[0] || 0}${DocTime[1] || 0}:${DocTime[2] || 0}${DocTime[3] || 0}`
+        const data = {
+            time,
+            DocNum,
+            BarCode,
+            USER_CODE,
+            U_NAME,
+            U_N: ``,
+            WhsCode,
+            WhsName,
+            DocDate,
+            DocDueDate,
+            CardCode,
+            CardName,
+            PymntGroup,
+            DocTotal,
+            DocTime,
+            Phone1,
+            Address2,
+            U_Zona,
+            U_Comentario,
+            Comments,
+            SlpName: `${SlpName || 'No Asignado'}`,
+            detailsList,
+        };
+        // return res.json({data, layout})
+
+        //! Generar QR Code
+        const qrCode = await QRCode.toDataURL(data.BarCode.toString());
+
+        //! Renderizar la plantilla EJS a HTML
+        const htmlTemplate = path.join(__dirname, 'imprimible', 'template.ejs');
+        const htmlContent = await ejs.renderFile(htmlTemplate, { data, qrCode });
+
+        //! Generar el PDF con Puppeteer
+        const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+        const page = await browser.newPage();
+
+        await page.setContent(htmlContent, { waitUntil: 'load' });
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true
+        });
+
+        await browser.close();
+
+        //! Definir nombre del archivo
+        const fileName = `devolucion_${data.DocNum}_${new Date()}.pdf`;
+
+        //! Registrar en el log
+        // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
+        //     "Nota Creada con éxito", layout.query || '', "facturacion/nota-entrega", process.env.PRD);
+
+        //! Enviar el PDF como respuesta
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${fileName}"`,
+            'Content-Length': pdfBuffer.length
+        });
+
+        return res.end(pdfBuffer);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `error en el controlador imprimibleDevolucionController. ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -3048,4 +3167,5 @@ module.exports = {
     detalleFacturasController,
     detalleFacturasController,
     stockDisponibleIfaController,
+    imprimibleDevolucionController
 }

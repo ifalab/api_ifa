@@ -404,6 +404,22 @@ const getClienteByCardCode = async (cardCode) => {
         throw new Error(`Error de getClienteByCardCode: ${error.message}`)
     }
 }
+
+const devolucionLayout = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_DEVOLUCION_LAYOUT(${id})`;
+        // const query = `call LAB_IFA_PRD.IFA_LAPP_VEN_DEVOLUCION_LAYOUT(${id})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en devolucionLayout:', error.message);
+        throw { message: `Error en devolucionLayout: ${error.message}`, error }
+    }
+}
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -427,5 +443,6 @@ module.exports = {
     facturasClienteLoteItemCodeGenesis,
     stockDisponiblePorSucursal,
     clientesBySucCode,
-    getClienteByCardCode
+    getClienteByCardCode,
+    devolucionLayout
 }

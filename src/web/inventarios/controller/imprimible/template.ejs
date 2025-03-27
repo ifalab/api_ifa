@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Nota de Entrega</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 12px;
+            padding: 10px;
+            margin: 0;
+        }
+
+        .qr-code {
+            width: 100px;
+            height: 100px;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .header-left {
+            width: 50%;
+            text-align: left;
+        }
+
+        .header-right {
+            width: 50%;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0px;
+            margin-bottom: 5px;
+        }
+
+        .title-container {
+            flex-grow: 1;
+            text-align: center;
+            padding: 0px;
+            margin-bottom: 5px;
+        }
+
+        .qr-container {
+            width: 100px;
+            text-align: right;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            padding: 5px;
+            text-align: center;
+            padding: 3px;
+        }
+
+        .header-container,
+        .header-top,
+        .table {
+            margin-bottom: 5px !important;
+            /* Reduce espacio entre secciones */
+        }
+
+        .header-left p,
+        .header-right p {
+            margin: 2px 0 !important;
+            /* Reduce separación entre párrafos */
+        }
+
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+            padding: 3px;
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 10%;
+            /* Ajusta el porcentaje según el tamaño que desees */
+            min-width: 100px;
+            /* Para evitar que se encoja demasiado */
+            text-align: left;
+            /* Alineación opcional */
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+
+        .footer-text {
+            margin-top: 15px;
+            padding: 0px;
+            text-align: right;
+            font-style: italic;
+        }
+
+        .footer-signatures {
+            margin-top: 55px;
+            /* margin: 0 5px; */
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .footer-signatures div {
+            display: inline-block;
+            width: 20%;
+            border-top: 1px solid black;
+            margin: 0 5px;
+            margin-top: 30px
+        }
+
+        .comments {
+            margin: 1rem 0rem;
+            padding: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content">
+        <div class="header-top">
+            <div class="title-container">
+                <h6 class="text-center">LABORATORIOS IFA</h6>
+                <h6 class="text-center">DEVOLUCION #<%= data.DocNum %>
+                </h6>
+                <h6 class="text-center">ALMACEN : <%= data.WhsCode %>
+                </h6>
+                <h6 class="text-center">
+                    <%= data.WhsName %>
+                </h6>
+            </div>
+            <div class="qr-container">
+                <img class="qr-code" src="<%= qrCode %>" alt="QR Code">
+            </div>
+        </div>
+        <hr>
+
+        <div class="header-container">
+
+            <div class="header-left">
+                <p><strong>Usuario:</strong>
+                    <%= data.USER_CODE %>
+                </p>
+                <p><strong>Creado por:</strong>
+                    <%= data.U_NAME %>
+                </p>
+                <p><strong>Fecha de creación:</strong>
+                    <%= new Date(data.DocDate).toLocaleDateString('es-ES') %>
+                </p>
+                <p><strong>Hora:</strong>
+                    <%= data.time %>
+                </p>
+            </div>
+            <div class="header-right">
+                <p><strong>Teléfono:</strong>
+                    <%= data.Phone1 %>
+                </p>
+                <p><strong>Dirección:</strong>
+                    <%= data.Address2 %>
+                </p>
+                <p><strong>Zona:</strong>
+                    <%= data.U_Zona %>
+                </p>
+                <p><strong>Cliente:</strong>
+                    <%= data.CardCode %> - <%= data.CardName %>
+                </p>
+            </div>
+        </div>
+        <hr>
+
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Descripción</th>
+                    <th>Lote</th>
+                    <th>Fecha Exp.</th>
+                    <th>Cant.</th>
+                    <th>Precio</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% let totalGeneral=0; %>
+                    <% data.detailsList.forEach(item=> {
+                        totalGeneral += parseFloat(item.LineTotal); %>
+                        <tr>
+                            <td>
+                                <%= item.ItemCode %>
+                            </td>
+                            <td>
+                                <%= item.Dscription %>
+                            </td>
+                            <td>
+                                <%= item.BatchNum %>
+                            </td>
+                            <td>
+                                <%= new Date(item.ExpDate).toLocaleDateString('es-ES') %>
+                            </td>
+                            <td>
+                                <%= item.Quantity %>
+                            </td>
+                            <td>
+                                <%= parseFloat(item.Price).toFixed(2) %>
+                            </td>
+                            <td>
+                                <%= parseFloat(item.LineTotal).toFixed(2) %>
+                            </td>
+                        </tr>
+                        <% }); %>
+            </tbody>
+            <tfoot>
+                <!-- <tr class="total-row">
+                    <td colspan="6" class="text-end">Total General:</td>
+                    <td>
+                        <%= totalGeneral.toFixed(2) %> BOB
+                    </td>
+                </tr> -->
+            </tfoot>
+        </table>
+        <div class="comments">
+            <p><strong>Comentario:</strong>
+                <%= data.Comments %>
+            </p>
+            <p><strong>Vendedor:</strong>
+                <%= data.SlpName %>
+            </p>
+        </div>
+        <div class="footer-text">
+            <tr class="total-row">
+                <td colspan="6" class="text-end"><strong>Total General:</strong></td>
+                <td>
+                    <%= totalGeneral.toFixed(2) %> BOB
+                </td>
+            </tr>
+            <!-- <p><strong></strong></p> -->
+            <p><strong>Condición de pago:</strong>
+                <%= data.PymntGroup %>
+            </p>
+        </div>
+
+
+        <div class="footer-signatures">
+            <div style="margin-top: 2rem;">Creado por <%= data.U_NAME %>
+            </div>
+            <div>Preparado por <%= data.U_N %>
+            </div>
+            <div>Revisado por <%= data.U_N %>
+            </div>
+            <div>Recibí conforme <%= data.U_N %>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
