@@ -840,6 +840,34 @@ const articuloByItemCode = async (itemCode) => {
     }
 }
 
+const updateListaPrecios = async(data, user, comentario) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        for (const element of data) {
+            const { ItemCode, Precio, PriceList } = element;
+
+            const query = `
+                CALL LAB_IFA_DEV."IFA_DM_AGREGAR_PRECIOS"(${PriceList}, '${ItemCode}', ${Precio}, ${user}, '${comentario}')
+            `;
+
+            await executeQuery(query);
+        }
+
+        return {
+            status: 200,
+            message: 'Lista de precios actualizada correctamente.'
+        };
+    } catch (error) {
+        console.error('Error en updateListaPrecios:', error);
+        return {
+            status: 400,
+            message: `Error en updateListaPrecios: ${error.message || ''}`,
+            query
+        }
+    }
+}
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -878,4 +906,5 @@ module.exports = {
     getDescuentosEspecialesLinea,
     deleteDescuentosEspecialesLinea,
     articuloByItemCode,
+    updateListaPrecios,
 }
