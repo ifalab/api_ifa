@@ -12,7 +12,8 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getIdsDescuentoEspecial, getDescuentosEspecialesById, getVendedores, getZonas, getAllTipos,
     getZonasTiposPorVendedor, asignarZonasYTiposAVendedores, deleteZonasYTiposAVendedores,
     getDescuentosEspecialesLinea, deleteDescuentosEspecialesLinea,
-    articuloByItemCode } = require("./hana.controller")
+    articuloByItemCode, 
+    updateListaPrecios} = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 const { validateDataExcel } = require('./helpers');
@@ -704,18 +705,22 @@ const deleteDescuentosEspecialesLineaController = async (req, res) => {
 
 const cargarPreciosExcelController = async (req, res) => {
     try {
+        const {comment} = req.body;
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        // console.log(req.body);
+        let listErrors = [];
+        const processedItemCodes = new Set();
 
-        let listErrors = []
-        if (!req.file) {
-            console.log({ files: req.file });
+        if (!req.archivo) {
+            console.log({ files: req.archivo });
             return res.status(400).json({
                 mensaje: 'Archivo no obtenido',
-                file: req.file
+                file: req.archivo
             });
         }
-
-        const { path, originalname } = req.file;
-        const filePath = req.file.path;
+        console.log({comment});
+        const { path, originalname } = req.archivo;
+        const filePath = path;
         const workbook = XLSX.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
         console.log(sheetName);
@@ -723,46 +728,81 @@ const cargarPreciosExcelController = async (req, res) => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
         const errorSet = new Set();
         let idx = 0
-        for (const element of jsonData) {
-            const { ItemCode, ItemName, Precio, ListName, PriceList } = element
-            const validate = validateDataExcel({ItemCode, ItemName, Precio, ListName, PriceList}, listErrors, idx);
 
-            const response = await articuloByItemCode(ItemCode);
-            // console.log(response);
-            if (!response.result || response.result.length === 0) {
+        const requiredHeaders = ['ItemCode', 'ItemName', 'Precio', 'ListName', 'PriceList'];
+
+        const headers = [
+            worksheet['A1']?.v, // PriceList
+            worksheet['B1']?.v, // ListName
+            worksheet['C1']?.v, // ItemCode
+            worksheet['D1']?.v, // ItemName
+            worksheet['E1']?.v  // Precio
+        ];
+
+        console.log(headers);
+
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+
+        if (missingHeaders.length > 0) {
+            return res.status(400).json({
+                mensaje: `Formato de Excel incorrecto. Las siguientes cabeceras están faltando o son incorrectas: ${missingHeaders.join(', ')}`
+            });
+        }
+        for (const element of jsonData) {
+            let validate;
+            const { ItemCode, ItemName, Precio, ListName, PriceList } = element
+            if (processedItemCodes.has(ItemCode)) {
                 listErrors.push({
                     PriceList,
                     ListName,
                     ItemCode,
                     ItemName,
                     Precio,
-                    error: `El artículo con código ${ItemCode} en la posición ${idx} no existe o es incorrecto.`,
+                    error: `El artículo con código ${ItemCode} en la posición ${idx} está duplicado en el archivo.`
                 });
-            }else {
-                const dbItem = response.result[0];
+            } else{
+                validate = validateDataExcel({ItemCode, ItemName, Precio, ListName, PriceList}, listErrors, idx);
 
-                const dbItemName = dbItem.ItemName;
-                const excelItemName = ItemName;
-
-                if (dbItemName !== excelItemName) {
+                const response = await articuloByItemCode(ItemCode);
+                // console.log(response);
+                if (!response.result || response.result.length === 0) {
                     listErrors.push({
                         PriceList,
                         ListName,
                         ItemCode,
                         ItemName,
                         Precio,
-                        error: `El artículo con código ${ItemCode} en la posición ${idx} tiene un nombre incorrecto.`
+                        error: `El artículo con código ${ItemCode} en la posición ${idx} no existe o es incorrecto.`,
                     });
-                }
-                if (dbItem.validFor !== "Y") {
-                    listErrors.push({
-                        PriceList,
-                        ListName,
-                        ItemCode,
-                        ItemName,
-                        Precio,
-                        error: `El artículo con código ${ItemCode} en la posición ${idx} no es válido.`
-                    });
+                }else {
+                    const dbItem = response.result[0];
+    
+                    const dbItemName = dbItem.ItemName;
+                    const excelItemName = ItemName;
+    
+                    if (dbItemName !== excelItemName) {
+                        listErrors.push({
+                            PriceList,
+                            ListName,
+                            ItemCode,
+                            ItemName,
+                            Precio,
+                            error: `El artículo con código ${ItemCode} en la posición ${idx} tiene un nombre incorrecto.`
+                        });
+                    }else{
+                        if (dbItem.validFor !== "Y") {
+                            listErrors.push({
+                                PriceList,
+                                ListName,
+                                ItemCode,
+                                ItemName,
+                                Precio,
+                                error: `El artículo con código ${ItemCode} en la posición ${idx} no es válido.`
+                            });
+                        }else{
+    
+                        }
+                    }   
                 }
             }
             // console.log(response);
@@ -773,9 +813,10 @@ const cargarPreciosExcelController = async (req, res) => {
         }
         listErrors = Array.from(errorSet); 
 
-        // console.log(listErrors);
+        console.log(listErrors);
 
         if (listErrors.length > 0) {
+            
             const ws = XLSX.utils.json_to_sheet(listErrors); 
             const wb = XLSX.utils.book_new(); 
             XLSX.utils.book_append_sheet(wb, ws, 'Errores');
@@ -785,12 +826,24 @@ const cargarPreciosExcelController = async (req, res) => {
             // Establecer los encabezados para la descarga del archivo
             res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.set('Content-Disposition', 'attachment; filename=errores.xlsx');
-            return res.end(excelBuffer);  // Enviar el archivo Excel
+            return res.status(200).end(excelBuffer);  // Enviar el archivo Excel
         } else {
-            
-            return res.json({
-                mensaje: 'Archivo procesado correctamente, sin errores.'
-            });
+            try {
+                const result = await updateListaPrecios(jsonData, usuario.ID_SAP, comment);
+
+                res.set('Content-Type', 'application/json');
+                return res.status(200).json({
+                    mensaje: 'Archivo procesado correctamente, sin errores.',
+                    result
+                });
+            } catch (error) {
+                console.error('Error al actualizar precios:', error);
+                return res.status(500).json({
+                    mensaje: 'Error al actualizar la lista de precios.',
+                    error: error.message || error
+                });
+            }
+
         }
     } catch (error) {
         console.log({ error })

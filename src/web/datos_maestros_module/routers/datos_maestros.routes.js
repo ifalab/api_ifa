@@ -59,6 +59,6 @@ router.post('/delete-zonaytipo', [validarToken, validarCampos], deleteZonasYTipo
 router.get('/get-espc-linea', [validarToken, validarCampos], getDescuentosEspecialesLineaController)
 router.get('/delete-espc-linea', [validarToken, validarCampos], deleteDescuentosEspecialesLineaController)
 
-router.post('/cargar-xsl-precios', [validarToken, validarCampos, upload.single('archivo'), validarArchivoExcel,], cargarPreciosExcelController)
+router.post('/cargar-xsl-precios', [validarToken, validarCampos, upload.any(), validarArchivoExcel,], cargarPreciosExcelController)
 
 module.exports = router
