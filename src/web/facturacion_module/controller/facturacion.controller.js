@@ -24,8 +24,9 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     ofertaDelPedido, obtenerGroupCode,
     clientesExportacion,
     getAllAlmacenes,
-    articulosExportacion, 
-    intercom} = require("./hana.controller")
+    articulosExportacion,
+    pedidosExportacion,
+    intercom } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -2796,6 +2797,7 @@ const crearPedidoExportacionController = async (req, res) => {
         bodyToOrder.SalesPersonCode = ''
         bodyToOrder.U_OSLP_ID = usuario.ID_SAP
         bodyToOrder.U_UserCode = usuario.ID_VENDEDOR_SAP
+        bodyToOrder.U_B_doctype = 3
         bodyToOrder.DocumentLines = []
 
         // if (bodyToOrder.U_OSLP_ID == null || !bodyToOrder.U_OSLP_ID) {
@@ -2822,11 +2824,11 @@ const crearPedidoExportacionController = async (req, res) => {
             const { SalUnitMsr } = itemData
             const { cantidad, precio, subtotal } = element
             const newData = {
+                LineNum: idx,
                 ItemCode,
                 Quantity: cantidad,
                 GrossPrice: precio,
                 GrossTotal: subtotal,
-                LineNum: idx,
                 WarehouseCode: WhsCode,
                 AccountCode: '4110101',
                 TaxCode: 'IVA_EXE',
@@ -2842,10 +2844,11 @@ const crearPedidoExportacionController = async (req, res) => {
         console.log('--------------------------------------------------------')
         console.log(JSON.stringify(bodyToOrder, null, 2))
         console.log('--------------------------------------------------------')
+        // return res.json({ bodyToOrder })
         const ordenResponse = await postOrden(bodyToOrder)
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `Error en el proceso post orden ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "facturacion/crear-pedido-exportacion", process.env.PRD)
-            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, bodyToOrder })
         }
         return res.json({ ...ordenResponse })
     } catch (error) {
@@ -2853,6 +2856,61 @@ const crearPedidoExportacionController = async (req, res) => {
         return res.status(500).json({ mensaje: 'error en el controlador', error })
     }
 }
+
+const pedidosExportacionController = async (req, res) => {
+    try {
+        const pedidos = await pedidosExportacion()
+        return res.json(pedidos)
+    } catch (error) {
+        console.log({ error })
+        return res.json({ mensaje: 'Error en el controlador', error })
+    }
+}
+
+const facturarExportacionController = async (req, res) => {
+    let idData = ''
+    let body = {}
+    const startTime = Date.now();
+    try {
+        const id = req.query.id
+        const user = req.usuarioAutorizado
+        const id_sap = user.ID_SAP
+        let deliveryData
+        let deliveryBody
+        let finalDataEntrega
+        idData = id
+
+
+        if (!id || id == '') {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", 'error: debe haber un ID valido', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.status(400).json({ mensaje: 'debe haber un ID valido' })
+        }
+        const solicitud = await solicitarId(id);
+        if (solicitud.message) {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `${solicitud.message || 'Error en solicitarId'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.status(400).json({ mensaje: `${solicitud.message || 'Error en solicitarId'}` })
+        }
+
+        if (solicitud.result.length > 1) {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Existe más de una entrega`, `${solicitud.query || ''}. [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+
+            return res.status(400).json({ mensaje: 'Existe más de una entrega' })
+        }
+
+        return res.json({ solicitud })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: 'Error en el controlador',
+            error,
+            idData
+        })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2885,5 +2943,7 @@ module.exports = {
     almacenesController,
     articulosExportacionController,
     crearPedidoExportacionController,
-    getIncoterm
+    pedidosExportacionController,
+    getIncoterm,
+    facturarExportacionController
 }

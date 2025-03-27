@@ -21,7 +21,9 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     almacenesController,
     articulosExportacionController,
     getIncoterm,
-    crearPedidoExportacionController
+    crearPedidoExportacionController,
+    pedidosExportacionController,
+    facturarExportacionController
 } = require('../controller/facturacion.controller')
 const router = Router()
 
@@ -62,5 +64,7 @@ router.get('/articulos-exportacion', [validarToken, validarCampos], articulosExp
 router.post('/crear-pedido-exportacion', [validarToken, validarCampos], crearPedidoExportacionController)
 
 router.get('/intercom', [validarToken, validarCampos], getIncoterm)
+router.get('/pedidos-exportacion', [validarToken, validarCampos], pedidosExportacionController)
+router.get('/facturar-exportacion', [validarToken, validarCampos], facturarExportacionController)
 
 module.exports = router
