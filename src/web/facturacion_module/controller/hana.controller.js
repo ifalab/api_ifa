@@ -491,6 +491,51 @@ const pedidosExportacion = async () => {
         throw new Error(`Error en pedidosExportacion ${error.message}`)
     }
 }
+
+const reabrirOferta = async (id_oferta) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_sis_open_oferta_venta(${id_oferta})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en reabrirOferta ${error.message}`)
+    }
+}
+
+const obtenerDetallePedidoAnulado = async(id_pedido) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}."ifa_ven_pedidos_detalle_anulados" where "DocEntry" = ${id_pedido}`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en obtenerDetallePedidoAnulado ${error.message}`)
+    }
+}
+
+const reabrirLineas = async (id_linea, doc_lin) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_sis_open_lines_oferta_venta_con_orden(${id_linea}, ${doc_lin})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en reabrirLineas ${error.message}`)
+    }
+}
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -520,4 +565,7 @@ module.exports = {
     pedidosExportacion,
     intercom,
     obtenerEntregaDetalleExportacion,
+    reabrirOferta,
+    reabrirLineas,
+    obtenerDetallePedidoAnulado
 }

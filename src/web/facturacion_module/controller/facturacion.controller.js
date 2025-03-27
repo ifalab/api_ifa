@@ -27,7 +27,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     articulosExportacion,
     pedidosExportacion,
     intercom,
-    obtenerEntregaDetalleExportacion } = require("./hana.controller")
+    obtenerEntregaDetalleExportacion, 
+    reabrirOferta} = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -987,6 +988,7 @@ const cancelToProsinController = async (req, res) => {
         let listResponseDelivery = []
         let listCancelOrders = []
         let responsePedidosPorEntrega = []
+        let responseReabrirOferta = [];
 
         for (const iterator of responseEntregas) {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
@@ -1016,8 +1018,26 @@ const cancelToProsinController = async (req, res) => {
                     responseCancelOrder.push(auxResponseCancelOrder)
 
                     //?------------------------------------------------- procedimiento pedido.BaseEntry
+                    
+                    const auxOfertaLinea = await obtenerDetallePedidoAnulado(pedido.baseEntry)
+                    console.log(auxOfertaLinea);
+                    let index = 0;
+                    for (const element of auxOfertaLinea) {
+                        if(index === 0){
+                            const result = await reabrirOferta(element.BaseEntry);
+                            console.log(result);
+                        }
+                        
+                        const responseLinea = await reabrirLineas(element.BaseEntry, element.BaseLine);
+                        console.log(responseLinea);
+                        responseReabrirOferta.push(responseLinea);
+                        index++;
+                    }
+
                 }
-                listCancelOrders.push(responseCancelOrder)
+
+                listCancelOrders.push(responseCancelOrder);
+
             }
 
             console.log('fin de anulacion de ordenes---------------------------------------------------------------')
@@ -1034,7 +1054,8 @@ const cancelToProsinController = async (req, res) => {
             responseEntregas,
             listResponseDelivery,
             responsePedidosPorEntrega,
-            listCancelOrders
+            listCancelOrders,
+            responseReabrirOferta
         })
 
     } catch (error) {
