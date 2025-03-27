@@ -67,6 +67,24 @@ const obtenerEntregaDetalle = async (id) => {
 
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE(${id})`;
         const result = await executeQuery(query)
+        console.log({query})
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerEntregaDetalle:', error.message || '');
+        return { message: `Error en obtenerEntregaDetalle: ${error.message || ''}` }
+    }
+}
+
+const obtenerEntregaDetalleExportacion = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_EXP_DETALLE(${id})`;
+        const result = await executeQuery(query)
+        console.log({query})
         return result
 
     } catch (error) {
@@ -420,7 +438,7 @@ const getAllAlmacenes = async () => {
             await connectHANA();
         }
         const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -435,7 +453,7 @@ const articulosExportacion = async (parameter) => {
             await connectHANA();
         }
         const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemName" LIKE '%${parameter}%' AND "SellItem" = 'Y' limit 50`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -444,13 +462,13 @@ const articulosExportacion = async (parameter) => {
     }
 }
 
-const intercom = async() => {
+const intercom = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
         const query = `SELECT * FROM LAB_IFA_PRD.INCOTERM`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -465,12 +483,57 @@ const pedidosExportacion = async () => {
             await connectHANA();
         }
         const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_exportacion()`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
         throw new Error(`Error en pedidosExportacion ${error.message}`)
+    }
+}
+
+const reabrirOferta = async (id_oferta) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_sis_open_oferta_venta(${id_oferta})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en reabrirOferta ${error.message}`)
+    }
+}
+
+const obtenerDetallePedidoAnulado = async(id_pedido) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}."ifa_ven_pedidos_detalle_anulados" where "DocEntry" = ${id_pedido}`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en obtenerDetallePedidoAnulado ${error.message}`)
+    }
+}
+
+const reabrirLineas = async (id_linea, doc_lin) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_sis_open_lines_oferta_venta_con_orden(${id_linea}, ${doc_lin})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en reabrirLineas ${error.message}`)
     }
 }
 module.exports = {
@@ -500,5 +563,9 @@ module.exports = {
     getAllAlmacenes,
     articulosExportacion,
     pedidosExportacion,
-    intercom
+    intercom,
+    obtenerEntregaDetalleExportacion,
+    reabrirOferta,
+    reabrirLineas,
+    obtenerDetallePedidoAnulado
 }
