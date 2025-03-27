@@ -823,6 +823,7 @@ const cargarPreciosExcelController = async (req, res) => {
    
             const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
 
+            fs.unlinkSync(filePath);
             // Establecer los encabezados para la descarga del archivo
             res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.set('Content-Disposition', 'attachment; filename=errores.xlsx');
@@ -831,6 +832,7 @@ const cargarPreciosExcelController = async (req, res) => {
             try {
                 const result = await updateListaPrecios(jsonData, usuario.ID_SAP, comment);
 
+                fs.unlinkSync(filePath);
                 res.set('Content-Type', 'application/json');
                 return res.status(200).json({
                     mensaje: 'Archivo procesado correctamente, sin errores.',
