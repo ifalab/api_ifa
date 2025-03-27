@@ -420,6 +420,21 @@ const devolucionLayout = async (id) => {
         throw { message: `Error en devolucionLayout: ${error.message}`, error }
     }
 }
+
+const getDeudaDelCliente = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "CardCode", "Balance" from ${process.env.PRD}.ifa_dm_clientes where "CardCode"='${cardCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDeudaDelCliente:', error.message);
+        throw { message: `Error en getDeudaDelCliente: ${error.message}`, error }
+    }
+}
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -444,5 +459,6 @@ module.exports = {
     stockDisponiblePorSucursal,
     clientesBySucCode,
     getClienteByCardCode,
-    devolucionLayout
+    devolucionLayout,
+    getDeudaDelCliente
 }
