@@ -9,7 +9,7 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getCobradoresBySucursalController,
     getYearToDayController,
     getYTDCobradorController, getPendientesBajaPorCobradorController, darDeBajaController,
-    getCuentasParaBajaController, comprobanteContableController, darVariasDeBajaController
+    getCuentasParaBajaController,getCuentasBancoParaBajaCobranzaController,comprobanteContableController, darVariasDeBajaController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -70,6 +70,7 @@ router.post('/ytd-cobrador',[validarToken, validarCampos], getYTDCobradorControl
 router.get('/pendientes-baja',[validarToken, validarCampos], getPendientesBajaPorCobradorController)
 router.post('/baja',[validarToken, validarCampos], darDeBajaController)
 router.get('/cuentas-baja',[validarToken, validarCampos], getCuentasParaBajaController)
+router.get('/cuentas-banco-baja',[validarToken, validarCampos], getCuentasBancoParaBajaCobranzaController)
 router.get('/comprobante-contable',[validarToken, validarCampos], comprobanteContableController)
 router.post('/baja-varias',[validarToken, validarCampos], darVariasDeBajaController)
 
