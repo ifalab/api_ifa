@@ -90,7 +90,7 @@ const findCajasEmpleado = async (codEmp) => {
     }
 }
 
-const findAllCajasEmpleados = async()=>{
+const findAllCajasEmpleados = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -137,7 +137,7 @@ const rendicionByTransac = async (codTransac) => {
     }
 }
 
-const crearRendicion = async (NEW_TransactionId, NEW_CodEmp, NEW_ESTADO, NEW_MES, NEW_YEAR,new_glosa) => {
+const crearRendicion = async (NEW_TransactionId, NEW_CodEmp, NEW_ESTADO, NEW_MES, NEW_YEAR, new_glosa) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -501,7 +501,7 @@ const costoComercialCuenta = async () => {
 
     }
 }
-const filtroCC = async (areaCode,tipoCode,lineaCode,especialidadCode,clasificacionCode,conceptoCode, cuentaCode) => {
+const filtroCC = async (areaCode, tipoCode, lineaCode, especialidadCode, clasificacionCode, conceptoCode, cuentaCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -559,7 +559,7 @@ const actualizarfechaContRendicion = async (idRend, new_date) => {
     }
 }
 
-const actualizarGlosaPRDGastos = async (id,new_glosa_prd) => {
+const actualizarGlosaPRDGastos = async (id, new_glosa_prd) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -578,7 +578,7 @@ const actualizarGlosaPRDGastos = async (id,new_glosa_prd) => {
     }
 }
 
-const actualizarCCRendicion = async (id,idRend, new_cuenta_cc) => {
+const actualizarCCRendicion = async (id, idRend, new_cuenta_cc) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -626,7 +626,7 @@ const searchBeneficiarios = async (cadena) => {
     }
 }
 
-const concepComercialById = async(id)=>{
+const concepComercialById = async (id) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -661,6 +661,7 @@ const busquedaProd = async (parametro) => {
     }
 }
 
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -692,4 +693,5 @@ module.exports = {
     actualizarCCRendicion,
     actualizarGlosaPRDGastos,
     busquedaProd,
+    
 }

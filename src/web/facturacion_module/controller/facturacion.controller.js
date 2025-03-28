@@ -11,7 +11,7 @@ const fs = require('fs');
 
 const { entregaDetallerFactura, pedidoDetallerFactura } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
-const { facturacionProsin, anulacionFacturacion } = require("../service/apiFacturacionProsin")
+const { facturacionProsin, anulacionFacturacion, facturacionExportacionProsin } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
     facturasAnuladas, pedidosPorEntrega,
     entregasSinFacturas,
@@ -25,8 +25,10 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     clientesExportacion,
     getAllAlmacenes,
     articulosExportacion,
-    pedidosExportacion, 
-    intercom} = require("./hana.controller")
+    pedidosExportacion,
+    intercom,
+    obtenerEntregaDetalleExportacion,
+    reabrirOferta } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -38,6 +40,7 @@ const { postReturn } = require("../../inventarios/controller/sld.controller");
 const { clientePorCardCode, articuloPorItemCode } = require('../../pedido_module/controller/hana.controller');
 const { getDocDueDate } = require('../../../controllers/hanaController');
 const { postOrden } = require('../../../movil/ventas_module/controller/sld.controller');
+const { tipoDeCambioByFecha, tipoDeCambio } = require('../../contabilidad_module/controllers/hana.controller');
 
 const facturacionController = async (req, res) => {
     let body = {}
@@ -953,6 +956,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `Debe venir el doc entry` })
         }
         const reponseInvoice = await cancelInvoice(docEntry)
+
         if (reponseInvoice.value && !reponseInvoice.value.includes('Document is already closed')) {
             const outputDir = path.join(__dirname, 'outputsAnulacion');
             if (!fs.existsSync(outputDir)) {
@@ -984,6 +988,8 @@ const cancelToProsinController = async (req, res) => {
         let listResponseDelivery = []
         let listCancelOrders = []
         let responsePedidosPorEntrega = []
+        let responseReabrirOferta = [];
+
         for (const iterator of responseEntregas) {
             const responseDeliveryNotes = await cancelDeliveryNotes(iterator.BaseEntry)
             // console.log({ responseDeliveryNotes })
@@ -995,6 +1001,7 @@ const cancelToProsinController = async (req, res) => {
             }
             console.log('Inicio de anulacion de ordenes---------------------------------------------------------------')
             if (anulacionOrden) {
+
                 console.log('se esta ejecutando anulacion de ordenes')
                 const auxResponsePedido = await pedidosPorEntrega(iterator.BaseEntry)
                 // console.log({auxResponsePedido})
@@ -1009,11 +1016,31 @@ const cancelToProsinController = async (req, res) => {
                         return res.status(400).json({ mensaje: `Error en cancelOrder: ${auxResponseCancelOrder.errorMessage.value || ''}` })
                     }
                     responseCancelOrder.push(auxResponseCancelOrder)
-                }
-                listCancelOrders.push(responseCancelOrder)
-            }
-            console.log('fin de anulacion de ordenes---------------------------------------------------------------')
 
+                    //?------------------------------------------------- procedimiento pedido.BaseEntry
+
+                    const auxOfertaLinea = await obtenerDetallePedidoAnulado(pedido.baseEntry)
+                    console.log(auxOfertaLinea);
+                    let index = 0;
+                    for (const element of auxOfertaLinea) {
+                        if (index === 0) {
+                            const result = await reabrirOferta(element.BaseEntry);
+                            console.log(result);
+                        }
+
+                        const responseLinea = await reabrirLineas(element.BaseEntry, element.BaseLine);
+                        console.log(responseLinea);
+                        responseReabrirOferta.push(responseLinea);
+                        index++;
+                    }
+
+                }
+
+                listCancelOrders.push(responseCancelOrder);
+
+            }
+
+            console.log('fin de anulacion de ordenes---------------------------------------------------------------')
             listResponseDelivery.push(responseDeliveryNotes)
         }
         console.log(JSON.stringify(listResponseDelivery, null, 2))
@@ -1027,7 +1054,8 @@ const cancelToProsinController = async (req, res) => {
             responseEntregas,
             listResponseDelivery,
             responsePedidosPorEntrega,
-            listCancelOrders
+            listCancelOrders,
+            responseReabrirOferta
         })
 
     } catch (error) {
@@ -2736,11 +2764,13 @@ const crearPedidoExportacionController = async (req, res) => {
             WhsCode,
             WhsName,
             DocDate,
+            PuertoDestino,
             TransFrontNac,
             SegFrontNac,
             LicTradNum,
             TransFrontInt,
             SegFrontInt,
+            cajasEmbalaje,
             OtrosInt,
             totalGastoNac,
             totalGastoInt,
@@ -2798,8 +2828,32 @@ const crearPedidoExportacionController = async (req, res) => {
         bodyToOrder.U_OSLP_ID = usuario.ID_SAP
         bodyToOrder.U_UserCode = usuario.ID_VENDEDOR_SAP
         bodyToOrder.U_B_doctype = 3
+        bodyToOrder.Currency = 'USD'
+        bodyToOrder.U_B_incoterm = Incoterm
+        bodyToOrder.U_B_nexpcost = TransFrontNac
+        bodyToOrder.U_B_iexpcost = TransFrontInt
+        bodyToOrder.U_B_destplace = SegFrontNac
+        bodyToOrder.U_B_cntrycode = SegFrontInt
+        bodyToOrder.U_B_addinfo = OtrosInt
+        bodyToOrder.U_B_iexpfob = totalGastoInt
+        bodyToOrder.U_B_nexpfob = totalGastoNac
+        bodyToOrder.U_B_paqnum = cajasEmbalaje
+        bodyToOrder.U_B_destport = PuertoDestino
         bodyToOrder.DocumentLines = []
 
+        sumatoriaNacional = TransFrontNac + SegFrontNac
+        sumatoriaInternacional = TransFrontInt + SegFrontInt + OtrosInt
+
+        if (totalGastoNac != sumatoriaNacional) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `El total Nacional (${totalGastoNac}) es diferente de la sumatoria de los gastos (${sumatoriaNacional})`, '', "facturacion/crear-pedido-exportacion", process.env.PRD)
+            return res.status(400).json({ mensaje: `El total Nacional (${totalGastoNac}) es diferente de la sumatoria de los gastos (${sumatoriaNacional})` })
+        }
+
+        if (totalGastoInt != sumatoriaInternacional) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `El total Internacional (${totalGastoInt}) es diferente de la sumatoria de los gastos (${sumatoriaInternacional})`, '', "facturacion/crear-pedido-exportacion", process.env.PRD)
+            return res.status(400).json({ mensaje: `El total Internacional (${totalGastoInt}) es diferente de la sumatoria de los gastos (${sumatoriaInternacional})` })
+        }
+        // return res.status(200).json({ mensaje: `ok` })
         // if (bodyToOrder.U_OSLP_ID == null || !bodyToOrder.U_OSLP_ID) {
         //     grabarLog(`${bodyToOrder.U_OSLP_ID  || 'No Definido'}`, 'Facturacion Exportacion', "crear-pedido-exportacion", `error , el ID SAP no esta definido`, 'https://srvhana:50000/b1s/v1/Orders', "facturacion/crear-pedido-exportacion", process.env.PRD)
         //     return res.status(400).json({ mensaje: 'error el ID SAP es obligatorio' })
@@ -2824,11 +2878,11 @@ const crearPedidoExportacionController = async (req, res) => {
             const { SalUnitMsr } = itemData
             const { cantidad, precio, subtotal } = element
             const newData = {
+                LineNum: idx,
                 ItemCode,
                 Quantity: cantidad,
                 GrossPrice: precio,
                 GrossTotal: subtotal,
-                LineNum: idx,
                 WarehouseCode: WhsCode,
                 AccountCode: '4110101',
                 TaxCode: 'IVA_EXE',
@@ -2844,11 +2898,11 @@ const crearPedidoExportacionController = async (req, res) => {
         console.log('--------------------------------------------------------')
         console.log(JSON.stringify(bodyToOrder, null, 2))
         console.log('--------------------------------------------------------')
-        return res.json({ bodyToOrder })
+        // return res.json({ bodyToOrder })
         const ordenResponse = await postOrden(bodyToOrder)
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `Error en el proceso post orden ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "facturacion/crear-pedido-exportacion", process.env.PRD)
-            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, bodyToOrder })
         }
         return res.json({ ...ordenResponse })
     } catch (error) {
@@ -2860,12 +2914,505 @@ const crearPedidoExportacionController = async (req, res) => {
 const pedidosExportacionController = async (req, res) => {
     try {
         const pedidos = await pedidosExportacion()
-        return res.json(pedidos)
+        // return res.json(pedidos)
+        let listPedidos = []
+        pedidos.map((item) => {
+            const usd = +item.DocRate
+            if (!usd || usd == 0) {
+                return res.status(400).json({ mensaje: 'El tipo de cambio es 0' })
+            }
+            const docTotalUSD = (+item.DocTotal) / usd
+            item.DocTotalUSD = Number(docTotalUSD.toFixed(2))
+            listPedidos.push(item)
+        })
+        return res.json(listPedidos)
     } catch (error) {
         console.log({ error })
         return res.json({ mensaje: 'Error en el controlador', error })
     }
 }
+
+const facturarExportacionController = async (req, res) => {
+    let idData = ''
+    let body = {}
+    const startTime = Date.now();
+    try {
+        const id = req.query.id
+        const user = req.usuarioAutorizado
+        const id_sap = user.ID_SAP
+        let deliveryData
+        let deliveryBody
+        let finalDataEntrega
+        idData = id
+
+
+        if (!id || id == '') {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", 'error: debe haber un ID valido', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.status(400).json({ mensaje: 'debe haber un ID valido' })
+        }
+        const solicitud = await solicitarId(id);
+        if (solicitud.message) {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `${solicitud.message || 'Error en solicitarId'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.status(400).json({ mensaje: `${solicitud.message || 'Error en solicitarId'}` })
+        }
+
+        if (solicitud.result.length > 1) {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Existe más de una entrega`, `${solicitud.query || ''}. [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+
+            return res.status(400).json({ mensaje: 'Existe más de una entrega' })
+        }
+
+        else if (solicitud.result.length == 1) {
+            //return res.json({solicitud})
+            deliveryData = solicitud.result[0].DocEntry
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se consulto obtenerEntregaDetalle,  deliveryData: ${deliveryData || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE( ${deliveryData || ''})`, process.env.PRD)
+            deliveryBody = await obtenerEntregaDetalleExportacion(deliveryData)
+            // return res.json({deliveryBody})
+            console.log('1 solicitud tiene mas de uno')
+            // console.log({ solicitud, deliveryData })
+            if (deliveryBody.message) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${deliveryBody.message || 'Error en obtenerEntregaDetalle'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_EXP_DETALLE(${deliveryData})`, process.env.PRD)
+                return res.status(400).json({ mensaje: `${deliveryBody.message || ''}` })
+            }
+        }
+
+        if (!deliveryBody) {
+
+            // const { data } = await facturacionById(id)
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se al consulto facturacionByIdSld,  id: ${id || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "https://srvhana:50000/b1s/v1/Orders(${id})", process.env.PRD)
+            const facturacion = await facturacionByIdSld(id)
+            console.log('2 facturacion ')
+            console.log({ facturacion })
+            // return res.json({facturacion})
+            if (facturacion.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar: ${facturacion.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `Hubo un error al facturar: ${facturacion.value || ''}` })
+            }
+            if (!facturacion.data) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `Hubo un error al facturar`, facturacion })
+            }
+            const data = facturacion.data
+            const { DocumentLines, ...restData } = data
+            if (!DocumentLines) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: No existen los DocumentLines en la facturacion por ID', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: 'No existen los DocumentLines en la facturacion por ID ' })
+            }
+
+            let batchNumbers = []
+            let newDocumentLines = []
+            // return res.json({data})
+            for (const line of DocumentLines) {
+                let newLine = {}
+                const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, LineStatus, ...restLine } = line;
+                const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
+                console.log({ batch: batchData })
+                if (batchData.message) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                    return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
+                }
+                if (batchData && batchData.length > 0) {
+
+                    let new_quantity = 0
+                    batchData.map((item) => {
+                        new_quantity += Number(item.Quantity).toFixed(6)
+                    })
+                    //console.log({ batchData })
+                    batchNumbers = batchData.map(batch => ({
+                        BaseLineNumber: LineNum,
+                        BatchNumber: batch.BatchNum,
+                        Quantity: Number(batch.Quantity).toFixed(6),
+                        ItemCode: batch.ItemCode
+                    }))
+
+                    const data = {
+                        BaseLine: LineNum,
+                        BaseType: 17,
+                        BaseEntry: id,
+                    }
+
+                    newLine = {
+                        ...data,
+                        ItemCode,
+                        WarehouseCode,
+                        Quantity: new_quantity / UnitsOfMeasurment,
+                        LineNum,
+                        ...restLine,
+                        BatchNumbers: batchNumbers
+                    };
+                    newLine = { ...newLine };
+                    newDocumentLines.push(newLine)
+                }
+
+
+            }
+            let newData = {
+                ...restData,
+                DocumentLines: newDocumentLines
+            }
+            console.log('rest data------------------------------------------------------------')
+            // return res.json({ restData })
+            const { U_NIT, U_RAZSOC, U_UserCode } = restData
+            console.log({ restData })
+            const {
+                DocDate,
+                DocDueDate,
+                CardCode,
+                DocumentLines: docLines,
+                ...restNewData
+            } = newData;
+
+            const finalData = {
+                // DocDate,
+                // DocDueDate,
+                CardCode,
+                U_NIT,
+                U_RAZSOC,
+                U_UserCode: id_sap,
+                DocumentLines: docLines,
+            }
+
+            finalDataEntrega = finalData
+            // return res.json({ ...finalDataEntrega })
+            console.log('FINAL ENTREGA------------------------------------------------------------')
+            console.log({ finalDataEntrega })
+            //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se envio postEntrega,  CardCode: ${finalDataEntrega.CardCode || ''}, U_UserCode: ${finalDataEntrega.U_UserCode || ''}, U_NIT: ${finalDataEntrega.U_NIT || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `https://srvhana:50000/b1s/v1/DeliveryNotes`, process.env.PRD)
+            deliveryBody = await postEntrega(finalDataEntrega)
+            // return res.json({deliveryBody})
+            if (deliveryBody.lang) {
+
+                const outputDir = path.join(__dirname, 'outputs');
+                if (!fs.existsSync(outputDir)) {
+                    fs.mkdirSync(outputDir);
+                }
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+                // Generar el nombre del archivo con el timestamp
+                const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
+                fs.writeFileSync(fileNameJson, JSON.stringify(finalDataEntrega, null, 2), 'utf8');
+                console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno en la entrega de sap en postEntrega: ${deliveryBody.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: `error interno en la entrega de sap. ${deliveryBody.value || ''}`, respuestaSapEntrega: deliveryBody, finalDataEntrega })
+            }
+            console.log('3 post entrega')
+            console.log({ deliveryBody })
+            // return res.json({ deliveryBody })
+            // console.log('response post entrega ejecutado')
+
+        }
+
+
+        console.log('4 delivery body fuera del if')
+        console.log({ deliveryBody })
+        // return res.json({deliveryBody})
+        let { responseData } = deliveryBody
+        if (!responseData) {
+            responseData = deliveryBody
+        } else {
+            const delivery = deliveryBody.deliveryN44umber
+            if (!delivery) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error del sap, no se pudo crear la entrega, no se encontro el deliveryNumber en la respuesta', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                return res.status(400).json({ mensaje: 'error del sap, no se pudo crear la entrega, falta delivery linea 164 en el controlador de la factura' })
+            }
+            deliveryData = delivery
+            console.log('5 deliveryData')
+            console.log({ deliveryData })
+        }
+
+        console.log('6 responseData de delivery body')
+        console.log({ responseData })
+        // return res.json({ responseData })
+        if (responseData.deliveryN44umber) { ///
+            deliveryData = responseData.deliveryN44umber
+        }
+        console.log('7 deliveryData')
+        console.log({ deliveryData })
+
+        if (responseData.lang) {
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno de SAP. ${responseData.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error interno de sap. ${responseData.value || ''}` })
+        }
+        const detalle = [];
+        const cabezera = [];
+        if (responseData.responseData) { ///
+            responseData = responseData.responseData
+        }
+        // return res.json({responseData})
+        for (const line of responseData) {
+            const { producto, descripcion, cantidad, precioUnitario, montoDescuento, subTotal, numeroImei, numeroSerie, complemento, ...result } = line
+            if (!cabezera.length) {
+                cabezera.push({ ...result, complemento: complemento || "" })
+            }
+            detalle.push({
+                producto,
+                descripcion,
+                cantidad,
+                precioUnitario,
+                montoDescuento,
+                subTotal,
+                // numeroImei,
+                // numeroSerie
+            })
+        }
+        const bodyFactura = {
+            ...cabezera[0],
+            detalle
+        }
+
+        const { documento_via: docVia, ...rest } = bodyFactura
+        const bodyFinalFactura = {
+            ...rest,
+            documento_via: `${docVia}`
+        }
+        const { direccion, ...restFact } = bodyFinalFactura
+        if (direccion == null || !direccion || direccion == undefined) {
+            body = { ...restFact, direccion: '' }
+        } else {
+            body = bodyFinalFactura
+        }
+        //TODO --------------------------------------------------------------  PROSIN
+        // return res.json({bodyFinalFactura})
+        const responseGenesis = await spObtenerCUF(deliveryData)
+        if (responseGenesis.message) {
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
+        }
+
+        if (responseGenesis.length != 0) {
+
+        } else {
+            endTime = Date.now()
+            let dataToProsin = {}
+            const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
+            if (direccion == null || direccion == undefined) {
+                dataToProsin = {
+                    ...restBodyFinalFactura,
+                    direccion: ''
+                }
+            } else {
+                dataToProsin = bodyFinalFactura
+            }
+            // return res.json({ dataToProsin,deliveryBody })
+            dataToProsin.tipo_identificacion = 4
+            if (dataToProsin.tipo_identificacion == null ||
+                (dataToProsin.tipo_identificacion == 1 || dataToProsin.tipo_identificacion == 5)) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error el tipo de identificacion es ${dataToProsin.tipo_identificacion || 'No definido'}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataToProsin, bodyFinalFactura })
+            }
+
+            if (dataToProsin.correo == null || dataToProsin.correo == '') {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error no hay datos en CORREO. codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
+            }
+            dataToProsin.usuario = user.USERNAME || 'No definido'
+            const tipoCambio = await tipoDeCambio()
+            const usdRate = tipoCambio[0]
+            const usd = +usdRate.Rate
+
+            dataToProsin.detalle.map((item) => {
+                item.cantidad = Number(item.cantidad)
+                item.precioUnitario = Number(item.precioUnitario)
+                item.montoDescuento = 0
+                item.subTotal = Number(item.subTotal)
+            })
+            const { } = dataToProsin
+            let formatedDataToProsin = {
+                sucursal: dataToProsin.sucursal,
+                punto: dataToProsin.punto,
+                documento_via: dataToProsin.documento_via,
+                codigo_cliente_externo: dataToProsin.codigo_cliente_externo,
+                tipo_identificacion: Number(dataToProsin.tipo_identificacion),
+                identificacion: dataToProsin.identificacion,
+                complemento: dataToProsin.complemento,
+                nombre: dataToProsin.nombre,
+                correo: dataToProsin.correo,
+                direccionComprador: dataToProsin.direccionComprador,
+                incoterm: dataToProsin.incoterm,
+                incotermDetalle: dataToProsin.incotermDetalle,
+                puertoDestino: dataToProsin.puertoDestino,
+                lugarDestino: dataToProsin.lugarDestino,
+                codigoPais: dataToProsin.codigoPais,
+                metodo_pago: dataToProsin.metodo_pago,
+                numeroTarjeta: dataToProsin.numeroTarjeta,
+                montoDetalle: Number(dataToProsin.montoDetalle),
+                totalGastosNacionalesFob: Number(dataToProsin.TransFrontNac) + Number(dataToProsin.SegFrontNac),
+                totalGastosInternacionales: Number(dataToProsin.TransFrontInt) + Number(dataToProsin.SegFrontInt) + Number(dataToProsin.OtrosInt),
+                informacionAdicional: '',
+                descuentoAdicional: Number(dataToProsin.descuentoAdicional),
+                codigoMoneda: dataToProsin.codigoMoneda,
+                tipoCambio: usd,
+                usuario: dataToProsin.usuario,
+                facturaManual: dataToProsin.facturaManual,
+                fechaEmision: dataToProsin.fechaEmision,
+                mediaPagina: true,
+                detalle: dataToProsin.detalle,
+                costosGastosNacional: [
+                    { campo: 'Transporte Frontera', valor: Number(dataToProsin.TransFrontNac) },
+                    { campo: 'Seguro Frontera', valor: Number(dataToProsin.SegFrontNac) },
+                ],
+                costosGastosInternacional: [
+                    { campo: 'Transporte Internacional', valor: Number(dataToProsin.TransFrontInt) },
+                    { campo: 'Seguro Internacional', valor: Number(dataToProsin.SegFrontInt) },
+                    { campo: 'Otros', valor: Number(dataToProsin.OtrosInt) },
+                ],
+                numeroDescripcionPaquetesBultos: [
+                    { campo: 'Cajas', valor: Number(dataToProsin.paquetes1) },
+                ]
+            }
+
+            const responseProsin = await facturacionExportacionProsin(formatedDataToProsin, user)
+            console.log(JSON.stringify(responseProsin, null, 2))
+            const { data: dataProsin } = responseProsin
+            if (dataProsin && dataProsin.estado != 200) {
+                endTime = Date.now()
+                if (dataProsin.mensaje.includes('§')) {
+                    const mensaje = dataProsin.mensaje.split('§')
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.status(400).json({ mensaje: `error de prosin ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, dataProsin, formatedDataToProsin, deliveryData })
+                }
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
+            }
+            if (dataProsin.mensaje != null) {
+                endTime = Date.now()
+                if (dataProsin.mensaje.includes('§')) {
+                    const mensaje = dataProsin.mensaje.split('§')
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.status(400).json({ mensaje: `error de prosin ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, dataProsin, formatedDataToProsin, deliveryData })
+                }
+
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
+            }
+            return res.json({ dataProsin, formatedDataToProsin })
+            const fecha = dataProsin.fecha
+            const nroFactura = dataProsin.datos.factura
+            const cuf = dataProsin.datos.cuf
+            // return res.json({ delivery, fecha,nroFactura,cuf })
+            console.log({ fecha })
+            const formater = fecha.split('/')
+            const day = formater[0]
+            const month = formater[1]
+            const yearTime = formater[2]
+            const yearFomater = yearTime.split(' ')
+            const year = yearFomater[0]
+            console.log({ day, month, year })
+            if (year.length > 4) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error en el formateo de la fecha: linea 360`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: 'error al formateo de la fecha', year })
+            }
+
+            const fechaFormater = year + month + day
+            // return res.json({fechaFormater})
+            console.log({ deliveryData, cuf, nroFactura, fechaFormater })
+            //TODO --------------------------------------------------------------  PATCH ENTREGA
+            const responsePatchEntrega = await patchEntrega(deliveryData, {
+                U_B_cuf: `${cuf}`,
+                U_B_em_date: `${fechaFormater}`,
+                NumAtCard: `${nroFactura}`
+            })
+
+            if (responsePatchEntrega.status == 400) {
+                console.error({ error: responsePatchEntrega.errorMessage })
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || "No definido"}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || 'No definido'} ,NumAtCard: ${nroFactura || 'No definido'}, delivery: ${deliveryData || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}`, responsePatchEntrega, deliveryData, U_B_cuf: `${cuf}`, U_B_em_date: `${fechaFormater}`, NumAtCard: `${nroFactura}` })
+            }
+
+            const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
+            if (responseHana.message) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf || ''}, fechaFormater: ${fechaFormater || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, responseHana, deliveryData, cuf, nroFactura, fechaFormater })
+            }
+            const DocumentLinesHana = [];
+            let cabezeraHana = [];
+
+            let DocumentAdditionalExpenses = [];
+            for (const line of responseHana) {
+                const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                    ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                    DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+
+                if (!cabezeraHana.length) {
+                    cabezeraHana = {
+                        ...result,
+                        DocTotal: Number(DocTotal),
+                        U_OSLP_ID: U_OSLP_ID || "",
+                        U_UserCode: U_UserCode || ""
+                    };
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA_EXE' },
+                    ]
+
+                }
+                DocumentLinesHana.push({
+                    LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                })
+            }
+
+            const responseHanaB = {
+                ...cabezeraHana,
+                U_B_doctype: 3,
+                DocumentLines: DocumentLinesHana,
+                DocumentAdditionalExpenses
+            }
+
+            const invoiceResponse = await postInvoice(responseHanaB)
+            console.log({ invoiceResponse })
+            if (invoiceResponse.status == 400) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar la solicitud: postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}`, invoiceResponse, responseHanaB })
+            }
+            const response = {
+                status: invoiceResponse.status || {},
+                statusText: invoiceResponse.statusText || {},
+                idInvoice: invoiceResponse.idInvoice,
+                delivery: deliveryData,
+                cuf
+            }
+            console.log({ response })
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.json({ ...response, cuf, responseProsin, dataProsin, responsePatchEntrega, responseHana, responseHanaB })
+        }
+
+        // return res.json({ formatedDataToProsin, body })
+    } catch (error) {
+        console.log({ error })
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en el controlador. ${error.message || 'no definido'}`,
+            error,
+            idData
+        })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -2899,5 +3446,6 @@ module.exports = {
     articulosExportacionController,
     crearPedidoExportacionController,
     pedidosExportacionController,
-    getIncoterm
+    getIncoterm,
+    facturarExportacionController
 }

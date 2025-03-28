@@ -58,13 +58,6 @@
             text-align: right;
         }
 
-        .header-container,
-        .header-top,
-        .table {
-            margin-bottom: 5px !important;
-            /* Reduce espacio entre secciones */
-        }
-
         .header-left p,
         .header-right p {
             margin: 2px 0 !important;
@@ -129,7 +122,7 @@
         <div class="header-top">
             <div class="title-container">
                 <h6 class="text-center" style="font-weight: bold;">LABORATORIOS IFA</h6>
-                <h6 class="text-center">ENTRADA DE INVENTARIO #<%= data.DocNum %></h6>
+                <h6 class="text-center">SALIDAS DE INVENTARIO #<%= data.DocNum %></h6>
                 
             </div>
             <div class="qr-container text-center">
@@ -166,15 +159,15 @@
         </div>
         <hr>
 
-        <table class="table table-bordered table-striped">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Código</th>
                     <th>Descripción</th>
-                    <th>Cant.</th>
+                    <th>Cant</th>
                     <th>Uom</th>
                     <th>Lote</th>
-                    <th>Fecha Exp.</th>
+                    <th>Expiracion</th>
                     <th>Almacen</th>
                 </tr>
             </thead>
@@ -208,17 +201,22 @@
                         <% }); %>
             </tbody>
             <tfoot>
-                <!-- <tr class="total-row">
-                    <td colspan="6" class="text-end">Total General:</td>
+                <tr class="total-row">
+                    <td></td>
+                    <td class="text-end">Cantidad Total:</td>
                     <td>
-                        <%= totalGeneral.toFixed(2) %> BOB
+                        <%= data.totalCant.toFixed(0) %>
                     </td>
-                </tr> -->
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
             </tfoot>
         </table>
         <div class="comments">
             <p><strong>Glosa:</strong>
-                Entrada de mercancias
+                Salida de mercancias
             </p>
             <p><strong>Comentario:</strong>
                <%= data.cambio %> <!-- agregar comentarios a la devolucion-->
