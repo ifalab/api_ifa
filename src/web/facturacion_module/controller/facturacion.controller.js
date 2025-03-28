@@ -3340,10 +3340,10 @@ const facturarExportacionController = async (req, res) => {
                         U_UserCode: U_UserCode || ""
                     };
                     DocumentAdditionalExpenses = [
-                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
-                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
-                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
-                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA_EXE' },
                     ]
 
                 }
@@ -3375,11 +3375,11 @@ const facturarExportacionController = async (req, res) => {
             }
             console.log({ response })
             endTime = Date.now()
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
             return res.json({ ...response, cuf, responseProsin, dataProsin, responsePatchEntrega, responseHana, responseHanaB })
         }
 
-        return res.json({ formatedDataToProsin, body })
+        // return res.json({ formatedDataToProsin, body })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({
