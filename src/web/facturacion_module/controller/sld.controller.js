@@ -56,7 +56,7 @@ const postEntrega = async (responseJson) => {
         const locationHeader = sapResponse.headers.location;
         const deliveryNumberMatch = locationHeader.match(/\((\d+)\)$/);
         const deliveryNumber = deliveryNumberMatch ? deliveryNumberMatch[1] : 'Desconocido';
-        console.log({ sapResponse })
+        // console.log({ sapResponse })
         const responseHana = await obtenerEntregaDetalle(deliveryNumber);
         console.log('Nueva Entrega: #', deliveryNumber);
         return {
