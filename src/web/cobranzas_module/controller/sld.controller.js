@@ -82,6 +82,42 @@ const postIncommingPayments = async (body) => {
         }
     }
 }
+
+const cancelIncommingPayments = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments(${id})/Cancel`;
+
+        // Configura los encabezados para la solicitud
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+        };
+
+        // Realiza la solicitud POST
+        const response = await axios.post(url,{}, {
+            httpsAgent: agent,
+            headers: headers
+        });
+
+        return {
+            status: 200,
+            data: response.data||{},
+        };
+    } catch (error) {
+        
+        console.log({error})
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST para cancelIncommingPayments';
+        console.error('Error en la solicitud post para  cancelIncommingPayments:', errorMessage);
+        return {
+            status: 400,
+            errorMessage
+        }
+    }
+}
 module.exports = {
     postIncommingPayments,
+    cancelIncommingPayments
 }

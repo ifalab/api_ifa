@@ -11,9 +11,10 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getAllLines,
     getVendedoresBySuc,
     getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
-    cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable
+    cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
+    getBajasByUser
 } = require("./hana.controller")
-const { postIncommingPayments } = require("./sld.controller");
+const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
@@ -1855,6 +1856,39 @@ const comprobanteContableController = async (req, res) => {
     }
 }
 
+
+const getBajasByUserController = async (req, res) => {
+    try {
+        const {id_sap} = req.query
+        const response =await getBajasByUser(id_sap)
+
+        console.log({response})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje =  `${error.message||'Error en el controlador getBajasByUserController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const anularBajaController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response =await cancelIncommingPayments(id)
+
+        console.log({response})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje =  `${error.message||'Error en el controlador anularBajaController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -1904,5 +1938,7 @@ module.exports = {
     getYearToDayController,getCuentasBancoParaBajaCobranzaController,
     getYTDCobradorController, getPendientesBajaPorCobradorController,
     darDeBajaController, getCuentasParaBajaController, comprobanteContableController,
-    darVariasDeBajaController
+    darVariasDeBajaController,
+    getBajasByUserController,
+    anularBajaController
 }

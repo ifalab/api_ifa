@@ -13,7 +13,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     facturasClienteLoteItemCodeGenesis,
     stockDisponiblePorSucursal,
     clientesBySucCode, getClienteByCardCode,
-    devolucionLayout, getDeudaDelCliente } = require("./hana.controller")
+    devolucionLayout, getDeudaDelCliente,
+    findCliente } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega } = require("../../facturacion_module/controller/sld.controller")
@@ -1037,6 +1038,9 @@ const devolucionExcepcionalController = async (req, res) => {
 }
 
 const devolucionNotaDebitoCreditoController = async (req, res) => {
+    let idReturn
+    let cufndc
+    let idCreditNote
     try {
         const {
             DocEntry: docEntry,
@@ -1068,28 +1072,29 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         if (!docEntry || docEntry <= 0) {
             return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
         }
-        let idReturn
-        if(!idReturnHecho){
-            const fechaFormater = new Date(DocDate)
-            const year = fechaFormater.getUTCFullYear();
-            const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
-            const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
-            const formater = `${year}${month}${day}`;
-            console.log({ docEntry })
+        
+        const fechaFormater = new Date(DocDate)
+        const year = fechaFormater.getUTCFullYear();
+        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
+        const formater = `${year}${month}${day}`;
+        console.log({ docEntry })
 
-            //----------------------
-            const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
-            console.log({ entregas })
-            if (entregas.message) {
-                endTime = Date.now()
-                // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
-                return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
-            }
-            if (entregas.length == 0) {
-                endTime = Date.now()
-                // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
-                return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
-            }
+        //----------------------
+        const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
+        console.log({ entregas })
+        let finalDataEntrega
+        if (entregas.message) {
+            endTime = Date.now()
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${entregas.message || ""}` })
+        }
+        if (entregas.length == 0) {
+            endTime = Date.now()
+            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
+            return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
+        }
+        if(!idReturnHecho || idReturnHecho==''){    
             //*-------------------------------------------------- OBTENER ENTREGA DETALLE DEV
             const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
             if (batchEntrega.length == 0) {
@@ -1196,7 +1201,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             idReturn=idReturnHecho
         }
         //*------------------------------------------------ DETALLE TO PROSIN
-
+        // return res.json({idReturn})
         
         const entregasFromProsin = await entregaDetalleToProsin(idReturn)
         console.log({ entregasFromProsin })
@@ -1282,7 +1287,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             }
             return res.status(400).json({
                 mensaje,
-                dataToProsin, entregasFromProsin, idReturn, entregas
+                dataToProsin, entregasFromProsin, idReturn, finalDataEntrega, entregas
             })
         }
         console.log({ responseProsin })
@@ -1304,7 +1309,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //*------------------------------------------------------------------------ RESPONSE PROSIN
         
         console.log({ datosProsin: responseProsin.data.datos })
-        const cufndc = responseProsin.data.datos.cuf
+        cufndc = responseProsin.data.datos.cuf
         const facturandc = responseProsin.data.datos.factura
         //---------------------------------------------------------------------PATCH RETURNS
 
@@ -1415,25 +1420,29 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 mensaje,
                 bodyCreditNotes,
                 devolucionDetalle,
-                idReturn: responceReturn.orderNumber,
+                idReturn,
+                cufndc,
                 finalDataEntrega
             })
         }
-
+        idCreditNote = responseCreditNote.orderNumber
         return res.json({
             finalDataEntrega,
             idReturn,
+            cufndc,
+            idCreditNote,
             entregasFromProsin,
             dataToProsin,
             responseProsin,
-            bodyCreditNotes,
-            responseCreditNote
+            bodyCreditNotes
         })
     } catch (error) {
         console.log({ errorCatch: JSON.stringify(error, null, 2) })
         return res.status(500).json({
             mensaje: `Error en el controlador devolucionNotaDebitoCreditoController: ${error.message}`,
-
+            idReturn,
+            cufndc,
+            idCreditNote,
         })
     }
 }
@@ -3583,7 +3592,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                     return res.status(400).json({
                         mensaje: `${batchDataEntrega.message || 'Error en lotesArticuloAlmacenCantidad'}`,
                         allResponseReturn, allResponseCreditNote,
-                        facturasCompletadas,devolucionFinished
+                        facturasCompletadas, devolucionFinished
                     })
                 }
                 if (batchDataEntrega.length > 0) {
@@ -3939,6 +3948,20 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
     }
 }
 
+const findClienteController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({ body })
+        const buscar = body.buscar.toUpperCase()
+        console.log({ buscar })
+        const response = await findCliente(buscar)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador findClienteController: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -3973,5 +3996,6 @@ module.exports = {
     stockDisponibleIfaController,
     imprimibleDevolucionController,
     devolucionPorValoradoDifArticulosController,
-    imprimibleSalidaController
+    imprimibleSalidaController,
+    findClienteController
 }
