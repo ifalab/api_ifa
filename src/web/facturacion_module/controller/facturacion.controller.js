@@ -27,8 +27,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     articulosExportacion,
     pedidosExportacion,
     intercom,
-    obtenerEntregaDetalleExportacion, 
-    reabrirOferta} = require("./hana.controller")
+    obtenerEntregaDetalleExportacion,
+    reabrirOferta } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -1018,16 +1018,16 @@ const cancelToProsinController = async (req, res) => {
                     responseCancelOrder.push(auxResponseCancelOrder)
 
                     //?------------------------------------------------- procedimiento pedido.BaseEntry
-                    
+
                     const auxOfertaLinea = await obtenerDetallePedidoAnulado(pedido.baseEntry)
                     console.log(auxOfertaLinea);
                     let index = 0;
                     for (const element of auxOfertaLinea) {
-                        if(index === 0){
+                        if (index === 0) {
                             const result = await reabrirOferta(element.BaseEntry);
                             console.log(result);
                         }
-                        
+
                         const responseLinea = await reabrirLineas(element.BaseEntry, element.BaseLine);
                         console.log(responseLinea);
                         responseReabrirOferta.push(responseLinea);
@@ -2914,7 +2914,18 @@ const crearPedidoExportacionController = async (req, res) => {
 const pedidosExportacionController = async (req, res) => {
     try {
         const pedidos = await pedidosExportacion()
-        return res.json(pedidos)
+        // return res.json(pedidos)
+        let listPedidos = []
+        pedidos.map((item) => {
+            const usd = +item.DocRate
+            if (!usd || usd == 0) {
+                return res.status(400).json({ mensaje: 'El tipo de cambio es 0' })
+            }
+            const docTotalUSD = (+item.DocTotal) / usd
+            item.DocTotalUSD = Number(docTotalUSD.toFixed(2))
+            listPedidos.push(item)
+        })
+        return res.json(listPedidos)
     } catch (error) {
         console.log({ error })
         return res.json({ mensaje: 'Error en el controlador', error })
@@ -3203,13 +3214,13 @@ const facturarExportacionController = async (req, res) => {
             if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion == 1 || dataToProsin.tipo_identificacion == 5)) {
                 endTime = Date.now()
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error el tipo de identificacion es ${dataToProsin.tipo_identificacion || 'No definido'}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error el tipo de identificacion es ${dataToProsin.tipo_identificacion || 'No definido'}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataToProsin, bodyFinalFactura })
             }
 
             if (dataToProsin.correo == null || dataToProsin.correo == '') {
                 endTime = Date.now()
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `error no hay datos en CORREO. codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error no hay datos en CORREO. codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
             }
             dataToProsin.usuario = user.USERNAME || 'No definido'
@@ -3273,11 +3284,22 @@ const facturarExportacionController = async (req, res) => {
             const { data: dataProsin } = responseProsin
             if (dataProsin && dataProsin.estado != 200) {
                 endTime = Date.now()
+                if (dataProsin.mensaje.includes('§')) {
+                    const mensaje = dataProsin.mensaje.split('§')
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.status(400).json({ mensaje: `error de prosin ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, dataProsin, formatedDataToProsin, deliveryData })
+                }
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
             }
             if (dataProsin.mensaje != null) {
                 endTime = Date.now()
+                if (dataProsin.mensaje.includes('§')) {
+                    const mensaje = dataProsin.mensaje.split('§')
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.status(400).json({ mensaje: `error de prosin ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, dataProsin, formatedDataToProsin, deliveryData })
+                }
+
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
             }
@@ -3381,6 +3403,7 @@ const facturarExportacionController = async (req, res) => {
 
         // return res.json({ formatedDataToProsin, body })
     } catch (error) {
+        console.log({ error })
         console.log({ error })
         return res.status(500).json({
             mensaje: `Error en el controlador. ${error.message || 'no definido'}`,
