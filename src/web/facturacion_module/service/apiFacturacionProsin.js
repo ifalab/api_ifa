@@ -123,9 +123,9 @@ const apiFacturacionProsin = {
                 // Error específico de la API
                 throw {
                     statusCode: error.response.status,
-                    config: error.response.config,
-                    headers: error.response.headers,
-                    request: error.response.request,
+                    // config: error.response.config,
+                    // headers: error.response.headers,
+                    // request: error.response.request,
                     data: error.response.data,
                     message: error.response.statusText + '. _currentUrl: https://lab2.laboratoriosifa.com:96/api/sfl/FacturaComercialExportacion' || 'Error en la solicitud facturacionProsin POST',
                 };

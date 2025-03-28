@@ -1044,6 +1044,22 @@ const getYTDDelVendedorMonto = async (sucCode, linea, sublinea, fechaInicio1, fe
     }
 }
 
+const reporteOfertaPDF = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OFERTA_LAYOUT(${id})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDDelVendedorMonto: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1109,5 +1125,6 @@ module.exports = {
     getYTDByVendedor,
     getYTDDelVendedor,
     getYTDDelVendedorMonto,
-    getYTDMontoByVendedor
+    getYTDMontoByVendedor,
+    reporteOfertaPDF
 }

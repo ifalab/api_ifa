@@ -2971,6 +2971,7 @@ const facturarExportacionController = async (req, res) => {
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se consulto obtenerEntregaDetalle,  deliveryData: ${deliveryData || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE( ${deliveryData || ''})`, process.env.PRD)
             deliveryBody = await obtenerEntregaDetalleExportacion(deliveryData)
+            // return res.json({mensaje:'after obtenerEntregaDetalleExportacion',deliveryBody})
             // return res.json({deliveryBody})
             console.log('1 solicitud tiene mas de uno')
             // console.log({ solicitud, deliveryData })
@@ -3089,8 +3090,9 @@ const facturarExportacionController = async (req, res) => {
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se envio postEntrega,  CardCode: ${finalDataEntrega.CardCode || ''}, U_UserCode: ${finalDataEntrega.U_UserCode || ''}, U_NIT: ${finalDataEntrega.U_NIT || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `https://srvhana:50000/b1s/v1/DeliveryNotes`, process.env.PRD)
+            // return res.json({mensaje:'before postEntrega',deliveryBody})
             deliveryBody = await postEntrega(finalDataEntrega)
-            // return res.json({deliveryBody})
+            // return res.json({mensaje:'postEntrega',deliveryBody})
             if (deliveryBody.lang) {
 
                 const outputDir = path.join(__dirname, 'outputs');
@@ -3118,7 +3120,7 @@ const facturarExportacionController = async (req, res) => {
 
         console.log('4 delivery body fuera del if')
         console.log({ deliveryBody })
-        // return res.json({deliveryBody})
+        // return res.json({mensaje:'after post entrega',deliveryBody})
         let { responseData } = deliveryBody
         if (!responseData) {
             responseData = deliveryBody
@@ -3191,12 +3193,98 @@ const facturarExportacionController = async (req, res) => {
         const responseGenesis = await spObtenerCUF(deliveryData)
         if (responseGenesis.message) {
             endTime = Date.now()
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
         }
 
         if (responseGenesis.length != 0) {
+            const dataGenesis = responseGenesis[0]
+            const cuf = dataGenesis.cuf
+            const nroFactura = dataGenesis.factura
+            const fechaFormater = new Date(dataGenesis.fecha_emision)
+            // Extraer componentes de la fecha
+            const year = fechaFormater.getUTCFullYear();
+            const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+            const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
 
+            // Formatear la fecha en YYYYMMDD
+            const formater = `${year}${month}${day}`;
+            //TODO ------------------------------------------------------------ PATCH ENTREGA
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Se envio al patchEntrega,  cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.json({ mensaje: 'genesis', responseGenesis, dataGenesis, cuf, nroFactura, formater })
+            const responsePatchEntrega = await patchEntrega(deliveryData, {
+                U_B_cuf: `${cuf}`,
+                U_B_em_date: `${formater}`,
+                NumAtCard: `${nroFactura}`
+            })
+            if (responsePatchEntrega.status == 400) {
+                console.error({ error: responsePatchEntrega.errorMessage })
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar patchEntrega: ${responsePatchEntrega.errorMessage.value || 'linea 280'}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `Error al procesar la solicitud: patchEntrega ${responsePatchEntrega.errorMessage.value}` })
+            }
+
+            const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
+            if (responseHana.message) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf || ''}, fechaFormater: ${fechaFormater || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, responseHana, deliveryData, cuf, nroFactura, fechaFormater })
+            }
+            const DocumentLinesHana = [];
+            let cabezeraHana = [];
+
+            let DocumentAdditionalExpenses = [];
+            for (const line of responseHana) {
+                const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
+                    ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+                    DocTotal, U_OSLP_ID, U_UserCode, ...result } = line
+
+                if (!cabezeraHana.length) {
+                    cabezeraHana = {
+                        ...result,
+                        DocTotal: Number(DocTotal),
+                        U_OSLP_ID: U_OSLP_ID || "",
+                        U_UserCode: U_UserCode || ""
+                    };
+                    DocumentAdditionalExpenses = [
+                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA_EXE' },
+                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA_EXE' },
+                    ]
+
+                }
+                DocumentLinesHana.push({
+                    LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                })
+            }
+
+            const responseHanaB = {
+                ...cabezeraHana,
+                U_B_doctype: 3,
+                DocumentLines: DocumentLinesHana,
+                DocumentAdditionalExpenses
+            }
+
+            const invoiceResponse = await postInvoice(responseHanaB)
+            console.log({ invoiceResponse })
+            if (invoiceResponse.status == 400) {
+                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar la solicitud: postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}`, invoiceResponse, responseHanaB })
+            }
+            const response = {
+                status: invoiceResponse.status || {},
+                statusText: invoiceResponse.statusText || {},
+                idInvoice: invoiceResponse.idInvoice,
+                delivery: deliveryData,
+                cuf
+            }
+            console.log({ response })
+            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.json({ ...response, cuf, responseProsin, dataProsin, responsePatchEntrega, responseHana, responseHanaB })
         } else {
             endTime = Date.now()
             let dataToProsin = {}
@@ -3292,6 +3380,7 @@ const facturarExportacionController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
             }
+            
             if (dataProsin.mensaje != null) {
                 endTime = Date.now()
                 if (dataProsin.mensaje.includes('§')) {

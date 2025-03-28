@@ -65,7 +65,8 @@ const {
     allCampaignFilterController,
     getYTDByVendedorController,
     getYTDDelVendedorController, getYTDDelVendedorMontoController, getYTDMontoByVendedorController,
-    createCampaignController
+    createCampaignController,
+    ReporteOfertaPDFController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -154,5 +155,6 @@ router.post('/ytd', [validarToken, validarCampos], getYTDByVendedorController)
 router.post('/ytd-vendedor', [validarToken, validarCampos,], getYTDDelVendedorController)
 router.post('/ytd-vendedor-monto', [validarToken, validarCampos], getYTDDelVendedorMontoController)
 router.post('/ytd-monto', [validarToken, validarCampos], getYTDMontoByVendedorController)
+router.get('/reporte-oferta-pdf', [validarToken, validarCampos], ReporteOfertaPDFController)
 
 module.exports = router
