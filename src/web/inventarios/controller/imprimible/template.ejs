@@ -10,7 +10,8 @@
             font-family: "Courier New", Courier, monospace;
             font-size: 12px;
             padding: 10px;
-            margin: 0;
+            margin-left: 10px;
+            margin-right: 10px;
         }
 
         .qr-code {
@@ -85,13 +86,14 @@
 
         td {
             font-size: 12px;
+            border-bottom: 0px;
         }
 
         th {
             font-size: 12px;
             font-weight: bold;
-            border-top: 1px solid black;
-            border-bottom: 1px solid black;
+            border-top: 0.8px solid black;
+            border-bottom: 0.8px solid black;
         }
 
         .footer-text {
@@ -112,7 +114,7 @@
         .footer-signatures div {
             display: inline-block;
             width: 20%;
-            border-top: 1px solid black;
+            border-top: 0.8px solid black;
             margin: 0 5px;
             margin-top: 30px
         }
@@ -137,7 +139,6 @@
                 <p><%= data.BarCode %></p>
             </div>
         </div>
-        <hr>
 
         <div class="header-container">
 
@@ -164,9 +165,8 @@
                 </p>
             </div>
         </div>
-        <hr>
 
-        <table class="table table-bordered table-striped">
+        <table class="table">
             <thead>
                 <tr>
                     <th>Código</th>
@@ -221,7 +221,7 @@
                 Entrada de mercancias
             </p>
             <p><strong>Comentario:</strong>
-               <%= data.cambio %> <!-- agregar comentarios a la devolucion-->
+               <%= data.cambio %> <%= data.Comments %><!-- agregar comentarios a la devolucion-->
             </p>
         </div>
 

@@ -826,6 +826,20 @@ const getLayoutComprobanteContable = async (transId) => {
         throw new Error(`Error en getLayoutComprobanteContable: ${error.message || ''}`)
     }
 }
+const getBajasByUser = async (id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = `select * from ${process.env.PRD}.ifa_cob_bajas limit 20`
+        const query = `call ${process.env.PRD}.ifa_lapp_cob_bajas_por_usuario(${id_sap})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getBajasByUser: ${error.message || ''}`)
+    }
+}
 
 module.exports = {
     cobranzaGeneral,
@@ -876,5 +890,6 @@ module.exports = {
     getYearToDayByCobrador,
     getYTDCobrador,
     getPendientesBajaPorCobrador, cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza,
-    getBaja,getLayoutComprobanteContable
+    getBaja,getLayoutComprobanteContable,
+    getBajasByUser
 }

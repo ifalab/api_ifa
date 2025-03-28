@@ -435,6 +435,23 @@ const getDeudaDelCliente = async (cardCode) => {
         throw { message: `Error en getDeudaDelCliente: ${error.message}`, error }
     }
 }
+const findCliente = async (buscar, sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en findCliente:', error);
+        throw {
+            status: 400,
+            message: `Error en findCliente: ${error.message || ''}`
+        }
+    }
+}
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -460,5 +477,6 @@ module.exports = {
     clientesBySucCode,
     getClienteByCardCode,
     devolucionLayout,
-    getDeudaDelCliente
+    getDeudaDelCliente,
+    findCliente
 }
