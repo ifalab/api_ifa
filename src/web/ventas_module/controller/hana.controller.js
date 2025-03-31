@@ -1060,6 +1060,38 @@ const reporteOfertaPDF = async (id) => {
     }
 }
 
+const getCoberturaVendedor = async (idVendedor, mes, año) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_COBERTURA_BY_VENDEDOR(${idVendedor}, ${mes}, ${año})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getCoberturaVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const getCobertura = async (sucCode, mes, año) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_COBERTURA(${sucCode},${mes}, ${año})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getCobertura: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1126,5 +1158,5 @@ module.exports = {
     getYTDDelVendedor,
     getYTDDelVendedorMonto,
     getYTDMontoByVendedor,
-    reporteOfertaPDF
+    reporteOfertaPDF, getCoberturaVendedor, getCobertura
 }

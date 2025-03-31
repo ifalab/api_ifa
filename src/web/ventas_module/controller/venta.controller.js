@@ -65,7 +65,7 @@ const {
     allCampaignFilter,
     getYTDByVendedor,
     getYTDDelVendedor, getYTDDelVendedorMonto, getYTDMontoByVendedor,
-    reporteOfertaPDF
+    reporteOfertaPDF, getCoberturaVendedor, getCobertura
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1763,6 +1763,19 @@ const ReporteOfertaPDFController = async (req, res) => {
     }
 }
 
+const getCoberturaController = async (req, res) => {
+    try {
+        const { sucCode, mes, año } = req.body
+        console.log({ body: req.body })
+        const response = await getCobertura( sucCode, mes, año)
+        response.sort((a, b) => a.SlpCode - b.SlpCode);
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getCoberturaVendedorController: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1829,5 +1842,6 @@ module.exports = {
     getYTDDelVendedorController,
     getYTDDelVendedorMontoController, getYTDMontoByVendedorController,
     createCampaignController,
-    ReporteOfertaPDFController
+    ReporteOfertaPDFController,
+    getCoberturaController
 };

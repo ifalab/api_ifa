@@ -3318,6 +3318,117 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
             ControlAccount = '1120101'
         }
         
+        devolucionFinished=true
+        ///////////////////////// Entregas e invoice
+        let newDocumentLinesEntrega = []
+        let newDocumentLinesInvoice = []
+        let numLines =0
+        for (const nuevoArticulo of nuevosArticulos) {
+            const {
+                ItemCode,
+                Cantidad,
+                UnitPrice,
+                Total,
+                U_DESCLINEA,
+            } = nuevoArticulo
+            
+            let batchNumbersentrega = []
+                const batchDataEntrega = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
+                console.log({ batchDataEntrega })
+                if (batchDataEntrega.message) {
+
+                    const outputDir = path.join(__dirname, 'outputs');
+                    if (!fs.existsSync(outputDir)) {
+                        fs.mkdirSync(outputDir);
+                    }
+                    const now = new Date();
+                    const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+                    // Generar el nombre del archivo con el timestamp
+                    const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
+                    fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
+                    console.log(`Objeto allBodies guardado en ${fileNameJson}`);
+
+                    endTime = Date.now();
+                    // grabarLog(user.USERCODE, user.USERNAME, "Dovolucion Mal Estado", `${batchDataEntrega.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-mal-estado", process.env.PRD)
+                    return res.status(400).json({
+                        mensaje: `${batchDataEntrega.message || 'Error en lotesArticuloAlmacenCantidad'}`,
+                        allResponseReturn, allResponseCreditNote,
+                        facturasCompletadas, devolucionFinished
+                    })
+                }
+                if (batchDataEntrega.length > 0) {
+                    let new_quantity = 0
+                    batchDataEntrega.map((item) => {
+                        new_quantity += Number(item.Quantity).toFixed(6)
+                    })
+                    batchNumbersentrega = batchDataEntrega.map(batch => ({
+                        BaseLineNumber: numLines,
+                        BatchNumber: batch.BatchNum,
+                        Quantity: Number(batch.Quantity).toFixed(6),
+                        ItemCode: batch.ItemCode
+                    }))
+                }else{
+
+                    const outputDir = path.join(__dirname, 'outputs');
+                    if (!fs.existsSync(outputDir)) {
+                        fs.mkdirSync(outputDir);
+                    }
+                    const now = new Date();
+                    const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+                    // Generar el nombre del archivo con el timestamp
+                    const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
+                    fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
+                    console.log(`Objeto allBodies guardado en ${fileNameJson}`);
+
+                    endTime = Date.now();
+                    const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
+                    // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
+                    
+                    return res.status(400).json({
+                        mensaje,
+                        allResponseReturn, 
+                        allResponseCreditNote,
+                        facturasCompletadas,
+                        devolucionFinished
+                    })
+                }
+
+                const newLineEntrega = {
+                    ItemCode,
+                    WarehouseCode: AlmacenSalida,
+                    Quantity: Cantidad,
+                    LineNum: numLines,
+                    TaxCode: "IVA_GND",
+                    AccountCode: "6210103",
+                    GrossTotal: Total,
+                    GrossPrice: UnitPrice,
+                    U_DESCLINEA,
+                    BatchNumbers: batchNumbersentrega
+                };
+                console.log({ newLineEntrega })
+                newDocumentLinesEntrega.push(newLineEntrega)
+
+                const newLineInvoice = {
+                    BaseLine: numLines,
+                    BaseType: 15,
+                    ItemCode,
+                    WarehouseCode: AlmacenSalida,
+                    Quantity: Cantidad,
+                    LineNum: numLines,
+                    TaxCode: "IVA_GND",
+                    AccountCode: "6210103",
+                    GrossTotal: Total,
+                    GrossPrice: UnitPrice,
+                    U_DESCLINEA
+                };
+                newDocumentLinesInvoice.push(newLineInvoice)
+
+                numLines +=1
+
+        }
+
         for (const factura of facturas) {
             const {
                 Cuf,
@@ -3556,117 +3667,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
             facturasCompletadas.push(DocEntry)
         }
 
-        devolucionFinished=true
-        ///////////////////////// Entregas e invoice
-        let newDocumentLinesEntrega = []
-        let newDocumentLinesInvoice = []
-        let numLines =0
-        for (const nuevoArticulo of nuevosArticulos) {
-            const {
-                ItemCode,
-                Cantidad,
-                UnitPrice,
-                Total,
-                U_DESCLINEA,
-            } = nuevoArticulo
-            
-            let batchNumbersentrega = []
-                const batchDataEntrega = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
-                console.log({ batchDataEntrega })
-                if (batchDataEntrega.message) {
-
-                    const outputDir = path.join(__dirname, 'outputs');
-                    if (!fs.existsSync(outputDir)) {
-                        fs.mkdirSync(outputDir);
-                    }
-                    const now = new Date();
-                    const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-                    // Generar el nombre del archivo con el timestamp
-                    const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
-                    fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
-                    console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-
-                    endTime = Date.now();
-                    // grabarLog(user.USERCODE, user.USERNAME, "Dovolucion Mal Estado", `${batchDataEntrega.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-mal-estado", process.env.PRD)
-                    return res.status(400).json({
-                        mensaje: `${batchDataEntrega.message || 'Error en lotesArticuloAlmacenCantidad'}`,
-                        allResponseReturn, allResponseCreditNote,
-                        facturasCompletadas, devolucionFinished
-                    })
-                }
-                if (batchDataEntrega.length > 0) {
-                    let new_quantity = 0
-                    batchDataEntrega.map((item) => {
-                        new_quantity += Number(item.Quantity).toFixed(6)
-                    })
-                    batchNumbersentrega = batchDataEntrega.map(batch => ({
-                        BaseLineNumber: numLines,
-                        BatchNumber: batch.BatchNum,
-                        Quantity: Number(batch.Quantity).toFixed(6),
-                        ItemCode: batch.ItemCode
-                    }))
-                }else{
-
-                    const outputDir = path.join(__dirname, 'outputs');
-                    if (!fs.existsSync(outputDir)) {
-                        fs.mkdirSync(outputDir);
-                    }
-                    const now = new Date();
-                    const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-                    // Generar el nombre del archivo con el timestamp
-                    const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
-                    fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
-                    console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-
-                    endTime = Date.now();
-                    const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
-                    // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
-                    
-                    return res.status(400).json({
-                        mensaje,
-                        allResponseReturn, 
-                        allResponseCreditNote,
-                        facturasCompletadas,
-                        devolucionFinished
-                    })
-                }
-
-                const newLineEntrega = {
-                    ItemCode,
-                    WarehouseCode: AlmacenSalida,
-                    Quantity: Cantidad,
-                    LineNum: numLines,
-                    TaxCode: "IVA_GND",
-                    AccountCode: "6210103",
-                    GrossTotal: Total,
-                    GrossPrice: UnitPrice,
-                    U_DESCLINEA,
-                    BatchNumbers: batchNumbersentrega
-                };
-                console.log({ newLineEntrega })
-                newDocumentLinesEntrega.push(newLineEntrega)
-
-                const newLineInvoice = {
-                    BaseLine: numLines,
-                    BaseType: 15,
-                    ItemCode,
-                    WarehouseCode: AlmacenSalida,
-                    Quantity: Cantidad,
-                    LineNum: numLines,
-                    TaxCode: "IVA_GND",
-                    AccountCode: "6210103",
-                    GrossTotal: Total,
-                    GrossPrice: UnitPrice,
-                    U_DESCLINEA
-                };
-                newDocumentLinesInvoice.push(newLineInvoice)
-
-                numLines +=1
-
-        }
-
+        
         
         const bodyEntrega = {
             Series: 353,

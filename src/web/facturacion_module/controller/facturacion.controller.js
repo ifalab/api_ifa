@@ -28,7 +28,7 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     pedidosExportacion,
     intercom,
     obtenerEntregaDetalleExportacion,
-    reabrirOferta } = require("./hana.controller")
+    reabrirOferta, getClienteByCardCode } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -3502,6 +3502,19 @@ const facturarExportacionController = async (req, res) => {
     }
 }
 
+const getClienteByCardCodeController = async (req, res) => {
+    try {
+        const { cardCode } = req.query
+        const cliente = await getClienteByCardCode(cardCode)
+        if (cliente.length == 0)
+            return res.status(400).json({ mensaje: `No existe cliente con el codigo: ${cardCode}` })
+        return res.json(cliente[0])
+    } catch (error) {
+        console.log({ error })
+        return res
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -3536,5 +3549,6 @@ module.exports = {
     crearPedidoExportacionController,
     pedidosExportacionController,
     getIncoterm,
-    facturarExportacionController
+    facturarExportacionController,
+    getClienteByCardCodeController
 }
