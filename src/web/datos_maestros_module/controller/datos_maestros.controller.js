@@ -830,6 +830,7 @@ const cargarPreciosExcelController = async (req, res) => {
             return res.status(200).end(excelBuffer);  // Enviar el archivo Excel
         } else {
             try {
+                console.log('actualizando result: ')
                 const result = await updateListaPrecios(jsonData, usuario.ID_SAP, comment);
 
                 fs.unlinkSync(filePath);

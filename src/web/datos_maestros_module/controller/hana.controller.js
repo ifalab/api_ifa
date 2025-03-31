@@ -848,10 +848,9 @@ const updateListaPrecios = async(data, user, comentario) => {
         for (const element of data) {
             const { ItemCode, Precio, PriceList } = element;
 
-            const query = `
-                CALL LAB_IFA_DEV."IFA_DM_AGREGAR_PRECIOS"(${PriceList}, '${ItemCode}', ${Precio}, ${user}, '${comentario}')
-            `;
+            const query = `CALL ${process.env.PRD}."IFA_DM_AGREGAR_PRECIOS"(${PriceList}, '${ItemCode}', ${Precio}, ${user}, '${comentario}')`;
 
+            console.log({query})
             await executeQuery(query);
         }
 

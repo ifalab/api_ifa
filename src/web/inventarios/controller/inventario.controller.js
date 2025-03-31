@@ -274,6 +274,7 @@ const postHabilitacionController = async (req, res) => {
             DocumentLines
         }
         console.log({ dataFinal })
+        // return res.json({ dataFinal})
         const responseEntradaHabilitacion = await postEntradaHabilitacion(dataFinal)
         console.log('respuesta post entrada habilitacion')
         console.log({ responseEntradaHabilitacion })
