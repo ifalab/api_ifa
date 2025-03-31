@@ -30,7 +30,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     obtenerEntregaDetalleExportacion,
     reabrirOferta, getClienteByCardCode } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
-    cancelOrder, closeQuotations } = require("./sld.controller");
+    cancelOrder, closeQuotations, 
+    getOrdersById} = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
@@ -2935,6 +2936,7 @@ const pedidosExportacionController = async (req, res) => {
 const facturarExportacionController = async (req, res) => {
     let idData = ''
     let body = {}
+    let BodyToProsin = {}
     const startTime = Date.now();
     try {
         const id = req.query.id
@@ -2945,7 +2947,9 @@ const facturarExportacionController = async (req, res) => {
         let finalDataEntrega
         idData = id
 
-
+        const responseDelivery = await getOrdersById(id)
+        const {U_B_State} = responseDelivery.data
+        return res.json({U_B_State})
         if (!id || id == '') {
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", 'error: debe haber un ID valido', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
@@ -3198,6 +3202,7 @@ const facturarExportacionController = async (req, res) => {
         }
 
         if (responseGenesis.length != 0) {
+
             const dataGenesis = responseGenesis[0]
             const cuf = dataGenesis.cuf
             const nroFactura = dataGenesis.factura
@@ -3212,7 +3217,7 @@ const facturarExportacionController = async (req, res) => {
             //TODO ------------------------------------------------------------ PATCH ENTREGA
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Se envio al patchEntrega,  cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
-            return res.json({ mensaje: 'genesis', responseGenesis, dataGenesis, cuf, nroFactura, formater })
+            // return res.json({ mensaje: 'genesis', responseGenesis, dataGenesis, cuf, nroFactura, formater })
             const responsePatchEntrega = await patchEntrega(deliveryData, {
                 U_B_cuf: `${cuf}`,
                 U_B_em_date: `${formater}`,
@@ -3279,7 +3284,8 @@ const facturarExportacionController = async (req, res) => {
                 statusText: invoiceResponse.statusText || {},
                 idInvoice: invoiceResponse.idInvoice,
                 delivery: deliveryData,
-                cuf
+                cuf,
+                dataGenesis,
             }
             console.log({ response })
             endTime = Date.now()
@@ -3322,6 +3328,7 @@ const facturarExportacionController = async (req, res) => {
                 item.montoDescuento = 0
                 item.subTotal = Number(item.subTotal)
             })
+            // return res.json({dataToProsin})
             const { } = dataToProsin
             let formatedDataToProsin = {
                 sucursal: dataToProsin.sucursal,
@@ -3342,8 +3349,8 @@ const facturarExportacionController = async (req, res) => {
                 metodo_pago: dataToProsin.metodo_pago,
                 numeroTarjeta: dataToProsin.numeroTarjeta,
                 montoDetalle: Number(dataToProsin.montoDetalle),
-                totalGastosNacionalesFob: Number(dataToProsin.TransFrontNac) + Number(dataToProsin.SegFrontNac),
-                totalGastosInternacionales: Number(dataToProsin.TransFrontInt) + Number(dataToProsin.SegFrontInt) + Number(dataToProsin.OtrosInt),
+                totalGastosNacionalesFob: Number(dataToProsin.TransFrontNac || 0) + Number(dataToProsin.SegFrontNac || 0),
+                totalGastosInternacionales: Number(dataToProsin.TransFrontInt || 0) + Number(dataToProsin.SegFrontInt || 0) + Number(dataToProsin.OtrosInt || 0),
                 informacionAdicional: '',
                 descuentoAdicional: Number(dataToProsin.descuentoAdicional),
                 codigoMoneda: dataToProsin.codigoMoneda,
@@ -3354,21 +3361,76 @@ const facturarExportacionController = async (req, res) => {
                 mediaPagina: true,
                 detalle: dataToProsin.detalle,
                 costosGastosNacional: [
-                    { campo: 'Transporte Frontera', valor: Number(dataToProsin.TransFrontNac) },
-                    { campo: 'Seguro Frontera', valor: Number(dataToProsin.SegFrontNac) },
                 ],
                 costosGastosInternacional: [
-                    { campo: 'Transporte Internacional', valor: Number(dataToProsin.TransFrontInt) },
-                    { campo: 'Seguro Internacional', valor: Number(dataToProsin.SegFrontInt) },
-                    { campo: 'Otros', valor: Number(dataToProsin.OtrosInt) },
                 ],
                 numeroDescripcionPaquetesBultos: [
-                    { campo: 'Cajas', valor: Number(dataToProsin.paquetes1) },
                 ]
             }
+            //? nacional
+            // 
+            if (dataToProsin.TransFrontNac && Number(dataToProsin.TransFrontNac) > 0) {
+                formatedDataToProsin.costosGastosNacional.push(
+                    {
+                        campo: 'Transporte Frontera',
+                        valor: Number(dataToProsin.TransFrontNac)
+                    },
+                )
+            }
 
+            if (dataToProsin.SegFrontNac && Number(dataToProsin.SegFrontNac) > 0) {
+                formatedDataToProsin.costosGastosNacional.push(
+                    {
+                        campo: 'Seguro Frontera',
+                        valor: Number(dataToProsin.SegFrontNac)
+                    },
+                )
+            }
+            //? internacional
+            // { campo: 'Transporte Internacional', valor: Number(dataToProsin.TransFrontInt) },
+            if (dataToProsin.TransFrontInt && Number(dataToProsin.TransFrontInt) > 0) {
+                formatedDataToProsin.costosGastosInternacional.push(
+                    {
+                        campo: 'Transporte Internacional',
+                        valor: Number(dataToProsin.TransFrontInt)
+                    },
+                )
+            }
+            // { campo: 'Seguro Internacional', valor: Number(dataToProsin.SegFrontInt) },
+            if (dataToProsin.SegFrontInt && Number(dataToProsin.SegFrontInt) > 0) {
+                formatedDataToProsin.costosGastosInternacional.push(
+                    {
+                        campo: 'Seguro Internacional',
+                        valor: Number(dataToProsin.SegFrontInt)
+                    },
+                )
+            }
+            // { campo: 'Otros', valor: Number(dataToProsin.OtrosInt) },
+            if (dataToProsin.OtrosInt && Number(dataToProsin.OtrosInt) > 0) {
+                formatedDataToProsin.costosGastosInternacional.push(
+                    {
+                        campo: 'Otros',
+                        valor: Number(dataToProsin.OtrosInt)
+                    },
+                )
+            }
+            //? numeroDescrip
+            // { campo: 'Cajas', valor: Number(dataToProsin.paquetes1) },
+            if (dataToProsin.paquetes1 && Number(dataToProsin.paquetes1) > 0) {
+                formatedDataToProsin.numeroDescripcionPaquetesBultos.push(
+                    {
+                        campo: 'Cajas',
+                        valor: Number(dataToProsin.paquetes1)
+                    },
+                )
+            }
+
+            // return res.json({ formatedDataToProsin })
+            BodyToProsin = formatedDataToProsin
             const responseProsin = await facturacionExportacionProsin(formatedDataToProsin, user)
             console.log(JSON.stringify(responseProsin, null, 2))
+            console.log({mensaje:'ya se ejecuto factura exportacion'})
+            return res.json({responseProsin})
             const { data: dataProsin } = responseProsin
             if (dataProsin && dataProsin.estado != 200) {
                 endTime = Date.now()
@@ -3380,7 +3442,7 @@ const facturarExportacionController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
             }
-            
+
             if (dataProsin.mensaje != null) {
                 endTime = Date.now()
                 if (dataProsin.mensaje.includes('§')) {
@@ -3392,11 +3454,9 @@ const facturarExportacionController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
             }
-            return res.json({ dataProsin, formatedDataToProsin })
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
             const cuf = dataProsin.datos.cuf
-            // return res.json({ delivery, fecha,nroFactura,cuf })
             console.log({ fecha })
             const formater = fecha.split('/')
             const day = formater[0]
@@ -3489,15 +3549,13 @@ const facturarExportacionController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
             return res.json({ ...response, cuf, responseProsin, dataProsin, responsePatchEntrega, responseHana, responseHanaB })
         }
-
-        // return res.json({ formatedDataToProsin, body })
     } catch (error) {
-        console.log({ error })
-        console.log({ error })
+        console.log(JSON.stringify({ error }, null, 2))
         return res.status(500).json({
             mensaje: `Error en el controlador. ${error.message || 'no definido'}`,
             error,
-            idData
+            idData,
+            BodyToProsin
         })
     }
 }

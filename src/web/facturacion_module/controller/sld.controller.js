@@ -193,6 +193,54 @@ const facturacionByIdSld = async (id) => {
     }
 }
 
+const getOrdersById = async (id) => {
+    try {
+
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/Orders(${id})`
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        return { data: sapResponse.data }
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la getOrdersById Get/Orders';
+        return errorMessage
+    }
+}
+
+const setOrderState = async (id,state) => {
+    try {
+
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/Orders(${id})`
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        return { data: sapResponse.data }
+    } catch (error) {
+        console.log({ error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la getOrdersById Get/Orders';
+        return errorMessage
+    }
+}
+
 const cancelInvoice = async (id) => {
     try {
         const currentSession = await validateSession();
@@ -296,5 +344,6 @@ module.exports = {
     cancelDeliveryNotes,
     cancelOrder,
     closeQuotations,
-    getEntrega
+    getEntrega,
+    getOrdersById
 }
