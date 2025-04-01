@@ -46,7 +46,7 @@ const postIncommingPayments = async (body) => {
     try {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
-
+        body.Series = process.env.SAP_SERIES_INCOMING_PAYMENT
         const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments`;
 
         // Configura los encabezados para la solicitud

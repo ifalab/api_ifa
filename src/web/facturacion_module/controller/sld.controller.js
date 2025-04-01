@@ -47,6 +47,7 @@ const postEntrega = async (responseJson) => {
             Prefer: 'return-no-content'
         };
         const url = 'https://srvhana:50000/b1s/v1/DeliveryNotes';
+        responseJson.Series = process.env.SAP_SERIES_DELIVERY_NOTES
         const sapResponse = await axios.post(url, responseJson, {
             httpsAgent: agent,
             headers: headers,
@@ -145,6 +146,7 @@ const postInvoice = async (body) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             //Prefer: 'return-no-content'
         };
+        body.Series = process.env.SAP_SERIES_DELIVERY_NOTES
         const url = 'https://172.16.11.25:50000/b1s/v1/Invoices';
         const sapResponse = await axios.post(url, body, {
             httpsAgent: agent,
