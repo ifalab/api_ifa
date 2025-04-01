@@ -452,6 +452,23 @@ const findCliente = async (buscar, sucCode) => {
         }
     }
 }
+
+const getAlmacenesSucursal = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "WhsCode", "WhsName", "SucCode" from ${process.env.PRD}.IFA_DM_ALMACENES`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getAlmacenesSucursal: ${error.message}`)
+    }
+}
+
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -478,5 +495,6 @@ module.exports = {
     getClienteByCardCode,
     devolucionLayout,
     getDeudaDelCliente,
-    findCliente
+    findCliente,
+    getAlmacenesSucursal
 }

@@ -14,7 +14,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     stockDisponiblePorSucursal,
     clientesBySucCode, getClienteByCardCode,
     devolucionLayout, getDeudaDelCliente,
-    findCliente } = require("./hana.controller")
+    findCliente, getAlmacenesSucursal } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega } = require("../../facturacion_module/controller/sld.controller")
@@ -2242,7 +2242,7 @@ const getAllCreditNotesController = async (req, res) => {
 
 const devolucionMalEstadoController = async (req, res) => {
     try {
-        const { Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap } = req.body
+        const { Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
         console.log({ Devoluciones, AlmacenIngreso, CardCode, id_sap })
         let numRet = 0
         let newDocumentLinesReturn = []
@@ -2322,6 +2322,8 @@ const devolucionMalEstadoController = async (req, res) => {
             Series: 352,
             CardCode: CardCode,
             U_UserCode: id_sap,
+            JournalMemo:Comentario,
+            Comments: Comentario,
             DocumentLines: newDocumentLinesReturn,
         }
         console.log(JSON.stringify({ bodyReturn }, null, 2))
@@ -2353,6 +2355,8 @@ const devolucionMalEstadoController = async (req, res) => {
             Series: 353,
             CardCode: CardCode,
             U_UserCode: id_sap,
+            JournalMemo: Comentario,
+            Comments: Comentario,
             DocumentLines: newDocumentLinesEntrega,
         }
         console.log({ bodyEntrega })
@@ -3964,6 +3968,23 @@ const findClienteController = async (req, res) => {
     }
 }
 
+const getAlmacenesSucursalController = async (req, res) => {
+    try {
+        const { listSucCode } = req.body
+        let listClients = []
+        const clientes = await getAlmacenesSucursal()
+        // return res.json(clientes)
+        listSucCode.map((sucursal) => {
+            const filter = clientes.filter(client => client.SucCode == sucursal)
+            listClients = [...listClients, ...filter]
+        })
+        return res.json(listClients)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({mensaje: `Error en getAlmacenesSucursalController: ${error.message || 'No definido'}`})
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -3999,5 +4020,6 @@ module.exports = {
     imprimibleDevolucionController,
     devolucionPorValoradoDifArticulosController,
     imprimibleSalidaController,
-    findClienteController
+    findClienteController,
+    getAlmacenesSucursalController
 }
