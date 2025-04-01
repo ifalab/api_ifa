@@ -105,7 +105,7 @@ const moraController = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
         const mora = await moraCliente(cardCode)
-        return res.json({ mora })
+        return res.json(mora)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })

@@ -536,6 +536,24 @@ const reabrirLineas = async (id_linea, doc_lin) => {
         throw new Error(`Error en reabrirLineas ${error.message}`)
     }
 }
+
+const getClienteByCardCode = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT 
+        *
+        FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getClienteByCardCode: ${error.message}`)
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -567,5 +585,6 @@ module.exports = {
     obtenerEntregaDetalleExportacion,
     reabrirOferta,
     reabrirLineas,
-    obtenerDetallePedidoAnulado
+    obtenerDetallePedidoAnulado,
+    getClienteByCardCode
 }
