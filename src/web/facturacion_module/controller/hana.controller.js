@@ -512,7 +512,7 @@ const obtenerDetallePedidoAnulado = async(id_pedido) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}."ifa_ven_pedidos_detalle_anulados" where "DocEntry" = ${id_pedido}`
+        const query = `select * from ${process.env.PRD}.ifa_ven_pedidos_detalle_anulados where "DocEntry" = ${id_pedido}`
         console.log({query})
         const result = await executeQuery(query)
         return result
@@ -554,6 +554,36 @@ const getClienteByCardCode = async (cardCode) => {
     }
 }
 
+const getOrdersById = async(id)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.getOrderByDocEntry(${id})`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getOrdersById: ${error.message}`)
+    }
+}
+
+const setOrderState= async(id,state)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.setOrderState(${id},'${state}')`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de setOrderState: ${error.message}`)
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -586,5 +616,7 @@ module.exports = {
     reabrirOferta,
     reabrirLineas,
     obtenerDetallePedidoAnulado,
-    getClienteByCardCode
+    getClienteByCardCode,
+    getOrdersById,
+    setOrderState,
 }

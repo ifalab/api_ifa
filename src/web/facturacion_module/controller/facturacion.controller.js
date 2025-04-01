@@ -28,10 +28,13 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     pedidosExportacion,
     intercom,
     obtenerEntregaDetalleExportacion,
-    reabrirOferta, getClienteByCardCode } = require("./hana.controller")
+    reabrirOferta, getClienteByCardCode, 
+    obtenerDetallePedidoAnulado,
+    reabrirLineas,
+    getOrdersById,
+    setOrderState} = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
-    cancelOrder, closeQuotations, 
-    getOrdersById} = require("./sld.controller");
+    cancelOrder, closeQuotations, } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
@@ -2920,7 +2923,7 @@ const pedidosExportacionController = async (req, res) => {
         pedidos.map((item) => {
             const usd = +item.DocRate
             if (!usd || usd == 0) {
-                return res.status(400).json({ mensaje: 'El tipo de cambio es 0' })
+                return res.status(400).json({ mensaje: 'El tipo de cambio es 0',usd,item })
             }
             const docTotalUSD = (+item.DocTotal) / usd
             item.DocTotalUSD = Number(docTotalUSD.toFixed(2))
@@ -2947,25 +2950,75 @@ const facturarExportacionController = async (req, res) => {
         let finalDataEntrega
         idData = id
 
-        const responseDelivery = await getOrdersById(id)
-        const {U_B_State} = responseDelivery.data
-        return res.json({U_B_State})
+        const responseDeliveryByID = await getOrdersById(id)
+        // return res.json({ responseDeliveryByID })
+        const { U_B_State } = responseDeliveryByID.data
+        const stateData  = await setOrderState(id, '')
+        return res.json({stateData,U_B_State})
+        if (U_B_State == null) {
+            const setOrderResponse = await setOrderState(id, 'P') // pendiente 
+            if (setOrderResponse.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+            }
+            return res.json({ mensaje: 'estado cambiado ', setOrderResponse })
+        }
+
+        if (U_B_State == 'P') {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se puede Facturar una Orden con Estado Pendiente , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.json({ mensaje: 'No se puede Facturar una Orden con Estado P - Pendiente', })
+        }
+
+        if (U_B_State == 'R') {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se puede Facturar una Orden con Estado R - Procesado , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.json({ mensaje: 'No se puede Facturar una Orden con Estado R - Procesado', })
+        }
+
+        if (U_B_State == 'E') {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se puede Facturar una Orden con Estado E - Error , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.json({ mensaje: 'No se puede Facturar una Orden con Estado E - Error', })
+        }
+
         if (!id || id == '') {
+
+            const setOrderResponse = await setOrderState(id, null) // pendiente 
+            if (setOrderResponse.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+            }
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", 'error: debe haber un ID valido', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'debe haber un ID valido' })
         }
         const solicitud = await solicitarId(id);
         if (solicitud.message) {
+
+            const setOrderResponse = await setOrderState(id, null) // pendiente 
+            if (setOrderResponse.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+            }
+
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `${solicitud.message || 'Error en solicitarId'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
             return res.status(400).json({ mensaje: `${solicitud.message || 'Error en solicitarId'}` })
         }
 
         if (solicitud.result.length > 1) {
+            const setOrderResponse = await setOrderState(id, null) // pendiente 
+            if (setOrderResponse.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+            }
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Existe más de una entrega`, `${solicitud.query || ''}. [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
-
             return res.status(400).json({ mensaje: 'Existe más de una entrega' })
         }
 
@@ -2980,6 +3033,12 @@ const facturarExportacionController = async (req, res) => {
             console.log('1 solicitud tiene mas de uno')
             // console.log({ solicitud, deliveryData })
             if (deliveryBody.message) {
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${deliveryBody.message || 'Error en obtenerEntregaDetalle'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_EXP_DETALLE(${deliveryData})`, process.env.PRD)
                 return res.status(400).json({ mensaje: `${deliveryBody.message || ''}` })
@@ -2996,11 +3055,24 @@ const facturarExportacionController = async (req, res) => {
             console.log({ facturacion })
             // return res.json({facturacion})
             if (facturacion.lang) {
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar: ${facturacion.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `Hubo un error al facturar: ${facturacion.value || ''}` })
             }
             if (!facturacion.data) {
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error: Hubo un error al facturar`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `Hubo un error al facturar`, facturacion })
@@ -3008,6 +3080,14 @@ const facturarExportacionController = async (req, res) => {
             const data = facturacion.data
             const { DocumentLines, ...restData } = data
             if (!DocumentLines) {
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error: No existen los DocumentLines en la facturacion por ID', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'No existen los DocumentLines en la facturacion por ID ' })
@@ -3022,6 +3102,14 @@ const facturarExportacionController = async (req, res) => {
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
                 console.log({ batch: batchData })
                 if (batchData.message) {
+
+                    const setOrderResponse = await setOrderState(id, null) // pendiente 
+                    if (setOrderResponse.lang) {
+                        endTime = Date.now();
+                        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                        return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                    }
+
                     endTime = Date.now();
                     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                     return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
@@ -3098,18 +3186,26 @@ const facturarExportacionController = async (req, res) => {
             deliveryBody = await postEntrega(finalDataEntrega)
             // return res.json({mensaje:'postEntrega',deliveryBody})
             if (deliveryBody.lang) {
+                
+                // const outputDir = path.join(__dirname, 'outputs');
+                // if (!fs.existsSync(outputDir)) {
+                //     fs.mkdirSync(outputDir);
+                // }
+                // const now = new Date();
+                // const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
 
-                const outputDir = path.join(__dirname, 'outputs');
-                if (!fs.existsSync(outputDir)) {
-                    fs.mkdirSync(outputDir);
+                // // Generar el nombre del archivo con el timestamp
+                // const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
+                // fs.writeFileSync(fileNameJson, JSON.stringify(finalDataEntrega, null, 2), 'utf8');
+                // console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
                 }
-                const now = new Date();
-                const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
 
-                // Generar el nombre del archivo con el timestamp
-                const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
-                fs.writeFileSync(fileNameJson, JSON.stringify(finalDataEntrega, null, 2), 'utf8');
-                console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno en la entrega de sap en postEntrega: ${deliveryBody.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `error interno en la entrega de sap. ${deliveryBody.value || ''}`, respuestaSapEntrega: deliveryBody, finalDataEntrega })
@@ -3131,6 +3227,14 @@ const facturarExportacionController = async (req, res) => {
         } else {
             const delivery = deliveryBody.deliveryN44umber
             if (!delivery) {
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", 'Error del sap, no se pudo crear la entrega, no se encontro el deliveryNumber en la respuesta', `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: 'error del sap, no se pudo crear la entrega, falta delivery linea 164 en el controlador de la factura' })
@@ -3150,6 +3254,14 @@ const facturarExportacionController = async (req, res) => {
         console.log({ deliveryData })
 
         if (responseData.lang) {
+
+            const setOrderResponse = await setOrderState(id, null) // pendiente 
+            if (setOrderResponse.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+            }
+
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno de SAP. ${responseData.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: `Error interno de sap. ${responseData.value || ''}` })
@@ -3196,6 +3308,14 @@ const facturarExportacionController = async (req, res) => {
         // return res.json({bodyFinalFactura})
         const responseGenesis = await spObtenerCUF(deliveryData)
         if (responseGenesis.message) {
+
+            const setOrderResponse = await setOrderState(id, null) // pendiente 
+            if (setOrderResponse.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+            }
+
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
@@ -3224,6 +3344,14 @@ const facturarExportacionController = async (req, res) => {
                 NumAtCard: `${nroFactura}`
             })
             if (responsePatchEntrega.status == 400) {
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
                 console.error({ error: responsePatchEntrega.errorMessage })
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar patchEntrega: ${responsePatchEntrega.errorMessage.value || 'linea 280'}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
@@ -3232,6 +3360,14 @@ const facturarExportacionController = async (req, res) => {
 
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
             if (responseHana.message) {
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf || ''}, fechaFormater: ${fechaFormater || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, responseHana, deliveryData, cuf, nroFactura, fechaFormater })
@@ -3275,6 +3411,14 @@ const facturarExportacionController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar la solicitud: postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}`, invoiceResponse, responseHanaB })
@@ -3288,6 +3432,12 @@ const facturarExportacionController = async (req, res) => {
                 dataGenesis,
             }
             console.log({ response })
+            const setOrderResponse = await setOrderState(id, 'R') //Procesada
+            if (setOrderResponse.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: Facturacion con exito pero No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.json({ mensaje: 'Facturacion con Exito pero No se pudo cambiar el estado de la orden a R - Procesado ', setOrderResponse })
+            }
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
             return res.json({ ...response, cuf, responseProsin, dataProsin, responsePatchEntrega, responseHana, responseHanaB })
@@ -3307,12 +3457,28 @@ const facturarExportacionController = async (req, res) => {
             dataToProsin.tipo_identificacion = 4
             if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion == 1 || dataToProsin.tipo_identificacion == 5)) {
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error el tipo de identificacion es ${dataToProsin.tipo_identificacion || 'No definido'}, codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, dataToProsin, bodyFinalFactura })
             }
 
             if (dataToProsin.correo == null || dataToProsin.correo == '') {
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error no hay datos en CORREO. codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
@@ -3429,16 +3595,33 @@ const facturarExportacionController = async (req, res) => {
             BodyToProsin = formatedDataToProsin
             const responseProsin = await facturacionExportacionProsin(formatedDataToProsin, user)
             console.log(JSON.stringify(responseProsin, null, 2))
-            console.log({mensaje:'ya se ejecuto factura exportacion'})
-            return res.json({responseProsin})
+            console.log({ mensaje: 'ya se ejecuto factura exportacion' })
+            //! return res.json({ responseProsin })
             const { data: dataProsin } = responseProsin
             if (dataProsin && dataProsin.estado != 200) {
                 endTime = Date.now()
                 if (dataProsin.mensaje.includes('§')) {
                     const mensaje = dataProsin.mensaje.split('§')
+
+                    const setOrderResponse = await setOrderState(id, null) // pendiente 
+                    if (setOrderResponse.lang) {
+                        endTime = Date.now();
+                        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                        return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                    }
+                    endTime = Date.now();
                     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                     return res.status(400).json({ mensaje: `error de prosin ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, dataProsin, formatedDataToProsin, deliveryData })
                 }
+
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
+                endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
             }
@@ -3446,11 +3629,28 @@ const facturarExportacionController = async (req, res) => {
             if (dataProsin.mensaje != null) {
                 endTime = Date.now()
                 if (dataProsin.mensaje.includes('§')) {
+
+                    const setOrderResponse = await setOrderState(id, null) // pendiente 
+                    if (setOrderResponse.lang) {
+                        endTime = Date.now();
+                        grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                        return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                    }
+
+                    endTime = Date.now();
                     const mensaje = dataProsin.mensaje.split('§')
                     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                     return res.status(400).json({ mensaje: `error de prosin ${mensaje[mensaje.length - 1] || dataProsin.mensaje || "No definido"}`, dataProsin, formatedDataToProsin, deliveryData })
                 }
 
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
+
+                endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error Prosin: ${dataProsin.mensaje || dataProsin.estado || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error de prosin ${dataProsin.mensaje || ''}`, dataProsin, formatedDataToProsin, deliveryData })
             }
@@ -3466,6 +3666,12 @@ const facturarExportacionController = async (req, res) => {
             const year = yearFomater[0]
             console.log({ day, month, year })
             if (year.length > 4) {
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error en el formateo de la fecha: linea 360`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'error al formateo de la fecha', year })
@@ -3483,6 +3689,12 @@ const facturarExportacionController = async (req, res) => {
 
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar la solicitud patchEntrega: ${responsePatchEntrega.errorMessage.value || "No definido"}, U_B_cuf: ${cuf || ''}, U_B_em_date: ${fechaFormater || 'No definido'} ,NumAtCard: ${nroFactura || 'No definido'}, delivery: ${deliveryData || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}`, responsePatchEntrega, deliveryData, U_B_cuf: `${cuf}`, U_B_em_date: `${fechaFormater}`, NumAtCard: `${nroFactura}` })
@@ -3490,6 +3702,12 @@ const facturarExportacionController = async (req, res) => {
 
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
             if (responseHana.message) {
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf || ''}, fechaFormater: ${fechaFormater || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, responseHana, deliveryData, cuf, nroFactura, fechaFormater })
@@ -3533,6 +3751,12 @@ const facturarExportacionController = async (req, res) => {
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
+                const setOrderResponse = await setOrderState(id, null) // pendiente 
+                if (setOrderResponse.lang) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                    return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                }
                 endTime = Date.now()
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar la solicitud: postInvoice: ${invoiceResponse.errorMessage.value || ""}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
                 return res.status(400).json({ mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}`, invoiceResponse, responseHanaB })
@@ -3545,12 +3769,24 @@ const facturarExportacionController = async (req, res) => {
                 cuf
             }
             console.log({ response })
+            const setOrderResponse = await setOrderState(id, 'R') //Procesada
+            if (setOrderResponse.lang) {
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: Facturacion con exito pero No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.json({ mensaje: 'Facturacion con Exito pero No se pudo cambiar el estado de la orden a R - Procesado ', setOrderResponse })
+            }
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
             return res.json({ ...response, cuf, responseProsin, dataProsin, responsePatchEntrega, responseHana, responseHanaB })
         }
     } catch (error) {
         console.log(JSON.stringify({ error }, null, 2))
+        const setOrderResponse = await setOrderState(+idData, '') // pendiente 
+        if (setOrderResponse.lang) {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+        }
         return res.status(500).json({
             mensaje: `Error en el controlador. ${error.message || 'no definido'}`,
             error,
