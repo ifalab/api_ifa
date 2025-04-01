@@ -1092,6 +1092,54 @@ const getCobertura = async (sucCode, mes, año) => {
     }
 }
 
+const clientesNoVenta = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_CLIENTES_NO_VENTA(${sucCode})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesNoVenta: ${error.message || ''}`
+        }
+    }
+}
+
+const clientesNoVentaPorVendedor = async (vendedorCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_CLIENTES_NO_VENTA_POR_VENDEDOR(${vendedorCode})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesNoVentaPorVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const vendedoresAsignedWithClientsBySucursal = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_VENDEDORES_QUE_TIENEN_CLIENTES_POR_SUC(${sucCode})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en vendedoresAsignedWithClientsBySucursal: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1154,9 +1202,10 @@ module.exports = {
     obtenerClientesSinUbicacion,
     clientesSinUbicacionSupervisor,
     allCampaignFilter,
-    getYTDByVendedor,
-    getYTDDelVendedor,
-    getYTDDelVendedorMonto,
-    getYTDMontoByVendedor,
-    reporteOfertaPDF, getCoberturaVendedor, getCobertura
+    getYTDByVendedor, getYTDDelVendedor,
+    getYTDDelVendedorMonto, getYTDMontoByVendedor,
+    reporteOfertaPDF,
+    getCoberturaVendedor, getCobertura,
+    clientesNoVenta, clientesNoVentaPorVendedor,
+    vendedoresAsignedWithClientsBySucursal
 }

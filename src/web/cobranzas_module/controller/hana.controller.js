@@ -831,7 +831,6 @@ const getBajasByUser = async (id_sap) => {
         if (!connection) {
             await connectHANA();
         }
-        // const query = `select * from ${process.env.PRD}.ifa_cob_bajas limit 20`
         const query = `call ${process.env.PRD}.ifa_lapp_cob_bajas_por_usuario(${id_sap})`
         const result = await executeQuery(query)
         return result

@@ -65,7 +65,8 @@ const {
     allCampaignFilter,
     getYTDByVendedor,
     getYTDDelVendedor, getYTDDelVendedorMonto, getYTDMontoByVendedor,
-    reporteOfertaPDF, getCoberturaVendedor, getCobertura
+    reporteOfertaPDF, getCoberturaVendedor, getCobertura,
+    clientesNoVenta, clientesNoVentaPorVendedor, vendedoresAsignedWithClientsBySucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1776,6 +1777,44 @@ const getCoberturaController = async (req, res) => {
     }
 }
 
+const clientesNoVentaController = async (req, res) => {
+    try {
+        const { sucCode } = req.body
+        console.log({ body: req.body })
+        const response = await clientesNoVenta(sucCode)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en clientesNoVentaController: ${error.message}` })
+    }
+}
+
+const clientesNoVentaPorVendedorController = async (req, res) => {
+    try {
+        const { vendedorCode } = req.body
+        console.log({ body: req.body })
+        const response = await clientesNoVentaPorVendedor(vendedorCode)
+        
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en clientesNoVentaPorVendedorController: ${error.message}` })
+    }
+}
+
+const getVendedoresThatHasClientsController = async (req, res) => {
+    try {
+        const { sucCode } = req.query
+        const response = await vendedoresAsignedWithClientsBySucursal(sucCode)
+        
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getVendedoresThatHasClientsController: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -1843,5 +1882,7 @@ module.exports = {
     getYTDDelVendedorMontoController, getYTDMontoByVendedorController,
     createCampaignController,
     ReporteOfertaPDFController,
-    getCoberturaController
+    getCoberturaController,
+    clientesNoVentaController, clientesNoVentaPorVendedorController, 
+    getVendedoresThatHasClientsController
 };
