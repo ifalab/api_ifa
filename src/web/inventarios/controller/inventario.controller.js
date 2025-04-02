@@ -317,7 +317,7 @@ const descripcionArticuloController = async (req, res) => {
         const { itemCode } = req.body
         const response = await descripcionArticulo(itemCode)
         if (response.length == 0) return res.status(404).json({ mensaje: 'El articulo no fue encontrado' })
-        return res.json({ ItemName: response[0].ItemName })
+        return res.json(response[0])
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en descripcionArticuloController: ${error.message}` })
@@ -2359,7 +2359,7 @@ const devolucionMalEstadoController = async (req, res) => {
             Comments: Comentario,
             DocumentLines: newDocumentLinesEntrega,
         }
-        console.log({ bodyEntrega })
+        console.log(JSON.stringify({ bodyEntrega }, null, 2))
         const responseEntrega = await postEntrega(bodyEntrega)
 
         if (responseEntrega.lang) {

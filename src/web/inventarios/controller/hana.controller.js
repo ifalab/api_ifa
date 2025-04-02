@@ -108,7 +108,7 @@ const descripcionArticulo = async (itemCode) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select "ItemName" from ${process.env.PRD}.oitm where "ItemCode" = '${itemCode}'`
+        const query = `select "ItemName", "NumInSale" from ${process.env.PRD}.oitm where "ItemCode" = '${itemCode}'`
         const result = executeQuery(query)
         return result
     } catch (error) {
