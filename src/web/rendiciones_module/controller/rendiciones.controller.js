@@ -235,7 +235,8 @@ const crearRendicionController = async (req, res) => {
                 new_id_cuenta,
                 new_beneficiario,
                 new_cod_beneficiario,
-                new_detalle_cuenta
+                new_detalle_cuenta,
+                ''
             )
             result.push(responseHana[0] || responseHana)
 
