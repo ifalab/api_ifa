@@ -2947,8 +2947,16 @@ const facturarExportacionController = async (req, res) => {
         const id_sap = user.ID_SAP
         let deliveryData
         let deliveryBody
+        let usd = 0
         let finalDataEntrega
         idData = id
+
+        const usdRate = await tipoDeCambio()
+        if (usdRate.length == 0) {
+            return res.json({ mensaje: 'No se obtuvo el tipo de cambio' })
+        }
+        usd = +usdRate[0].Rate
+        // return res.json({ usd })
 
         const responseDeliveryByID = await getOrdersById(id)
         // const setOrderResponse = await setOrderState(id, '') // null 
@@ -3034,7 +3042,7 @@ const facturarExportacionController = async (req, res) => {
             //return res.json({solicitud})
             deliveryData = solicitud.result[0].DocEntry
             endTime = Date.now()
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se consulto obtenerEntregaDetalle,  deliveryData: ${deliveryData || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE( ${deliveryData || ''})`, process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Se consulto obtenerEntregaDetalle,  deliveryData: ${deliveryData || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE( ${deliveryData || ''})`, process.env.PRD)
             deliveryBody = await obtenerEntregaDetalleExportacion(deliveryData)
             // return res.json({mensaje:'after obtenerEntregaDetalleExportacion',deliveryBody,deliveryData})
             // return res.json({deliveryBody})
@@ -3055,12 +3063,12 @@ const facturarExportacionController = async (req, res) => {
 
         if (!deliveryBody) {
 
-            // const { data } = await facturacionById(id)
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se al consulto facturacionByIdSld,  id: ${id || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "https://srvhana:50000/b1s/v1/Orders(${id})", process.env.PRD)
             const facturacion = await facturacionByIdSld(id)
             console.log('2 facturacion ')
             console.log({ facturacion })
+            // await setOrderState(id, '') //! pendiente 
             // return res.json({facturacion})
             if (facturacion.lang) {
                 const setOrderResponse = await setOrderState(id, '') // pendiente 
@@ -3103,10 +3111,15 @@ const facturarExportacionController = async (req, res) => {
 
             let batchNumbers = []
             let newDocumentLines = []
-            // return res.json({data})
+
             for (const line of DocumentLines) {
                 let newLine = {}
-                const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, LineStatus, ...restLine } = line;
+                const {
+                    ItemCode, WarehouseCode, Quantity,
+                    UnitsOfMeasurment, LineNum, BaseLine: base1,
+                    BaseType: base2, BaseEntry: base3,
+                    LineStatus, ...restLine
+                } = line;
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
                 console.log({ batch: batchData })
                 if (batchData.message) {
@@ -3162,6 +3175,7 @@ const facturarExportacionController = async (req, res) => {
                 DocumentLines: newDocumentLines
             }
             console.log('rest data------------------------------------------------------------')
+            //  await setOrderState(id, '') //! pendiente 
             // return res.json({ restData })
             const { U_NIT, U_RAZSOC, U_UserCode } = restData
             console.log({ restData })
@@ -3174,8 +3188,6 @@ const facturarExportacionController = async (req, res) => {
             } = newData;
 
             const finalData = {
-                // DocDate,
-                // DocDueDate,
                 CardCode,
                 U_NIT,
                 U_RAZSOC,
@@ -3184,28 +3196,14 @@ const facturarExportacionController = async (req, res) => {
             }
 
             finalDataEntrega = finalData
-            // return res.json({ ...finalDataEntrega })
             console.log('FINAL ENTREGA------------------------------------------------------------')
             console.log({ finalDataEntrega })
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
             endTime = Date.now()
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se envio postEntrega,  CardCode: ${finalDataEntrega.CardCode || ''}, U_UserCode: ${finalDataEntrega.U_UserCode || ''}, U_NIT: ${finalDataEntrega.U_NIT || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `https://srvhana:50000/b1s/v1/DeliveryNotes`, process.env.PRD)
-            // return res.json({mensaje:'before postEntrega',deliveryBody})
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion exportacion", `Se envio postEntrega,  CardCode: ${finalDataEntrega.CardCode || ''}, U_UserCode: ${finalDataEntrega.U_UserCode || ''}, U_NIT: ${finalDataEntrega.U_NIT || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `https://srvhana:50000/b1s/v1/DeliveryNotes`, process.env.PRD)
             deliveryBody = await postEntrega(finalDataEntrega)
-            // return res.json({mensaje:'postEntrega',deliveryBody})
+
             if (deliveryBody.lang) {
-
-                // const outputDir = path.join(__dirname, 'outputs');
-                // if (!fs.existsSync(outputDir)) {
-                //     fs.mkdirSync(outputDir);
-                // }
-                // const now = new Date();
-                // const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-                // // Generar el nombre del archivo con el timestamp
-                // const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
-                // fs.writeFileSync(fileNameJson, JSON.stringify(finalDataEntrega, null, 2), 'utf8');
-                // console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
 
                 const setOrderResponse = await setOrderState(id, '') // pendiente 
                 if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
@@ -3220,6 +3218,8 @@ const facturarExportacionController = async (req, res) => {
             }
             console.log('3 post entrega')
             console.log({ deliveryBody })
+            await setOrderState(id, '') //! pendiente 
+            return res.json({ restData, deliveryBody })
             // return res.json({ deliveryBody })
             // console.log('response post entrega ejecutado')
 
@@ -3228,7 +3228,8 @@ const facturarExportacionController = async (req, res) => {
 
         console.log('4 delivery body fuera del if')
         console.log({ deliveryBody })
-        // return res.json({mensaje:'after post entrega',deliveryBody})
+        await setOrderState(id, '') //! pendiente 
+        return res.json({ mensaje: 'after post entrega', deliveryBody })
         let { responseData } = deliveryBody
         if (!responseData) {
             responseData = deliveryBody
@@ -3254,7 +3255,8 @@ const facturarExportacionController = async (req, res) => {
 
         console.log('6 responseData de delivery body')
         console.log({ responseData })
-        // return res.json({ responseData })
+        await setOrderState(id, '') //! pendiente 
+        return res.json({ responseData })
         if (responseData.deliveryN44umber) { ///
             deliveryData = responseData.deliveryN44umber
         }
@@ -3366,7 +3368,7 @@ const facturarExportacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: `Error al procesar la solicitud: patchEntrega ${responsePatchEntrega.errorMessage.value}` })
             }
 
-            const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
+            const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
             if (responseHana.message) {
 
                 const setOrderResponse = await setOrderState(id, '') // pendiente 
@@ -3377,12 +3379,12 @@ const facturarExportacionController = async (req, res) => {
                 }
 
                 endTime = Date.now()
-                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf || ''}, fechaFormater: ${fechaFormater || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
-                return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, responseHana, deliveryData, cuf, nroFactura, fechaFormater })
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}, cuf: ${cuf || ''}, fechaFormater: ${fechaFormater || ''}, formater: ${formater || ''}, nroFactura: ${nroFactura || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+                return res.status(400).json({ mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, responseHana, deliveryData, cuf, nroFactura, fechaFormater, formater })
             }
             const DocumentLinesHana = [];
             let cabezeraHana = [];
-
+            let total = 0
             let DocumentAdditionalExpenses = [];
             for (const line of responseHana) {
                 const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
@@ -3395,23 +3397,40 @@ const facturarExportacionController = async (req, res) => {
                         DocTotal: Number(DocTotal),
                         U_OSLP_ID: U_OSLP_ID || "",
                         U_UserCode: U_UserCode || ""
+                        // U_UserCode: 0
                     };
                     DocumentAdditionalExpenses = [
-                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_EXE' },
-                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_EXE' },
-                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA_EXE' },
-                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA_EXE' },
+                        // { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_EXE' },
+                        // { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_EXE' },
+                        // { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA_EXE' },
+                        // { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA_EXE' },
                     ]
 
                 }
                 DocumentLinesHana.push({
-                    LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                    LineNum,
+                    BaseType,
+                    BaseEntry,
+                    BaseLine,
+                    ItemCode,
+                    Quantity: Number(Quantity),
+                    GrossPrice: Number(GrossPrice),
+                    GrossTotal: Math.round((Number(GrossTotal) / usd) * 100) / 100,
+                    WarehouseCode,
+                    AccountCode,
+                    TaxCode,
+                    MeasureUnit,
+                    UnitsOfMeasurment: Number(UnitsOfMeasurment),
+                    U_DESCLINEA: 0
                 })
+                total += Math.round((Number(GrossTotal) / usd) * 100) / 100
             }
 
             const responseHanaB = {
                 ...cabezeraHana,
                 U_B_doctype: 3,
+                DocTotal: total,
+                ControlAccount: 1120201,
                 DocumentLines: DocumentLinesHana,
                 DocumentAdditionalExpenses
             }
@@ -3448,10 +3467,11 @@ const facturarExportacionController = async (req, res) => {
             }
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
-            return res.json({ ...response, cuf, responseProsin, dataProsin, responsePatchEntrega, responseHana, responseHanaB })
+            return res.json({ ...response, cuf, dataProsin, responsePatchEntrega, responseHana, responseHanaB })
         } else {
             endTime = Date.now()
             let dataToProsin = {}
+            return res.json({ bodyFinalFactura })
             const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
             if (direccion == null || direccion == undefined) {
                 dataToProsin = {
@@ -3523,8 +3543,10 @@ const facturarExportacionController = async (req, res) => {
                 metodo_pago: dataToProsin.metodo_pago,
                 numeroTarjeta: dataToProsin.numeroTarjeta,
                 montoDetalle: Number(dataToProsin.montoDetalle),
-                totalGastosNacionalesFob: Number(dataToProsin.TransFrontNac || 0) + Number(dataToProsin.SegFrontNac || 0),
-                totalGastosInternacionales: Number(dataToProsin.TransFrontInt || 0) + Number(dataToProsin.SegFrontInt || 0) + Number(dataToProsin.OtrosInt || 0),
+                // totalGastosNacionalesFob: Number(dataToProsin.TransFrontNac || 0) + Number(dataToProsin.SegFrontNac || 0),
+                // totalGastosInternacionales: Number(dataToProsin.TransFrontInt || 0) + Number(dataToProsin.SegFrontInt || 0) + Number(dataToProsin.OtrosInt || 0),
+                totalGastosNacionalesFob: 0,
+                totalGastosInternacionales: 0,
                 informacionAdicional: '',
                 descuentoAdicional: Number(dataToProsin.descuentoAdicional),
                 codigoMoneda: dataToProsin.codigoMoneda,
@@ -3543,51 +3565,51 @@ const facturarExportacionController = async (req, res) => {
             }
             //? nacional
             // 
-            if (dataToProsin.TransFrontNac && Number(dataToProsin.TransFrontNac) > 0) {
-                formatedDataToProsin.costosGastosNacional.push(
-                    {
-                        campo: 'Transporte Frontera',
-                        valor: Number(dataToProsin.TransFrontNac)
-                    },
-                )
-            }
+            // if (dataToProsin.TransFrontNac && Number(dataToProsin.TransFrontNac) > 0) {
+            //     formatedDataToProsin.costosGastosNacional.push(
+            //         {
+            //             campo: 'Transporte Frontera',
+            //             valor: Number(dataToProsin.TransFrontNac)
+            //         },
+            //     )
+            // }
 
-            if (dataToProsin.SegFrontNac && Number(dataToProsin.SegFrontNac) > 0) {
-                formatedDataToProsin.costosGastosNacional.push(
-                    {
-                        campo: 'Seguro Frontera',
-                        valor: Number(dataToProsin.SegFrontNac)
-                    },
-                )
-            }
+            // if (dataToProsin.SegFrontNac && Number(dataToProsin.SegFrontNac) > 0) {
+            //     formatedDataToProsin.costosGastosNacional.push(
+            //         {
+            //             campo: 'Seguro Frontera',
+            //             valor: Number(dataToProsin.SegFrontNac)
+            //         },
+            //     )
+            // }
             //? internacional
             // { campo: 'Transporte Internacional', valor: Number(dataToProsin.TransFrontInt) },
-            if (dataToProsin.TransFrontInt && Number(dataToProsin.TransFrontInt) > 0) {
-                formatedDataToProsin.costosGastosInternacional.push(
-                    {
-                        campo: 'Transporte Internacional',
-                        valor: Number(dataToProsin.TransFrontInt)
-                    },
-                )
-            }
+            // if (dataToProsin.TransFrontInt && Number(dataToProsin.TransFrontInt) > 0) {
+            //     formatedDataToProsin.costosGastosInternacional.push(
+            //         {
+            //             campo: 'Transporte Internacional',
+            //             valor: Number(dataToProsin.TransFrontInt)
+            //         },
+            //     )
+            // }
             // { campo: 'Seguro Internacional', valor: Number(dataToProsin.SegFrontInt) },
-            if (dataToProsin.SegFrontInt && Number(dataToProsin.SegFrontInt) > 0) {
-                formatedDataToProsin.costosGastosInternacional.push(
-                    {
-                        campo: 'Seguro Internacional',
-                        valor: Number(dataToProsin.SegFrontInt)
-                    },
-                )
-            }
+            // if (dataToProsin.SegFrontInt && Number(dataToProsin.SegFrontInt) > 0) {
+            //     formatedDataToProsin.costosGastosInternacional.push(
+            //         {
+            //             campo: 'Seguro Internacional',
+            //             valor: Number(dataToProsin.SegFrontInt)
+            //         },
+            //     )
+            // }
             // { campo: 'Otros', valor: Number(dataToProsin.OtrosInt) },
-            if (dataToProsin.OtrosInt && Number(dataToProsin.OtrosInt) > 0) {
-                formatedDataToProsin.costosGastosInternacional.push(
-                    {
-                        campo: 'Otros',
-                        valor: Number(dataToProsin.OtrosInt)
-                    },
-                )
-            }
+            // if (dataToProsin.OtrosInt && Number(dataToProsin.OtrosInt) > 0) {
+            //     formatedDataToProsin.costosGastosInternacional.push(
+            //         {
+            //             campo: 'Otros',
+            //             valor: Number(dataToProsin.OtrosInt)
+            //         },
+            //     )
+            // }
             //? numeroDescrip
             // { campo: 'Cajas', valor: Number(dataToProsin.paquetes1) },
             if (dataToProsin.paquetes1 && Number(dataToProsin.paquetes1) > 0) {
@@ -3598,8 +3620,8 @@ const facturarExportacionController = async (req, res) => {
                     },
                 )
             }
-
-            // return res.json({ formatedDataToProsin,dataToProsin })
+            const setOrderResponsew = await setOrderState(id, '') //! pendiente 
+            return res.json({ formatedDataToProsin, dataToProsin })
             BodyToProsin = formatedDataToProsin
             const responseProsin = await facturacionExportacionProsin(formatedDataToProsin, user)
             console.log(JSON.stringify(responseProsin, null, 2))
@@ -3725,6 +3747,7 @@ const facturarExportacionController = async (req, res) => {
             let cabezeraHana = [];
 
             let DocumentAdditionalExpenses = [];
+            let total = 0
             for (const line of responseHana) {
                 const { LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
                     ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
@@ -3738,21 +3761,37 @@ const facturarExportacionController = async (req, res) => {
                         U_UserCode: U_UserCode || ""
                     };
                     DocumentAdditionalExpenses = [
-                        { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_EXE' },
-                        { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_EXE' },
-                        { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA_EXE' },
-                        { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA_EXE' },
+                        // { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_EXE' },
+                        // { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_EXE' },
+                        // { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA_EXE' },
+                        // { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA_EXE' },
                     ]
 
                 }
                 DocumentLinesHana.push({
-                    LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
+                    LineNum,
+                    BaseType,
+                    BaseEntry,
+                    BaseLine,
+                    ItemCode,
+                    Quantity: Number(Quantity),
+                    GrossPrice: Number(GrossPrice),
+                    GrossTotal: Math.round((Number(GrossTotal) / usd) * 100) / 100,
+                    WarehouseCode,
+                    AccountCode,
+                    TaxCode,
+                    MeasureUnit,
+                    UnitsOfMeasurment: Number(UnitsOfMeasurment),
+                    U_DESCLINEA: 0
                 })
+                total += Math.round((Number(GrossTotal) / usd) * 100) / 100
             }
 
             const responseHanaB = {
                 ...cabezeraHana,
                 U_B_doctype: 3,
+                DocTotal: total,
+                ControlAccount: 1120201,
                 DocumentLines: DocumentLinesHana,
                 DocumentAdditionalExpenses
             }
