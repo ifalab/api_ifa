@@ -1023,20 +1023,20 @@ const cancelToProsinController = async (req, res) => {
                     responseCancelOrder.push(auxResponseCancelOrder)
 
                     //?------------------------------------------------- procedimiento pedido.BaseEntry
-                    
+
                     const auxOfertaLinea = await obtenerDetallePedidoAnulado(pedido.BaseEntry)
                     console.log("Ofertaaaaaaaaaaaaaa----------------------------------------------------------------------------------------------", auxOfertaLinea);
                     let index = 0;
                     console.log(auxOfertaLinea);
-                    if(auxOfertaLinea.length > 0){
+                    if (auxOfertaLinea.length > 0) {
                         for (const element of auxOfertaLinea) {
-                            if(index === 0){
+                            if (index === 0) {
                                 const result = await reabrirOferta(element.BaseEntry);
                                 console.log(result);
                             }
-                            
+
                             const responseLinea = await reabrirLineas(element.BaseEntry, element.BaseLine);
-                            console.log("Lineas a reaperturar----------------------------------------------------------------------",responseLinea);
+                            console.log("Lineas a reaperturar----------------------------------------------------------------------", responseLinea);
                             responseReabrirOferta.push(responseLinea);
                             index++;
                         }
@@ -3069,6 +3069,7 @@ const facturarExportacionController = async (req, res) => {
 
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se al consulto facturacionByIdSld,  id: ${id || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "https://srvhana:50000/b1s/v1/Orders(${id})", process.env.PRD)
+            const facturacionD = await getOrdersById(id)
             const facturacion = await facturacionByIdSld(id)
             console.log('2 facturacion ')
             console.log({ facturacion })
@@ -3222,8 +3223,27 @@ const facturarExportacionController = async (req, res) => {
             }
             console.log('3 post entrega')
             console.log({ deliveryBody })
-            await setOrderState(id, '') //! pendiente 
-            return res.json({ restData, deliveryBody })
+            const responseHana = await obtenerEntregaDetalleExportacion(deliveryBody.deliveryN44umber);
+            deliveryBody.responseData=responseHana
+            // deliveryBody.responseData[0].incoterm = facturacionD[0].U_B_incoterm
+            // deliveryBody.responseData[0].incotermDetalle = facturacionD[0].U_B_incoterm
+            // deliveryBody.responseData[0].puertoDestino = facturacionD[0].U_B_destport
+            // deliveryBody.responseData[0].direccionComprador = facturacionD[0].ShipToCode
+            // deliveryBody.responseData[0].codigoPais = facturacionD[0].CountryCode
+            // deliveryBody.responseData[0].lugarDestino = facturacionD[0].Free_Text || ''
+            // deliveryBody.responseData[0].montoDetalle = Math.round((Number(deliveryBody.responseData[0].montoDetalle) / usd) * 100) / 100
+
+            // if(facturacionD[0].Free_Text == null){
+            //     const setOrderResponse = await setOrderState(id, '') // pendiente 
+            //     if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
+            //         endTime = Date.now();
+            //         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No existe el lugar de destino en el Cliente , CardCode : ${facturacionD[0].CardCode || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`,`call ${process.env.PRD}.getOrderByDocEntry(${id})`, process.env.PRD)
+            //         return res.json({ mensaje: 'No existe el lugar de destino en el Cliente ', facturacionD })
+            //     }
+            //     return res.json({ mensaje: 'No existe el lugar de destino en el Cliente ', facturacionD })
+            // }
+            // await setOrderState(id, '') //! pendiente 
+            // return res.json({ restData, deliveryBody,facturacionD })
             // return res.json({ deliveryBody })
             // console.log('response post entrega ejecutado')
 
@@ -3232,8 +3252,8 @@ const facturarExportacionController = async (req, res) => {
 
         console.log('4 delivery body fuera del if')
         console.log({ deliveryBody })
-        await setOrderState(id, '') //! pendiente 
-        return res.json({ mensaje: 'after post entrega', deliveryBody })
+        // await setOrderState(id, '') //! pendiente 
+        // return res.json({ mensaje: 'after post entrega', deliveryBody })
         let { responseData } = deliveryBody
         if (!responseData) {
             responseData = deliveryBody
@@ -3259,8 +3279,8 @@ const facturarExportacionController = async (req, res) => {
 
         console.log('6 responseData de delivery body')
         console.log({ responseData })
-        await setOrderState(id, '') //! pendiente 
-        return res.json({ responseData })
+        // await setOrderState(id, '') //! pendiente 
+        // return res.json({ responseData })
         if (responseData.deliveryN44umber) { ///
             deliveryData = responseData.deliveryN44umber
         }
@@ -3475,7 +3495,7 @@ const facturarExportacionController = async (req, res) => {
         } else {
             endTime = Date.now()
             let dataToProsin = {}
-            return res.json({ bodyFinalFactura })
+            // return res.json({ bodyFinalFactura })
             const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
             if (direccion == null || direccion == undefined) {
                 dataToProsin = {
@@ -3624,9 +3644,30 @@ const facturarExportacionController = async (req, res) => {
                     },
                 )
             }
-            const setOrderResponsew = await setOrderState(id, '') //! pendiente 
-            return res.json({ formatedDataToProsin, dataToProsin })
+            // const setOrderResponsew = await setOrderState(id, '') //! pendiente 
+            // return res.json({ formatedDataToProsin, dataToProsin })
             BodyToProsin = formatedDataToProsin
+
+            if (formatedDataToProsin.lugarDestino == null || formatedDataToProsin.lugarDestino == '') {
+                const setOrderResponse = await setOrderState(id, '') // pendiente 
+                if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No existe el lugar de destino en el Cliente , CardCode : ${formatedDataToProsin.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `call ${process.env.PRD}.getOrderByDocEntry(${id})`, process.env.PRD)
+                    return res.json({ mensaje: 'No existe el lugar de destino en el Cliente ', formatedDataToProsin })
+                }
+                return res.json({ mensaje: 'No existe el lugar de destino en el Cliente ', formatedDataToProsin })
+            }
+
+            if (formatedDataToProsin.codigoPais == null || formatedDataToProsin.codigoPais == 0) {
+                const setOrderResponse = await setOrderState(id, '') // pendiente 
+                if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
+                    endTime = Date.now();
+                    grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No existe el Codigo de Pais en el Cliente , CardCode : ${formatedDataToProsin.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `call ${process.env.PRD}.getOrderByDocEntry(${id})`, process.env.PRD)
+                    return res.json({ mensaje: 'No existe el Codigo de Pais en el Cliente ', formatedDataToProsin })
+                }
+                return res.json({ mensaje: 'No existe el Codigo de Pais en el Cliente ', formatedDataToProsin })
+            }
+
             const responseProsin = await facturacionExportacionProsin(formatedDataToProsin, user)
             console.log(JSON.stringify(responseProsin, null, 2))
             console.log({ mensaje: 'ya se ejecuto factura exportacion' })
