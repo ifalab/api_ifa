@@ -3778,7 +3778,7 @@ const facturarExportacionController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-            const setOrderResponse = await setOrderState(id, 'R') // pendiente 
+            const setOrderResponse = await setOrderState(id, 'R') // Procesada 
             if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
