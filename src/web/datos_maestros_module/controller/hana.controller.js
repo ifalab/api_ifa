@@ -867,6 +867,31 @@ const updateListaPrecios = async(data, user, comentario) => {
         }
     }
 }
+
+const desactivePriceList = async(priceList) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `
+            call ${process.env.PRD}.ifa_dm_desactivar_precios_por_lista(${priceList})
+        `;
+
+        await executeQuery(query);
+
+        return {
+            status: 200,
+            message: 'Lista de Precios Desactivada.'
+        };
+    } catch (error) {
+        console.error('Error en desactivePriceList:', error);
+        return {
+            status: 400,
+            message: `Error en desactivePriceList: ${error.message || ''}`,
+            query
+        }
+    }
+}
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -906,4 +931,5 @@ module.exports = {
     deleteDescuentosEspecialesLinea,
     articuloByItemCode,
     updateListaPrecios,
+    desactivePriceList,
 }
