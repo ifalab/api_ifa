@@ -98,6 +98,7 @@ const asientoContable = async (data) => {
         };
 
         // Realiza la solicitud POST
+        data.Series = process.env.SAP_SERIES_JOURNAL_ENTRY
         const response = await axios.post(url, { ...data }, {
             httpsAgent: agent,
             headers: headers

@@ -1044,6 +1044,102 @@ const getYTDDelVendedorMonto = async (sucCode, linea, sublinea, fechaInicio1, fe
     }
 }
 
+const reporteOfertaPDF = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OFERTA_LAYOUT(${id})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getYTDDelVendedorMonto: ${error.message || ''}`
+        }
+    }
+}
+
+const getCoberturaVendedor = async (idVendedor, mes, año) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_COBERTURA_BY_VENDEDOR(${idVendedor}, ${mes}, ${año})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getCoberturaVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const getCobertura = async (sucCode, mes, año) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_COBERTURA(${sucCode},${mes}, ${año})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getCobertura: ${error.message || ''}`
+        }
+    }
+}
+
+const clientesNoVenta = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_CLIENTES_NO_VENTA(${sucCode})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesNoVenta: ${error.message || ''}`
+        }
+    }
+}
+
+const clientesNoVentaPorVendedor = async (vendedorCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_CLIENTES_NO_VENTA_POR_VENDEDOR(${vendedorCode})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesNoVentaPorVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const vendedoresAsignedWithClientsBySucursal = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_VENDEDORES_QUE_TIENEN_CLIENTES_POR_SUC(${sucCode})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en vendedoresAsignedWithClientsBySucursal: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1106,8 +1202,10 @@ module.exports = {
     obtenerClientesSinUbicacion,
     clientesSinUbicacionSupervisor,
     allCampaignFilter,
-    getYTDByVendedor,
-    getYTDDelVendedor,
-    getYTDDelVendedorMonto,
-    getYTDMontoByVendedor
+    getYTDByVendedor, getYTDDelVendedor,
+    getYTDDelVendedorMonto, getYTDMontoByVendedor,
+    reporteOfertaPDF,
+    getCoberturaVendedor, getCobertura,
+    clientesNoVenta, clientesNoVentaPorVendedor,
+    vendedoresAsignedWithClientsBySucursal
 }

@@ -60,6 +60,7 @@ const postSalidaHabilitacion = async (data) => {
     };
 
     // Realiza la solicitud POST
+    data.Series = process.env.SAP_SERIES_INVENTORY_GEN_EXISTS
     const response = await axios.post(url, data, {
       httpsAgent: agent,
       headers: headers
@@ -107,6 +108,7 @@ const postEntradaHabilitacion = async (data) => {
     // console.log({agent})
 
     // Realiza la solicitud POST
+    data.Series = process.env.SAP_SERIES_INVENTORY_GEN_ENTRY
     const response = await axios.post(url, { ...data }, {
       httpsAgent: agent,
       headers: headers
@@ -150,6 +152,7 @@ const postReturn = async (data) => {
       Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
     };
     // Realiza la solicitud POST
+    data.Series = process.env.SAP_SERIES_RETURN
     const response = await axios.post(url, { ...data }, {
       httpsAgent: agent,
       headers: headers
@@ -193,6 +196,7 @@ const postCreditNotes = async (data) => {
       //Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
     };
     // Realiza la solicitud POST
+    data.Series = process.env.SAP_SERIES_CREDIT_NOTES
     const response = await axios.post(url, { ...data }, {
       httpsAgent: agent,
       headers: headers
@@ -346,6 +350,7 @@ const postReconciliacion = async (data) => {
       Prefer: 'return-no-content'
     };
     // Realiza la solicitud POST
+    // data.Series = process.env.
     const response = await axios.post(url, { ...data }, {
       httpsAgent: agent,
       headers: headers

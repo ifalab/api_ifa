@@ -11,9 +11,10 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getAllLines,
     getVendedoresBySuc,
     getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
-    cuentasParaBajaCobranza, getBaja, getLayoutComprobanteContable
+    cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
+    getBajasByUser
 } = require("./hana.controller")
-const { postIncommingPayments } = require("./sld.controller");
+const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
@@ -1673,6 +1674,21 @@ const getCuentasParaBajaController = async (req, res) => {
     }
 }
 
+
+const getCuentasBancoParaBajaCobranzaController = async (req, res) => {
+    try {
+        const response = await cuentasBancoParaBajaCobranza()
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador cuentasBancoParaBajaCobranza'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 const darDeBajaController = async (req, res) => {
     try {
         const {body} = req.body
@@ -1731,6 +1747,10 @@ const comprobanteContableController = async (req, res) => {
         const {TransId} = baja[0]
 
         const layout = await getLayoutComprobanteContable(TransId)
+        
+        if(layout.length==0){
+            return res.status(400).json({mensaje: `No se encontro datos para TransId: ${TransId}, DocEntry: ${id} en el procedure ACB_INV_LayOutCoomprobanteContablePR`})
+        }
 
         let cabecera = []
         let detalle=[]
@@ -1836,6 +1856,39 @@ const comprobanteContableController = async (req, res) => {
     }
 }
 
+
+const getBajasByUserController = async (req, res) => {
+    try {
+        const {id_sap} = req.query
+        const response =await getBajasByUser(id_sap)
+
+        console.log({response})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje =  `${error.message||'Error en el controlador getBajasByUserController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const anularBajaController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response =await cancelIncommingPayments(id)
+
+        console.log({response})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje =  `${error.message||'Error en el controlador anularBajaController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -1882,8 +1935,10 @@ module.exports = {
     getAllSublinesController,
     getAllLinesController,
     getCobradoresBySucursalController,
-    getYearToDayController,
+    getYearToDayController,getCuentasBancoParaBajaCobranzaController,
     getYTDCobradorController, getPendientesBajaPorCobradorController,
     darDeBajaController, getCuentasParaBajaController, comprobanteContableController,
-    darVariasDeBajaController
+    darVariasDeBajaController,
+    getBajasByUserController,
+    anularBajaController
 }

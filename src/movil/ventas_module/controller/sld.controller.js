@@ -52,6 +52,8 @@ const postOrden = async (newOrderDate) => {
             Prefer: 'return-no-content'
         };
         console.log({ newOrderDate })
+        //? cambio de series: 
+        newOrderDate.Series = process.env.SAP_SERIES_ORDER
         // Realiza la solicitud POST a la API externa usando el agente y los encabezados
         const response = await axios.post(url, newOrderDate, {
             httpsAgent: agent,

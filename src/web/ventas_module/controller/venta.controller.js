@@ -1,4 +1,5 @@
 const { request, response } = require("express")
+const puppeteer = require('puppeteer');
 const fs = require('fs')
 const XLSX = require('xlsx');
 const path = require('path');
@@ -63,7 +64,9 @@ const {
     clientesSinUbicacionSupervisor,
     allCampaignFilter,
     getYTDByVendedor,
-    getYTDDelVendedor, getYTDDelVendedorMonto, getYTDMontoByVendedor
+    getYTDDelVendedor, getYTDDelVendedorMonto, getYTDMontoByVendedor,
+    reporteOfertaPDF, getCoberturaVendedor, getCobertura,
+    clientesNoVenta, clientesNoVentaPorVendedor, vendedoresAsignedWithClientsBySucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1642,7 +1645,7 @@ const createCampaignController = async (req, res) => {
                 file: req.file
             });
         }
-        
+
         const { path, originalname } = req.file;
         const filePath = req.file.path;
         const workbook = XLSX.readFile(filePath);
@@ -1665,8 +1668,8 @@ const createCampaignController = async (req, res) => {
 
 const getYTDMontoByVendedorController = async (req, res) => {
     try {
-        const {codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2} = req.body
-        console.log({body: req.body})
+        const { codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2 } = req.body
+        console.log({ body: req.body })
         const response = await getYTDMontoByVendedor(codVendedor, tipo, linea, sublinea, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
 
         return res.json(response)
@@ -1678,14 +1681,137 @@ const getYTDMontoByVendedorController = async (req, res) => {
 
 const getYTDDelVendedorMontoController = async (req, res) => {
     try {
-        const {sucCode, linea, sublinea, fechaInicio1, fechaFin1} = req.body
-        console.log({body: req.body})
+        const { sucCode, linea, sublinea, fechaInicio1, fechaFin1 } = req.body
+        console.log({ body: req.body })
         const response = await getYTDDelVendedorMonto(sucCode, linea, sublinea, fechaInicio1, fechaFin1)
 
         return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en getYTDDelVendedorMontoController: ${error.message}` })
+    }
+}
+
+const ReporteOfertaPDFController = async (req, res) => {
+    try {
+        const id = req.query.id
+
+        const response = await reporteOfertaPDF(id)
+        if (response.length == 0) {
+            return res.status(400).json({ mensaje: `No se encontraron datos de la oferta` })
+        }
+        const dataHeader = response[0]
+        const listDetails = []
+
+        const { ItemCode, CodeBars, Dscription, UomCode, Quantity, Price, LineTotal, DescLinea, ...header } = dataHeader
+
+        for (const element of response) {
+            const { ItemCode, CodeBars, Dscription, UomCode, Quantity, Price, LineTotal, DescLinea } = element
+            listDetails.push({
+                ItemCode,
+                CodeBars,
+                Dscription,
+                UomCode,
+                Quantity: +Quantity,
+                Price: parseFloat(Price).toFixed(2),
+                LineTotal: parseFloat(LineTotal).toFixed(2),
+                DescLinea: parseFloat(DescLinea).toFixed(2),
+            })
+        }
+        const data = {
+            ...header,
+            detalle: listDetails
+        }
+        data.DocTotal = parseFloat(data.DocTotal).toFixed(2)
+        data.DocDate = data.DocDate.split(' ')[0]
+        const time = data.DocTime
+        const time1 = `${time[0]}${time[1]}:${time[2]}${time[3]}`
+        const time2 = `0${time[0]}:${time[1]}${time[2]}`
+        data.DocTime = (time.length == 4) ? time1 : time2
+        // return res.json({ data })
+        const ejs = require('ejs');
+        const htmlTemplate = path.join(__dirname, './pdf/template.ejs'); // Ruta del archivo template.ejs
+        const htmlContent = await ejs.renderFile(htmlTemplate, {
+            data,
+            staticBaseUrl: process.env.STATIC_BASE_URL,
+        });
+
+
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+
+        await page.setContent(htmlContent, { waitUntil: 'load' });
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true
+        });
+
+        await browser.close();
+        console.log('PDF Buffer Size:', pdfBuffer.length);
+
+        const fileName = `${data.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${fileName}"`,
+            'Content-Length': pdfBuffer.length
+        });
+
+        return res.end(pdfBuffer);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+}
+
+const getCoberturaController = async (req, res) => {
+    try {
+        const { sucCode, mes, año } = req.body
+        console.log({ body: req.body })
+        const response = await getCobertura( sucCode, mes, año)
+        response.sort((a, b) => a.SlpCode - b.SlpCode);
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getCoberturaVendedorController: ${error.message}` })
+    }
+}
+
+const clientesNoVentaController = async (req, res) => {
+    try {
+        const { sucCode } = req.body
+        console.log({ body: req.body })
+        const response = await clientesNoVenta(sucCode)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en clientesNoVentaController: ${error.message}` })
+    }
+}
+
+const clientesNoVentaPorVendedorController = async (req, res) => {
+    try {
+        const { vendedorCode } = req.body
+        console.log({ body: req.body })
+        const response = await clientesNoVentaPorVendedor(vendedorCode)
+        
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en clientesNoVentaPorVendedorController: ${error.message}` })
+    }
+}
+
+const getVendedoresThatHasClientsController = async (req, res) => {
+    try {
+        const { sucCode } = req.query
+        const response = await vendedoresAsignedWithClientsBySucursal(sucCode)
+        
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getVendedoresThatHasClientsController: ${error.message}` })
     }
 }
 
@@ -1754,5 +1880,9 @@ module.exports = {
     getYTDByVendedorController,
     getYTDDelVendedorController,
     getYTDDelVendedorMontoController, getYTDMontoByVendedorController,
-    createCampaignController
+    createCampaignController,
+    ReporteOfertaPDFController,
+    getCoberturaController,
+    clientesNoVentaController, clientesNoVentaPorVendedorController, 
+    getVendedoresThatHasClientsController
 };

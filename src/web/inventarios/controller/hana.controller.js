@@ -420,6 +420,55 @@ const devolucionLayout = async (id) => {
         throw { message: `Error en devolucionLayout: ${error.message}`, error }
     }
 }
+
+const getDeudaDelCliente = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "CardCode", "Balance" from ${process.env.PRD}.ifa_dm_clientes where "CardCode"='${cardCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDeudaDelCliente:', error.message);
+        throw { message: `Error en getDeudaDelCliente: ${error.message}`, error }
+    }
+}
+const findCliente = async (buscar, sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en findCliente:', error);
+        throw {
+            status: 400,
+            message: `Error en findCliente: ${error.message || ''}`
+        }
+    }
+}
+
+const getAlmacenesSucursal = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "WhsCode", "WhsName", "SucCode" from ${process.env.PRD}.IFA_DM_ALMACENES`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getAlmacenesSucursal: ${error.message}`)
+    }
+}
+
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -444,5 +493,8 @@ module.exports = {
     stockDisponiblePorSucursal,
     clientesBySucCode,
     getClienteByCardCode,
-    devolucionLayout
+    devolucionLayout,
+    getDeudaDelCliente,
+    findCliente,
+    getAlmacenesSucursal
 }

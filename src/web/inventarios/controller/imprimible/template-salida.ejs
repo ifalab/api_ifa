@@ -33,7 +33,6 @@
 
         .header-right {
             width: 50%;
-            text-align: right;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
@@ -57,13 +56,6 @@
         .qr-container {
             width: 100px;
             text-align: right;
-        }
-
-        .header-container,
-        .header-top,
-        .table {
-            margin-bottom: 5px !important;
-            /* Reduce espacio entre secciones */
         }
 
         .header-left p,
@@ -131,7 +123,7 @@
         <div class="header-top">
             <div class="title-container">
                 <h6 class="text-center" style="font-weight: bold;">LABORATORIOS IFA</h6>
-                <h6 class="text-center">ENTRADA DE INVENTARIO #<%= data.DocNum %></h6>
+                <h6 class="text-center">SALIDAS DE INVENTARIO #<%= data.DocNum %></h6>
                 
             </div>
             <div class="qr-container text-center">
@@ -139,9 +131,7 @@
                 <p><%= data.BarCode %></p>
             </div>
         </div>
-
         <div class="header-container">
-
             <div class="header-left">
                 <p><strong>Usuario:</strong>
                     <%= data.USER_CODE %>
@@ -171,10 +161,10 @@
                 <tr>
                     <th>Código</th>
                     <th>Descripción</th>
-                    <th>Cant.</th>
+                    <th>Cant</th>
                     <th>Uom</th>
                     <th>Lote</th>
-                    <th>Fecha Exp.</th>
+                    <th>Expiracion</th>
                     <th>Almacen</th>
                 </tr>
             </thead>
@@ -208,17 +198,22 @@
                         <% }); %>
             </tbody>
             <tfoot>
-                <!-- <tr class="total-row">
-                    <td colspan="6" class="text-end">Total General:</td>
+                <tr class="total-row">
+                    <td></td>
+                    <td class="text-end">Cantidad Total:</td>
                     <td>
-                        <%= totalGeneral.toFixed(2) %> BOB
+                        <%= data.totalCant.toFixed(0) %>
                     </td>
-                </tr> -->
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
             </tfoot>
         </table>
-        <div class="comments">
+        <div >
             <p><strong>Glosa:</strong>
-                Entrada de mercancias
+                Salida de mercancias
             </p>
             <p><strong>Comentario:</strong>
                <%= data.cambio %> <%= data.Comments %><!-- agregar comentarios a la devolucion-->

@@ -67,6 +67,24 @@ const obtenerEntregaDetalle = async (id) => {
 
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE(${id})`;
         const result = await executeQuery(query)
+        console.log({query})
+        return result
+
+    } catch (error) {
+        console.error('Error en obtenerEntregaDetalle:', error.message || '');
+        return { message: `Error en obtenerEntregaDetalle: ${error.message || ''}` }
+    }
+}
+
+const obtenerEntregaDetalleExportacion = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_EXP_DETALLE(${id})`;
+        const result = await executeQuery(query)
+        console.log({query})
         return result
 
     } catch (error) {
@@ -421,7 +439,7 @@ const getAllAlmacenes = async () => {
             await connectHANA();
         }
         const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -436,7 +454,7 @@ const articulosExportacion = async (parameter) => {
             await connectHANA();
         }
         const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemName" LIKE '%${parameter}%' AND "SellItem" = 'Y' limit 50`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -445,7 +463,7 @@ const articulosExportacion = async (parameter) => {
     }
 }
 
-const intercom = async() => {
+const intercom = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -466,7 +484,7 @@ const pedidosExportacion = async () => {
             await connectHANA();
         }
         const query = `call ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_exportacion()`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -519,6 +537,54 @@ const reabrirLineas = async (id_linea, doc_lin) => {
         throw new Error(`Error en reabrirLineas ${error.message}`)
     }
 }
+
+const getClienteByCardCode = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT 
+        *
+        FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getClienteByCardCode: ${error.message}`)
+    }
+}
+
+const getOrdersById = async(id)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.getOrderByDocEntry(${id})`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getOrdersById: ${error.message}`)
+    }
+}
+
+const setOrderState= async(id,state)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.setOrderState(${id},'${state}')`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de setOrderState: ${error.message}`)
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -547,7 +613,11 @@ module.exports = {
     articulosExportacion,
     pedidosExportacion,
     intercom,
+    obtenerEntregaDetalleExportacion,
     reabrirOferta,
     reabrirLineas,
-    obtenerDetallePedidoAnulado
+    obtenerDetallePedidoAnulado,
+    getClienteByCardCode,
+    getOrdersById,
+    setOrderState,
 }

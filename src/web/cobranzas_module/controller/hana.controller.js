@@ -785,6 +785,20 @@ const cuentasParaBajaCobranza = async () => {
     }
 }
 
+const cuentasBancoParaBajaCobranza = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM LAB_IFA_PRD.IFA_DM_CUENTAS_PERMITIDAS_PARA_BAJA_COBRANZA WHERE "AcctCode" IN ('1110604','1110605','1110606','1110612')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en cuentasBancoParaBajaCobranza: ${error.message || ''}`)
+    }  
+}
+
 const getBaja = async (docEntry) => {
     try {
         if (!connection) {
@@ -810,6 +824,19 @@ const getLayoutComprobanteContable = async (transId) => {
     } catch (error) {
         console.log({ error })
         throw new Error(`Error en getLayoutComprobanteContable: ${error.message || ''}`)
+    }
+}
+const getBajasByUser = async (id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_cob_bajas_por_usuario(${id_sap})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getBajasByUser: ${error.message || ''}`)
     }
 }
 
@@ -861,6 +888,7 @@ module.exports = {
     getYearToDayBySuc,
     getYearToDayByCobrador,
     getYTDCobrador,
-    getPendientesBajaPorCobrador, cuentasParaBajaCobranza,
-    getBaja,getLayoutComprobanteContable
+    getPendientesBajaPorCobrador, cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza,
+    getBaja,getLayoutComprobanteContable,
+    getBajasByUser
 }

@@ -1,6 +1,6 @@
 const axios = require('axios');
 const https = require('https');
-const { obtenerEntregaDetalle } = require("./hana.controller")
+const { obtenerEntregaDetalle } = require("./hana.controller");
 
 const agent = new https.Agent({ rejectUnauthorized: false })
 
@@ -45,6 +45,7 @@ const postInventoryTransferRequests = async (responseJson) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
+        responseJson.Series = process.env.SAP_SERIES_INVENTORY_TRANSFER_REQUEST
         const url = 'https://srvhana:50000/b1s/v1/InventoryTransferRequests';
         const sapResponse = await axios.post(url, responseJson, {
             httpsAgent: agent,

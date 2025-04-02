@@ -48,6 +48,8 @@ const postInventoryEntries = async (data) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
+        // newOrderDate.Series = process.env.SAP_SERIES_ORDER
+        data.Series = process.env.SAP_SERIES_INVENTORY_GEN_EXISTS
         const url = 'https://srvhana:50000/b1s/v1/InventoryGenEntries';
         const sapResponse = await axios.post(url, {...data}, {
             httpsAgent: agent,

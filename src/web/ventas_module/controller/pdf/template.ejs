@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante de Pago</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: "Courier New", Courier, monospace;     
+            margin: 20px;
+            color: #333;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #4d4c4c;
+            margin: 10px 0;
+        }
+
+        h1 {
+            font-size: 28px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        p {
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .total{
+            font-size: 16px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header img {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+
+        /* QR Code */
+        .qr-code {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .qr-code img {
+            width: 150px;
+            height: 150px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <img src="<%= staticBaseUrl %>/ifa_logo.png" alt="Laboratorios IFA Logo" style="max-width: 120px; margin-bottom: 10px;">
+            <h1>LABORATORIOS IFA</h1>
+        </div>
+
+        <!-- Title -->
+        <h1>Reporte de la Oferta de Venta</h1>
+
+        <!-- Comprobante Details -->
+        <div>
+            <p><strong>Comprobante:</strong> <%= data.DocNumPayments %></p>
+            <p><strong>Fecha:</strong> <%= data.DocDate %></p>
+            <p><strong>Cliente:</strong> <%= data.CardName %></p>
+            <p><strong>Modalidad de pago:</strong> <%= data.PymntGroup %></p>
+            <!-- <p><strong>Total:</strong> <%= data.DocTotal %> Bs.</p> -->
+        </div>
+
+        <!-- Facturas Table -->
+        <h2>Facturas</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Codigo</th>
+                    <!-- <th>CodeBars</th> -->
+                    <th>Dscription</th>
+                    <th>UomCode</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>LineTotal</th>
+                    <th>DescLinea</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% data.detalle.forEach(detalle => { %>
+                    <tr>
+                        <td><%= detalle.ItemCode %></td>
+                        <!-- <td><%= detalle.CodeBars %></td> -->
+                        <td><%= detalle.Dscription %></td>
+                        <td><%= detalle.UomCode %></td>
+                        <td><%= detalle.Quantity %></td>
+                        <td><%= detalle.Price %></td>
+                        <td><%= detalle.LineTotal %></td>
+                        <td><%= detalle.DescLinea %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+
+        <!-- Totals and Memo -->
+        <p class="total"><strong>Total:</strong> <%= data.DocTotal %> Bs.</p>
+        <p><strong>Glosa:</strong> <%= data.JrnlMemo %></p>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>LABORATORIOS IFA - Todos los derechos reservados</p>
+            <p>Documento generado automáticamente el <%= new Date().toLocaleDateString() %></p>
+        </div>
+    </div>
+</body>
+</html>

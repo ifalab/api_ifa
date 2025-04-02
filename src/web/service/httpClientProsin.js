@@ -8,7 +8,7 @@ const httpsAgent = new https.Agent({
 
 const httpProsin = axios.create({
     baseURL: process.env.API_PROSIN || 'https://api.example.com prosin',
-    timeout: 70000,
+    timeout: 45000,
     headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
