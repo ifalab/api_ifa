@@ -8,7 +8,7 @@
         /* General Styles */
         body {
             font-family: "Courier New", Courier, monospace;     
-            margin: 20px;
+            margin: 5px;
             color: #333;
         }
 
@@ -19,7 +19,7 @@
         }
 
         h1 {
-            font-size: 28px;
+            font-size: 25px;
         }
 
         h2 {
@@ -28,7 +28,11 @@
 
         p {
             font-size: 14px;
-            margin: 5px 0;
+            margin: 4px 0;
+        }
+        .smaller p{
+            font-size: 11px;
+            margin: 1px 0;
         }
 
         .total{
@@ -79,6 +83,10 @@
             align-items: flex-start;
         }
 
+        .detalle-right p{
+            margin: 3.5px 0;
+        }
+
         /* Table Styles */
         table {
             width: 100%;
@@ -121,7 +129,7 @@
             color: #888;
         }
         .footer-signatures {
-            margin-top: 55px;
+            margin-top: 30px;
             /* margin: 0 5px; */
             display: flex;
             justify-content: space-around;
@@ -152,7 +160,7 @@
         <!-- Title -->
         <h1>COMPROBANTE CONTABLE Nº <%= comprobante.DocNumFiscal %></h1>
 
-        <div style="font-weight: lighter;">
+        <div class="smaller" style="font-weight: lighter;">
             <p>TC Usd: <%= comprobante.RateUsd %></p>
             <p>TC Eur.: <%= comprobante.RateEur %></p>
             <p>Indicador: </p>
@@ -169,7 +177,7 @@
                 <p><strong>Referencia 1:</strong> <%= comprobante.Ref1 %></p>
                 <p><strong>Referencia 2:</strong> <%= comprobante.Ref2 %></p>
                 <p><strong>Referencia 3:</strong> <%= comprobante.Ref3 %></p>
-                <p><strong>Referencia 4:</strong>  <%= comprobante.Voucher %></p> 
+                <p><strong>Referencia 4:</strong>  <%= comprobante.Ref3Line %></p> 
             </div>
         </DIV>
 

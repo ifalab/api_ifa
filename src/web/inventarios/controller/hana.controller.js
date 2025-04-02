@@ -234,7 +234,7 @@ const facturasClienteLoteItemCode = async (itemcode, cardCode, batchNum) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.PRD}.IFA_FAC_FACTURAS_X_CLIENTE_LOTE_ARTICULO('${itemcode}','${cardCode}',${batchNum})`
+        const query = `call ${process.env.PRD}.IFA_FAC_FACTURAS_X_CLIENTE_LOTE_ARTICULO('${itemcode}','${cardCode}','${batchNum}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result

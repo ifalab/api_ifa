@@ -1747,7 +1747,7 @@ const comprobanteContableController = async (req, res) => {
         const {TransId} = baja[0]
 
         const layout = await getLayoutComprobanteContable(TransId)
-        
+        // return res.json({layout})
         if(layout.length==0){
             return res.status(400).json({mensaje: `No se encontro datos para TransId: ${TransId}, DocEntry: ${id} en el procedure ACB_INV_LayOutCoomprobanteContablePR`})
         }
@@ -1774,6 +1774,8 @@ const comprobanteContableController = async (req, res) => {
                     BaseRef,
                     NumAtCard,
                     U_NAME,
+                    Voucher,
+                    Ref3Line,
                     ...rest} = line
             const fechaTax= formattedDataInvoice(TaxDate)
             sumDebit += +Debit
@@ -1796,7 +1798,9 @@ const comprobanteContableController = async (req, res) => {
                     DocNumFiscal,
                     BaseRef,
                     NumAtCard,
-                    U_NAME
+                    U_NAME,
+                    Voucher,
+                    Ref3Line
                 })
             }
             detalle.push({
