@@ -27,7 +27,9 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     articulosExportacion,
     pedidosExportacion,
     intercom, 
-    reabrirOferta} = require("./hana.controller")
+    reabrirOferta,
+    obtenerDetallePedidoAnulado,
+    reabrirLineas} = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -940,6 +942,7 @@ const cancelToProsinController = async (req, res) => {
                 usuario,
                 mediaPagina,
             }, user)
+            console.log(responseProsin);
 
             if (responseProsin.data.mensaje) {
                 const mess = responseProsin.data.mensaje.split('§')
@@ -1008,7 +1011,7 @@ const cancelToProsinController = async (req, res) => {
                 let responseCancelOrder = []
                 for (const pedido of auxResponsePedido) {
                     const auxResponseCancelOrder = await cancelOrder(pedido.BaseEntry)
-                    console.log('se esta ejecutando cancelOrder')
+                    console.log('se esta ejecutando cancelOrder', pedido.BaseEntry)
                     if (auxResponseCancelOrder.status == 400) {
                         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancelOrder: ${auxResponseCancelOrder.errorMessage.value || ''}`, 'https://srvhana:50000/b1s/v1/Orders(id)/Cancel', "facturacion/cancel-to-prosin", process.env.PRD)
                         // console.log({ auxResponseCancelOrder })
@@ -1018,19 +1021,22 @@ const cancelToProsinController = async (req, res) => {
                     
                     //?------------------------------------------------- procedimiento pedido.BaseEntry
                     
-                    const auxOfertaLinea = await obtenerDetallePedidoAnulado(pedido.baseEntry)
-                    console.log(auxOfertaLinea);
+                    const auxOfertaLinea = await obtenerDetallePedidoAnulado(pedido.BaseEntry)
+                    console.log("Ofertaaaaaaaaaaaaaa----------------------------------------------------------------------------------------------", auxOfertaLinea);
                     let index = 0;
-                    for (const element of auxOfertaLinea) {
-                        if(index === 0){
-                            const result = await reabrirOferta(element.BaseEntry);
-                            console.log(result);
+                    console.log(auxOfertaLinea);
+                    if(auxOfertaLinea.length > 0){
+                        for (const element of auxOfertaLinea) {
+                            if(index === 0){
+                                const result = await reabrirOferta(element.BaseEntry);
+                                console.log(result);
+                            }
+                            
+                            const responseLinea = await reabrirLineas(element.BaseEntry, element.BaseLine);
+                            console.log("Lineas a reaperturar----------------------------------------------------------------------",responseLinea);
+                            responseReabrirOferta.push(responseLinea);
+                            index++;
                         }
-                        
-                        const responseLinea = await reabrirLineas(element.BaseEntry, element.BaseLine);
-                        console.log(responseLinea);
-                        responseReabrirOferta.push(responseLinea);
-                        index++;
                     }
 
                 }

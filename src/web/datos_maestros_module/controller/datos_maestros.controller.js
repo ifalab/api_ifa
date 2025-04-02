@@ -13,7 +13,8 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getZonasTiposPorVendedor, asignarZonasYTiposAVendedores, deleteZonasYTiposAVendedores,
     getDescuentosEspecialesLinea, deleteDescuentosEspecialesLinea,
     articuloByItemCode, 
-    updateListaPrecios} = require("./hana.controller")
+    updateListaPrecios,
+    desactivePriceList} = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 const { validateDataExcel } = require('./helpers');
@@ -829,8 +830,15 @@ const cargarPreciosExcelController = async (req, res) => {
             res.set('Content-Disposition', 'attachment; filename=errores.xlsx');
             return res.status(200).end(excelBuffer);  // Enviar el archivo Excel
         } else {
+            console.log("Primer valor excel", jsonData[0].PriceList);
             try {
-                const result = await updateListaPrecios(jsonData, usuario.ID_SAP, comment);
+                let result;
+                const resultDesactive = await desactivePriceList(jsonData[0].PriceList);
+                console.log(resultDesactive);
+
+                if(resultDesactive.status === 200){
+                    result = await updateListaPrecios(jsonData, usuario.ID_SAP, comment);
+                }
 
                 fs.unlinkSync(filePath);
                 res.set('Content-Type', 'application/json');

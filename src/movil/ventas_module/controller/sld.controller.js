@@ -88,7 +88,7 @@ const patchQuotations = async (id, DocumentLines) => {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
-        const url = `https://srvhana:50000/b1s/v1/Quotations(${id})`;
+        const url = `https://172.16.11.25:50000/b1s/v1/Quotations(${id})`;
 
         // Configura los encabezados para incluir la cookie y el encabezado Prefer
         const headers = {
@@ -136,7 +136,7 @@ const postQuotations = async (newOrderDate) => {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
-        const url = 'https://srvhana:50000/b1s/v1/Quotations';
+        const url = 'https://172.16.11.25:50000/b1s/v1/Quotations';
 
         // Configura los encabezados para incluir la cookie y el encabezado Prefer
         const headers = {
@@ -176,7 +176,7 @@ const getQuotation = async (id) => {
         const currentSession = await validateSession();
         const sessionSldId = currentSession.SessionId;
 
-        const url = `https://srvhana:50000/b1s/v1/Quotations(${id})`;
+        const url = `https://172.16.11.25:50000/b1s/v1/Quotations(${id})`;
 
         // Configura los encabezados para incluir la cookie y el encabezado Prefer
         const headers = {
@@ -223,7 +223,7 @@ const postEntrega = async (responseJson) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = 'https://srvhana:50000/b1s/v1/DeliveryNotes';
+        const url = 'https://172.16.11.25:50000/b1s/v1/DeliveryNotes';
         const sapResponse = await axios.post(url, responseJson, {
             httpsAgent: agent,
             headers: headers
@@ -261,7 +261,7 @@ const postInvoice = async (CardCode, DocumentLines) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = 'https://srvhana:50000/b1s/v1/Invoices';
+        const url = 'https://172.16.11.25:50000/b1s/v1/Invoices';
         const sapResponse = await axios.post(url, responseJson, {
             httpsAgent: agent,
             headers: headers
@@ -283,7 +283,7 @@ const findOneInvoice = async (id) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/Invoices(${id})`
+        const url = `https://172.16.11.25:50000/b1s/v1/Invoices(${id})`
         const sapResponse = await axios.get(url, {
             httpsAgent: agent,
             headers: headers
@@ -305,7 +305,7 @@ const updateInvoice = async (id, DocDueDate) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/Invoices(${id})`
+        const url = `https://172.16.11.25:50000/b1s/v1/Invoices(${id})`
         const sapResponse = await axios.patch(url, { DocDueDate }, {
             httpsAgent: agent,
             headers: headers
@@ -327,7 +327,7 @@ const findAllIncomingPayment = async () => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/IncomingPayments`
+        const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments`
         const sapResponse = await axios.get(url, {
             httpsAgent: agent,
             headers: headers
@@ -350,7 +350,7 @@ const findOneIncomingPayment = async (id) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/IncomingPayments(${id})`
+        const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments(${id})`
         const sapResponse = await axios.get(url, {
             httpsAgent: agent,
             headers: headers
@@ -374,7 +374,7 @@ const findOneByCardCodeIncomingPayment = async (code) => {
             Prefer: 'return-no-content'
         };
         // console.log({ code })
-        const url = `https://srvhana:50000/b1s/v1/IncomingPayments?$filter=CardCode eq '${code}'`
+        const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments?$filter=CardCode eq '${code}'`
         console.log({ url })
         const sapResponse = await axios.get(url, {
             httpsAgent: agent,
@@ -399,7 +399,7 @@ const createIncomingPayment = async (data) => {
             Prefer: 'return-no-content'
         };
 
-        const url = `https://srvhana:50000/b1s/v1/IncomingPayments`
+        const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments`
         console.log({ url })
         console.log({ data })
         const sapResponse = await axios.post(url, data, {
@@ -425,7 +425,7 @@ const cancelIncomingPayment = async (id) => {
             Prefer: 'return-no-content'
         };
 
-        const url = `https://srvhana:50000/b1s/v1/IncomingPayments(${id})/Cancel`
+        const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments(${id})/Cancel`
 
         const sapResponse = await axios.post(url, {}, {
             httpsAgent: agent,

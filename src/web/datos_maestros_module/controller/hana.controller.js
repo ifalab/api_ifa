@@ -849,7 +849,7 @@ const updateListaPrecios = async(data, user, comentario) => {
             const { ItemCode, Precio, PriceList } = element;
 
             const query = `
-                CALL LAB_IFA_DEV."IFA_DM_AGREGAR_PRECIOS"(${PriceList}, '${ItemCode}', ${Precio}, ${user}, '${comentario}')
+                CALL ${process.env.PRD}."IFA_DM_AGREGAR_PRECIOS"(${PriceList}, '${ItemCode}', ${Precio}, ${user}, '${comentario}')
             `;
 
             await executeQuery(query);
@@ -864,6 +864,31 @@ const updateListaPrecios = async(data, user, comentario) => {
         return {
             status: 400,
             message: `Error en updateListaPrecios: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
+const desactivePriceList = async(priceList) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `
+            call ${process.env.PRD}.ifa_dm_desactivar_precios_por_lista(${priceList})
+        `;
+
+        await executeQuery(query);
+
+        return {
+            status: 200,
+            message: 'Lista de Precios Desactivada.'
+        };
+    } catch (error) {
+        console.error('Error en desactivePriceList:', error);
+        return {
+            status: 400,
+            message: `Error en desactivePriceList: ${error.message || ''}`,
             query
         }
     }
@@ -907,4 +932,5 @@ module.exports = {
     deleteDescuentosEspecialesLinea,
     articuloByItemCode,
     updateListaPrecios,
+    desactivePriceList,
 }

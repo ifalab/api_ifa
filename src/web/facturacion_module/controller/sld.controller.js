@@ -10,7 +10,7 @@ const REQUEST_TIMEOUT = 65000;
 
 const connectSLD = async () => {
     try {
-        const url = 'https://172.16.11.25:50000/b1s/v1/Login';
+        const url = 'https://srvhana:50000/b1s/v1/Login';
         const data = {
             CompanyDB: process.env.DBSAPPRD,
             UserName: process.env.USERSAP,
@@ -145,7 +145,7 @@ const postInvoice = async (body) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             //Prefer: 'return-no-content'
         };
-        const url = 'https://172.16.11.25:50000/b1s/v1/Invoices';
+        const url = 'https://srvhana:50000/b1s/v1/Invoices';
         const sapResponse = await axios.post(url, body, {
             httpsAgent: agent,
             headers: headers,

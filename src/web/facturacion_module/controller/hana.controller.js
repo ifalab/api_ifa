@@ -129,6 +129,7 @@ const facturasParaAnular = async (sucursal) => {
         if (!connection) {
             await connectHANA();
         }
+        console.log(sucursal);
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_FACTURAS_PARA_ANULAR_POR_SUCURSAL(${sucursal})`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -449,7 +450,7 @@ const intercom = async() => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM LAB_IFA_PRD.INCOTERM`
+        const query = `SELECT * FROM ${process.env.PRD}.INCOTERM`
         console.log({query})
         const result = await executeQuery(query)
         return result
@@ -494,7 +495,7 @@ const obtenerDetallePedidoAnulado = async(id_pedido) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}."ifa_ven_pedidos_detalle_anulados" where "DocEntry" = ${id_pedido}`
+        const query = `select * from ${process.env.PRD}."IFA_VEN_PEDIDOS_DETALLE_ANULADOS" where "DocEntry" = ${id_pedido}`
         console.log({query})
         const result = await executeQuery(query)
         return result
