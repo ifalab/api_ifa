@@ -399,7 +399,8 @@ const crearActualizarGastoController = async (req, res) => {
                     new_id_cuenta,
                     new_beneficiario,
                     new_cod_beneficiario,
-                    new_detalle_cuenta
+                    new_detalle_cuenta,
+                    new_cod_proveedor,
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -686,7 +687,19 @@ const sendToSapController = async (req, res) => {
             listRecibos,
             listFacturasND
         })
-        // return res.json(usd)
+        
+        // return res.json({
+        //     usd,
+        //     codEmp,
+        //     estado,
+        //     idRendicion,
+        //     transacId,
+        //     glosaRend,
+        //     fechaContabilizado,
+        //     listFacturas,
+        //     listRecibos,
+        //     listFacturasND,
+        // })
 
         const { statusCode, data } = await sapService.sendRendiciones({
             usd,
@@ -757,7 +770,8 @@ const sendToSapController = async (req, res) => {
                 new_id_cuenta,
                 new_beneficiario,
                 new_cod_beneficiario,
-                new_detalle_cuenta
+                new_detalle_cuenta,
+                new_cod_proveedor
             } = item
             const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
             listResHana.push(responseSap)
@@ -791,7 +805,8 @@ const sendToSapController = async (req, res) => {
                 new_id_cuenta,
                 new_beneficiario,
                 new_cod_beneficiario,
-                new_detalle_cuenta
+                new_detalle_cuenta,
+                new_cod_proveedor
             )
             listResHana.push(responseHana)
         }))
@@ -820,7 +835,8 @@ const sendToSapController = async (req, res) => {
                 new_id_cuenta,
                 new_beneficiario,
                 new_cod_beneficiario,
-                new_detalle_cuenta
+                new_detalle_cuenta,
+                new_cod_proveedor
             } = item
 
             const responseSap = await actualizarEstadoComentario(id_gasto, 3, 'Contabilizado con exito')
@@ -855,7 +871,8 @@ const sendToSapController = async (req, res) => {
                 new_id_cuenta,
                 new_beneficiario,
                 new_cod_beneficiario,
-                new_detalle_cuenta
+                new_detalle_cuenta,
+                new_cod_proveedor
             )
             listResHana.push(responseHana)
 
