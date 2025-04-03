@@ -3996,6 +3996,21 @@ const getStockdeItemAlmacenController = async (req, res) => {
     }
 }
 
+const getStockVariosItemsAlmacenController = async (req, res) => {
+    try {
+        const { itemCodes, whsCode } = req.body
+        let responses =[]
+        for(const itemCode of itemCodes){
+            const response = await getStockdeItemAlmacen(itemCode, whsCode)
+            responses.push(...response)
+        }
+        return res.json(responses)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({mensaje: `Error en getStockVariosItemsAlmacenController: ${error.message || 'No definido'}`})
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -4033,5 +4048,5 @@ module.exports = {
     imprimibleSalidaController,
     findClienteController,
     getAlmacenesSucursalController,
-    getStockdeItemAlmacenController,
+    getStockdeItemAlmacenController, getStockVariosItemsAlmacenController
 }
