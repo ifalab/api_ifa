@@ -6,7 +6,8 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     concepComercialById,
     actualizarCCRendicion,
     actualizarGlosaPRDGastos,
-    busquedaProd
+    busquedaProd,
+    busquedaProveedor
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -79,6 +80,7 @@ const rendicionDetalladaController = async (req, res) => {
                 DETALLE_CUENTA,
                 CUENTA_CC,
                 GLOSA_PRD,
+                CODPROVEEDOR,
                 ...rest
             } = item
             const data = {
@@ -100,7 +102,8 @@ const rendicionDetalladaController = async (req, res) => {
                 COD_BENEFICIARIO,
                 DETALLE_CUENTA,
                 CUENTA_PRODUCTIVA: CUENTA_CC,
-                GLOSA_PRD
+                GLOSA_PRD,
+                CODPROVEEDOR
             }
             listaDetalles.push(data)
         })
@@ -158,6 +161,13 @@ const crearRendicionController = async (req, res) => {
         const year = date.getFullYear()
         const month = date.getMonth() + 1
         console.log('======================================                 DATA TO CREATE REND')
+        console.log(JSON.stringify({
+            codEmp,
+            transacId,
+            estado,
+            glosaRend,
+            listaGastos
+        }, null, 2))
         const response = await crearRendicion(transacId, codEmp, estado, month, year, glosaRend)
         if (!response[0].ID) return res.status(404).json({ mensaje: 'error al crear la rendicion' })
         const idRendicion = response[0].ID
@@ -202,6 +212,7 @@ const crearRendicionController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta,
+                new_cod_proveedor
             } = item
 
             const fecha = new_fecha.split('/')
@@ -236,7 +247,7 @@ const crearRendicionController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta,
-                ''
+                new_cod_proveedor
             )
             result.push(responseHana[0] || responseHana)
 
@@ -321,7 +332,8 @@ const crearActualizarGastoController = async (req, res) => {
                 new_id_cuenta,
                 new_beneficiario,
                 new_cod_beneficiario,
-                new_detalle_cuenta
+                new_detalle_cuenta,
+                new_cod_proveedor
             } = item
 
             const fecha = new_fecha.split('/')
@@ -355,7 +367,8 @@ const crearActualizarGastoController = async (req, res) => {
                     new_id_cuenta,
                     new_beneficiario,
                     new_cod_beneficiario,
-                    new_detalle_cuenta
+                    new_detalle_cuenta,
+                    new_cod_proveedor
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -470,6 +483,7 @@ const gastosEnRevisionController = async (req, res) => {
                 year,
                 new_id_cuenta,
                 new_detalle_cuenta,
+                new_cod_proveedor
             } = item
 
             const fecha = new_fecha.split('/')
@@ -500,7 +514,8 @@ const gastosEnRevisionController = async (req, res) => {
                     month,
                     year,
                     new_id_cuenta,
-                    new_detalle_cuenta
+                    new_detalle_cuenta,
+                    new_cod_proveedor
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -670,7 +685,7 @@ const sendToSapController = async (req, res) => {
             listFacturas,
             listRecibos,
             listFacturasND
-         })
+        })
         // return res.json(usd)
 
         const { statusCode, data } = await sapService.sendRendiciones({
@@ -1157,7 +1172,7 @@ const conceptoComercialByIdController = async (req, res) => {
     }
 }
 
-const buscarCuentaProdController= async (req, res) => {
+const buscarCuentaProdController = async (req, res) => {
     try {
         let parametro = req.query.parametro
         const response = await busquedaProd(parametro.toUpperCase())
@@ -1180,7 +1195,7 @@ const actualizarCCRendController = async (req, res) => {
         if (!new_cuenta_cc) {
             return res.status(400).json({ mensaje: 'debe venir una cuenta CC' })
         }
-        console.log({id, idRend, new_cuenta_cc})
+        console.log({ id, idRend, new_cuenta_cc })
         const responseHana = await actualizarCCRendicion(id, idRend, new_cuenta_cc)
         const { response } = responseHana[0]
         console.log({ response })
@@ -1194,6 +1209,16 @@ const actualizarCCRendController = async (req, res) => {
     }
 }
 
+const proveedoresController = async (req, res) => {
+    try {
+        let parametro = req.query.parametro
+        const response = await busquedaProveedor(parametro.toUpperCase())
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
 
 
 module.exports = {
@@ -1225,4 +1250,5 @@ module.exports = {
     actualizarCCRendController,
     actualizarGlosaPRDGastoController,
     buscarCuentaProdController,
+    proveedoresController
 }

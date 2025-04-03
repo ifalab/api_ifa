@@ -9,6 +9,7 @@ const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDeta
     actualizarCCRendController,
     actualizarGlosaPRDGastoController,
     buscarCuentaProdController,
+    proveedoresController,
  } = require('../controller/rendiciones.controller')
 const router = Router()
 
@@ -41,6 +42,7 @@ router.get('/proveedor', [validarToken, validarCampos], getProveedorController)
 router.post('/search-beneficiarios', [validarToken, validarCampos], searchBeneficiariosController)
 router.get('/cc-by-id/:id', [validarToken, validarCampos], conceptoComercialByIdController)
 router.get('/buscar-cuenta-prod', [validarToken, validarCampos], buscarCuentaProdController)
+router.get('/proveedores', [validarToken, validarCampos], proveedoresController)
 
 
 

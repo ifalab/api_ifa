@@ -182,7 +182,6 @@ const crearGasto = async (
     new_cod_beneficiario,
     new_detalle_cuenta,
     new_cod_proveedor
-    //CODPROVEEDOR
 ) => {
     try {
         if (!connection) {
@@ -663,6 +662,25 @@ const busquedaProd = async (parametro) => {
     }
 }
 
+const busquedaProveedor = async (parametro) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarCCRendicion EXECUTE')
+        const query = `select * from ${process.env.PRD}.IFA_DM_PROVEEDORES where "CardName" like '%${parametro}%' limit 30 `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo ejecutar busquedaProveedor`
+        }
+
+    }
+}
+
 
 module.exports = {
     findAllAperturaCaja,
@@ -695,5 +713,6 @@ module.exports = {
     actualizarCCRendicion,
     actualizarGlosaPRDGastos,
     busquedaProd,
+    busquedaProveedor
 
 }
