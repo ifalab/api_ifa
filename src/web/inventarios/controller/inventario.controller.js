@@ -14,7 +14,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     stockDisponiblePorSucursal,
     clientesBySucCode, getClienteByCardCode,
     devolucionLayout, getDeudaDelCliente,
-    findCliente, getAlmacenesSucursal } = require("./hana.controller")
+    findCliente, getAlmacenesSucursal, getStockdeItemAlmacen } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega } = require("../../facturacion_module/controller/sld.controller")
@@ -3985,6 +3985,17 @@ const getAlmacenesSucursalController = async (req, res) => {
     }
 }
 
+const getStockdeItemAlmacenController = async (req, res) => {
+    try {
+        const { itemCode, whsCode } = req.body
+        const response = await getStockdeItemAlmacen(itemCode, whsCode)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({mensaje: `Error en getStockdeItemAlmacenController: ${error.message || 'No definido'}`})
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -4021,5 +4032,6 @@ module.exports = {
     devolucionPorValoradoDifArticulosController,
     imprimibleSalidaController,
     findClienteController,
-    getAlmacenesSucursalController
+    getAlmacenesSucursalController,
+    getStockdeItemAlmacenController,
 }

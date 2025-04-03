@@ -468,6 +468,22 @@ const getAlmacenesSucursal = async () => {
     }
 }
 
+const getStockdeItemAlmacen = async (itemCode, whsCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_INV_INVENTARIO_STOCK 
+        where "ItemCode" = '${itemCode}' and "WhsCode"='${whsCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getStockdeItemAlmacen:', error.message);
+        throw { message: `Error en getStockdeItemAlmacen: ${error.message}`, error }
+    }
+}
+
 
 module.exports = {
     clientesPorDimensionUno,
@@ -496,5 +512,6 @@ module.exports = {
     devolucionLayout,
     getDeudaDelCliente,
     findCliente,
-    getAlmacenesSucursal
+    getAlmacenesSucursal,
+    getStockdeItemAlmacen
 }

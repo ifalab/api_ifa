@@ -1713,8 +1713,8 @@ const darVariasDeBajaController = async (req, res) => {
     try {
         const {body} = req.body
         for(const farmacia of body){
-            const {CardCode, CardName, ...rest}=farmacia
-            const responsePostIncomming =await postIncommingPayments(rest)
+            const {CardCode, CardName, CounterReference, ...rest}=farmacia
+            const responsePostIncomming =await postIncommingPayments({CounterReference, ...rest})
             console.log({responsePostIncomming})
             if(responsePostIncomming.status==400){
                 const mensaje=responsePostIncomming.errorMessage
@@ -1722,7 +1722,7 @@ const darVariasDeBajaController = async (req, res) => {
                     {mensaje: `${mensaje.value||mensaje||'Error de postIncommingPayments.'} Cliente del error: ${CardCode}- ${CardName}`, 
                     farmacia, responses})
             }
-            responses.push({CardCode, CardName, DocEntry: responsePostIncomming.orderNumber})
+            responses.push({CardCode, CardName, DocNum: CounterReference, DocEntry: responsePostIncomming.orderNumber})
         }
         
         console.log({responses})

@@ -19,7 +19,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     stockDisponibleIfaController,
     imprimibleDevolucionController,
     devolucionPorValoradoDifArticulosController,
-    imprimibleSalidaController, findClienteController, getAlmacenesSucursalController
+    imprimibleSalidaController, findClienteController, getAlmacenesSucursalController,
+    getStockdeItemAlmacenController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -63,5 +64,6 @@ router.post('/imprimible-salida', [validarToken, validarCampos], imprimibleSalid
 router.post('/buscar-cliente', [validarToken, validarCampos], findClienteController)
 
 router.post('/almacenes-sucursal', [validarToken, validarCampos], getAlmacenesSucursalController)
+router.post('/get-stock', [validarToken, validarCampos], getStockdeItemAlmacenController)
 
 module.exports = router
