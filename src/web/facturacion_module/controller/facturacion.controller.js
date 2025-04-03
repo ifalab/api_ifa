@@ -2769,6 +2769,7 @@ const crearPedidoExportacionController = async (req, res) => {
         const {
             CardCode,
             CardName,
+            CardFName,
             WhsCode,
             WhsName,
             DocDate,
@@ -2778,12 +2779,13 @@ const crearPedidoExportacionController = async (req, res) => {
             LicTradNum,
             TransFrontInt,
             SegFrontInt,
-            cajasEmbalaje,
+            cajaEmbalaje,
             OtrosInt,
             totalGastoNac,
             totalGastoInt,
             Incoterm,
             total,
+            // glosa,
             items
         } = req.body
 
@@ -2820,7 +2822,7 @@ const crearPedidoExportacionController = async (req, res) => {
             return res.status(404).json({ mensaje: `No se pudo calcular el DocDueDate, revise el DocDate` })
         }
         const docDueData = DocDue[0].DocDueDate
-
+        // return res.json({ cliente })
         bodyToOrder.Series = 319
         bodyToOrder.DocDate = DocDate
         bodyToOrder.DocDueDate = docDueData
@@ -2830,7 +2832,7 @@ const crearPedidoExportacionController = async (req, res) => {
         bodyToOrder.JournalMemo = ''
         bodyToOrder.PaymentGroupCode = paymentCode
         bodyToOrder.U_NIT = LicTradNum
-        bodyToOrder.U_RAZSOC = LicTradNum
+        bodyToOrder.U_RAZSOC = CardFName
         bodyToOrder.DocTotal = total
         bodyToOrder.SalesPersonCode = ''
         bodyToOrder.U_OSLP_ID = usuario.ID_SAP
@@ -2845,7 +2847,7 @@ const crearPedidoExportacionController = async (req, res) => {
         bodyToOrder.U_B_addinfo = OtrosInt
         bodyToOrder.U_B_iexpfob = totalGastoInt
         bodyToOrder.U_B_nexpfob = totalGastoNac
-        bodyToOrder.U_B_paqnum = cajasEmbalaje
+        bodyToOrder.U_B_paqnum = cajaEmbalaje
         bodyToOrder.U_B_destport = PuertoDestino
         bodyToOrder.DocumentLines = []
 
@@ -2906,13 +2908,13 @@ const crearPedidoExportacionController = async (req, res) => {
         console.log('--------------------------------------------------------')
         console.log(JSON.stringify(bodyToOrder, null, 2))
         console.log('--------------------------------------------------------')
-        // return res.json({ bodyToOrder })
+        // return res.json({ bodyToOrder, cliente })
         const ordenResponse = await postOrden(bodyToOrder)
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Exportacion", `Error en el proceso post orden ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "facturacion/crear-pedido-exportacion", process.env.PRD)
             return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, bodyToOrder })
         }
-        return res.json({ ...ordenResponse })
+        return res.json({ ordenResponse, })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador', error })
@@ -3224,28 +3226,7 @@ const facturarExportacionController = async (req, res) => {
             console.log('3 post entrega')
             console.log({ deliveryBody })
             const responseHana = await obtenerEntregaDetalleExportacion(deliveryBody.deliveryN44umber);
-            deliveryBody.responseData=responseHana
-            // deliveryBody.responseData[0].incoterm = facturacionD[0].U_B_incoterm
-            // deliveryBody.responseData[0].incotermDetalle = facturacionD[0].U_B_incoterm
-            // deliveryBody.responseData[0].puertoDestino = facturacionD[0].U_B_destport
-            // deliveryBody.responseData[0].direccionComprador = facturacionD[0].ShipToCode
-            // deliveryBody.responseData[0].codigoPais = facturacionD[0].CountryCode
-            // deliveryBody.responseData[0].lugarDestino = facturacionD[0].Free_Text || ''
-            // deliveryBody.responseData[0].montoDetalle = Math.round((Number(deliveryBody.responseData[0].montoDetalle) / usd) * 100) / 100
-
-            // if(facturacionD[0].Free_Text == null){
-            //     const setOrderResponse = await setOrderState(id, '') // pendiente 
-            //     if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
-            //         endTime = Date.now();
-            //         grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No existe el lugar de destino en el Cliente , CardCode : ${facturacionD[0].CardCode || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`,`call ${process.env.PRD}.getOrderByDocEntry(${id})`, process.env.PRD)
-            //         return res.json({ mensaje: 'No existe el lugar de destino en el Cliente ', facturacionD })
-            //     }
-            //     return res.json({ mensaje: 'No existe el lugar de destino en el Cliente ', facturacionD })
-            // }
-            // await setOrderState(id, '') //! pendiente 
-            // return res.json({ restData, deliveryBody,facturacionD })
-            // return res.json({ deliveryBody })
-            // console.log('response post entrega ejecutado')
+            deliveryBody.responseData = responseHana
 
         }
 
@@ -3541,11 +3522,12 @@ const facturarExportacionController = async (req, res) => {
             const usd = +usdRate.Rate
 
             dataToProsin.detalle.map((item) => {
-                item.cantidad = Number(item.cantidad)
-                item.precioUnitario = Number(item.precioUnitario)
+                item.cantidad = Number(item.cantidad).toFixed(2)
+                item.precioUnitario = Number(item.precioUnitario).toFixed(2)
                 item.montoDescuento = 0
-                item.subTotal = Number(item.subTotal)
+                item.subTotal = Number(item.subTotal).toFixed(2)
             })
+            // dataToProsin.paquetes1 = Number(200)
             // return res.json({dataToProsin})
             const { } = dataToProsin
             let formatedDataToProsin = {
@@ -3571,7 +3553,7 @@ const facturarExportacionController = async (req, res) => {
                 // totalGastosInternacionales: Number(dataToProsin.TransFrontInt || 0) + Number(dataToProsin.SegFrontInt || 0) + Number(dataToProsin.OtrosInt || 0),
                 totalGastosNacionalesFob: 0,
                 totalGastosInternacionales: 0,
-                informacionAdicional: '',
+                informacionAdicional: 'Se declara que la transaccion comercial entre LABORATORIOS IFA S.A. Y LIQUICAPS tiene condicion de pago al credito a 90 dias, a partir de la fecha de emision de la factura comercial',
                 descuentoAdicional: Number(dataToProsin.descuentoAdicional),
                 codigoMoneda: dataToProsin.codigoMoneda,
                 tipoCambio: usd,
@@ -3637,12 +3619,13 @@ const facturarExportacionController = async (req, res) => {
             //? numeroDescrip
             // { campo: 'Cajas', valor: Number(dataToProsin.paquetes1) },
             if (dataToProsin.paquetes1 && Number(dataToProsin.paquetes1) > 0) {
-                formatedDataToProsin.numeroDescripcionPaquetesBultos.push(
-                    {
-                        campo: 'Cajas',
-                        valor: Number(dataToProsin.paquetes1)
-                    },
-                )
+            formatedDataToProsin.numeroDescripcionPaquetesBultos.push(
+                {
+                    campo: 'Cajas',
+                    // valor: Number(200)
+                    valor: Number(dataToProsin.paquetes1)
+                },
+            )
             }
             // const setOrderResponsew = await setOrderState(id, '') //! pendiente 
             // return res.json({ formatedDataToProsin, dataToProsin })
@@ -3879,7 +3862,7 @@ const facturarExportacionController = async (req, res) => {
         if (response == 404) {
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
-            return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+            return res.json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse ,BodyToProsin})
         }
         return res.status(500).json({
             mensaje: `Error en el controlador. ${error.message || 'no definido'}`,
