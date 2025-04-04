@@ -146,7 +146,11 @@ const postInvoice = async (body) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             //Prefer: 'return-no-content'
         };
-        body.Series = process.env.SAP_SERIES_INVOICE
+        if(body.DocumentSubType == "bod_Bill"){
+            body.Series = process.env.SAP_SERIES_BILL
+        }else
+            body.Series = process.env.SAP_SERIES_INVOICE
+
         const url = 'https://172.16.11.25:50000/b1s/v1/Invoices';
         const sapResponse = await axios.post(url, body, {
             httpsAgent: agent,

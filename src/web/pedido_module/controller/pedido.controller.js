@@ -240,6 +240,7 @@ const crearOrderController = async (req, res) => {
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const docLine = body.DocumentLines
+        body.Series = process.env.SAP_SERIES_ORDER
         let alprazolamContains = false
         let otherContains = false
         docLine.map((item) => {
@@ -303,7 +304,7 @@ const crearOrderIfaController = async (req, res) => {
         body.PaymentGroupCode = paymentCode
         body.Comments = body.Comments + ' PEDIDO DESDE EL ENDPOINT PUBLICO'
         body.DocDueDate = docDueData
-        body.Series = 319
+        body.Series = process.env.SAP_SERIES_ORDER
         let docLines = body.DocumentLines
         let newDocLines = []
         for (const element of docLines) {
@@ -467,7 +468,7 @@ const crearOrderCadenaController = async (req, res) => {
             Comments
         } = body
         const ordenBody = {
-            Series,
+            Series: process.env.SAP_SERIES_ORDER,
             CardCode,
             FederalTaxID,
             DocDate,
@@ -901,7 +902,7 @@ const pedidoInstitucionController = async (req, res) => {
         }
         return res.json(oferta.response)
 
-        body.Series = 319;
+        body.Series = process.env.SAP_SERIES_ORDER;
         let num = 0
         body.DocumentLines.forEach((line) => {
             line.LineNum = num
@@ -1078,7 +1079,7 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
             U_UserCode,
         } = body
         const ordenBody = {
-            Series: 319,
+            Series: process.env.SAP_SERIES_ORDER,
             CardCode,
             FederalTaxID,
             DocDate,

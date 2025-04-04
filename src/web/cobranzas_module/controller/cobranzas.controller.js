@@ -12,7 +12,7 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getVendedoresBySuc,
     getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
     cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
-    getBajasByUser
+    getBajasByUser, reporteBajaCobranzas
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -1893,6 +1893,21 @@ const anularBajaController = async (req, res) => {
     }
 }
 
+const reporteBajaCobranzasController = async (req, res) => {
+    try {
+        const {UserSign, month, year} = req.body
+        const response = await reporteBajaCobranzas(UserSign, month, year)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador reporteBajaCobranzasController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -1944,5 +1959,5 @@ module.exports = {
     darDeBajaController, getCuentasParaBajaController, comprobanteContableController,
     darVariasDeBajaController,
     getBajasByUserController,
-    anularBajaController
+    anularBajaController, reporteBajaCobranzasController
 }
