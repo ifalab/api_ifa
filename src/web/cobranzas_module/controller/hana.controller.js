@@ -644,12 +644,26 @@ const getCobradores = async () => {
         //         union all
         //         select * from ${process.env.PRD}.ifa_dm_despachadores
         //         order by "SlpCode"`
-        const quer = `select * from ${process.env.PRD}.ifa_dm_cobradores`
+        const query = `select * from ${process.env.PRD}.ifa_dm_cobradores`
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
         throw new Error(`error en getCobradores: ${error.message || ''}`)
+    }
+}
+
+const getCobradoresBySucursales = async (listSucursales) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_cobradores where "SucCode" in (${listSucursales})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en getCobradoresBySucursales: ${error.message || ''}`)
     }
 }
 
@@ -707,7 +721,7 @@ const getVendedoresBySuc = async (sucCode) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SucCode"=${sucCode} and "SlpCode">0`
+        const query = `select * from ${process.env.PRD}.ifa_dm_cobradores where "SucCode"=${sucCode} and "SlpCode">0`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -909,5 +923,5 @@ module.exports = {
     getPendientesBajaPorCobrador, cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza,
     getBaja,getLayoutComprobanteContable,
     getBajasByUser,
-    reporteBajaCobranzas
+    reporteBajaCobranzas, getCobradoresBySucursales
 }
