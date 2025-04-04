@@ -68,7 +68,10 @@ const {
     createCampaignController,
     ReporteOfertaPDFController,
     getCoberturaController, clientesNoVentaController, clientesNoVentaPorVendedorController,
-    getVendedoresThatHasClientsController
+    getVendedoresThatHasClientsController,
+    facturasMoraByClientController,
+    clientesMoraController,
+    vendedorPorSucCodeController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -162,5 +165,8 @@ router.get('/reporte-oferta-pdf', [validarToken, validarCampos], ReporteOfertaPD
 router.post('/cobertura', [validarToken, validarCampos], getCoberturaController)
 router.post('/clientes-no-venta', [validarToken, validarCampos], clientesNoVentaPorVendedorController)
 router.get('/vendedores-clientes', [validarToken, validarCampos], getVendedoresThatHasClientsController)
+router.get('/facturas-mora-by-clientes', [validarToken, validarCampos], facturasMoraByClientController)
+router.get('/clientes-mora-by-sucode-slpcode', [validarToken, validarCampos], clientesMoraController)
+router.get('/vendedores-by-sucode', [validarToken, validarCampos], vendedorPorSucCodeController)
 
 module.exports = router

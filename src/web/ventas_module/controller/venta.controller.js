@@ -66,7 +66,10 @@ const {
     getYTDByVendedor,
     getYTDDelVendedor, getYTDDelVendedorMonto, getYTDMontoByVendedor,
     reporteOfertaPDF, getCoberturaVendedor, getCobertura,
-    clientesNoVenta, clientesNoVentaPorVendedor, vendedoresAsignedWithClientsBySucursal
+    clientesNoVenta, clientesNoVentaPorVendedor, vendedoresAsignedWithClientsBySucursal,
+    facturasMoraByClients,
+    clientesConMora,
+    vendedorPorSucCode
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1768,7 +1771,7 @@ const getCoberturaController = async (req, res) => {
     try {
         const { sucCode, mes, año } = req.body
         console.log({ body: req.body })
-        const response = await getCobertura( sucCode, mes, año)
+        const response = await getCobertura(sucCode, mes, año)
         response.sort((a, b) => a.SlpCode - b.SlpCode);
         return res.json(response)
     } catch (error) {
@@ -1795,7 +1798,7 @@ const clientesNoVentaPorVendedorController = async (req, res) => {
         const { vendedorCode } = req.body
         console.log({ body: req.body })
         const response = await clientesNoVentaPorVendedor(vendedorCode)
-        
+
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -1807,11 +1810,166 @@ const getVendedoresThatHasClientsController = async (req, res) => {
     try {
         const { sucCode } = req.query
         const response = await vendedoresAsignedWithClientsBySucursal(sucCode)
-        
+
         return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en getVendedoresThatHasClientsController: ${error.message}` })
+    }
+}
+
+const facturasMoraByClientController = async (req, res) => {
+    try {
+        const { cardCode } = req.query
+        const response = await facturasMoraByClients(cardCode)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en facturasMoraByClientController: ${error.message}` })
+    }
+}
+
+const clientesMoraController = async (req, res) => {
+    try {
+        const { sucCode, slpCode } = req.query
+        const response = await clientesConMora(sucCode, slpCode)
+        /**
+         * LicTradNum//nit
+         * Comments
+         * JrnlMemo
+         * DocTotal
+         * U_RAZSOC
+         * FiscalDate
+         * NumAtCard//nro factura
+         * U_B_cuf
+         * U_B_path
+         * C002519
+         */
+        // let listCardCode = []
+        const cardMap = new Map();
+        response.map((item) => {
+            if (item.CardCode && item.CardCode !== '') {
+                const {
+                    LicTradNum,
+                    Comments,
+                    JrnlMemo,
+                    DocTotal,
+                    DocEntry,
+                    DocNum,
+                    U_RAZSOC,
+                    NumAtCard,
+                    FiscalDate,
+                    U_B_cuf,
+                    U_B_path,
+                    ...restData
+                } = item
+
+                const {
+                    PymntGroup,
+                    CardCode,
+                    CardName,
+                    GroupName,
+                    SucName,
+                    AreaName,
+                    ZoneName,
+                    SlpNameCli,
+                    CardFName,
+                    DaysDue
+                } = restData
+
+                if (cardMap.has(CardCode)) {
+                    const existing = cardMap.get(CardCode);
+                    if (DaysDue > existing.DaysDue) {
+                        cardMap.set(CardCode, {
+                            PymntGroup,
+                            CardCode,
+                            CardName,
+                            GroupName,
+                            SucName,
+                            AreaName,
+                            ZoneName,
+                            SlpNameCli,
+                            CardFName,
+                            DaysDue,
+                            Facturas: []
+                        });
+                    }
+                } else {
+                    cardMap.set(CardCode, {
+                        PymntGroup,
+                        CardCode,
+                        CardName,
+                        GroupName,
+                        SucName,
+                        AreaName,
+                        ZoneName,
+                        SlpNameCli,
+                        CardFName,
+                        DaysDue,
+                        Facturas: []
+                    });
+                }
+            }
+        })
+
+        const listCardCode = Array.from(cardMap.values())
+
+        listCardCode.map((itemData) => {
+
+            const listDataFacturas = response
+                .filter(item => item.CardCode === itemData.CardCode)
+                .map(item => {
+                    const {
+                        LicTradNum,
+                        Comments,
+                        JrnlMemo,
+                        DocTotal,
+                        DocEntry,
+                        DocNum,
+                        U_RAZSOC,
+                        NumAtCard,
+                        FiscalDate,
+                        U_B_cuf,
+                        U_B_path,
+                        DaysDue,
+                    } = item;
+
+                    return {
+                        LicTradNum,
+                        Comments,
+                        JrnlMemo,
+                        DocTotal,
+                        DocEntry,
+                        DocNum,
+                        U_RAZSOC,
+                        NumAtCard,
+                        FiscalDate,
+                        U_B_cuf,
+                        DaysDue,
+                        U_B_path,
+                    }
+                })
+
+            itemData.Facturas = listDataFacturas
+        })
+
+        return res.json(listCardCode)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en facturasMoraByClientController: ${error.message}` })
+    }
+}
+
+const vendedorPorSucCodeController = async (req, res) => {
+    try {
+        const { sucCode } = req.query
+        const response = await vendedorPorSucCode(sucCode)
+        // return res.json({response,total:response.length})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en vendedorPorSucCodeController: ${error.message}` })
     }
 }
 
@@ -1872,6 +2030,7 @@ module.exports = {
     insertarUbicacionClienteController,
     obtenerClientesSinUbicacionController,
     clienteByVendedorController,
+    vendedorPorSucCodeController,
     lineasController,
     reporteVentasClienteLineas,
     clienteByCardCodeController,
@@ -1883,6 +2042,8 @@ module.exports = {
     createCampaignController,
     ReporteOfertaPDFController,
     getCoberturaController,
-    clientesNoVentaController, clientesNoVentaPorVendedorController, 
-    getVendedoresThatHasClientsController
+    clientesNoVentaController, clientesNoVentaPorVendedorController,
+    getVendedoresThatHasClientsController,
+    facturasMoraByClientController,
+    clientesMoraController
 };

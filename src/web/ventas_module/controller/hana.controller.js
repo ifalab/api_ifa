@@ -487,7 +487,8 @@ const obtenerOfertas = async (sucCode, codCliente) => {
             data: result
         }
     } catch (error) {
-        return {status: 400,
+        return {
+            status: 400,
             message: `Error en obtenerOfertas: ${error.message || ''}`
         }
     }
@@ -505,7 +506,8 @@ const detalleOfertaCadena = async (id) => {
             data: result
         }
     } catch (error) {
-        return {status: 400,
+        return {
+            status: 400,
             message: `Error en detalleOfertaCadena: ${error.message || ''}`
         }
     }
@@ -523,7 +525,8 @@ const detalleOfertaPendCadena = async (id) => {
             data: result
         }
     } catch (error) {
-        return {status: 400,
+        return {
+            status: 400,
             message: `Error en detalleOfertaCadena: ${error.message || ''}`
         }
     }
@@ -541,7 +544,8 @@ const detalleOferta = async (id) => {
             data: result
         }
     } catch (error) {
-        return {status: 400,
+        return {
+            status: 400,
             message: `Error en detalleOferta: ${error.message || ''}`
         }
     }
@@ -561,7 +565,7 @@ const unidadMedida = async (itemCode) => {
     }
 }
 
-const listaArticuloCadenas = async (cardCode,listNum) => {
+const listaArticuloCadenas = async (cardCode, listNum) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -575,7 +579,7 @@ const listaArticuloCadenas = async (cardCode,listNum) => {
     }
 }
 
-const clientesInstituciones = async()=>{
+const clientesInstituciones = async () => {
     try {
         if (!connection) {
             await connectHANA()
@@ -589,7 +593,7 @@ const clientesInstituciones = async()=>{
     }
 }
 
-const clientesInstitucionByCardCode = async(cardCode)=>{
+const clientesInstitucionByCardCode = async (cardCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -604,12 +608,12 @@ const clientesInstitucionByCardCode = async(cardCode)=>{
     }
 }
 
-const vendedoresPorSucursal = async(suc)=>{
+const vendedoresPorSucursal = async (suc) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        
+
         const query = `CALL ${process.env.PRD}.IFA_DM_VENDEDORES_POR_SUCURSAL('${suc}')`
         const result = executeQuery(query)
         return result
@@ -791,13 +795,13 @@ const listaPrecioSuc = async (sucCode) => {
     }
 }
 
-const listaPrecioInst= async () => {
+const listaPrecioInst = async () => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `select * from ${process.env.PRD}.ifa_dm_listas_de_precios where "ListName" like '%LISTA INS%'`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return {
             status: 200,
@@ -811,7 +815,7 @@ const listaPrecioInst= async () => {
     }
 }
 
-const ventasPedidoPorVendedor = async(slpCode,starDate,endDate)=>{
+const ventasPedidoPorVendedor = async (slpCode, starDate, endDate) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -915,7 +919,7 @@ const lineas = async () => {
     }
 }
 
-const analisisVentas = async (CardCode,DimensionCCode,starDate,endDate) => {
+const analisisVentas = async (CardCode, DimensionCCode, starDate, endDate) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -986,7 +990,7 @@ const getYTDDelVendedor = async (sucCode, linea, sublinea, fechaInicio1, fechaFi
     }
 }
 
-const clientesSinUbicacionSupervisor = async()=>{
+const clientesSinUbicacionSupervisor = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -999,7 +1003,7 @@ const clientesSinUbicacionSupervisor = async()=>{
     }
 }
 
-const allCampaignFilter=async(idCampaign, agrupar,codAgencia,codVendedor,codLinea)=>{
+const allCampaignFilter = async (idCampaign, agrupar, codAgencia, codVendedor, codLinea) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -1050,7 +1054,7 @@ const reporteOfertaPDF = async (id) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFA_LAPP_VEN_OFERTA_LAYOUT(${id})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -1066,7 +1070,7 @@ const getCoberturaVendedor = async (idVendedor, mes, año) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFA_LAPP_COBERTURA_BY_VENDEDOR(${idVendedor}, ${mes}, ${año})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -1082,7 +1086,7 @@ const getCobertura = async (sucCode, mes, año) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFA_LAPP_COBERTURA(${sucCode},${mes}, ${año})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -1098,7 +1102,7 @@ const clientesNoVenta = async (sucCode) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFA_LAPP_CLIENTES_NO_VENTA(${sucCode})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -1114,7 +1118,7 @@ const clientesNoVentaPorVendedor = async (vendedorCode) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFA_LAPP_CLIENTES_NO_VENTA_POR_VENDEDOR(${vendedorCode})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -1130,12 +1134,60 @@ const vendedoresAsignedWithClientsBySucursal = async (sucCode) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFA_LAPP_VENDEDORES_QUE_TIENEN_CLIENTES_POR_SUC(${sucCode})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         throw {
             message: `Error en vendedoresAsignedWithClientsBySucursal: ${error.message || ''}`
+        }
+    }
+}
+
+const clientesConMora = async (sucCode, slpCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_clientes_mora_by_sucode_slpcode(${sucCode},${slpCode})`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesConMora: ${error.message || ''}`
+        }
+    }
+}
+
+const facturasMoraByClients = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_facturas_mora_by_cliente('${cardCode}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en facturasMoraByClients: ${error.message || ''}`
+        }
+    }
+}
+
+const vendedorPorSucCode = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SucCode" = ${sucCode}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en vendedorPorSucCode: ${error.message || ''}`
         }
     }
 }
@@ -1206,6 +1258,10 @@ module.exports = {
     getYTDDelVendedorMonto, getYTDMontoByVendedor,
     reporteOfertaPDF,
     getCoberturaVendedor, getCobertura,
-    clientesNoVenta, clientesNoVentaPorVendedor,
-    vendedoresAsignedWithClientsBySucursal
+    clientesNoVenta,
+    clientesNoVentaPorVendedor,
+    vendedoresAsignedWithClientsBySucursal,
+    facturasMoraByClients,
+    clientesConMora,
+    vendedorPorSucCode,
 }
