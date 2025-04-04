@@ -147,6 +147,7 @@ const postQuotations = async (newOrderDate) => {
         };
         console.log({ newOrderDate })
         // Realiza la solicitud POST a la API externa usando el agente y los encabezados
+        newOrderDate.Series = process.env.SAP_SERIES_QUOTATION
         const response = await axios.post(url, newOrderDate, {
             httpsAgent: agent,
             headers: headers
@@ -226,6 +227,7 @@ const postEntrega = async (responseJson) => {
             Prefer: 'return-no-content'
         };
         const url = 'https://172.16.11.25:50000/b1s/v1/DeliveryNotes';
+        responseJson.Series = process.env.SAP_SERIES_DELIVERY_NOTES
         const sapResponse = await axios.post(url, responseJson, {
             httpsAgent: agent,
             headers: headers
@@ -264,6 +266,7 @@ const postInvoice = async (CardCode, DocumentLines) => {
             Prefer: 'return-no-content'
         };
         const url = 'https://172.16.11.25:50000/b1s/v1/Invoices';
+        responseJson.Series = process.env.SAP_SERIES_INVOICE
         const sapResponse = await axios.post(url, responseJson, {
             httpsAgent: agent,
             headers: headers
@@ -404,6 +407,7 @@ const createIncomingPayment = async (data) => {
         const url = `https://172.16.11.25:50000/b1s/v1/IncomingPayments`
         console.log({ url })
         console.log({ data })
+        data.Series = process.env.SAP_SERIES_INCOMING_PAYMENT
         const sapResponse = await axios.post(url, data, {
             httpsAgent: agent,
             headers: headers
