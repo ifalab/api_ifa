@@ -5,7 +5,7 @@ const QRCode = require('qrcode');
 const { request, response } = require("express")
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
     detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo, getVendedores,
-    getCobradores,
+    getCobradores, getCobradoresBySucursales,
     saldoDeudorIfavet,
     getAllSublines,
     getAllLines,
@@ -1529,15 +1529,17 @@ const getCobradoresController = async (req, res) => {
     }
 }
 
-const getCobradoresBySucursalesController = async (req, res) => {
+const getVendedoresBySucursalesController = async (req, res) => {
     try {
         const { listSucName } = req.body
         let response = []
-        let cobradores = await getVendedores()
+        let cobradores = await getCobradores()
         cobradores = cobradores.filter((element) => element.SlpCode != -1)
 
         cobradores.map((item) => {
             if (listSucName.includes(item.SucName)) {
+                item.SlpCode = item.ClpCode
+                item.SlpName = item.ClpName
                 response.push(item)
             }
         })
@@ -1545,7 +1547,7 @@ const getCobradoresBySucursalesController = async (req, res) => {
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        const mensaje = error.message || 'Error en el controlador getCobradoresBySucursalesController'
+        const mensaje = error.message || 'Error en el controlador getVendedoresBySucursalesController'
         return res.status(500).json({
             mensaje
         })
@@ -1566,6 +1568,21 @@ const getCobradoresBySucursalController = async (req, res) => {
     try {
         const { sucCode } = req.query
         let cobradores = await getVendedoresBySuc(sucCode)
+        
+        return res.json(cobradores)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getCobradoresBySucursalController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getCobradoresBySucursalesController = async (req, res) => {
+    try {
+        const { listSuc } = req.body
+        let cobradores = await getCobradoresBySucursales(listSuc)
         
         return res.json(cobradores)
     } catch (error) {
@@ -1950,7 +1967,7 @@ module.exports = {
     cobranzaPorSucursalYTiposController,
     getCobradoresController,
     saldoDeudorIfavetController,
-    getCobradoresBySucursalesController,
+    getVendedoresBySucursalesController,
     getAllSublinesController,
     getAllLinesController,
     getCobradoresBySucursalController,
@@ -1959,5 +1976,6 @@ module.exports = {
     darDeBajaController, getCuentasParaBajaController, comprobanteContableController,
     darVariasDeBajaController,
     getBajasByUserController,
-    anularBajaController, reporteBajaCobranzasController
+    anularBajaController, reporteBajaCobranzasController,
+    getCobradoresBySucursalesController
 }
