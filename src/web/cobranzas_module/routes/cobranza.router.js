@@ -10,7 +10,8 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getYearToDayController,
     getYTDCobradorController, getPendientesBajaPorCobradorController, darDeBajaController,
     getCuentasParaBajaController,getCuentasBancoParaBajaCobranzaController,comprobanteContableController, 
-    darVariasDeBajaController, getBajasByUserController, anularBajaController
+    darVariasDeBajaController, getBajasByUserController, anularBajaController,
+    reporteBajaCobranzasController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -76,5 +77,7 @@ router.get('/comprobante-contable',[validarToken, validarCampos], comprobanteCon
 router.post('/baja-varias',[validarToken, validarCampos], darVariasDeBajaController)
 router.get('/get-bajas',[validarToken, validarCampos], getBajasByUserController)
 router.get('/anular-baja',[validarToken, validarCampos], anularBajaController)
+
+router.post('/reporte-baja',[validarToken, validarCampos], reporteBajaCobranzasController)
 
 module.exports = router

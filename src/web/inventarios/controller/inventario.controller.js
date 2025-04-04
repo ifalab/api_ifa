@@ -3762,7 +3762,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 totalDeLaEntrega=+DocTotal
                 cabezeraHana = {
                     ...result,
-                    Series: 357,
+                    Series: process.env.SAP_SERIES_BILL,
                     DocTotal: Number(DocTotal),
                     U_OSLP_ID: U_OSLP_ID || "",
                     U_UserCode: U_UserCode || "",

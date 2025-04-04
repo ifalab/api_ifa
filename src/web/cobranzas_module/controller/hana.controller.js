@@ -839,6 +839,24 @@ const getBajasByUser = async (id_sap) => {
         throw new Error(`Error en getBajasByUser: ${error.message || ''}`)
     }
 }
+const reporteBajaCobranzas = async (UserSign, month, year) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        //"SucCode" in (${sucCodes}) 
+        const query = `select * from ${process.env.PRD}.ifa_cob_cobranzas where 
+        "UserSign" =${UserSign} 
+        and EXTRACT(MONTH FROM "DocDate") =${month}
+  	    AND EXTRACT(YEAR FROM "DocDate") =${year}`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en reporteBajaCobranzas: ${error.message || ''}`)
+    }
+}
 
 module.exports = {
     cobranzaGeneral,
@@ -890,5 +908,6 @@ module.exports = {
     getYTDCobrador,
     getPendientesBajaPorCobrador, cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza,
     getBaja,getLayoutComprobanteContable,
-    getBajasByUser
+    getBajasByUser,
+    reporteBajaCobranzas
 }
