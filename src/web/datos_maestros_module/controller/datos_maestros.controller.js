@@ -806,7 +806,7 @@ const cargarPreciosExcelController = async (req, res) => {
                     }   
                 }
             }
-            // console.log(response);
+         
             if (validate.length > 0) {
                 validate.forEach(error => errorSet.add(error)); 
             }        

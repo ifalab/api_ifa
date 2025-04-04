@@ -1,6 +1,7 @@
 const { request, response } = require("express")
 const puppeteer = require('puppeteer');
 const fs = require('fs')
+const ExcelJS = require('exceljs');
 const XLSX = require('xlsx');
 const path = require('path');
 const {
@@ -1973,6 +1974,182 @@ const vendedorPorSucCodeController = async (req, res) => {
     }
 }
 
+const excelClientesMoraController = async (req, res) => {
+    try {
+        const { sucCode, slpCode } = req.query
+        const response = await clientesConMora(sucCode, slpCode)
+        const cardMap = new Map();
+        response.map((item) => {
+            if (item.CardCode && item.CardCode !== '') {
+                const {
+                    LicTradNum,
+                    Comments,
+                    JrnlMemo,
+                    DocTotal,
+                    DocEntry,
+                    DocNum,
+                    U_RAZSOC,
+                    NumAtCard,
+                    FiscalDate,
+                    U_B_cuf,
+                    U_B_path,
+                    ...restData
+                } = item
+
+                const {
+                    PymntGroup,
+                    CardCode,
+                    CardName,
+                    GroupName,
+                    SucName,
+                    AreaName,
+                    ZoneName,
+                    SlpNameCli,
+                    CardFName,
+                    DaysDue
+                } = restData
+
+                if (cardMap.has(CardCode)) {
+                    const existing = cardMap.get(CardCode);
+                    if (DaysDue > existing.DaysDue) {
+                        cardMap.set(CardCode, {
+                            PymntGroup,
+                            CardCode,
+                            CardName,
+                            GroupName,
+                            SucName,
+                            AreaName,
+                            ZoneName,
+                            SlpNameCli,
+                            CardFName,
+                            DaysDue,
+                            Facturas: []
+                        });
+                    }
+                } else {
+                    cardMap.set(CardCode, {
+                        PymntGroup,
+                        CardCode,
+                        CardName,
+                        GroupName,
+                        SucName,
+                        AreaName,
+                        ZoneName,
+                        SlpNameCli,
+                        CardFName,
+                        DaysDue,
+                        Facturas: []
+                    });
+                }
+            }
+        })
+
+        const listCardCode = Array.from(cardMap.values())
+
+        listCardCode.map((itemData) => {
+
+            const listDataFacturas = response
+                .filter(item => item.CardCode === itemData.CardCode)
+                .map(item => {
+                    const {
+                        LicTradNum,
+                        Comments,
+                        JrnlMemo,
+                        DocTotal,
+                        DocEntry,
+                        DocNum,
+                        U_RAZSOC,
+                        NumAtCard,
+                        FiscalDate,
+                        U_B_cuf,
+                        U_B_path,
+                        DaysDue,
+                    } = item;
+                    // const dataFormated = FiscalDate.split
+                    return {
+                        LicTradNum,
+                        Comments,
+                        JrnlMemo,
+                        DocTotal,
+                        DocEntry,
+                        DocNum,
+                        U_RAZSOC,
+                        NumAtCard,
+                        FiscalDate: `${FiscalDate.split(' ')[0] || ''}`,
+                        U_B_cuf,
+                        DaysDue,
+                        U_B_path,
+                    }
+                })
+
+            itemData.Facturas = listDataFacturas
+        })
+
+        // return res.json(listCardCode)
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Clientes y Facturas');
+
+        worksheet.columns = [
+            { header: 'Codigo', key: 'CardCode', width: 15 },
+            { header: 'Nombre', key: 'CardName', width: 30 },
+            { header: 'Zona', key: 'ZoneName', width: 20 },
+            { header: 'Factura Nro', key: 'DocNum', width: 15 },
+            { header: 'Monto Total', key: 'DocTotal', width: 15 },
+            { header: 'Fecha Fiscal', key: 'FiscalDate', width: 20 },
+            { header: 'CUF', key: 'U_B_cuf', width: 60 },
+        ];
+
+        for (const cliente of listCardCode) {
+            const clienteRow = worksheet.addRow({
+                CardCode: cliente.CardCode,
+                CardName: cliente.CardName,
+                ZoneName: cliente.ZoneName,
+            });
+
+            clienteRow.font = { bold: true };
+            clienteRow.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD9E1F2' },
+            };
+
+            for (const factura of cliente.Facturas) {
+                worksheet.addRow({
+                    CardCode: '',
+                    CardName: '',
+                    ZoneName: '',
+                    DocNum: factura.DocNum,
+                    DocTotal: factura.DocTotal,
+                    FiscalDate: factura.FiscalDate,
+                    U_B_cuf: factura.U_B_cuf,
+                });
+            }
+
+            worksheet.addRow({});
+        }
+
+        const filePath = path.join(__dirname, './excel/Clientes_Facturas.xlsx');
+        await workbook.xlsx.writeFile(filePath);
+
+        res.download(filePath, 'Clientes_Facturas.xlsx', (err) => {
+            if (err) {
+                console.error('Error al enviar el archivo:', err);
+                return res.status(500).json({ mensaje: 'Error al enviar el archivo.' });
+            }
+
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error('Error al eliminar el archivo:', unlinkErr);
+                }
+            });
+        });
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en excelClientesMoraController: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2045,5 +2222,6 @@ module.exports = {
     clientesNoVentaController, clientesNoVentaPorVendedorController,
     getVendedoresThatHasClientsController,
     facturasMoraByClientController,
-    clientesMoraController
+    clientesMoraController,
+    excelClientesMoraController
 };

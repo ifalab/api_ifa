@@ -71,7 +71,8 @@ const {
     getVendedoresThatHasClientsController,
     facturasMoraByClientController,
     clientesMoraController,
-    vendedorPorSucCodeController
+    vendedorPorSucCodeController,
+    excelClientesMoraController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -168,5 +169,6 @@ router.get('/vendedores-clientes', [validarToken, validarCampos], getVendedoresT
 router.get('/facturas-mora-by-clientes', [validarToken, validarCampos], facturasMoraByClientController)
 router.get('/clientes-mora-by-sucode-slpcode', [validarToken, validarCampos], clientesMoraController)
 router.get('/vendedores-by-sucode', [validarToken, validarCampos], vendedorPorSucCodeController)
+router.get('/excel-clientes-mora', [validarToken, validarCampos], excelClientesMoraController)
 
 module.exports = router
