@@ -1533,11 +1533,13 @@ const getVendedoresBySucursalesController = async (req, res) => {
     try {
         const { listSucName } = req.body
         let response = []
-        let cobradores = await getVendedores()
+        let cobradores = await getCobradores()
         cobradores = cobradores.filter((element) => element.SlpCode != -1)
 
         cobradores.map((item) => {
             if (listSucName.includes(item.SucName)) {
+                item.SlpCode = item.ClpCode
+                item.SlpName = item.ClpName
                 response.push(item)
             }
         })
