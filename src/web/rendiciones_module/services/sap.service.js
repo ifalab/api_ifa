@@ -29,6 +29,32 @@ const sapService = {
             };
         }
     },
+    async createAsiento(body) {
+        try {
+            console.log({body})
+            const response = await httpClient.post('/contabilidad/asiento', body);
+            return {
+                statusCode: response.status,
+                data: response.data,
+            };
+        } catch (error) {
+            
+            if (error.response) {
+                
+                throw {
+                    statusCode: error.response.status,
+                    message: error.response.data || 'Error en la solicitud POST',
+                };
+            }
+
+            // Otros errores (como errores de red)
+            throw {
+                statusCode: 500,
+                message: error.message || 'Error desconocido en la solicitud POST',
+            };
+        }
+    },
 };
+
 
 module.exports = sapService;

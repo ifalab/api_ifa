@@ -1,4 +1,5 @@
 const { response } = require("express")
+const puppeteer = require('puppeteer');
 const { findClientePorVendedor,
     clientesMora,
     moraCliente,
@@ -419,7 +420,7 @@ const crearOrderCadenaController = async (req, res) => {
         if (!docEntry) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error no existe el doc entry en la peticion.`, '', "pedido/crear-orden-cad", process.env.PRD)
             return res.status(400).json({ message: `Error no existe el doc entry en la peticion.` })
-        } else if (DocumentLines.length>0) {
+        } else if (DocumentLines.length > 0) {
             const detalle = await detalleOfertaCadena(+docEntry)
             let newDocTotal = grossTotal
             detalle.data.map((item) => {
@@ -484,7 +485,7 @@ const crearOrderCadenaController = async (req, res) => {
             JournalMemo
         }
         // let DocTotal = 0
-        
+
         const detalle = await detalleOfertaCadena(+docEntry)
         if (!detalle) {
             return res.status(400).json({ mensaje: 'Hubo un error al intentar obtener el detalle de la orden.' })
@@ -723,24 +724,52 @@ const pedidoLayoutController = async (req, res) => {
 
         // Renderizar la plantilla EJS a HTML
         console.log({ data })
-        const html = await ejs.renderFile(path.join(__dirname, 'notaPedido', 'template.ejs'), { data, qrCode });
+        // const html = await ejs.renderFile(path.join(__dirname, 'notaPedido', 'template.ejs'), { data, qrCode });
+        const htmlTemplate = path.join(__dirname, 'notaPedido', 'template.ejs');
+        const htmlContent = await ejs.renderFile(htmlTemplate, { data, qrCode });
 
         // Configuración para html-pdf
-        const options = { format: 'A4', orientation: 'portrait' };
+        // const options = { format: 'A4', orientation: 'portrait' };
 
-        // Generar el PDF
-        pdf.create(html, options).toStream((err, stream) => {
-            if (err) {
-                console.error('Error al generar el PDF:', err);
-                grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `Error al generar el PDF. ${err.message || ''}`, `${response.query || ''}`, "pedido/pedido-layout", process.env.PRD)
-                return res.status(500).json({ mensaje: 'Error al generar el PDF' });
-            }
+        // // Generar el PDF
+        // pdf.create(html, options).toStream((err, stream) => {
+        //     if (err) {
+        //         console.error('Error al generar el PDF:', err);
+        //         grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `Error al generar el PDF. ${err.message || ''}`, `${response.query || ''}`, "pedido/pedido-layout", process.env.PRD)
+        //         return res.status(500).json({ mensaje: 'Error al generar el PDF' });
+        //     }
 
-            grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `PDF generado con exito`, `${response.query || ''}`, "pedido/pedido-layout", process.env.PRD)
-            // Enviar el PDF en la respuesta
-            res.setHeader('Content-Type', 'application/pdf');
-            stream.pipe(res);
+        //     grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", `PDF generado con exito`, `${response.query || ''}`, "pedido/pedido-layout", process.env.PRD)
+        //     // Enviar el PDF en la respuesta
+        //     res.setHeader('Content-Type', 'application/pdf');
+        //     stream.pipe(res);
+        // });
+
+        const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+        const page = await browser.newPage();
+
+        await page.setContent(htmlContent, { waitUntil: 'load' });
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true
         });
+        await browser.close();
+
+        //! Definir nombre del archivo
+        const fileName = `nota_pedido_${data.DocNum}.pdf`;
+
+        //! Registrar en el log
+        grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
+            "Nota Creada con éxito", response.query, "facturacion/nota-entrega", process.env.PRD);
+
+        //! Enviar el PDF como respuesta
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="${fileName}"`,
+            'Content-Length': pdfBuffer.length
+        });
+
+        return res.end(pdfBuffer);
     } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -1185,8 +1214,8 @@ const pedidosPorVendedorFacturadosOrdenadoController = async (req, res) => {
             return res.status(400).json({ mensaje: pedidos.value })
 
         const cabeceras = []
-        pedidos.forEach((pedido)=>{
-            const {SucCode,
+        pedidos.forEach((pedido) => {
+            const { SucCode,
                 SucName,
                 ZoneCode,
                 ZoneName,
@@ -1194,14 +1223,14 @@ const pedidosPorVendedorFacturadosOrdenadoController = async (req, res) => {
                 CardName,
                 SlpCodeCli,
                 SlpNameCli,
-                DocTotal, ...rest} = pedido
-            const cabecera = cabeceras.find((cab)=> cab.CardCode == CardCode)
-            if(cabecera){
-                console.log('existe', {cabecera})
-                cabecera.Cantidad= Number(cabecera.Cantidad)+1
-                cabecera.Total= Number(cabecera.Total)+Number(DocTotal)
-                cabecera.Detalle.push({...rest, DocTotal})
-            }else{
+                DocTotal, ...rest } = pedido
+            const cabecera = cabeceras.find((cab) => cab.CardCode == CardCode)
+            if (cabecera) {
+                console.log('existe', { cabecera })
+                cabecera.Cantidad = Number(cabecera.Cantidad) + 1
+                cabecera.Total = Number(cabecera.Total) + Number(DocTotal)
+                cabecera.Detalle.push({ ...rest, DocTotal })
+            } else {
                 console.log('nuevo')
                 cabeceras.push({
                     SucCode,
@@ -1214,11 +1243,11 @@ const pedidosPorVendedorFacturadosOrdenadoController = async (req, res) => {
                     SlpCodeCli,
                     SlpNameCli,
                     Total: +DocTotal,
-                    Detalle: [{...rest, DocTotal}]
+                    Detalle: [{ ...rest, DocTotal }]
                 })
             }
         })
-        console.log({cabeceras})
+        console.log({ cabeceras })
         return res.json(cabeceras)
     } catch (error) {
         console.log({ error })

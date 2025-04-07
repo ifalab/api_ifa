@@ -1,7 +1,7 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
-
+const sapService = require("../../rendiciones_module/services/sap.service")
 const asientoContableController = async (req, res) => {
     try {
         const {
@@ -197,7 +197,7 @@ const createAsientoContableController = async (req, res) => {
             voucher,
             cuenta
         } = req.body
-        
+
         const user = req.usuarioAutorizado
         const idSap = user.ID_SAP || 0
         // return res.json({user})
@@ -247,12 +247,12 @@ const createAsientoContableController = async (req, res) => {
         JournalEntryLines.push(firstAccount)
         JournalEntryLines.push(contraAccount)
         let data = {
-            U_UserCode:idSap,
+            U_UserCode: idSap,
             ReferenceDate: date,
             Memo: glosa,
             Indicator: indicador,
             Reference: reference,
-            Reference3:cheque,
+            Reference3: cheque,
             JournalEntryLines
         }
 
@@ -393,6 +393,52 @@ const cerrarCajaChicaController = async (req, res) => {
     }
 }
 
+const createAsientoContableSAPController = async (req, res) => {
+    try {
+        const {
+            fechaContabilizacion,
+            glosa,
+            referencia1,
+            referencia2,
+            referencia3,
+            details
+        } = req.body
+        let totalDebe = 0
+        let totalHaber = 0
+
+        details.map((item) => {
+            totalDebe += item.debe
+            totalHaber += item.haber
+        })
+
+        if (totalDebe != totalHaber) {
+            return res.status(400).json({
+                mensaje: `La sumatoria del Debe y Haber son diferentes. Total Debe: ${totalDebe}, Total Haber: ${totalHaber}`
+            })
+        }
+
+        const sapResponse = await sapService.createAsiento({
+            fechaContabilizacion,
+            glosa,
+            referencia1,
+            referencia2,
+            referencia3,
+            details
+        })
+        const { data } = sapResponse
+        const { TransacId } = data
+        return res.json({ transacId: TransacId })
+
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador, ${mensaje}` })
+    }
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -402,5 +448,6 @@ module.exports = {
     empleadosByCodeController,
     findAllBancoController,
     findAllAccountController,
-    cerrarCajaChicaController
+    cerrarCajaChicaController,
+    createAsientoContableSAPController
 }
