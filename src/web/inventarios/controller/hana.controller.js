@@ -471,10 +471,9 @@ const getAlmacenesSucursal = async () => {
 const getStockdeItemAlmacen = async (itemCode, whsCode) => {
     try {
         if (!connection) {
-            await connectHANA();
+            await connectHANA();    
         }
-        const query = `select * from ${process.env.PRD}.IFA_INV_INVENTARIO_STOCK 
-        where "ItemCode" = '${itemCode}' and "WhsCode"='${whsCode}'`;
+        const query = `select * from ${process.env.PRD}.IFA_INV_INVENTARIO_STOCK where "ItemCode" = '${itemCode}' and "WhsCode"='${whsCode}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result

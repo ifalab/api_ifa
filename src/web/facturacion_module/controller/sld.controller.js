@@ -10,7 +10,7 @@ const REQUEST_TIMEOUT = 65000;
 
 const connectSLD = async () => {
     try {
-        const url = 'https://srvhana:50000/b1s/v1/Login';
+        const url = 'https://172.16.11.25:50000/b1s/v1/Login';
         const data = {
             CompanyDB: process.env.DBSAPPRD,
             UserName: process.env.USERSAP,
@@ -46,7 +46,7 @@ const postEntrega = async (responseJson) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = 'https://srvhana:50000/b1s/v1/DeliveryNotes';
+        const url = 'https://172.16.11.25:50000/b1s/v1/DeliveryNotes';
         responseJson.Series = process.env.SAP_SERIES_DELIVERY_NOTES
         const sapResponse = await axios.post(url, responseJson, {
             httpsAgent: agent,
@@ -188,7 +188,7 @@ const facturacionByIdSld = async (id) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/Orders(${id})`
+        const url = `https://172.16.11.25:50000/b1s/v1/Orders(${id})`
         const sapResponse = await axios.get(url, {
             httpsAgent: agent,
             headers: headers,
@@ -259,7 +259,7 @@ const cancelInvoice = async (id) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/Invoices(${id})/Cancel`
+        const url = `https://172.16.11.25:50000/b1s/v1/Invoices(${id})/Cancel`
         const sapResponse = await axios.post(url, {}, {
             httpsAgent: agent,
             headers: headers,
@@ -283,7 +283,7 @@ const cancelDeliveryNotes = async (id) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/DeliveryNotes(${id})/Cancel`
+        const url = `https://172.16.11.25:50000/b1s/v1/DeliveryNotes(${id})/Cancel`
         const sapResponse = await axios.post(url, {}, {
             httpsAgent: agent,
             headers: headers,
@@ -306,7 +306,7 @@ const cancelOrder = async (id) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/Orders(${id})/Cancel`
+        const url = `https://172.16.11.25:50000/b1s/v1/Orders(${id})/Cancel`
         const sapResponse = await axios.post(url, {}, {
             httpsAgent: agent,
             headers: headers,
@@ -329,7 +329,7 @@ const closeQuotations = async (id) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        const url = `https://srvhana:50000/b1s/v1/Quotations(${id})/Close`
+        const url = `https://172.16.11.25:50000/b1s/v1/Quotations(${id})/Close`
         const sapResponse = await axios.post(url, {}, {
             httpsAgent: agent,
             headers: headers,

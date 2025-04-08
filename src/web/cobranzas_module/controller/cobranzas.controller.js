@@ -1581,10 +1581,15 @@ const getCobradoresBySucursalController = async (req, res) => {
 
 const getCobradoresBySucursalesController = async (req, res) => {
     try {
-        const { listSuc } = req.body
-        let cobradores = await getCobradoresBySucursales(listSuc)
-        
-        return res.json(cobradores)
+        const { listSuc } = req.body;
+        let cobradores = await getCobradoresBySucursales(listSuc);
+        let clpCodes = new Set();
+        let cobradoresUnicos = cobradores.filter(cobrador => {
+            if (clpCodes.has(cobrador.ClpCode)) return false;
+            clpCodes.add(cobrador.ClpCode);
+            return true;
+        });
+        return res.json(cobradoresUnicos);
     } catch (error) {
         console.log({ error })
         const mensaje = error.message || 'Error en el controlador getCobradoresBySucursalController'
