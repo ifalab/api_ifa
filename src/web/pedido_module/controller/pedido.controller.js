@@ -488,7 +488,7 @@ const crearOrderCadenaController = async (req, res) => {
 
         const detalle = await detalleOfertaCadena(+docEntry)
         if (!detalle) {
-            return res.status(400).json({ mensaje: 'Hubo un error al intentar obtener el detalle de la orden.' })
+            return res.status(400).json({ message: 'Hubo un error al intentar obtener el detalle de la orden.' })
         }
         // detalle.data.map((item) => {
         //     const subTotal = Number(item.subTotal)

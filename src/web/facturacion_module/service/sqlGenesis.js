@@ -7,8 +7,8 @@ const configGenesis = {
     server: process.env.SERVIDOR_GENESIS,
     database: process.env.BD_GENESIS_SERVER,
     options: {
-        encrypt: false, // Configura según tus necesidades
-        trustServerCertificate: true, // Útil para entornos locales
+        encrypt: false,
+        trustServerCertificate: true,
     },
     connectionTimeout: 30000,
     requestTimeout: 60000,
