@@ -1,7 +1,7 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
-const sapService = require("../../rendiciones_module/services/sap.service")
+const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
     try {
         const {
@@ -439,6 +439,54 @@ const createAsientoContableSAPController = async (req, res) => {
     }
 }
 
+const createAsientoContableCCController = async (req, res) => {
+    console.log(req.usuarioAutorizado)
+    console.log(req.body)
+    try {
+        const {
+            ReferenceDate,
+            Memo,
+            Reference1,
+            Reference2,
+            Reference3,
+            details
+        } = req.body
+        let totalDebe = 0
+        let totalHaber = 0
+
+        details.map((item) => {
+            totalDebe += item.Credit
+            totalHaber += item.Debit
+        })
+
+        if (totalDebe != totalHaber) {
+            return res.status(400).json({
+                mensaje: `La sumatoria del Debe y Haber son diferentes. Total Debe: ${totalDebe}, Total Haber: ${totalHaber}`
+            })
+        }
+
+        console.log(req.body)
+
+        const comResponse = await sapService.createAsientoCC({
+            fechaContabilizacion: ReferenceDate,
+            glosa: Memo,
+            referencia1: Reference1,
+            referencia2: Reference2,
+            referencia3: Reference3,
+            details
+        })
+        const { data } = comResponse
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador, ${mensaje}` })
+    }
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -449,5 +497,6 @@ module.exports = {
     findAllBancoController,
     findAllAccountController,
     cerrarCajaChicaController,
-    createAsientoContableSAPController
+    createAsientoContableSAPController,
+    createAsientoContableCCController
 }
