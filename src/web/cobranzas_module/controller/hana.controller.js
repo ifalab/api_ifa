@@ -727,7 +727,7 @@ const getVendedoresBySuc = async (sucCode) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_cobradores where "SucCode"=${sucCode} and "SlpCode">0`
+        const query = `select * from ${process.env.PRD}.ifa_dm_cobradores where "SucCode"=${sucCode} and "ClpCode">0`
         const result = await executeQuery(query)
         return result
     } catch (error) {
