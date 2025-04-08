@@ -201,14 +201,14 @@ const postCreditNotes = async (data) => {
       httpsAgent: agent,
       headers: headers
     });
-    console.log({ responseCreditNotes: response })
+    // console.log({ responseCreditNotes: response })
 
     // Retorna la respuesta en caso de éxito
     const status = response.status
     const locationHeader = response.headers.location;
     const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
     const orderNumber = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
-    console.log({ orderNumber })
+    console.log({ CNnumber: orderNumber })
 
     const datos = response.data
     // console.log({ location })

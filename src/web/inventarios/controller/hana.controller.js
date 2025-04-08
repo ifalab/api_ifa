@@ -345,7 +345,7 @@ const searchArticulos= async (itemName) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') order by "ItemName" limit 15`;
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') order by "ItemName" limit 50`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -471,16 +471,31 @@ const getAlmacenesSucursal = async () => {
 const getStockdeItemAlmacen = async (itemCode, whsCode) => {
     try {
         if (!connection) {
-            await connectHANA();
+            await connectHANA();    
         }
-        const query = `select * from ${process.env.PRD}.IFA_INV_INVENTARIO_STOCK 
-        where "ItemCode" = '${itemCode}' and "WhsCode"='${whsCode}'`;
+        const query = `select * from ${process.env.PRD}.IFA_INV_INVENTARIO_STOCK where "ItemCode" = '${itemCode}' and "WhsCode"='${whsCode}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.error('Error en getStockdeItemAlmacen:', error.message);
         throw { message: `Error en getStockdeItemAlmacen: ${error.message}`, error }
+    }
+}
+const getLineaArticulo= async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "LineItemName", "LineItemCode" from ${process.env.PRD}.ifa_dm_articulos where "ItemCode"='${itemCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getLineaArticulo:', error.message);
+        throw { 
+            message: `Error al procesar getLineaArticulo: ${error.message || ''}` 
+        }
     }
 }
 
@@ -513,5 +528,6 @@ module.exports = {
     getDeudaDelCliente,
     findCliente,
     getAlmacenesSucursal,
-    getStockdeItemAlmacen
+    getStockdeItemAlmacen,
+    getLineaArticulo
 }

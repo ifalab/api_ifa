@@ -20,7 +20,9 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     imprimibleDevolucionController,
     devolucionPorValoradoDifArticulosController,
     imprimibleSalidaController, findClienteController, getAlmacenesSucursalController,
-    getStockdeItemAlmacenController, getStockVariosItemsAlmacenController
+    getStockdeItemAlmacenController, getStockVariosItemsAlmacenController,
+    facturacionCambioValoradoController, entregaCambioValoradoController,
+    detalleFacturasGenesisController, getLineaArticuloController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -66,5 +68,9 @@ router.post('/buscar-cliente', [validarToken, validarCampos], findClienteControl
 router.post('/almacenes-sucursal', [validarToken, validarCampos], getAlmacenesSucursalController)
 router.post('/get-stock', [validarToken, validarCampos], getStockdeItemAlmacenController)
 router.post('/get-stock-varios', [validarToken, validarCampos], getStockVariosItemsAlmacenController)
+router.post('/facturacion-cambio', [validarToken, validarCampos], facturacionCambioValoradoController)
+router.post('/entrega-cambio-valorado', [validarToken, validarCampos], entregaCambioValoradoController)
+router.post('/detalle-fact-genesis', [validarToken, validarCampos], detalleFacturasGenesisController)
+router.get('/linea-articulo', [validarToken, validarCampos], getLineaArticuloController)
 
 module.exports = router

@@ -1581,10 +1581,15 @@ const getCobradoresBySucursalController = async (req, res) => {
 
 const getCobradoresBySucursalesController = async (req, res) => {
     try {
-        const { listSuc } = req.body
-        let cobradores = await getCobradoresBySucursales(listSuc)
-        
-        return res.json(cobradores)
+        const { listSuc } = req.body;
+        let cobradores = await getCobradoresBySucursales(listSuc);
+        let clpCodes = new Set();
+        let cobradoresUnicos = cobradores.filter(cobrador => {
+            if (clpCodes.has(cobrador.ClpCode)) return false;
+            clpCodes.add(cobrador.ClpCode);
+            return true;
+        });
+        return res.json(cobradoresUnicos);
     } catch (error) {
         console.log({ error })
         const mensaje = error.message || 'Error en el controlador getCobradoresBySucursalController'
@@ -1709,16 +1714,26 @@ const getCuentasBancoParaBajaCobranzaController = async (req, res) => {
 const darDeBajaController = async (req, res) => {
     try {
         const {body} = req.body
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const responsePostIncomming =await postIncommingPayments(body)
         if(responsePostIncomming.status==400){
             const mensaje=responsePostIncomming.errorMessage
+            grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+                `${mensaje.value||mensaje||'Error de postIncommingPayments.'}`,
+                'postIncommingPayments','cobranza/baja', process.env.DBSAPPRD)
             return res.status(400).json({mensaje: `${mensaje.value||mensaje||'Error de postIncommingPayments'}`, body})
         }
         console.log({responsePostIncomming})
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+            `Exito en la baja de cobranza`,
+            'postIncommingPayments','cobranza/baja', process.env.DBSAPPRD)
         return res.json({docEntry: responsePostIncomming.orderNumber})
     } catch (error) {
         console.log({ error })
-        const mensaje =  `${error.message||'Error en el controlador darDeBajaController'}`
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje =  `Error en el controlador darDeBajaController: ${error.message||'No definido'}`
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+            mensaje, 'catch controller','cobranza/baja', process.env.DBSAPPRD)
         return res.status(500).json({
             mensaje
         })
@@ -1728,6 +1743,7 @@ const darDeBajaController = async (req, res) => {
 const darVariasDeBajaController = async (req, res) => {
     let responses=[]
     try {
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const {body} = req.body
         for(const farmacia of body){
             const {CardCode, CardName, CounterReference, ...rest}=farmacia
@@ -1735,6 +1751,9 @@ const darVariasDeBajaController = async (req, res) => {
             console.log({responsePostIncomming})
             if(responsePostIncomming.status==400){
                 const mensaje=responsePostIncomming.errorMessage
+                grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+                    `${mensaje.value||mensaje||'Error de postIncommingPayments.'} Cliente del error: ${CardCode}- ${CardName}`,
+                    'postIncommingPayments','cobranza/baja-varias', process.env.DBSAPPRD)
                 return res.status(400).json(
                     {mensaje: `${mensaje.value||mensaje||'Error de postIncommingPayments.'} Cliente del error: ${CardCode}- ${CardName}`, 
                     farmacia, responses})
@@ -1743,10 +1762,16 @@ const darVariasDeBajaController = async (req, res) => {
         }
         
         console.log({responses})
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+            `Exito en las bajas`,
+            'postIncommingPayments','cobranza/baja-varias', process.env.DBSAPPRD)
         return res.json({responses})
     } catch (error) {
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ error })
-        const mensaje =  `${error.message||'Error en el controlador darVariasDeBajaController'}`
+        const mensaje =  `Error en el controlador darVariasDeBajaController: ${error.message||'No definido'}`
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+            mensaje, 'catch del controller','cobranza/baja-varias', process.env.DBSAPPRD)
         return res.status(500).json({
             mensaje, responses
         })
@@ -1897,13 +1922,25 @@ const getBajasByUserController = async (req, res) => {
 const anularBajaController = async (req, res) => {
     try {
         const {id} = req.query
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response =await cancelIncommingPayments(id)
-
+        if(response.status==400){
+            grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+                `${response.errorMessage || 'Error de cancelIncommingPayments id: '+id}`,
+                'cancelIncommingPayments','cobranza/anular-baja', process.env.DBSAPPRD)
+            return res.status(400).json({mensaje: response.errorMessage || 'Error de cancelIncommingPayments.'})
+        }
         console.log({response})
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+            `Exito en la anulacion de baja: ${id}`,
+            'cancelIncommingPayments','cobranza/anular-baja', process.env.DBSAPPRD)
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        const mensaje =  `${error.message||'Error en el controlador anularBajaController'}`
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje =  `Error en el controlador anularBajaController: ${error.message||'No definido'}`
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+            mensaje, 'catch controller','cobranza/anular-baja', process.env.DBSAPPRD)
         return res.status(500).json({
             mensaje
         })

@@ -125,7 +125,9 @@ const facturacionController = async (req, res) => {
             // return res.json({data})
             for (const line of DocumentLines) {
                 let newLine = {}
-                const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, BaseEntry: base3, LineStatus, ...restLine } = line;
+                const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment,
+                     LineNum, BaseLine: base1, BaseType: base2,
+                      BaseEntry: base3, LineStatus, ...restLine } = line;
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
                 console.log({ batch: batchData })
                 if (batchData.message) {
@@ -256,7 +258,10 @@ const facturacionController = async (req, res) => {
 
         if (responseData.lang) {
             endTime = Date.now()
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error interno de SAP. ${responseData.value || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME,
+                 "Facturacion Facturar", `Error interno de SAP. ${responseData.value || ''}`,
+                  `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`,
+                   "facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: `Error interno de sap. ${responseData.value || ''}` })
         }
         const detalle = [];
@@ -266,7 +271,9 @@ const facturacionController = async (req, res) => {
         }
 
         for (const line of responseData) {
-            const { producto, descripcion, cantidad, precioUnitario, montoDescuento, subTotal, numeroImei, numeroSerie, complemento, ...result } = line
+            const { producto, descripcion, cantidad, precioUnitario, montoDescuento,
+                 subTotal, numeroImei, numeroSerie, complemento, ...result
+                 } = line
             if (!cabezera.length) {
                 cabezera.push({ ...result, complemento: complemento || "" })
             }

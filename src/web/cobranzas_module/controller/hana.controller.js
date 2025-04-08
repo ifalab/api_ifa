@@ -364,7 +364,7 @@ const cobranzaSaldoDeudor = async (nombre, codigo) => {
     try {
         if (!connection) {
             await connectHANA()
-        }        
+        }
         // const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_BY_VEND_OR_CLI('${nombre}','${codigo}')`
         const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE('${codigo}')`
         console.log({ query })
@@ -381,7 +381,7 @@ const cobranzaSaldoAlContadoDeudor = async (nombre, codigo) => {
     try {
         if (!connection) {
             await connectHANA()
-        }        
+        }
         // const query = `CALL ${process.env.DBSAPPRD}.IFA_LAPP_SALDO_DEUDOR_BY_VEND_OR_CLI('${nombre}','${codigo}')`
         const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE_CONTADO('${codigo}')`
         console.log({ query })
@@ -401,16 +401,16 @@ const cobranzaSaldoDeudorDespachador = async (codigo) => {
         }
         const query = `CALL ${process.env.PRD}.IFA_LAPP_COB_SALDO_DEUDOR_POR_CLIENTE('${codigo}')`
         console.log({ query })
-        const result= await executeQuery(query)
-        return{
+        const result = await executeQuery(query)
+        return {
             statusCode: 200,
             data: result
         }
     } catch (error) {
         console.log({ error })
-        return { 
+        return {
             statusCode: 400,
-            message: `Error al procesar cobranzaSaldoDeudorDespachador: ${error.message || ''}` 
+            message: `Error al procesar cobranzaSaldoDeudorDespachador: ${error.message || ''}`
         }
     }
 }
@@ -474,9 +474,10 @@ const resumenCobranzaLayout = async (id_vendedor, fecha) => {
         return result
     } catch (error) {
         console.error('Error en cobroLayout:', error.message);
-        return { 
+        return {
             statusCode: 400,
-            message: 'Error al procesar la solicitud: IFA_LAPP_VEN_COBRO_LAYOUT' }
+            message: 'Error al procesar la solicitud: IFA_LAPP_VEN_COBRO_LAYOUT'
+        }
     }
 }
 
@@ -489,19 +490,21 @@ const cobrosRealizados = async (id_vendedor) => {
         // const query = `CALL LAB_IFA_PRD.IFA_LAPP_VEN_COBROS_POR_VENDEDOR(${id_vendedor})`;
         console.log({ query })
         const result = await executeQuery(query)
-        return { statusCode: 200,
+        return {
+            statusCode: 200,
             data: result
         }
 
     } catch (error) {
         console.error('Error en cobrosRealizados:', error.message);
-        return { 
+        return {
             statusCode: 400,
-            message: `Error al procesar cobrosRealizados: ${error.message}` }
+            message: `Error al procesar cobrosRealizados: ${error.message}`
+        }
     }
 }
 
-const clientesPorVendedor= async (id_vendedor) => {
+const clientesPorVendedor = async (id_vendedor) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -517,14 +520,14 @@ const clientesPorVendedor= async (id_vendedor) => {
         }
     } catch (error) {
         console.error('Error en clientesPorVendedor:', error.message);
-        return { 
+        return {
             statusCode: 400,
-            message: `Error al procesar clientesPorVendedor: ${error.message || ''}` 
+            message: `Error al procesar clientesPorVendedor: ${error.message || ''}`
         }
     }
 }
 
-const clientesPorSucursal= async (id_sucursal) => {
+const clientesPorSucursal = async (id_sucursal) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -539,14 +542,14 @@ const clientesPorSucursal= async (id_sucursal) => {
         }
     } catch (error) {
         console.error('Error en clientesPorSucursal:', error.message);
-        return { 
+        return {
             statusCode: 400,
-            message: `Error al procesar clientesPorSucursal: ${error.message || ''}` 
+            message: `Error al procesar clientesPorSucursal: ${error.message || ''}`
         }
     }
 }
 
-const clientesPorDespachador= async (id_sap) => {
+const clientesPorDespachador = async (id_sap) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -561,14 +564,14 @@ const clientesPorDespachador= async (id_sap) => {
         }
     } catch (error) {
         console.error('Error en clientesPorDespachador:', error.message);
-        return { 
+        return {
             statusCode: 400,
-            message: `Error al procesar clientesPorDespachador: ${error.message || ''}` 
+            message: `Error al procesar clientesPorDespachador: ${error.message || ''}`
         }
     }
 }
 
-const detalleFactura= async (docEntry) => {
+const detalleFactura = async (docEntry) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -582,9 +585,9 @@ const detalleFactura= async (docEntry) => {
         }
     } catch (error) {
         console.error('Error en detalleFactura:', error.message);
-        return { 
+        return {
             statusCode: 400,
-            message: `Error al procesar detalleFactura: ${error.message || ''}` 
+            message: `Error al procesar detalleFactura: ${error.message || ''}`
         }
     }
 }
@@ -600,7 +603,8 @@ const cobranzaNormalesPorSucursal = async (sucCode) => {
             data: result
         }
     } catch (error) {
-        return {status: 400,
+        return {
+            status: 400,
             message: `Error en cobranzaNormalesPorSucursal: ${error.message || ''}`
         }
     }
@@ -617,7 +621,8 @@ const cobranzaPorSucursalYTipo = async (sucCode, tipo) => {
             data: result
         }
     } catch (error) {
-        return {status: 400,
+        return {
+            status: 400,
             message: `Error en cobranzaPorSucursalYTipo: ${error.message || ''}`
         }
     }
@@ -658,7 +663,8 @@ const getCobradoresBySucursales = async (listSucursales) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_cobradores where "SucCode" in (${listSucursales})`
+        const query = `select DISTINCT * from ${process.env.PRD}.ifa_dm_cobradores where "SucCode" in (${listSucursales})`
+        // const query = `SELECT DISTINCT "ClpCode", "ClpName" FROM ${process.env.PRD}.ifa_dm_cobradores WHERE "SucCode" in (800,500)`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -683,7 +689,7 @@ const saldoDeudorIfavet = async () => {
     }
 }
 
-const getAllSublines= async () => {
+const getAllSublines = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -694,13 +700,13 @@ const getAllSublines= async () => {
         return result
     } catch (error) {
         console.error('Error en getAllSublines:', error.message);
-        throw { 
-            message: `Error al procesar getAllSublines: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar getAllSublines: ${error.message || ''}`
         }
     }
 }
 
-const getAllLines= async () => {
+const getAllLines = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -711,8 +717,8 @@ const getAllLines= async () => {
         return result
     } catch (error) {
         console.error('Error en getAllLines:', error.message);
-        throw { 
-            message: `Error al procesar getAllLines: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar getAllLines: ${error.message || ''}`
         }
     }
 }
@@ -721,7 +727,7 @@ const getVendedoresBySuc = async (sucCode) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_cobradores where "SucCode"=${sucCode} and "SlpCode">0`
+        const query = `select * from ${process.env.PRD}.ifa_dm_cobradores where "SucCode"=${sucCode} and "ClpCode">0`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -757,7 +763,7 @@ const getYearToDayByCobrador = async (cobradorName, dim2, fechaInicio1, fechaFin
         throw new Error(`error en getYearToDayByCobrador: ${error.message || ''}`)
     }
 }
-const getYTDCobrador = async (sucCode,fechaInicio1, fechaFin1) => {
+const getYTDCobrador = async (sucCode, fechaInicio1, fechaFin1) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -810,7 +816,7 @@ const cuentasBancoParaBajaCobranza = async () => {
     } catch (error) {
         console.log({ error })
         throw new Error(`Error en cuentasBancoParaBajaCobranza: ${error.message || ''}`)
-    }  
+    }
 }
 
 const getBaja = async (docEntry) => {
@@ -920,8 +926,8 @@ module.exports = {
     getYearToDayBySuc,
     getYearToDayByCobrador,
     getYTDCobrador,
-    getPendientesBajaPorCobrador, cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza,
-    getBaja,getLayoutComprobanteContable,
+    getPendientesBajaPorCobrador, cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza,
+    getBaja, getLayoutComprobanteContable,
     getBajasByUser,
     reporteBajaCobranzas, getCobradoresBySucursales
 }
