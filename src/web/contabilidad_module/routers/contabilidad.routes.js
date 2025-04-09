@@ -13,6 +13,7 @@ const { asientoContableController,
     findAllAccountController,
     cerrarCajaChicaController,
     createAsientoContableSAPController,
+    createAsientoContableCCController,
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -27,5 +28,6 @@ router.get('/empleado-by-code/:code', [validarToken, validarCampos], empleadosBy
 router.get('/find-all-bancos', [validarToken, validarCampos],findAllBancoController)
 router.get('/find-all-account', [validarToken, validarCampos],findAllAccountController)
 router.patch('/cierre-caja-chica', [validarToken, validarCampos],cerrarCajaChicaController)
+router.post('/create-asiento-contable-centro-costo', [validarToken, validarCampos], createAsientoContableCCController)
 
 module.exports = router
