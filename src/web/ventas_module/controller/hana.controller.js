@@ -1150,7 +1150,7 @@ const clientesConMora = async (sucCode, slpCode) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.ifa_clientes_mora_by_sucode_slpcode(${sucCode},${slpCode})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -1188,6 +1188,22 @@ const vendedorPorSucCode = async (sucCode) => {
     } catch (error) {
         throw {
             message: `Error en vendedorPorSucCode: ${error.message || ''}`
+        }
+    }
+}
+
+createCampaign = async (name, descrip, sucCode, starDate, endDate) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.LAPP}.CREATE_CAMPAIGN('${name}','${descrip}',${sucCode},'${starDate}','${endDate}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en createCampaign: ${error.message || ''}`
         }
     }
 }
