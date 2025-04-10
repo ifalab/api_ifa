@@ -1,5 +1,4 @@
 const hana = require('@sap/hana-client');
-const { query } = require('express');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -44,15 +43,19 @@ const executeQuery = async (query) => {
 }
 
 
-const getLotes = async () => {
+const getLotes = async (status) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select a.*, b."Status", b."StatusDescr", b."CreateDate" "CreateDateStatus"
+        const query = `
+        select a.*, b."Status", b."StatusDescr", 
+            b."CreateDate" "CreateDateStatus"
         from ${process.env.PRD}.ifa_dm_articulos_lotes_pt a
-        join(
-            select * from ${process.env.PRD}.ifa_dm_articulos_lotes_pt_status
+        join (
+            select * from ${process.env.PRD}.ifa_dm_articulos_lotes_pt_status 
+            where "Status"=${status}
+            limit 200
         ) b on a."BatchNum"=b."BatchNum"
         order by b."CreateDate" desc`
         console.log({ query })
@@ -60,6 +63,28 @@ const getLotes = async () => {
     } catch (error) {
         console.log({ error })
         throw new Error(`Error al procesar la solicitud getLotes: ${error.message || ''}`);
+    }
+}
+
+const searchLotes = async (cadena, status) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `
+        select a.*, b."Status", b."StatusDescr", 
+            b."CreateDate" "CreateDateStatus"
+        from ${process.env.PRD}.ifa_dm_articulos_lotes_pt a
+        join( select * from
+            ${process.env.PRD}.ifa_dm_articulos_lotes_pt_status 
+            where "BatchNum" like '%${cadena}%' and "Status"=${status}) b on a."BatchNum"=b."BatchNum"
+        where a."BatchNum" like '%${cadena}%'
+        order by b."CreateDate" desc`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la solicitud searchLotes: ${error.message || ''}`);
     }
 }
 
@@ -81,5 +106,6 @@ const cambiarEstadoLote = async (lote, estado, usuario, comentario) => {
 
 module.exports = {
     getLotes,
-    cambiarEstadoLote
+    cambiarEstadoLote,
+    searchLotes
 }
