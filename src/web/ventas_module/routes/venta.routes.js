@@ -72,7 +72,10 @@ const {
     facturasMoraByClientController,
     clientesMoraController,
     vendedorPorSucCodeController,
-    excelClientesMoraController
+    excelClientesMoraController,
+    allCampaignController,
+    allAgenciesController,
+    campaignByIdController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -121,18 +124,18 @@ router.get('/detalle-oferta-cadena-pend', [validarToken, validarCampos], detalle
 router.get('/oferta-unidad-medida', [validarToken, validarCampos], unidadMedidaController)
 router.get('/lista-articulo-cadenas', [validarToken, validarCampos], listaArticuloCadenasController)
 router.post('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
-router.get('/cliente-institucion-by-cardcode', [validarToken, validarCampos],clienteInstitucionByCardCodeController)
-router.post('/vendedor-sucursal', [validarToken, validarCampos],vendedoresPorSucursalController)
-router.get('/ofertas-instituciones', [validarToken, validarCampos],obtenerOfertasInstitucionesController)
+router.get('/cliente-institucion-by-cardcode', [validarToken, validarCampos], clienteInstitucionByCardCodeController)
+router.post('/vendedor-sucursal', [validarToken, validarCampos], vendedoresPorSucursalController)
+router.get('/ofertas-instituciones', [validarToken, validarCampos], obtenerOfertasInstitucionesController)
 router.get('/detalle-oferta', [validarToken, validarCampos], detalleOfertaController)
 router.post('/solicitud-planta', [validarToken, validarCampos], crearSolicitudPlantaController)
 router.get('/ofertas-vendedores', [validarToken, validarCampos], obtenerOfertasVendedoresController)
 router.post('/pedidos-detalle', [validarToken, validarCampos], obtenerPedidosDetalleController)
 router.get('/ofertas-sucursal', [validarToken, validarCampos], obtenerOfertasPorSucursalController)
-router.get('/lista-empleado-cliente', [validarToken, validarCampos],listaClienteEmpleadosController )
-router.get('/empleado-cliente', [validarToken, validarCampos],ClienteEmpleadosController)
-router.post('/articulos-vehiculo', [validarToken, validarCampos],obtenerArticulosVehiculoController)
-router.post('/search-vendedores', [validarToken, validarCampos],searchVendedoresController)
+router.get('/lista-empleado-cliente', [validarToken, validarCampos], listaClienteEmpleadosController)
+router.get('/empleado-cliente', [validarToken, validarCampos], ClienteEmpleadosController)
+router.post('/articulos-vehiculo', [validarToken, validarCampos], obtenerArticulosVehiculoController)
+router.post('/search-vendedores', [validarToken, validarCampos], searchVendedoresController)
 
 router.get('/lista-precio-suc', [validarToken, validarCampos], listaPrecioSucController)
 router.get('/lista-precio-inst', [validarToken, validarCampos], listaPrecioInstController)
@@ -148,13 +151,16 @@ router.get('/cliente-by-cardcode', [validarToken, validarCampos], clienteByCardC
 router.post('/ubicacion-cliente', [validarToken, validarCampos], insertarUbicacionClienteController)
 router.get('/clientes_sin_ubi', [validarToken, validarCampos], obtenerClientesSinUbicacionController)
 router.get('/clientes-sin-ubi-sup', [validarToken, validarCampos], clientesSinUbicacionSupervisorController)
-router.get('/all-campaign-filter', [validarToken, validarCampos],  allCampaignFilterController)
-router.post('/create-campaign',[
+router.get('/all-campaign-filter', [validarToken, validarCampos], allCampaignFilterController)
+router.get('/all-campaign', [validarToken, validarCampos], allCampaignController)
+router.get('/one-campaign', [validarToken, validarCampos], campaignByIdController)
+router.get('/all-agencies', [validarToken, validarCampos], allAgenciesController)
+router.post('/create-campaign', [
     validarToken,
     validarCampos,
     upload.single('archivo'),
-    validarArchivoExcel,
-],createCampaignController)
+    // validarArchivoExcel,
+], createCampaignController)
 
 
 router.post('/ytd', [validarToken, validarCampos], getYTDByVendedorController)

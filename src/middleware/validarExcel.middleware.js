@@ -1,5 +1,4 @@
 const validarArchivoExcel = (req, res, next) => {
-    // console.log(req.files);
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ mensaje: 'No hay un archivo que subir' });
     }

@@ -1208,6 +1208,168 @@ createCampaign = async (name, descrip, sucCode, starDate, endDate) => {
     }
 }
 
+createDetailsCampaign = async (id, zoneCode, itemCode, quantity) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.LAPP}.CREATE_DETAILSCAMPAIGN(${id},${zoneCode},'${itemCode}',${quantity})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en createDetailsCampaign: ${error.message || ''}`
+        }
+    }
+}
+
+bannedCampaign = async (id,) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.LAPP}.BANNED_CAMPAIGN(${id})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en bannedCampaign: ${error.message || ''}`
+        }
+    }
+}
+
+allCampaign = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.LAPP}.lapp_campaign where lapp_campaign.ISACTIVE = TRUE`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en allCampaign: ${error.message || ''}`
+        }
+    }
+}
+
+oneDetailsCampaignById = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.LAPP}.LAPP_ONECAMPAIGN_BY_ID(${id})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en oneDetailsCampaignById: ${error.message || ''}`
+        }
+    }
+}
+
+oneCampaignById = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.LAPP}.LAPP_CAMPAIGN WHERE ID = ${id} AND ISACTIVE = TRUE`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en oneDetailsCampaignById: ${error.message || ''}`
+        }
+    }
+}
+
+rollBackCampaignById = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `delete from ${process.env.LAPP}.lapp_campaign where ID = ${id} `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en rollBackCampaignById: ${error.message || ''}`
+        }
+    }
+}
+
+validateItem = async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" = '${itemCode}' and "validFor" = 'Y'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en validateItem: ${error.message || ''}`
+        }
+    }
+}
+
+validateZona = async (zoneCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_zonas where "ZoneCode" = ${zoneCode}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en validateZona: ${error.message || ''}`
+        }
+    }
+}
+
+allAgencies = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_sucursales`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en allAgencies: ${error.message || ''}`
+        }
+    }
+}
+
+
+
+agencyBySucCode = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_sucursales where "SucCode" = ${sucCode}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en agencyBySucCode: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1280,4 +1442,15 @@ module.exports = {
     facturasMoraByClients,
     clientesConMora,
     vendedorPorSucCode,
+    createCampaign,
+    createDetailsCampaign,
+    bannedCampaign,
+    allCampaign,
+    oneDetailsCampaignById,
+    validateItem,
+    validateZona,
+    allAgencies,
+    agencyBySucCode,
+    oneCampaignById,
+    rollBackCampaignById,
 }
