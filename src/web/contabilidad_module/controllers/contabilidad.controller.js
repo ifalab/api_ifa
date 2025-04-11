@@ -1,5 +1,5 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio } = require("./hana.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
@@ -440,39 +440,68 @@ const createAsientoContableSAPController = async (req, res) => {
 }
 
 const createAsientoContableCCController = async (req, res) => {
-    console.log(req.usuarioAutorizado)
-    console.log(req.body)
+    // console.log(req.usuarioAutorizado)
     try {
+        const user = req.usuarioAutorizado
         const {
             ReferenceDate,
+            DueDate,
             Memo,
             Reference1,
             Reference2,
             Reference3,
+            TransType,
             details
         } = req.body
-        let totalDebe = 0
-        let totalHaber = 0
+        let totalDebe = 0;
+        let totalHaber = 0;
 
+        let formattedDate;
+        let formattedDueDate;
+        if (ReferenceDate) {
+            const referenceDate = new Date(ReferenceDate);
+            const referenceDueDate = new Date(DueDate);
+        
+            if (isNaN(referenceDate) || isNaN(referenceDueDate)) {
+                return res.status(400).json({
+                    mensaje: 'La fecha de contabilización o de vencimiento no es válida.'
+                });
+            }
+        
+            formattedDate = referenceDate.toISOString();  
+            formattedDueDate = referenceDueDate.toISOString();  
+        } else {
+            return res.status(400).json({
+                mensaje: 'La fecha de contabilización o de vencimiento es obligatoria.'
+            });
+        }
+
+        console.log(req.body)
+        
         details.map((item) => {
-            totalDebe += item.Credit
-            totalHaber += item.Debit
+            // console.log(item);
+            totalDebe += Number(item.Credit)
+            totalHaber += Number(item.Debit)
         })
-
+        
+        console.log({totalDebe, totalHaber}) 
         if (totalDebe != totalHaber) {
             return res.status(400).json({
                 mensaje: `La sumatoria del Debe y Haber son diferentes. Total Debe: ${totalDebe}, Total Haber: ${totalHaber}`
             })
         }
 
-        console.log(req.body)
+        console.log(user);
 
         const comResponse = await sapService.createAsientoCC({
-            fechaContabilizacion: ReferenceDate,
+            fechaContabilizacion: formattedDate,
             glosa: Memo,
             referencia1: Reference1,
             referencia2: Reference2,
             referencia3: Reference3,
+            transType: Number(TransType),
+            fechaDueDate: formattedDueDate,
+            userSign: Number(user.ID),
             details
         })
         const { data } = comResponse
@@ -487,6 +516,125 @@ const createAsientoContableCCController = async (req, res) => {
     }
 }
 
+const getCuentasCC = async (req, res) => {
+    try {
+        const data = await cuentasCC();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+    }
+}
+
+const getAsientosContablesCC = async(req, res) => {
+    try {
+        const data = await asientosContablesCC();
+
+        const groupedData = data.reduce((acc, current) => {
+            if (acc[current.TransId]) {
+              acc[current.TransId].lines.push({
+                Line_ID: current.Line_ID,
+                Account: current.Account,
+                Debit: current.Debit,
+                Credit: current.Credit,
+                LineMemo: current.LineMemo
+              });
+            } else {
+              acc[current.TransId] = {
+                TransId: current.TransId,
+                TransType: current.TransType,
+                RefDate: current.RefDate,
+                Memo: current.Memo,
+                Ref1: current.Ref1,
+                Ref2: current.Ref2,
+                Ref3: current.Ref3,
+                Number: current.Number,
+                Indicator: current.Indicator,
+                lines: [{
+                  Line_ID: current.Line_ID,
+                  Account: current.Account,
+                  Debit: current.Debit,
+                  Credit: current.Credit,
+                  LineMemo: current.LineMemo
+                }]
+              };
+            }
+            return acc;
+        }, {});
+    
+        const formattedData = Object.values(groupedData);
+        
+        return res.json(formattedData);
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getAsientosContablesCC], ${mensaje}` })
+    }
+}
+
+const getSucursalesCC = async (req, res) => {
+    try {
+        const data = await sucursalesCC();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+    }
+}
+
+const getTipoClienteCC = async (req, res) => {
+    try {
+        const data = await tipoClienteCC();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+    }
+}
+
+const getLineasCC = async (req, res) => {
+    try {
+        const data = await lineaCC();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+    }
+}
+
+const getSublineasCC = async (req, res) => {
+    try {
+        const data = await subLineaCC();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+    }
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -498,5 +646,11 @@ module.exports = {
     findAllAccountController,
     cerrarCajaChicaController,
     createAsientoContableSAPController,
-    createAsientoContableCCController
+    createAsientoContableCCController,
+    getCuentasCC,
+    getAsientosContablesCC,
+    getSucursalesCC,
+    getTipoClienteCC, 
+    getLineasCC,    
+    getSublineasCC, 
 }

@@ -153,6 +153,102 @@ const dataCierreCaja = async (id)=>{
     }
 }
 
+const cuentasCC = async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('cuentasCC EXECUTE')
+        const query = `SELECT "AcctCode", "AcctName" FROM LAB_IFA_COM.ACCOUNT WHERE "Postable" = 'Y'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en cuentasCC')
+    }
+}
+
+const sucursalesCC= async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('cuentasCC EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_COM.DIM1`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en cuentasCC')
+    }
+}
+
+const tipoClienteCC= async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('cuentasCC EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_COM.DIM2`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en cuentasCC')
+    }
+}
+
+const lineaCC= async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('cuentasCC EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_COM.DIM3`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en cuentasCC')
+    }
+}
+
+const subLineaCC= async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('cuentasCC EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_COM.DIM31`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en cuentasCC')
+    }
+}
+
+const asientosContablesCC= async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('cuentasCC EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_JOURNAL`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en cuentasCC')
+    }
+}
+
 module.exports = {
     tipoDeCambio,
     empleadosHana,
@@ -161,4 +257,10 @@ module.exports = {
     findAllAccount,
     dataCierreCaja,
     tipoDeCambioByFecha,
+    cuentasCC,
+    asientosContablesCC,
+    sucursalesCC,
+    tipoClienteCC,
+    lineaCC,
+    subLineaCC,
 }
