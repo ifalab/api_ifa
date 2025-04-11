@@ -20,11 +20,12 @@ const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditN
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega } = require("../../facturacion_module/controller/hana.controller")
-const { spObtenerCUF, getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("../../facturacion_module/controller/sql_genesis.controller")
+const { spObtenerCUF } = require("../../facturacion_module/controller/sql_genesis.controller")
 const { notaDebitoCredito } = require("../../facturacion_module/service/apiFacturacionProsin")
 const path = require('path');
 const fs = require('fs');
 const { facturacionProsin } = require("../../facturacion_module/service/apiFacturacionProsin")
+const {getFacturasParaDevolucion, getDetalleFacturasParaDevolucion} = require("./sql_genesis.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {

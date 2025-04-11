@@ -35,9 +35,11 @@ app.use('/v1/web/centro-costo', require('./web/centro_costos_module/routes/cc.ro
 app.use('/v1/web/rendiciones', require('./web/rendiciones_module/routes/rendiciones.routes'));
 app.use('/v1/web/facturacion', require('./web/facturacion_module/router/facturacion.routes'));
 app.use('/v1/web/pedido', require('./web/pedido_module/routes/pedido.routes'));
+app.use('/v1/web/produccion', require('./web/produccion_module/routes/produccion.routes'));
 app.use('/v1/web/shared', require('./web/shared/routes/shared.routes'));
 app.use('/v1/web/datos-maestros', require('./web/datos_maestros_module/routers/datos_maestros.routes'));
 app.use('/v1/web/excel', require('./web/excel_reader/routes/excel.routes'));
+app.use('/v1/web/planificacion', require('./web/planificacion_module/routes/planificacion.routes'));
 
 
 //TODO VERSION MOVIL --------------------------------------------------------------------------------------

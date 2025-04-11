@@ -70,11 +70,22 @@ const {
     clientesNoVenta, clientesNoVentaPorVendedor, vendedoresAsignedWithClientsBySucursal,
     facturasMoraByClients,
     clientesConMora,
-    vendedorPorSucCode
+    vendedorPorSucCode,
+    createCampaign,
+    validateZona,
+    validateItem,
+    rollBackCampaignById,
+    bannedCampaign,
+    createDetailsCampaign,
+    allCampaign,
+    allAgencies,
+    agencyBySucCode,
+    oneCampaignById
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { postInventoryTransferRequests } = require("./sld.controller");
+const { validarExcel } = require("../../../helpers/validacionesExcel");
 
 
 
@@ -1641,7 +1652,7 @@ const processCampaignData = (data) => {
 
 const createCampaignController = async (req, res) => {
     try {
-
+        const { name, descrip, sucCode, starDate, endDate } = req.body
         if (!req.file) {
             console.log({ files: req.file });
             return res.status(400).json({
@@ -1650,25 +1661,150 @@ const createCampaignController = async (req, res) => {
             });
         }
 
+        console.log({ file: req.file })
         const { path, originalname } = req.file;
         const filePath = req.file.path;
         const workbook = XLSX.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonData.length == 0) {
+            return res.status(400).json({
+                mensaje: 'No hay datos para insertar en la campaña'
+            })
+        }
+
+        const { valido, error } = validarExcel(jsonData)
+        if (!valido) {
+            return res.json({ valido, mensaje: error })
+        }
+
+        const createCampaignResponse = await createCampaign(name, descrip, sucCode, starDate, endDate)
+        console.log({ jsonData, name, descrip, sucCode, starDate, endDate })
+
+        if (createCampaignResponse.length == 0) {
+            return res.status(400).json({
+                mensaje: 'Hubo un error al intentar crear la campaña'
+            })
+        }
+
+        const id = createCampaignResponse[0].ID
+        let idx = 0
+        for (const element of jsonData) {
+            const { codigoZona, itemCode, cantidad } = element
+            const validacionZona = await validateZona(+codigoZona)
+            const validacionItem = await validateItem(itemCode)
+            if (validacionZona.length == 0 || validacionItem.length == 0) {
+                const bannedCampaignExecute = await bannedCampaign(id)
+                const rollBack = await rollBackCampaignById(id)
+                let mensaje = `Hubo un Error en la validacion. `
+                mensaje += (validacionZona.length == 0)
+                    ? `Verifique el codigo de la zona : ${codigoZona}, con el item : ${itemCode}, en el indice : ${idx + 2}`
+                    : `Verifique el codigo del Item : ${itemCode}, con el codigo de zona: ${codigoZona}, en el indice : ${idx + 2}`
+                return res.status(400).json({
+                    mensaje,
+                    element,
+                    bannedCampaignExecute,
+                    rollBack,
+                    id
+                })
+            }
+
+            const createDetailsResponse = await createDetailsCampaign(id, codigoZona, itemCode, cantidad)
+            idx++
+        }
         return res.json({
+            id,
+            name,
+            descrip,
+            sucCode,
+            starDate,
+            endDate,
             jsonData,
         });
 
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({
-            mensaje: 'error en el controlador',
+        let mensaje = 'Error al Crear una Campaña. '
+        if (error.message) {
+            const errorDataBase = error.message
+            switch (true) {
+                case errorDataBase.includes('unique'):
+                    mensaje += 'El nombre de la Campaña debe ser Unico';
+                    break;
+                case errorDataBase.includes('Error en createCampaign: error en la consulta: sql syntax'):
+                    mensaje += 'La sucursal no es un numero';
+                    break;
+                case errorDataBase.includes('Error en validateItem: error en la consulta: sql syntax'):
+                    mensaje += 'El codigo del item no es valido';
+                    break;
+                case errorDataBase.includes('string is longer than the maximum length (100)'):
+                    mensaje += 'El nombre de la Campaña excede la logitud permitida (100)';
+                    break;
+
+                default:
+                    mensaje += error.message;
+                    break;
+            }
+
+        }
+        return res.status(500).json({ mensaje, error })
+    }
+}
+
+const allCampaignController = async (req, res) => {
+    try {
+        const campaigns = await allCampaign()
+        let data = []
+        for (const element of campaigns) {
+            const { AGENYCODE, ...restData } = element
+            const agencyData = await agencyBySucCode(+AGENYCODE)
+            if (agencyData.length !== 0) {
+                console.log({ agencyData, element })
+                const sucName = agencyData[0].SucName
+                data.push({ ...restData, AGENCYCODE: AGENYCODE, AGENCYNAME: sucName })
+            } else {
+                data.push({ ...restData, AGENCYCODE: AGENYCODE, AGENCYNAME: '' })
+            }
+        }
+
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador', error })
+    }
+}
+
+const allAgenciesController = async (req, res) => {
+    try {
+        const campaigns = await allAgencies()
+        return res.json(campaigns)
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador', error })
+    }
+}
+
+const campaignByIdController = async (req, res) => {
+    try {
+        const id = req.query.id
+        const data = await oneCampaignById(id)
+        if (data.length == 0) {
+            return res.status(404).json({ mensaje: 'La campaña no se encontro' })
+        }
+        const { AGENYCODE, ...rest } = data[0]
+        const agencyData = await agencyBySucCode(+AGENYCODE)
+        console.log({agencyData})
+        const campaignFormatted = { ...rest, AGENCYCODE: AGENYCODE, AGENCYNAME: agencyData[0].SucName }
+        return res.json(campaignFormatted)
+    } catch (error) {
+        console.log({ error })
+        return res.json({
+            mensaje: 'Error en el controlador',
             error
         })
     }
 }
-
 
 const getYTDMontoByVendedorController = async (req, res) => {
     try {
@@ -2223,5 +2359,8 @@ module.exports = {
     getVendedoresThatHasClientsController,
     facturasMoraByClientController,
     clientesMoraController,
-    excelClientesMoraController
+    allCampaignController,
+    allAgenciesController,
+    excelClientesMoraController,
+    campaignByIdController,
 };
