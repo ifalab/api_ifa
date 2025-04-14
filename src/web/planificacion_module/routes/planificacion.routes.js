@@ -4,7 +4,8 @@ const { validarCampos } = require('../../../middleware/validar_campos.middleware
 const {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
-    insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController
+    insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
+    actualizarDetalleVisitaController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -16,5 +17,6 @@ router.get('/detalle-ciclo-vendedor', [validarToken, validarCampos], getDetalleC
 router.post('/visita', [validarToken, validarCampos], insertarVisitaController)
 router.post('/detalle-visita', [validarToken, validarCampos], insertarDetalleVisitaController)
 router.post('/cabecera-visita', [validarToken, validarCampos], insertarCabeceraVisitaController)
+router.post('/actualizar-visita', [validarToken, validarCampos], actualizarDetalleVisitaController)
 
 module.exports = router

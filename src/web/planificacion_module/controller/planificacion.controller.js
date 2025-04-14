@@ -1,6 +1,7 @@
 const { 
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
-    getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita
+    getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita,
+    actualizarDetalleVisita
 } = require("./hana.controller")
 
 const vendedoresPorSucCodeController = async (req, res) => {
@@ -63,6 +64,8 @@ const getDetalleCicloVendedorController = async (req, res) => {
         let response = await getDetalleCicloVendedor(id)
         response.map((item)=>{
             item.PlanVisitDateNew = new Date(item.PlanVisitDate)
+            item.PlanVisitTimeFrom = String(item.PlanVisitTimeFrom).length<4? `0${item.PlanVisitTimeFrom}`:item.PlanVisitTimeFrom
+            item.PlanVisitTimeTo = String(item.PlanVisitTimeTo).length<4? `0${item.PlanVisitTimeTo}`:item.PlanVisitTimeTo
         })
         return res.json(response)
     } catch (error) {
@@ -117,8 +120,23 @@ const insertarDetalleVisitaController = async (req, res) => {
     }
 }
 
+const actualizarDetalleVisitaController = async (req, res) => {
+    try {
+        const {id, fecha, hora_ini, hora_fin, usuario } = req.body
+        let response = await actualizarDetalleVisita(id, fecha, hora_ini, hora_fin, usuario )
+
+        return res.json({response})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ 
+            mensaje: `Error en el controlador actualizarDetalleVisitaController: ${error.message}` 
+        })
+    }
+}
+
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
     insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
+    actualizarDetalleVisitaController
 }

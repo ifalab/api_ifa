@@ -20,7 +20,10 @@ async function getDetalleFacturasParaDevolucion(nro_cuenta) {
     try {
         const pool = await poolGenesisPromise;
         console.log({pool})
-        const result = await pool.request().query(`exec spDetalleVenta @I_NroCuenta =${nro_cuenta}`);
+        // const result = await pool.request().query(`exec spDetalleVenta @I_NroCuenta ='${nro_cuenta}'`);
+        const result = await pool.request()
+            .input('I_NroCuenta', sql.BigInt, nro_cuenta)
+            .execute('spDetalleVenta');
         console.log('Resultados:', result.recordset);
         return result.recordset
     } catch (err) {

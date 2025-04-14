@@ -548,19 +548,20 @@ const detalleFacturasGenesisController = async (req, res) => {
             const response = await getDetalleFacturasParaDevolucion(nro_cuenta)
             if(response.message){
                 console.log({response: response.message})
-                return res.json(responses)
+                // return res.json(responses)
+            }else{
+                response.map(item => {
+                    item.DiscPrcnt = item.Porcentaje_Descuento
+                    item.ItemCode = item.Articulo
+                    item.Dscription = item.NombreArticulo
+                    item.Quantity = item.Cantidad
+                    item.UnitPrice = item.Precio
+                    item.DocNum = item.Nro_Cuenta
+                    item.Cuf = String(item.cuf).trim()
+                    item.cuf = undefined
+                })
+                responses[nro_cuenta] = response
             }
-            response.map(item => {
-                item.DiscPrcnt = item.Porcentaje_Descuento
-                item.ItemCode = item.Articulo
-                item.Dscription = item.NombreArticulo
-                item.Quantity = item.Cantidad
-                item.UnitPrice = item.Precio
-                item.DocNum = item.Nro_Cuenta
-                item.Cuf = item.cuf
-                item.cuf = undefined
-            })
-            responses[nro_cuenta] = response
         }
         return res.json(responses)
     } catch (error) {
@@ -4372,7 +4373,7 @@ const facturacionCambioValoradoController = async (req, res) => {
         }
 
         console.log({bodyReconciliacion})
-        responseReconciliacion =  await postReconciliacion(bodyReconciliacion)
+        let responseReconciliacion =  await postReconciliacion(bodyReconciliacion)
         console.log({responseReconciliacion})
 
         if (responseReconciliacion.status == 400) {

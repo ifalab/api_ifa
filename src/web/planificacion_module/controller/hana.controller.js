@@ -175,7 +175,29 @@ const insertarDetalleVisita = async (cabecera_id, cod_cliente, nom_cliente, fech
     }
 }
 
+const actualizarDetalleVisita = async (id, fecha, hora_ini, hora_fin, usuario) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        ///${process.env.PRD}
+        const query = `
+        CALL LAB_IFA_PRD."IFA_CRM_ACTUALIZAR_VISIT_PLAN_DETAIL"(
+            ${id}, '${fecha}', ${hora_ini}, ${hora_fin}
+        );
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en actualizarDetalleVisita: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
-    getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita
+    getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
+    actualizarDetalleVisita
 }
