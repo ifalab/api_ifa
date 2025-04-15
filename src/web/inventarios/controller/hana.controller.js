@@ -379,7 +379,7 @@ const clientesBySucCode = async () => {
         }
         const query = `SELECT 
         *
-        FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "GroupCode" <> 105 and "GroupCode" <> 106`
+        FROM ${process.env.PRD}.IFA_DM_CLIENTES `
         console.log({query})
         const result = executeQuery(query)
         return result

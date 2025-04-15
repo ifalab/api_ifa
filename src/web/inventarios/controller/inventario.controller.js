@@ -105,10 +105,10 @@ const postHabilitacionController = async (req, res) => {
         }
 
         if (userLocal.user) {
-            if (userLocal.user.ID) {
-                id = userLocal.user.ID
+            if (userLocal.user.ID_SAP) {
+                id = userLocal.user.ID_SAP
             } else {
-                return res.status(400).json({ mensaje: 'El usuario es obligatorio' })
+                return res.status(400).json({ mensaje: 'El usuario es obligatorio, no tiene ID SAP' })
             }
         } else {
             return res.status(400).json({ mensaje: 'El usuario es obligatorio' })
@@ -161,7 +161,7 @@ const postHabilitacionController = async (req, res) => {
                 "WarehouseCode": `${warehouseCode}`,
                 "Quantity": `${item.cantidadIngreso}`,
                 "U_DIM_ARTICULO": `${item.articuloDict}`,
-                "AccountCode": "6110401",
+                "AccountCode": "1130201",
                 "BatchNumbers": [
                     {
                         "BatchNumber": `${item.lote}`,

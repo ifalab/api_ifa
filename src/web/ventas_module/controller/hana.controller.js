@@ -1370,6 +1370,7 @@ agencyBySucCode = async (sucCode) => {
     }
 }
 
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,

@@ -15,10 +15,13 @@ const { authLoginPost, createUserController, findAllUserController, findUserById
     getAlmacenesLibresController,
     validarTokenController,
     postSalesPersonsController,
-    patchSalesPersonsController
+    patchSalesPersonsController,
+    findAllSublineasController,
+    findAllDimensionSublineasByUserController
  } = require('../controllers/auth.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
+const { findAllLines } = require('../controllers/hana.controller')
 
 const router = Router()
 
@@ -35,12 +38,14 @@ router.get('/dimension/:dim',[validarToken, validarCampos],findDimensionControll
 router.get('/find-dimension-uno-by-user/:id',[validarToken, validarCampos],findAllDimensionUnoByUserController)
 router.get('/find-dimension-dos-by-user/:id',[validarToken, validarCampos],findAllDimensionDosByUserController)
 router.get('/find-dimension-tres-by-user/:id',[validarToken, validarCampos],findAllDimensionTresByUserController)
+router.get('/find-dimension-sublinea-by-user/:id',[validarToken, validarCampos],findAllDimensionSublineasByUserController)
 router.get('/role-by-user/:id',[validarToken, validarCampos],roleByUserController)
 router.post('/add-role-user',[validarToken, validarCampos],addRoleUserController)
 router.delete('/delete-all-role-user/:id',[validarToken, validarCampos],deleteAllRoleController)
 router.post('/delete-one-role-user',[validarToken, validarCampos],deleteOneRoleController)
 router.patch('/update-role-user',[validarToken, validarCampos],updateRolesByUserController)
 router.get('/find-all-rol',[validarToken, validarCampos],findAllRolesController)
+router.get('/find-all-sublines',[validarToken, validarCampos],findAllSublineasController)
 router.get('/get-users',[validarToken, validarCampos],getDmUsersController)
 router.get('/get-almacenes',[validarToken, validarCampos],getAllAlmacenesController)
 router.get('/get-user-by-id',[validarToken, validarCampos],getDmUserByIdController)

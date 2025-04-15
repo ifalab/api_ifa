@@ -80,7 +80,8 @@ const {
     allCampaign,
     allAgencies,
     agencyBySucCode,
-    oneCampaignById
+    oneCampaignById,
+    allLineas
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1596,9 +1597,16 @@ const allCampaignFilterController = async (req, res) => {
         const codVendedor = req.query.codVendedor
         const codLinea = req.query.codLinea
         const allCampaign = await allCampaignFilter(idCampaign, agrupar, codAgencia, codVendedor, codLinea)
-
-        const processCampaign = processCampaignData(allCampaign)
-        return res.json(processCampaign)
+        // return res.json(allCampaign)
+        const transformed = transformData(allCampaign)
+        transformed.forEach(item => {
+            item.Periods.sort((a, b) => {
+              const dateA = new Date(a.year, a.month - 1); 
+              const dateB = new Date(b.year, b.month - 1); 
+              return dateA - dateB; 
+            });
+          });
+        return res.json(transformed)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({
@@ -1608,46 +1616,62 @@ const allCampaignFilterController = async (req, res) => {
     }
 }
 
-const processCampaignData = (data) => {
-    const result = {};
-    const uniqueItems = {};
-    const allPeriods = new Set();
+function transformData(data) {
+    const allPeriodsSet = new Set();
+    const grouped = {};
+    for (const item of data) {
+       
+        const [monthStr, yearStr] = item.Period.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = monthStr.padStart(2,'0')
+        const periodKey = `${month}-${year}`;
+        allPeriodsSet.add(periodKey);
 
-    // Recorrer la lista original para recolectar los periodos y agrupar los datos
-    data.forEach(({ SucName, ZoneName, LineItemName, SalesPerson, SubLineItemName, ItemCode, ItemName, SalesQuantity, QuotaSalesQuantity, Period }) => {
-        const periodKey = `Period${Period.replace('-', '')}`;
-        allPeriods.add(periodKey);
+        const groupKey = item.ItemCode;
 
-        if (!uniqueItems[ItemCode]) {
-            uniqueItems[ItemCode] = {
-                SucName,
-                ZoneName,
-                SalesPerson,
-                LineItemName,
-                SubLineItemName,
-                ItemCode,
-                ItemName,
+        if (!grouped[groupKey]) {
+            grouped[groupKey] = {
+                SucName: item.SucName || '',
+                ZoneName: item.ZoneName || '',
+                SalesPerson: item.SalesPerson || '',
+                LineItemName: item.LineItemName || '',
+                SubLineItemName: item.SubLineItemName || '',
+                ItemCode: item.ItemCode,
+                ItemName: item.ItemName,
+                periodsMap: new Map()
             };
         }
 
-        if (!uniqueItems[ItemCode][periodKey]) {
-            uniqueItems[ItemCode][periodKey] = { SalesQuantity: 0, QuotaSalesQuantity: 0 };
-        }
-
-        uniqueItems[ItemCode][periodKey].SalesQuantity += parseFloat(SalesQuantity);
-        uniqueItems[ItemCode][periodKey].QuotaSalesQuantity += QuotaSalesQuantity;
-    });
-
-    // Asegurar que todos los artículos tienen todos los periodos
-    Object.values(uniqueItems).forEach((item) => {
-        allPeriods.forEach((period) => {
-            if (!item[period]) {
-                item[period] = { SalesQuantity: 0, QuotaSalesQuantity: 0 };
-            }
+        grouped[groupKey].periodsMap.set(periodKey, {
+            month,
+            year,
+            SalesQuantity: item.SalesQuantity,
+            QuotaSalesQuantity: item.CampSalesQuantity ?? null
         });
+    }
+
+    const allPeriods = Array.from(allPeriodsSet).map(p => {
+        const [month, year] = p.split('-');
+        return { month, year: parseInt(year, 10) };
     });
 
-    return Object.values(uniqueItems);
+    const result = Object.values(grouped).map(group => {
+        const periods = allPeriods.map(({ month, year }) => {
+            const key = `${month}-${year}`;
+            const found = group.periodsMap.get(key);
+            return found || {
+                month,
+                year,
+                SalesQuantity: null,
+                QuotaSalesQuantity: null
+            };
+        });
+
+        delete group.periodsMap;
+        return { ...group, Periods: periods };
+    });
+
+    return result;
 }
 
 const createCampaignController = async (req, res) => {
@@ -1794,7 +1818,7 @@ const campaignByIdController = async (req, res) => {
         }
         const { AGENYCODE, ...rest } = data[0]
         const agencyData = await agencyBySucCode(+AGENYCODE)
-        console.log({agencyData})
+        console.log({ agencyData })
         const campaignFormatted = { ...rest, AGENCYCODE: AGENYCODE, AGENCYNAME: agencyData[0].SucName }
         return res.json(campaignFormatted)
     } catch (error) {
@@ -2102,8 +2126,8 @@ const vendedorPorSucCodeController = async (req, res) => {
     try {
         const { sucCode } = req.query
         const response = await vendedorPorSucCode(sucCode)
-        // return res.json({response,total:response.length})
-        return res.json(response)
+        const data = response.filter((vendedor) => vendedor.SlpCode !== -1)
+        return res.json(data)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en vendedorPorSucCodeController: ${error.message}` })
@@ -2285,7 +2309,6 @@ const excelClientesMoraController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en excelClientesMoraController: ${error.message}` })
     }
 }
-
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
