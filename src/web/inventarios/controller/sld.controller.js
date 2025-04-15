@@ -370,7 +370,7 @@ const postReconciliacion = async (data) => {
   } catch (error) {
     // Centraliza el manejo de errores
     console.log({ errorCreditNotes: error })
-    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud postReconciliacion';
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido';
     console.error('Error en la solicitud POST Reconciliacion:', errorMessage);
     // throw new Error(errorMessage);
     return {

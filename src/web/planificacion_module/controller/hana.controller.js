@@ -98,9 +98,11 @@ const getCicloVendedor = async (idVendedor, mes, año) => {
         if (!connection) {
             await connectHANA()
         }
-        ///Change queryyy
         const query = `
-        
+                select * from LAB_IFA_PRD.IFA_CRM_VISIT_PLAN_HEADER
+                where "SlpCode"=${idVendedor}
+                and EXTRACT(MONTH FROM "ValidFrom") =${mes}
+  	            AND EXTRACT(YEAR FROM "ValidFrom") =${año}
         `
         console.log({ query })
         const result = await executeQuery(query)
@@ -112,7 +114,90 @@ const getCicloVendedor = async (idVendedor, mes, año) => {
     }
 }
 
+const getDetalleCicloVendedor = async (planId) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            select * from LAB_IFA_PRD.ifa_crm_visit_plan_detail where "PlanID"='${planId}'
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getDetalleCicloVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const insertarCabeceraVisita = async (descripcion, cod_vendedor, nom_vendedor, usuario, fechaIni, fechaFin) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        ///${process.env.PRD}
+        const query = `
+        CALL LAB_IFA_PRD."IFA_CRM_AGREGAR_VISIT_PLAN_HEADER"(
+            '${descripcion}', ${cod_vendedor}, '${nom_vendedor}', ${usuario}, '${fechaIni}', '${fechaFin}'
+        );
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en insertarCabeceraVisita: ${error.message || ''}`
+        }
+    }
+}
+
+const insertarDetalleVisita = async (cabecera_id, cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        ///${process.env.PRD}
+        const query = `
+        CALL LAB_IFA_PRD."IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL"(
+            ${cabecera_id}, '${cod_cliente}', '${nom_cliente}', '${fecha}', ${hora_ini}, ${hora_fin}, 
+            ${cod_vendedor}, '${nom_vendedor}', '${comentario}', ${usuario}
+        );
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en insertarDetalleVisita: ${error.message || ''}`
+        }
+    }
+}
+
+const actualizarDetalleVisita = async (id, fecha, hora_ini, hora_fin, usuario) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        ///${process.env.PRD}
+        const query = `
+        CALL LAB_IFA_PRD."IFA_CRM_ACTUALIZAR_VISIT_PLAN_DETAIL"(
+            ${id}, '${fecha}', ${hora_ini}, ${hora_fin}
+        );
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en actualizarDetalleVisita: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
-    getCicloVendedor,
+    getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
+    actualizarDetalleVisita
 }
