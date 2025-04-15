@@ -1,7 +1,7 @@
 const { 
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita,
-    actualizarDetalleVisita
+    actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas
 } = require("./hana.controller")
 
 const vendedoresPorSucCodeController = async (req, res) => {
@@ -81,7 +81,7 @@ const insertarVisitaController = async (req, res) => {
         let responseCabecera = await insertarCabeceraVisita(descripcion, cod_vendedor, nom_vendedor, usuario, fechaIni, fechaFin)
         console.log({ responseCabecera })
         allResponses.push(responseCabecera)
-        return res.json({responseCabecera})
+        // return res.json({responseCabecera})
         const cabecera_id = responseCabecera.id
         for(const detail of details){
             const { cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, comentario } = detail
@@ -134,9 +134,38 @@ const actualizarDetalleVisitaController = async (req, res) => {
     }
 }
 
+const cambiarEstadoCicloController = async (req, res) => {
+    try {
+        const {plan_id, status, usuario } = req.body
+        let response = await cambiarEstadoCiclo(plan_id, status, usuario )
+
+        return res.json({response})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ 
+            mensaje: `Error en el controlador cambiarEstadoCicloController: ${error.message}` 
+        })
+    }
+}
+
+const cambiarEstadoVisitasController = async (req, res) => {
+    try {
+        const {id_detalle, cliente, fechaIni, fechaFin, status, usuario} = req.body
+        let response = await cambiarEstadoVisitas(id_detalle??-1, 
+            cliente??'', fechaIni??'', fechaFin??'', status, usuario )
+
+        return res.json({response})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ 
+            mensaje: `Error en el controlador cambiarEstadoVisitasController: ${error.message}` 
+        })
+    }
+}
+
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
     insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
-    actualizarDetalleVisitaController
+    actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController
 }
