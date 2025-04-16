@@ -129,6 +129,7 @@ const getDetalleCicloVendedor = async (planId) => {
                 "PlanVisitTimeFrom",
                 "PlanVisitTimeTo",
                 "Comments",
+                "CreatedBy","CreateDate", "CreateTime",
                 "STATUS"
             from LAB_IFA_PRD.ifa_crm_visit_plan_detail 
             where "PlanID"='${planId}'
@@ -241,7 +242,7 @@ const cambiarEstadoCiclo = async (plan_id, status, usuario) => {
 // 	in status int,
 // 	in usuario int
 // )
-const cambiarEstadoVisitas = async (id_detalle, cliente, fechaIni, fechaFin, status, usuario) => {
+const cambiarEstadoVisitas = async (id_detalle, id_plan, cliente, fechaIni, fechaFin, status, usuario) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -249,7 +250,7 @@ const cambiarEstadoVisitas = async (id_detalle, cliente, fechaIni, fechaFin, sta
         ///${process.env.PRD}
         const query = `
         CALL LAB_IFA_PRD."IFA_CRM_CHANGE_STATUS_VISITAS"(
-            ${id_detalle}, '${cliente}', '${fechaIni}', '${fechaFin}', ${status}, ${usuario}
+            ${id_detalle}, ${id_plan}, '${cliente}', '${fechaIni}', '${fechaFin}', ${status}, ${usuario}
         );
         `
         console.log({ query })
@@ -262,8 +263,27 @@ const cambiarEstadoVisitas = async (id_detalle, cliente, fechaIni, fechaFin, sta
     }
 }
 
+const eliminarDetalleVisita = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        ///${process.env.PRD}
+        const query = `
+            delete from LAB_IFA_PRD.ifa_crm_visit_plan_detail where "PlanDetailID"=${id}
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en eliminarDetalleVisita: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
-    actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas
+    actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita
 }

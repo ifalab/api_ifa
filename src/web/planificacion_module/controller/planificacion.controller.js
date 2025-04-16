@@ -1,7 +1,7 @@
 const { 
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita,
-    actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas
+    actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita
 } = require("./hana.controller")
 
 const vendedoresPorSucCodeController = async (req, res) => {
@@ -150,8 +150,8 @@ const cambiarEstadoCicloController = async (req, res) => {
 
 const cambiarEstadoVisitasController = async (req, res) => {
     try {
-        const {id_detalle, cliente, fechaIni, fechaFin, status, usuario} = req.body
-        let response = await cambiarEstadoVisitas(id_detalle??-1, 
+        const {id_detalle, id_plan, cliente, fechaIni, fechaFin, status, usuario} = req.body
+        let response = await cambiarEstadoVisitas(id_detalle??-1, id_plan??-1,
             cliente??'', fechaIni??'', fechaFin??'', status, usuario )
 
         return res.json({response})
@@ -163,9 +163,24 @@ const cambiarEstadoVisitasController = async (req, res) => {
     }
 }
 
+const eliminarDetalleVisitaController = async (req, res) => {
+    try {
+        const {id } = req.query
+        let response = await eliminarDetalleVisita(id)
+
+        return res.json({response})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ 
+            mensaje: `Error en el controlador eliminarDetalleVisitaController: ${error.message}` 
+        })
+    }
+}
+
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
     insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
-    actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController
+    actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController,
+    eliminarDetalleVisitaController
 }

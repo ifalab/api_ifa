@@ -8,7 +8,7 @@ async function getFacturasParaDevolucion(cardCode, itemCode, lote) {
             .input('I_ItemCode', sql.VarChar(50), itemCode)
             .input('I_Lote', sql.VarChar(50), lote)
             .execute('spVentaCliente');
-        console.log('Resultados:', result);
+        console.log('Resultados:', result.recordset);
         return result.recordset
     } catch (err) {
         console.error('Error en la consulta getFacturasParaDevolucion:', err);
@@ -19,7 +19,6 @@ async function getFacturasParaDevolucion(cardCode, itemCode, lote) {
 async function getDetalleFacturasParaDevolucion(nro_cuenta) {
     try {
         const pool = await poolGenesisPromise;
-        console.log({pool})
         // const result = await pool.request().query(`exec spDetalleVenta @I_NroCuenta ='${nro_cuenta}'`);
         const result = await pool.request()
             .input('I_NroCuenta', sql.BigInt, nro_cuenta)

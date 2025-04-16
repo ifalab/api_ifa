@@ -2374,10 +2374,10 @@ const getAllCreditNotesController = async (req, res) => {
 }
 
 const devolucionMalEstadoController = async (req, res) => {
-    let idReturn
+    let idEntrega
     try {
         const { Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
-        const idReturnBody = req.body.idReturn
+        const idEntregaBody = req.body.idEntrega
         console.log({ Devoluciones, AlmacenIngreso, CardCode, id_sap })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         let numRet = 0
@@ -2395,7 +2395,10 @@ const devolucionMalEstadoController = async (req, res) => {
                 ItemCode: ItemCode
             })
 
-            const newLine = {
+            const newLineReturn = {
+                BaseEntry: 0,
+                BaseType: 15,
+                BaseLine: numRet,
                 ItemCode,
                 WarehouseCode: AlmacenIngreso,
                 Quantity: Cantidad,
@@ -2406,10 +2409,10 @@ const devolucionMalEstadoController = async (req, res) => {
                 GrossPrice: Precio,
                 BatchNumbers: batchNumbers
             };
-            console.log('------newLine-----')
-            console.log({ newLine })
+            console.log('------newLineReturn-----')
+            console.log({ newLineReturn })
 
-            newDocumentLinesReturn.push(newLine)
+            newDocumentLinesReturn.push(newLineReturn)
 
             let batchNumbersEntrega = []
             const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
@@ -2417,7 +2420,7 @@ const devolucionMalEstadoController = async (req, res) => {
             if (batchData.message) {
                 endTime = Date.now();
                 // grabarLog(user.USERCODE, user.USERNAME, "Dovolucion Mal Estado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-mal-estado", process.env.PRD)
-                return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
+                return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, idEntrega })
             }
             if (batchData.length > 0) {
                 let new_quantity = 0
@@ -2432,13 +2435,12 @@ const devolucionMalEstadoController = async (req, res) => {
                     ItemCode: batch.ItemCode
                 }))
             } else {
-                return res.status(400).json({ mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}` })
+                return res.status(400).json({ 
+                    mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
+                    idEntrega })
             }
 
             const newLineEntrega = {
-                BaseEntry: 0,
-                BaseType: 16,
-                BaseLine: numRet,
                 ItemCode,
                 WarehouseCode: AlmacenSalida,
                 Quantity: Cantidad,
@@ -2453,86 +2455,86 @@ const devolucionMalEstadoController = async (req, res) => {
             newDocumentLinesEntrega.push(newLineEntrega)
             numRet += 1
         }
+
         let bodyReturn
         let responceReturn
-        if (!idReturnBody) { //Si no hay id de devolucion, entonces se crea una nueva devolucion
-            bodyReturn = {
-                Series: 352,
+        let responseEntrega
+        let bodyEntrega
+        if (!idEntregaBody) { //Si no hay id de entrega, entonces se crea una nueva entrega
+            bodyEntrega = {
+                Series: 353,
                 CardCode: CardCode,
                 U_UserCode: id_sap,
                 JournalMemo: Comentario,
                 Comments: Comentario,
-                DocumentLines: newDocumentLinesReturn,
+                DocumentLines: newDocumentLinesEntrega,
             }
-            console.log(JSON.stringify({ bodyReturn }, null, 2))
-            // return res.status(400).json()
-            responceReturn = await postReturn(bodyReturn)
-            console.log({ responceReturn })
+            console.log(JSON.stringify({ bodyEntrega }, null, 2))
+            responseEntrega = await postEntrega(bodyEntrega)
+            
+            if (responseEntrega.lang) {
+                const outputDir = path.join(__dirname, 'outputs');
+                if (!fs.existsSync(outputDir)) {
+                    fs.mkdirSync(outputDir);
+                }
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+    
+                const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
+                fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
+                console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
+                return res.status(400).json({
+                    mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
+                    idEntrega,
+                    bodyReturn,
+                    responseEntrega,
+                    bodyEntrega
+                })
+            }
+            
+            idEntrega = responseEntrega.deliveryN44umber
 
-            if (responceReturn.status > 300) {
-                console.log({ errorMessage: responceReturn.errorMessage })
-                let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
-                if (mensaje.value)
-                    mensaje = mensaje.value
-                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-mal-estado", process.env.PRD)
-                return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn })
-            }
-            // return res.json({
-            //     idReturn: responceReturn.orderNumber,
-            //     bodyReturn
-            // })
-            idReturn = responceReturn.orderNumber
-        } else {//Existe id de devolucion
-            idReturn = idReturnBody
+        } else {//Existe id de entrega
+            idEntrega = idEntregaBody
         }
-        console.log({ idReturn })
-        newDocumentLinesEntrega.map((item) => {
-            item.BaseEntry = idReturn
+
+        console.log({ idEntrega })
+        newDocumentLinesReturn.map((item) => {
+            item.BaseEntry = idEntrega
         })
 
-        const bodyEntrega = {
-            Series: 353,
+        bodyReturn = {
+            Series: 352,
             CardCode: CardCode,
             U_UserCode: id_sap,
             JournalMemo: Comentario,
             Comments: Comentario,
-            DocumentLines: newDocumentLinesEntrega,
+            DocumentLines: newDocumentLinesReturn,
         }
-        console.log(JSON.stringify({ bodyEntrega }, null, 2))
-        const responseEntrega = await postEntrega(bodyEntrega)
+        console.log(JSON.stringify({ bodyReturn }, null, 2))
+        responceReturn = await postReturn(bodyReturn)
+        console.log({ responceReturn })
 
-        if (responseEntrega.lang) {
-            const outputDir = path.join(__dirname, 'outputs');
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir);
-            }
-            const now = new Date();
-            const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-            // Generar el nombre del archivo con el timestamp
-            const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
-            fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
-            console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
-            endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
-            return res.status(400).json({
-                mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
-                idReturn,
-                bodyReturn,
-                responseEntrega,
-                bodyEntrega
-            })
+        if (responceReturn.status > 300) {
+            console.log({ errorMessage: responceReturn.errorMessage })
+            let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
+            if (typeof mensaje != 'string' && mensaje.value)
+                mensaje = mensaje.value
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-mal-estado", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn, idEntrega, bodyEntrega })
         }
 
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Exito en la devolucion`, ``, "inventario/dev-mal-estado", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Exito en el cambio por Mal Estado/Vencimiento`, ``, "inventario/dev-mal-estado", process.env.PRD)
 
         return res.json({
-            responceReturn,
-            idReturn,
+            idEntrega,
+            idReturn: responceReturn.orderNumber,
+            bodyEntrega,
             bodyReturn,
             responseEntrega,
-            idEntrega: responseEntrega.deliveryN44umber,
-            bodyEntrega
+            responceReturn,
         })
     } catch (error) {
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -2540,7 +2542,7 @@ const devolucionMalEstadoController = async (req, res) => {
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error en el devolucionMalEstadoController: ${error.message || ''}`, `catch del controller devolucionMalEstadoController`, "inventario/dev-mal-estado", process.env.PRD)
         return res.status(500).json({
             mensaje: `Error en en controlador devolucionMalEstadoController: ${error.message}`,
-            idReturn
+            idEntrega
         })
     }
 }
@@ -3456,7 +3458,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
     let allBodies = {}
     const startTime = Date.now();
     try {
-        const { facturas, id_sap, CardCode, AlmacenIngreso,
+        const { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
             // AlmacenSalida, nuevosArticulos 
         } = req.body
         console.log(JSON.stringify({
@@ -3574,6 +3576,8 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 CardCode: CardCode,
                 U_UserCode: id_sap,
                 U_B_cufd: Cuf,
+                JournalMemo: Comentario,
+                Comments: Comentario,
                 DocumentLines: newDocumentLinesReturn,
             }
 
@@ -4014,7 +4018,7 @@ const entregaCambioValoradoController = async (req, res) => {
     let responseEntrega
     let bodyEntrega
     try {
-        const { nuevosArticulos, AlmacenSalida, CardCode, id_sap } = req.body
+        const { nuevosArticulos, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
 
         ///////////////////////// Entregas
         let newDocumentLinesEntrega = []
@@ -4082,6 +4086,8 @@ const entregaCambioValoradoController = async (req, res) => {
             Series: 353,
             CardCode: CardCode,
             U_UserCode: id_sap,
+            JournalMemo: Comentario,
+            Comments: Comentario,
             DocumentLines: newDocumentLinesEntrega,
         }
         // console.log('body enterga -----------------------------------------------')
