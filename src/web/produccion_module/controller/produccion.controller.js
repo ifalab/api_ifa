@@ -6,6 +6,7 @@ const getLotesController = async (req, res) => {
     try {
         const status = req.query.status
         let response = await getLotes(status)
+        // return res.json({response})
         const groupedByBatch = response.reduce((acc, item) => {
                     if (!acc[item.BatchNum]) {
                         acc[item.BatchNum] = {

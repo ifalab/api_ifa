@@ -606,19 +606,23 @@ const detalleFacturasGenesisController = async (req, res) => {
         let responses = {}
         for (const nro_cuenta of nro_cuentas) {
             const response = await getDetalleFacturasParaDevolucion(nro_cuenta)
-            if (response.message) {
-                console.log({ response: response.message })
+            // return res.json(response)
+            if(response.message){
+                console.log({response: response.message})
                 // return res.json(responses)
             } else {
                 response.map(item => {
                     item.DiscPrcnt = item.Porcentaje_Descuento
                     item.ItemCode = item.Articulo
                     item.Dscription = item.NombreArticulo
+                    item.Articulo = undefined
+                    item.NombreArticulo = undefined
                     item.Quantity = item.Cantidad
                     item.UnitPrice = item.Precio
                     item.DocNum = item.Nro_Cuenta
                     item.Cuf = String(item.cuf).trim()
                     item.cuf = undefined
+                    item.NumPerMsr = item.NumInSale
                 })
                 responses[nro_cuenta] = response
             }
@@ -633,7 +637,26 @@ const detalleFacturasGenesisController = async (req, res) => {
 const detalleVentasController = async (req, res) => {
     try {
         const id = req.query.id
-        const response = await detalleVentas(id)
+        let response = await detalleVentas(id)
+        if(response.length==0){
+            response = await getDetalleFacturasParaDevolucion(id)
+            // return res.json(response)
+            if(response.message){
+                console.log({response: response.message})
+                // return res.json(responses)
+            }else{
+                response.map(item => {
+                    item.DiscPrcnt = item.Porcentaje_Descuento
+                    item.ItemCode = item.Articulo
+                    item.Dscription = item.NombreArticulo
+                    item.Quantity = item.Cantidad
+                    item.UnitPrice = item.Precio
+                    item.DocNum = item.Nro_Cuenta
+                    item.Cuf = String(item.cuf).trim()
+                    item.cuf = undefined
+                })
+            }
+        }
         // console.log({ response })
         let cabecera = []
         let detalle = []
@@ -646,6 +669,8 @@ const detalleVentasController = async (req, res) => {
         })
         detalle.sort((a, b) => a.LineNum - b.LineNum);
         const venta = { ...cabecera[0], detalle }
+
+
         return res.json(venta)
     } catch (error) {
         console.log({ error })
@@ -3471,51 +3496,59 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                     UnitPrice,
                     Total,
                     U_DESCLINEA,
+                    Lote,
+                    NumPerMsr
                 } = devolucion
 
                 totalFactura += +Total
 
                 let batchNumbers = []
-                const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenIngreso, Cantidad);
-                console.log({ batch: batchData })
-                if (batchData.message) {
-                    endTime = Date.now();
-                    // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)
-                    return res.status(400).json({
-                        mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`,
-                        allResponseReturn, allResponseCreditNote,
-                        facturasCompletadas,
-                        devolucionFinished,
-                        // entregaFinished
-                    })
-                }
-                if (batchData.length > 0) {
-                    let new_quantity = 0
-                    batchData.map((item) => {
-                        new_quantity += Number(item.Quantity).toFixed(6)
-                    })
+                // const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenIngreso, Cantidad);
+                // console.log({ batch: batchData })
+                // if (batchData.message) {
+                //     endTime = Date.now();
+                //     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)
+                //     return res.status(400).json({
+                //         mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`,
+                //         allResponseReturn, allResponseCreditNote,
+                //         facturasCompletadas,
+                //         devolucionFinished, 
+                //         // entregaFinished
+                //     })
+                // }
+                // if (batchData.length > 0) {
+                //     let new_quantity = 0
+                //     batchData.map((item) => {
+                //         new_quantity += Number(item.Quantity).toFixed(6)
+                //     })
 
-                    batchNumbers = batchData.map(batch => ({
-                        BaseLineNumber: numRet,
-                        BatchNumber: batch.BatchNum,
-                        Quantity: Number(batch.Quantity).toFixed(6),
-                        ItemCode: batch.ItemCode
-                    }))
-                } else {
-                    endTime = Date.now();
-                    const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenIngreso}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
-                    // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
+                //     batchNumbers = batchData.map(batch => ({
+                //         BaseLineNumber: numRet,
+                //         BatchNumber: batch.BatchNum,
+                //         Quantity: Number(batch.Quantity).toFixed(6),
+                //         ItemCode: batch.ItemCode
+                //     }))
+                // }else{
+                //     endTime = Date.now();
+                //     const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenIngreso}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
+                //     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
+                    
+                //     return res.status(400).json({
+                //         mensaje,
+                //         allResponseReturn, 
+                //         allResponseCreditNote,
+                //         facturasCompletadas,
+                //         devolucionFinished, 
+                //         // entregaFinished
+                //     })
+                // }
 
-                    return res.status(400).json({
-                        mensaje,
-                        allResponseReturn,
-                        allResponseCreditNote,
-                        facturasCompletadas,
-                        devolucionFinished,
-                        // entregaFinished
-                    })
-                }
-
+                batchNumbers.push({
+                    BaseLineNumber: numRet,
+                    BatchNumber: Lote,
+                    Quantity: Cantidad*NumPerMsr,
+                    ItemCode: ItemCode
+                })
                 const newLine = {
                     ItemCode,
                     WarehouseCode: AlmacenIngreso,

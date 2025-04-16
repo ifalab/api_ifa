@@ -5,7 +5,7 @@ const {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
     insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
-    actualizarDetalleVisitaController
+    actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -18,5 +18,7 @@ router.post('/visita', [validarToken, validarCampos], insertarVisitaController)
 router.post('/detalle-visita', [validarToken, validarCampos], insertarDetalleVisitaController)
 router.post('/cabecera-visita', [validarToken, validarCampos], insertarCabeceraVisitaController)
 router.post('/actualizar-visita', [validarToken, validarCampos], actualizarDetalleVisitaController)
+router.post('/estado-ciclo', [validarToken, validarCampos], cambiarEstadoCicloController)
+router.post('/estado-visita', [validarToken, validarCampos], cambiarEstadoVisitasController)
 
 module.exports = router

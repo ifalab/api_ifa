@@ -120,8 +120,19 @@ const getDetalleCicloVendedor = async (planId) => {
             await connectHANA()
         }
         const query = `
-            select * from LAB_IFA_PRD.ifa_crm_visit_plan_detail where "PlanID"='${planId}'
-        `
+            select 
+                "PlanDetailID",
+                "PlanID",
+                "ClientCode",
+                "ClientName",
+                "PlanVisitDate",
+                "PlanVisitTimeFrom",
+                "PlanVisitTimeTo",
+                "Comments",
+                "STATUS"
+            from LAB_IFA_PRD.ifa_crm_visit_plan_detail 
+            where "PlanID"='${planId}'
+        `//and "STATUS"<2
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -196,8 +207,63 @@ const actualizarDetalleVisita = async (id, fecha, hora_ini, hora_fin, usuario) =
     }
 }
 
+const cambiarEstadoCiclo = async (plan_id, status, usuario) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        ///${process.env.PRD}
+        const query = `
+        CALL LAB_IFA_PRD."IFA_CRM_CHANGE_STATUS_CICLO"(
+            ${plan_id}, ${status}, ${usuario}
+        );
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en cambiarEstadoCiclo: ${error.message || ''}`
+        }
+    }
+}
+
+// ALTER PROCEDURE IFA_CRM_CHANGE_STATUS_VISITAS (
+// 	IN id_detalle int,
+// 	in cliente int,
+// 	in fechaIni date, 2025-04-08'
+// 	in fechaFin date,
+// 	in status int,
+// 	in usuario int
+// )
+// create PROCEDURE IFA_CRM_CHANGE_STATUS_CICLO (
+// 	IN id_plan int,
+// 	in status int,
+// 	in usuario int
+// )
+const cambiarEstadoVisitas = async (id_detalle, cliente, fechaIni, fechaFin, status, usuario) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        ///${process.env.PRD}
+        const query = `
+        CALL LAB_IFA_PRD."IFA_CRM_CHANGE_STATUS_VISITAS"(
+            ${id_detalle}, '${cliente}', '${fechaIni}', '${fechaFin}', ${status}, ${usuario}
+        );
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en cambiarEstadoVisitas: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
-    actualizarDetalleVisita
+    actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas
 }
