@@ -139,29 +139,17 @@
         <div class="header-container">
 
             <div class="header-left">
-                <p><strong>Usuario:</strong>
-                    <%= data.USER_CODE %>
-                </p>
-                <p><strong>Creado por:</strong>
-                    <%= data.U_NAME %>
-                </p>
-                <p><strong>Hora:</strong>
-                    <%= data.time %>
-                </p>
+                <p><strong>Usuario:  <%= data.USER_CODE %></strong></p>
+                <p><strong>Creado por: <%= data.U_NAME %></strong></p>
+                <p><strong>Hora: <%= data.time %></strong></p>
 
                 <p><strong>ALMACEN DE INGRESO: <%= data.WhsCode %>  <%= data.WhsName %></strong></p>
-                <p><strong>Cliente:</strong>
-                    <%= data.CardCode %> - <%= data.CardName %>
-                </p>
-                <p><strong>Zona:</strong>
-                    <%= data.U_Zona %>
-                </p>
+                <p><strong>Cliente: <%= data.CardCode %> - <%= data.CardName %></strong></p>
+                <p><strong>Zona: <%= data.U_Zona %></strong></p>
             </div>
             <div class="header-right">
                 
-                <p><strong>Fecha de contabilizacion:</strong>
-                    <%= new Date(data.DocDate).toLocaleDateString('es-ES') %>
-                </p>
+                <p><strong>Fecha de contabilizacion: <%= new Date(data.DocDate).toLocaleDateString('es-ES') %></strong></p>
             </div>
         </div>
 
@@ -183,25 +171,25 @@
                         totalGeneral += parseFloat(item.LineTotal); %>
                         <tr>
                             <td>
-                                <%= item.ItemCode %>
+                                <strong><%= item.ItemCode %></strong>
                             </td>
                             <td>
-                                <%= item.Dscription %>
+                                <strong><%= item.Dscription %></strong>
                             </td>
                             <td>
-                                <%= item.Quantity %>
+                                <strong><%= item.Quantity %></strong>
                             </td>
                             <td>
-                                <%= item.UomCode %>
+                                <strong><%= item.UomCode %></strong>
                             </td>
                             <td>
-                                <%= item.BatchNum %>
+                                <strong><%= item.BatchNum %></strong>
                             </td>
                             <td>
-                                <%= new Date(item.ExpDate).toLocaleDateString('es-ES') %>
+                                <strong><%= new Date(item.ExpDate).toLocaleDateString('es-ES') %></strong>
                             </td>
                             <td>
-                                <%= item.WhsCode %>
+                                <strong><%= item.WhsCode %></strong>
                             </td>
                         </tr>
                         <% }); %>
@@ -216,23 +204,19 @@
             </tfoot>
         </table>
         <div class="comments">
-            <p><strong>Glosa:</strong>
-                Entrada de mercancias
-            </p>
-            <p><strong>Comentario:</strong>
-               <%= data.cambio %> <%= data.Comments %><!-- agregar comentarios a la devolucion-->
-            </p>
+            <p><strong>Glosa: Entrada de mercancias</strong></p>
+            <p><strong>Comentario: <%= data.cambio %> <%= data.Comments %></strong></p>
         </div>
 
 
         <div class="footer-signatures">
-            <div>Creado por <%= data.U_NAME %>
+            <div><strong>Creado por <%= data.U_NAME %></strong>
             </div>
-            <div>Preparado por
+            <div><strong>Preparado por</strong>
             </div>
-            <div>Revisado por
+            <div><strong>Revisado por</strong>
             </div>
-            <div>Recibí conforme <%= data.CardName %>
+            <div><strong>Recibí conforme <%= data.CardName %></strong>
             </div>
         </div>
     </div>
