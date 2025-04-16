@@ -81,7 +81,11 @@ const {
     allAgencies,
     agencyBySucCode,
     oneCampaignById,
-    allLineas
+    allLineas,
+    sublineas,
+    reporteSinUbicacionCliente,
+    reporteConUbicacionCliente,
+    searchVendedorByIDSAP
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1484,6 +1488,16 @@ const lineasController = async (req, res) => {
     }
 }
 
+const sublineasController = async (req, res) => {
+    try {
+        const lineaslist = await sublineas()
+        return res.json(lineaslist)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en sublineasController' })
+    }
+}
+
 const reporteVentasClienteLineas = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
@@ -1601,11 +1615,11 @@ const allCampaignFilterController = async (req, res) => {
         const transformed = transformData(allCampaign)
         transformed.forEach(item => {
             item.Periods.sort((a, b) => {
-              const dateA = new Date(a.year, a.month - 1); 
-              const dateB = new Date(b.year, b.month - 1); 
-              return dateA - dateB; 
+                const dateA = new Date(a.year, a.month - 1);
+                const dateB = new Date(b.year, b.month - 1);
+                return dateA - dateB;
             });
-          });
+        });
         return res.json(transformed)
     } catch (error) {
         console.log({ error })
@@ -1620,10 +1634,10 @@ function transformData(data) {
     const allPeriodsSet = new Set();
     const grouped = {};
     for (const item of data) {
-       
+
         const [monthStr, yearStr] = item.Period.split('-');
         const year = parseInt(yearStr, 10);
-        const month = monthStr.padStart(2,'0')
+        const month = monthStr.padStart(2, '0')
         const periodKey = `${month}-${year}`;
         allPeriodsSet.add(periodKey);
 
@@ -2309,6 +2323,32 @@ const excelClientesMoraController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en excelClientesMoraController: ${error.message}` })
     }
 }
+
+const reporteUbicacionClienteController = async (req, res) => {
+    try {
+        const { sucCode } = req.query
+        const responseConUbi = await reporteConUbicacionCliente(sucCode)
+        for (const element of responseConUbi) {
+            const { ID_VENDEDOR_SAP } = element
+            const vendedor = await searchVendedorByIDSAP(ID_VENDEDOR_SAP)
+            const data = vendedor.data
+            if (data.length > 0) {
+                const dataVendedor = data[0]
+                element.vendedor = { ...dataVendedor }
+            }
+        }
+        const responseSinUbi = await reporteSinUbicacionCliente(sucCode)
+        return res.json({
+            responseConUbi,
+            responseSinUbi,
+            totalUbi: responseConUbi.length,
+            totalSinUbi: responseSinUbi.length
+        })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en reporteUbicacionClienteController: ${error.message}` })
+    }
+}
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2386,4 +2426,6 @@ module.exports = {
     allAgenciesController,
     excelClientesMoraController,
     campaignByIdController,
+    sublineasController,
+    reporteUbicacionClienteController,
 };
