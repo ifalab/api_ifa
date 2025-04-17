@@ -99,7 +99,7 @@ const getCicloVendedor = async (idVendedor, mes, año) => {
             await connectHANA()
         }
         const query = `
-                select * from LAB_IFA_PRD.IFA_CRM_VISIT_PLAN_HEADER
+                select * from ${process.env.PRD}.IFA_CRM_VISIT_PLAN_HEADER
                 where "SlpCode"=${idVendedor}
                 and EXTRACT(MONTH FROM "ValidFrom") =${mes}
   	            AND EXTRACT(YEAR FROM "ValidFrom") =${año}
@@ -131,9 +131,9 @@ const getDetalleCicloVendedor = async (planId) => {
                 "Comments",
                 "CreatedBy","CreateDate", "CreateTime",
                 "STATUS"
-            from LAB_IFA_PRD.ifa_crm_visit_plan_detail 
+            from ${process.env.PRD}.ifa_crm_visit_plan_detail 
             where "PlanID"='${planId}'
-        `//and "STATUS"<2
+        `
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -149,9 +149,8 @@ const insertarCabeceraVisita = async (descripcion, cod_vendedor, nom_vendedor, u
         if (!connection) {
             await connectHANA()
         }
-        ///${process.env.PRD}
         const query = `
-        CALL LAB_IFA_PRD."IFA_CRM_AGREGAR_VISIT_PLAN_HEADER"(
+        CALL  ${process.env.PRD}."IFA_CRM_AGREGAR_VISIT_PLAN_HEADER"(
             '${descripcion}', ${cod_vendedor}, '${nom_vendedor}', ${usuario}, '${fechaIni}', '${fechaFin}'
         );
         `
@@ -170,9 +169,8 @@ const insertarDetalleVisita = async (cabecera_id, cod_cliente, nom_cliente, fech
         if (!connection) {
             await connectHANA()
         }
-        ///${process.env.PRD}
         const query = `
-        CALL LAB_IFA_PRD."IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL"(
+        CALL  ${process.env.PRD}."IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL"(
             ${cabecera_id}, '${cod_cliente}', '${nom_cliente}', '${fecha}', ${hora_ini}, ${hora_fin}, 
             ${cod_vendedor}, '${nom_vendedor}', '${comentario}', ${usuario}
         );
@@ -192,9 +190,8 @@ const actualizarDetalleVisita = async (id, fecha, hora_ini, hora_fin, usuario) =
         if (!connection) {
             await connectHANA()
         }
-        ///${process.env.PRD}
         const query = `
-        CALL LAB_IFA_PRD."IFA_CRM_ACTUALIZAR_VISIT_PLAN_DETAIL"(
+        CALL ${process.env.PRD}."IFA_CRM_ACTUALIZAR_VISIT_PLAN_DETAIL"(
             ${id}, '${fecha}', ${hora_ini}, ${hora_fin}
         );
         `
@@ -213,9 +210,8 @@ const cambiarEstadoCiclo = async (plan_id, status, usuario) => {
         if (!connection) {
             await connectHANA()
         }
-        ///${process.env.PRD}
         const query = `
-        CALL LAB_IFA_PRD."IFA_CRM_CHANGE_STATUS_CICLO"(
+        CALL  ${process.env.PRD}."IFA_CRM_CHANGE_STATUS_CICLO"(
             ${plan_id}, ${status}, ${usuario}
         );
         `
@@ -247,9 +243,8 @@ const cambiarEstadoVisitas = async (id_detalle, id_plan, cliente, fechaIni, fech
         if (!connection) {
             await connectHANA()
         }
-        ///${process.env.PRD}
         const query = `
-        CALL LAB_IFA_PRD."IFA_CRM_CHANGE_STATUS_VISITAS"(
+        CALL ${process.env.PRD}."IFA_CRM_CHANGE_STATUS_VISITAS"(
             ${id_detalle}, ${id_plan}, '${cliente}', '${fechaIni}', '${fechaFin}', ${status}, ${usuario}
         );
         `
@@ -268,9 +263,8 @@ const eliminarDetalleVisita = async (id) => {
         if (!connection) {
             await connectHANA()
         }
-        ///${process.env.PRD}
         const query = `
-            delete from LAB_IFA_PRD.ifa_crm_visit_plan_detail where "PlanDetailID"=${id}
+            delete from  ${process.env.PRD}.ifa_crm_visit_plan_detail where "PlanDetailID"=${id}
         `
         console.log({ query })
         const result = await executeQuery(query)
@@ -282,8 +276,43 @@ const eliminarDetalleVisita = async (id) => {
     }
 }
 
+const getVisitasParaHoy = async (codVendedor, fecha) => { // 2023-04-08
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            select 
+                b."PlanDetailID",
+                b."PlanID",
+                b."ClientCode",
+                b."ClientName",
+                b."PlanVisitDate",
+                b."PlanVisitTimeFrom",
+                b."PlanVisitTimeTo",
+                b."Comments",
+                b."STATUS"
+            from ${process.env.PRD}.ifa_crm_visit_plan_detail b
+            join (select "PlanID"
+                from ${process.env.PRD}.ifa_crm_visit_plan_header 
+                where "SlpCode"=${codVendedor} 
+                and '${fecha}' between "ValidFrom" and "ValidTo"
+            ) a on a."PlanID" = b."PlanID"
+            where b."PlanVisitDate"='${fecha}'
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVisitasParaHoy: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
-    actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita
+    actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
+    getVisitasParaHoy
 }
