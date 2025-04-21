@@ -249,6 +249,23 @@ const asientosContablesCC= async() => {
     }
 }
 
+
+const rendicionesPorCaja= async(idCaja) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('rendicionesPorCaja EXECUTE')
+        const query = `call ${process.env.PRD}.ifa_rw_obtener_rendiciones_por_caja(${idCaja});`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en rendicionesPorCaja')
+    }
+}
+
 module.exports = {
     tipoDeCambio,
     empleadosHana,
@@ -263,4 +280,5 @@ module.exports = {
     tipoClienteCC,
     lineaCC,
     subLineaCC,
+    rendicionesPorCaja,
 }

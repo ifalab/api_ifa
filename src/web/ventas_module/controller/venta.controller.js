@@ -2326,8 +2326,8 @@ const excelClientesMoraController = async (req, res) => {
 
 const reporteUbicacionClienteController = async (req, res) => {
     try {
-        const { sucCode } = req.query
-        const responseConUbi = await reporteConUbicacionCliente(sucCode)
+        const { sucCode, SlpCode } = req.query
+        let responseConUbi = await reporteConUbicacionCliente(sucCode)
         for (const element of responseConUbi) {
             const { ID_VENDEDOR_SAP } = element
             const vendedor = await searchVendedorByIDSAP(ID_VENDEDOR_SAP)
@@ -2337,7 +2337,14 @@ const reporteUbicacionClienteController = async (req, res) => {
                 element.vendedor = { ...dataVendedor }
             }
         }
-        const responseSinUbi = await reporteSinUbicacionCliente(sucCode)
+
+
+        let responseSinUbi = await reporteSinUbicacionCliente(sucCode)
+
+        if (SlpCode && !isNaN(SlpCode)) {
+            responseConUbi = responseConUbi.filter((item) => item.vendedor.SlpCode == +SlpCode)
+            responseSinUbi = responseSinUbi.filter((item) => item.SlpCodeCli == +SlpCode)
+        }
         return res.json({
             responseConUbi,
             responseSinUbi,

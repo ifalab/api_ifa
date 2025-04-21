@@ -682,6 +682,128 @@ const busquedaProveedor = async (parametro) => {
     }
 }
 
+const idJournalPreliminar = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('idJournalPreliminar EXECUTE')
+        const query = `CALL "LAB_IFA_COM".IFA_INSERT_JOURNALS_PRELIMINAR();`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo ejecutar idJournalPreliminar`
+        }
+
+    }
+}
+
+const lineaDetalleCC = async (
+    idCom,
+    Line_ID,
+    AccountCode,
+    ShortName,
+    ContraAccount,
+    Debit,
+    Credit,
+    DebitSys,
+    CreditSys,
+    ProjectCode,
+    AdditionalReference,
+    Reference1,
+    Reference2,
+    CostingCode,
+    CostingCode2,
+    CostingCode3,
+    CostingCode4,
+    CostingCode5,
+    LineMemo,
+    U_ComercialComments,
+    U_TIPODOC,
+    U_NIT,
+    U_RSocial,
+    U_NumAuto,
+    U_B_cuf,
+    U_NumDoc,
+    U_FECHAFAC,
+    U_IMPORTE,
+    U_ICE,
+    U_IEHD,
+    U_IPJ,
+    U_TASAS,
+    U_OP_EXENTO,
+    U_EXENTO,
+    U_TASACERO,
+    U_DESCTOBR,
+    U_GIFTCARD,
+    U_ESTADOFC,
+    U_TIPOCOM,
+    U_CODALFA,
+    U_BenefCode,
+    U_CardCode
+) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('actualizarCCRendicion EXECUTE')
+        const query = `CALL "LAB_IFA_COM"."spInsertarLineaDetalle" (
+        ${idCom},
+        ${Line_ID},
+    '${AccountCode}',
+    '${ShortName}',
+    '${ContraAccount}',
+    ${Debit},
+    ${Credit},
+    ${DebitSys},
+    ${CreditSys},
+   '${ProjectCode}',
+    ${AdditionalReference},
+    '${Reference1}',
+    '${Reference2}',
+    ${CostingCode},
+    ${CostingCode2},
+    ${CostingCode3},
+    ${CostingCode4},
+    ${CostingCode5},
+    '${LineMemo}',
+    '${U_ComercialComments}',
+    '${U_TIPODOC}',
+    '${U_NIT}',
+    '${U_RSocial}',
+    ${U_NumAuto},
+    '${U_B_cuf}',
+    '${U_NumDoc}',
+    '${U_FECHAFAC}',
+    ${U_IMPORTE},
+    ${U_ICE},
+    ${U_IEHD},
+    ${U_IPJ},
+    ${U_TASAS},
+    ${U_OP_EXENTO},
+    ${U_EXENTO},
+    ${U_TASACERO},
+    ${U_DESCTOBR},
+    ${U_GIFTCARD},
+    '${U_ESTADOFC}',
+    ${U_TIPOCOM},
+    '${U_CODALFA}',
+    '${U_BenefCode}',
+    '${U_CardCode || ''}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo insertar el detalle en COM`
+        }
+    }
+}
+
 
 module.exports = {
     findAllAperturaCaja,
@@ -714,6 +836,8 @@ module.exports = {
     actualizarCCRendicion,
     actualizarGlosaPRDGastos,
     busquedaProd,
-    busquedaProveedor
+    busquedaProveedor,
+    lineaDetalleCC,
+    idJournalPreliminar,
 
 }

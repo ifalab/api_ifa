@@ -7,7 +7,9 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     actualizarCCRendicion,
     actualizarGlosaPRDGastos,
     busquedaProd,
-    busquedaProveedor
+    busquedaProveedor,
+    lineaDetalleCC,
+    idJournalPreliminar
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -631,15 +633,15 @@ const sendToSapController = async (req, res) => {
         let listResHana = []
         let errores = []
 
-        // console.log(JSON.stringify({
-        //     codEmp,
-        //     estado,
-        //     idRendicion,
-        //     transacId,
-        //     glosaRend,
-        //     fechaContabilizado,
-        //     listaGastos,
-        // }, null, 2))
+        console.log(JSON.stringify({
+            codEmp,
+            estado,
+            idRendicion,
+            transacId,
+            glosaRend,
+            fechaContabilizado,
+            listaGastos,
+        }, null, 2))
         // return res.json({
         //     codEmp,
         //     estado,
@@ -687,20 +689,8 @@ const sendToSapController = async (req, res) => {
             listRecibos,
             listFacturasND
         })
-        
-        // return res.json({
-        //     usd,
-        //     codEmp,
-        //     estado,
-        //     idRendicion,
-        //     transacId,
-        //     glosaRend,
-        //     fechaContabilizado,
-        //     listFacturas,
-        //     listRecibos,
-        //     listFacturasND,
-        // })
 
+        //!------------------------------------------- PRUEBA
         const { statusCode, data } = await sapService.sendRendiciones({
             usd,
             codEmp,
@@ -715,21 +705,21 @@ const sendToSapController = async (req, res) => {
         });
 
         console.log({ data, statusCode })
-        console.log(JSON.stringify({
-            usd,
-            codEmp,
-            estado,
-            idRendicion,
-            transacId,
-            glosaRend,
-            fechaContabilizado,
-            listFacturas,
-            listRecibos,
-            listFacturasND,
-        }, null, 2))
-        console.log('DATOS de REND-----------------------------------------------------------')
-        console.log({ statusCode, data })
-        // return res.json({ statusCode, data })
+        // console.log(JSON.stringify({
+        //     usd,
+        //     codEmp,
+        //     estado,
+        //     idRendicion,
+        //     transacId,
+        //     glosaRend,
+        //     fechaContabilizado,
+        //     listFacturas,
+        //     listRecibos,
+        //     listFacturasND,
+        // }, null, 2))
+        // console.log('DATOS de REND-----------------------------------------------------------')
+        // console.log({ statusCode, data })
+        // // return res.json({ statusCode, data })
         if (data.status >= 400) {
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
@@ -744,6 +734,365 @@ const sendToSapController = async (req, res) => {
             return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, listResHana });
 
         }
+        //!------------------------------------------- PRUEBA
+        //! enviar centro de costo:
+
+        let journalLines = []
+        // listFacturas,
+        // listRecibos,
+        // listFacturasND
+        listFacturas.map((factura) => {
+            const totalDolar = (factura.new_importeTotal / usd).toFixed(2)
+            const listData = [
+                {
+                    Line_ID: 1,
+                    AccountCode: '2110401',
+                    ShortName: codEmp,
+                    ContraAccount: factura.new_cuenta_productiva,
+                    Debit: 0,
+                    Credit: factura.new_importeTotal,
+                    DebitSys: 0,
+                    CreditSys: Number(totalDolar),
+                    ProjectCode: '',
+                    AdditionalReference: factura.id_gasto,
+                    Reference1: transacId,
+                    Reference2: idRendicion,
+                    CostingCode: null,
+                    CostingCode2: null,
+                    CostingCode3: null,
+                    CostingCode4: null,
+                    CostingCode5: null,
+                    LineMemo: factura.new_glosa_prod,
+                    U_ComercialComments: factura.new_glosa,
+                    U_TIPODOC: '10',
+                    U_NIT: null,
+                    U_RSocial: null,
+                    U_NumAuto: null,
+                    U_B_cuf: null,
+                    U_NumDoc: null,
+                    U_FECHAFAC: formatFecha(factura.new_fecha),
+                    U_IMPORTE: null,
+                    U_ICE: null,
+                    U_IEHD: null,
+                    U_IPJ: null,
+                    U_TASAS: null,
+                    U_OP_EXENTO: null,
+                    U_EXENTO: null,
+                    U_TASACERO: null,
+                    U_DESCTOBR: null,
+                    U_GIFTCARD: null,
+                    U_ESTADOFC: 'V',
+                    U_TIPOCOM: 1,
+                    U_CODALFA: '',
+                    U_BenefCode: factura.new_cod_beneficiario,
+                },
+                {
+                    Line_ID: 0,
+                    AccountCode: factura.new_cuenta_productiva,
+                    ShortName: factura.new_cuenta_productiva,
+                    ContraAccount: codEmp,
+                    Debit: factura.new_importeTotal,
+                    Credit: 0,
+                    DebitSys: +totalDolar,
+                    CreditSys: 0,
+                    ProjectCode: '',
+                    AdditionalReference: factura.id_gasto,
+                    Reference1: transacId,
+                    Reference2: idRendicion,
+                    CostingCode: null,
+                    CostingCode2: null,
+                    CostingCode3: null,
+                    CostingCode4: null,
+                    CostingCode5: null,
+                    LineMemo: factura.new_glosa_prod,
+                    U_ComercialComments: factura.new_glosa,
+                    U_TIPODOC: factura.new_tipo === 'F' ? '1' : '10',
+                    U_NIT: factura.new_nit,
+                    U_RSocial: factura.new_nombreRazon,
+                    U_NumAuto: factura.new_codAut.length > 20 ? null : factura.new_codAut,
+                    U_B_cuf: factura.new_codAut.length > 20 ? factura.new_codAut : null,
+                    U_NumDoc: factura.new_nroFactura,
+                    U_FECHAFAC: formatFecha(factura.new_fecha),
+                    U_IMPORTE: factura.new_importeTotal,
+                    U_ICE: factura.new_ice,
+                    U_IEHD: factura.new_iehd,
+                    U_IPJ: factura.new_ipj,
+                    U_TASAS: factura.new_tasas,
+                    U_OP_EXENTO: factura.new_otroNoSujeto,
+                    U_EXENTO: factura.new_exento,
+                    U_TASACERO: factura.new_tasaCero,
+                    U_DESCTOBR: factura.new_descuento,
+                    U_GIFTCARD: factura.new_gifCard,
+                    U_ESTADOFC: 'V',
+                    U_TIPOCOM: 1,
+                    U_CODALFA: factura.new_codControl,
+                    U_BenefCode: factura.new_cod_beneficiario,
+                    U_CardCode: factura.new_cod_proveedor,
+                },
+            ]
+            journalLines = [...journalLines, ...listData]
+        })
+
+        listRecibos.map((recibos) => {
+            const totalDolar = (recibos.new_importeTotal / usd).toFixed(2)
+            const listData = [
+                {
+                    Line_ID: 1,
+                    AccountCode: '2110401',
+                    ShortName: codEmp,
+                    ContraAccount: recibos.new_cuenta_productiva,
+                    Debit: 0,
+                    Credit: recibos.new_importeTotal,
+                    DebitSys: 0,
+                    CreditSys: Number(totalDolar),
+                    ProjectCode: '',
+                    AdditionalReference: recibos.id_gasto,
+                    Reference1: transacId,
+                    Reference2: idRendicion,
+                    CostingCode: null,
+                    CostingCode2: null,
+                    CostingCode3: null,
+                    CostingCode4: null,
+                    CostingCode5: null,
+                    LineMemo: recibos.new_glosa_prod,
+                    U_ComercialComments: recibos.new_glosa,
+                    U_TIPODOC: '10',
+                    U_NIT: null,
+                    U_RSocial: null,
+                    U_NumAuto: null,
+                    U_B_cuf: null,
+                    U_NumDoc: null,
+                    U_FECHAFAC: formatFecha(recibos.new_fecha),
+                    U_IMPORTE: null,
+                    U_ICE: null,
+                    U_IEHD: null,
+                    U_IPJ: null,
+                    U_TASAS: null,
+                    U_OP_EXENTO: null,
+                    U_EXENTO: null,
+                    U_TASACERO: null,
+                    U_DESCTOBR: null,
+                    U_GIFTCARD: null,
+                    U_ESTADOFC: 'V',
+                    U_TIPOCOM: 1,
+                    U_CODALFA: '',
+                    U_BenefCode: recibos.new_cod_beneficiario,
+                },
+                {
+                    Line_ID: 0,
+                    AccountCode: recibos.new_cuenta_productiva,
+                    ShortName: recibos.new_cuenta_productiva,
+                    ContraAccount: codEmp,
+                    Debit: recibos.new_importeTotal,
+                    Credit: 0,
+                    DebitSys: +totalDolar,
+                    CreditSys: 0,
+                    ProjectCode: '',
+                    AdditionalReference: recibos.id_gasto,
+                    Reference1: transacId,
+                    Reference2: idRendicion,
+                    CostingCode: null,
+                    CostingCode2: null,
+                    CostingCode3: null,
+                    CostingCode4: null,
+                    CostingCode5: null,
+                    LineMemo: recibos.new_glosa_prod,
+                    U_ComercialComments: recibos.new_glosa,
+                    U_TIPODOC: recibos.new_tipo === 'F' ? '1' : '10',
+                    U_NIT: recibos.new_nit,
+                    U_RSocial: recibos.new_nombreRazon,
+                    U_NumAuto: recibos.new_codAut.length > 20 ? null : recibos.new_codAut,
+                    U_B_cuf: recibos.new_codAut.length > 20 ? recibos.new_codAut : null,
+                    U_NumDoc: recibos.new_nrorecibos,
+                    U_FECHAFAC: formatFecha(recibos.new_fecha),
+                    U_IMPORTE: recibos.new_importeTotal,
+                    U_ICE: recibos.new_ice,
+                    U_IEHD: recibos.new_iehd,
+                    U_IPJ: recibos.new_ipj,
+                    U_TASAS: recibos.new_tasas,
+                    U_OP_EXENTO: recibos.new_otroNoSujeto,
+                    U_EXENTO: recibos.new_exento,
+                    U_TASACERO: recibos.new_tasaCero,
+                    U_DESCTOBR: recibos.new_descuento,
+                    U_GIFTCARD: recibos.new_gifCard,
+                    U_ESTADOFC: 'V',
+                    U_TIPOCOM: 1,
+                    U_CODALFA: recibos.new_codControl,
+                    U_BenefCode: recibos.new_cod_beneficiario,
+                    U_CardCode: recibos.new_cod_proveedor,
+                },
+            ]
+
+            journalLines = [...journalLines, ...listData]
+        })
+
+        listFacturasND.map((fnd) => {
+            const totalDolar = (fnd.new_importeTotal / usd).toFixed(2)
+            const listData = [
+                {
+                    Line_ID: 1,
+                    AccountCode: '2110401',
+                    ShortName: codEmp,
+                    ContraAccount: fnd.new_cuenta_productiva,
+                    Debit: 0,
+                    Credit: fnd.new_importeTotal,
+                    DebitSys: 0,
+                    CreditSys: Number(totalDolar),
+                    ProjectCode: '',
+                    AdditionalReference: fnd.id_gasto,
+                    Reference1: transacId,
+                    Reference2: idRendicion,
+                    CostingCode: null,
+                    CostingCode2: null,
+                    CostingCode3: null,
+                    CostingCode4: null,
+                    CostingCode5: null,
+                    LineMemo: fnd.new_glosa_prod,
+                    U_ComercialComments: fnd.new_glosa,
+                    U_TIPODOC: '10',
+                    U_NIT: null,
+                    U_RSocial: null,
+                    U_NumAuto: null,
+                    U_B_cuf: null,
+                    U_NumDoc: null,
+                    U_FECHAFAC: formatFecha(fnd.new_fecha),
+                    U_IMPORTE: null,
+                    U_ICE: null,
+                    U_IEHD: null,
+                    U_IPJ: null,
+                    U_TASAS: null,
+                    U_OP_EXENTO: null,
+                    U_EXENTO: null,
+                    U_TASACERO: null,
+                    U_DESCTOBR: null,
+                    U_GIFTCARD: null,
+                    U_ESTADOFC: 'V',
+                    U_TIPOCOM: 1,
+                    U_CODALFA: '',
+                    U_BenefCode: fnd.new_cod_beneficiario,
+                },
+                {
+                    Line_ID: 0,
+                    AccountCode: fnd.new_cuenta_productiva,
+                    ShortName: fnd.new_cuenta_productiva,
+                    ContraAccount: codEmp,
+                    Debit: fnd.new_importeTotal,
+                    Credit: 0,
+                    DebitSys: +totalDolar,
+                    CreditSys: 0,
+                    ProjectCode: '',
+                    AdditionalReference: fnd.id_gasto,
+                    Reference1: transacId,
+                    Reference2: idRendicion,
+                    CostingCode: null,
+                    CostingCode2: null,
+                    CostingCode3: null,
+                    CostingCode4: null,
+                    CostingCode5: null,
+                    LineMemo: fnd.new_glosa_prod,
+                    U_ComercialComments: fnd.new_glosa,
+                    U_TIPODOC: fnd.new_tipo === 'F' ? '1' : '10',
+                    U_NIT: fnd.new_nit,
+                    U_RSocial: fnd.new_nombreRazon,
+                    U_NumAuto: fnd.new_codAut.length > 20 ? null : fnd.new_codAut,
+                    U_B_cuf: fnd.new_codAut.length > 20 ? fnd.new_codAut : null,
+                    U_NumDoc: fnd.new_nrofnd,
+                    U_FECHAFAC: formatFecha(fnd.new_fecha),
+                    U_IMPORTE: fnd.new_importeTotal,
+                    U_ICE: fnd.new_ice,
+                    U_IEHD: fnd.new_iehd,
+                    U_IPJ: fnd.new_ipj,
+                    U_TASAS: fnd.new_tasas,
+                    U_OP_EXENTO: fnd.new_otroNoSujeto,
+                    U_EXENTO: fnd.new_exento,
+                    U_TASACERO: fnd.new_tasaCero,
+                    U_DESCTOBR: fnd.new_descuento,
+                    U_GIFTCARD: fnd.new_gifCard,
+                    U_ESTADOFC: 'V',
+                    U_TIPOCOM: 1,
+                    U_CODALFA: fnd.new_codControl,
+                    U_BenefCode: fnd.new_cod_beneficiario,
+                    U_CardCode: fnd.new_cod_proveedor,
+                },
+            ]
+
+            journalLines = [...journalLines, ...listData]
+        })
+        //***
+        let idx = 0
+        const idJournalCom = await idJournalPreliminar()
+        if (idJournalCom.length == 0) {
+            return res.status(400).json({mensaje:'No hay datos al buscar el ID en IFA COM'})
+        }
+        const idCom = idJournalCom[0].TransId
+        
+        for (const item of journalLines) {
+            item.Line_ID = idx
+            const response = await lineaDetalleCC(
+                idCom,
+                item.Line_ID,
+                item.AccountCode,
+                item.ShortName,
+                item.ContraAccount,
+                item.Debit,
+                item.Credit,
+                item.DebitSys,
+                item.CreditSys,
+                item.ProjectCode,
+                item.AdditionalReference,
+                item.Reference1,
+                item.Reference2,
+                item.CostingCode,
+                item.CostingCode2,
+                item.CostingCode3,
+                item.CostingCode4,
+                item.CostingCode5,
+                item.LineMemo,
+                item.U_ComercialComments,
+                item.U_TIPODOC,
+                item.U_NIT,
+                item.U_RSocial,
+                item.U_NumAuto,
+                item.U_B_cuf,
+                item.U_NumDoc,
+                item.U_FECHAFAC,
+                item.U_IMPORTE,
+                item.U_ICE,
+                item.U_IEHD,
+                item.U_IPJ,
+                item.U_TASAS,
+                item.U_OP_EXENTO,
+                item.U_EXENTO,
+                item.U_TASACERO,
+                item.U_DESCTOBR,
+                item.U_GIFTCARD,
+                item.U_ESTADOFC,
+                item.U_TIPOCOM,
+                item.U_CODALFA,
+                item.U_BenefCode,
+                item.U_CardCode
+            )
+            if(response.error){
+                return res.status(400).json({response})
+            }
+            idx++
+        }
+        // return res.json({
+        //     usd,
+        //     codEmp,
+        //     estado,
+        //     idRendicion,
+        //     transacId,
+        //     glosaRend,
+        //     fechaContabilizado,
+        //     listFacturas,
+        //     listRecibos,
+        //     listFacturasND,
+        //     journalLines,
+        //     totalJournalLines: journalLines.length,
+        //     idJournalCom
+        // })
+        //! FIN enviar centro de costo:
 
         await Promise.all(listFacturas.map(async (item) => {
             const {
@@ -924,6 +1273,10 @@ const sendToSapController = async (req, res) => {
     }
 }
 
+const formatFecha = (fecha) => {
+    const [day, month, year] = fecha.split('/');
+    return `${year}${month}${day}`;
+};
 const eliminarGastoController = async (req, res) => {
     try {
         const id = req.params.id
