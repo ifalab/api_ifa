@@ -2,7 +2,8 @@ const {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
-    getVisitasParaHoy
+    getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita, getDetalleVisitasCreadas,
+    getCabeceraVisitaCreada
 } = require("./hana.controller")
 
 const vendedoresPorSucCodeController = async (req, res) => {
@@ -182,8 +183,13 @@ const getVisitasParaHoyController = async (req, res) => {
     try {
         const {codVendedor, fecha} = req.body
         let response = await getVisitasParaHoy(codVendedor, fecha)
-        response.map(item => {//PlanVisitTimeFrom esta en formato 600, 1200
-            item.PlanVisitTimeFrom = String(item.PlanVisitTimeFrom)
+        response.map(item => {
+            item.PlanVisitTimeFrom = String(item.PlanVisitTimeFrom).length === 3 ? 
+            `0${String(item.PlanVisitTimeFrom).slice(0,1)}:${String(item.PlanVisitTimeFrom).slice(1,3)}`:
+            `${String(item.PlanVisitTimeFrom).slice(0,2)}:${String(item.PlanVisitTimeFrom).slice(2,4)}`
+            item.PlanVisitTimeTo = String(item.PlanVisitTimeTo).length === 3 ? 
+            `0${String(item.PlanVisitTimeTo).slice(0,1)}:${String(item.PlanVisitTimeTo).slice(1,3)}`:
+            `${String(item.PlanVisitTimeTo).slice(0,2)}:${String(item.PlanVisitTimeTo).slice(2,4)}`
         })
         return res.json(response)
     } catch (error) {
@@ -194,10 +200,95 @@ const getVisitasParaHoyController = async (req, res) => {
     }
 }
 
+const marcarVisitaController = async (req, res) => {
+    try {
+        const {IdPlan,
+            Latitud,
+            Longitud,
+            Comentario,
+            IdVendedor} = req.body
+
+        let Hora= new Date().toLocaleTimeString('es-PE', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        Hora = Hora.replace(':', '')
+        let response = await marcarVisita(IdPlan, Hora,
+            Latitud,
+            Longitud,
+            Comentario,
+            IdVendedor)
+        console.log({response})
+        return res.json({visitaId: response})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en el controlador marcarVisitaController: ${error.message}`
+        })
+    }
+}
+
+const getCabeceraVisitasCreadasController = async (req, res) => {
+    try {
+        const {id_vendedor} = req.body
+        let response = await getCabeceraVisitasCreadas(id_vendedor)
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en el controlador getCabeceraVisitasCreadasController: ${error.message}`
+        })
+    }
+}
+
+const getCabeceraVisitaCreadaController = async (req, res) => {
+    try {
+        const {} = req.body
+        let response = await getCabeceraVisitaCreada()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en el controlador getCabeceraVisitaCreadaController: ${error.message}`
+        })
+    }
+}
+
+const getDetalleVisitasCreadasController = async (req, res) => {
+    try {
+        const {id} = req.query
+        let response = await getDetalleVisitasCreadas(id)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en el controlador getDetalleVisitasCreadasController: ${error.message}`
+        })
+    }
+}
+
+const aniadirDetalleVisitaController = async (req, res) => {
+    try {
+        const {} = req.body
+        let response = await aniadirDetalleVisita()
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en el controlador aniadirDetalleVisitaController: ${error.message}`
+        })
+    }
+}
+
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
     insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
     actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController,
-    eliminarDetalleVisitaController, getVisitasParaHoyController
+    eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
+    marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
+    getCabeceraVisitaCreadaController
 }

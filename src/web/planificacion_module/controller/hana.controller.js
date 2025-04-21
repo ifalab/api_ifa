@@ -310,9 +310,125 @@ const getVisitasParaHoy = async (codVendedor, fecha) => { // 2023-04-08
     }
 }
 
+const getCabeceraVisitasCreadas = async (id_vendedor) => {
+    try {
+        if(!connection) {
+            await connectHANA()
+        }
+        const query = `select * from LAB_IFA_PRD.IFA_CRM_VISIT_HEADER`
+
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en getAllVisitasCreadas: ${error.message || ''}`
+        }
+    }
+}
+/*
+    VisitID
+    SlpCode
+    SlpName
+    PlanID
+    PlanVisitDate
+    VisitStatus
+    Comments
+    Longitude
+    Latitude
+    CreatedBy
+    CreateDate
+    CreateTime
+*/
+
+const getCabeceraVisitaCreada = async () => {
+    try {
+        if(!connection) {
+            await connectHANA()
+        }
+        const query = `select * from LAB_IFA_PRD.IFA_CRM_VISIT_HEADER `
+
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en getCabeceraVisitaCreada: ${error.message || ''}`
+        }
+    }
+}
+
+/*
+    VisitID
+    EventId
+    ClientCode
+    ClientName
+    EventType
+    VisitStatus
+    VisitDate
+    SaleAmount
+    CollectionAmount
+    ReasonNotVisit
+    Comments
+*/
+
+const getDetalleVisitasCreadas = async (id_visita) => {
+    try {
+        if(!connection) {
+            await connectHANA()
+        }
+        const query = `select * from LAB_IFA_PRD.IFA_CRM_VISIT_DETAIL where "VisitID"=${id_visita}`
+
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en getDetalleVisitasCreadas: ${error.message || ''}`
+        }
+    }
+}
+
+const marcarVisita = async (IdPlan, Hora,
+    Latitud,
+    Longitud,
+    Comentario,
+    IdVendedor) => {
+    try {
+        if(!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_PRD.USP_CREATE_VISIT_HEADER(
+            'VEND001', CURRENT_DATE, 1001, CURRENT_DATE, 1,
+            'Visita inicial', '-77.0282', '-12.0432', 101,
+            0
+        )`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en marcarVisita: ${error.message || ''}`
+        }
+    }
+}
+
+const aniadirDetalleVisita = async () => {
+    try {
+        if(!connection) {
+            await connectHANA()
+        }
+        const query = `CALL LAB_IFA_PRD."USP_ADD_VISIT_DETAIL"(
+                12345, 'CLI001', 'Farmacia Central', 'Visita', 'Completada',
+                CURRENT_DATE, 1500.50, 0.00, NULL, 'Primera visita',
+                101
+            );`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en aniadirDetalleVisita: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
-    getVisitasParaHoy
+    getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita,
+    getDetalleVisitasCreadas, getCabeceraVisitaCreada
 }
