@@ -669,7 +669,7 @@ const busquedaProveedor = async (parametro) => {
             await connectHANA();
         }
         console.log('actualizarCCRendicion EXECUTE')
-        const query = `select * from ${process.env.PRD}.IFA_DM_PROVEEDORES where "CardName" like '%${parametro}%' limit 30 `
+        const query = `select * from ${process.env.PRD}.IFA_DM_PROVEEDORES where "CardName" like '%${parametro}%' OR "CardFName" like '%${parametro}%' limit 30 `
         console.log({ query })
         const result = await executeQuery(query)
         return result

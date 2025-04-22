@@ -11,7 +11,7 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getAllLines,
     getVendedoresBySuc,
     getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
-    cuentasParaBajaCobranza,cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
+    cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
     getBajasByUser, reporteBajaCobranzas,
     getClienteById
 } = require("./hana.controller")
@@ -37,8 +37,8 @@ const cobranzaGeneralController = async (req, res) => {
 const cobranzasPorZonasController = async (req = request, res = response) => {
     const { username } = req.query;
     try {
-        console.log({username})
-        if (!username && typeof username != "string"){
+        console.log({ username })
+        if (!username && typeof username != "string") {
             return res.status(400).json({
                 mensaje: 'Ingrese un username valido'
             })
@@ -168,7 +168,7 @@ const cobranzaCadenaController = async (req, res) => {
 
 const cobranzaIfavetController = async (req, res) => {
     try {
-        const { listSuc } = req.body        
+        const { listSuc } = req.body
         const responseData = await cobranzaIfavet()
         let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
@@ -201,7 +201,7 @@ const cobranzaIfavetController = async (req, res) => {
 
 const cobranzaPorSucursalMesAnteriorController = async (req, res) => {
     try {
-        const { listSuc } = req.body           
+        const { listSuc } = req.body
         const responseData = await cobranzaPorSucursalMesAnterior()
         let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
@@ -234,7 +234,7 @@ const cobranzaPorSucursalMesAnteriorController = async (req, res) => {
 
 const cobranzaNormalesMesAnteriorController = async (req, res) => {
     try {
-        const { listSuc } = req.body 
+        const { listSuc } = req.body
         const responseData = await cobranzaNormalesMesAnterior()
         let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
@@ -267,7 +267,7 @@ const cobranzaNormalesMesAnteriorController = async (req, res) => {
 
 const cobranzaCadenaMesAnteriorController = async (req, res) => {
     try {
-        const { listSuc } = req.body 
+        const { listSuc } = req.body
         const responseData = await cobranzaCadenasMesAnterior()
         let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
@@ -300,7 +300,7 @@ const cobranzaCadenaMesAnteriorController = async (req, res) => {
 
 const cobranzaIfavetMesAnteriorController = async (req, res) => {
     try {
-        const { listSuc } = req.body 
+        const { listSuc } = req.body
         const responseData = await cobranzaIfavetMesAnterior()
         let response = []
         let totalPresupuesto = 0, totalDocTotal = 0, totalCump = 0
@@ -1189,25 +1189,45 @@ const resumenCobranzasController = async (req, res) => {
             const recibosCheque = [];
             const cabezera = [];
             for (const line of response) {
-                const { ClpCode, ClpName, Modality, TotalDay, Date, ...result } = line
+                let { ClpCode, ClpName, Modality, TotalDay, Date, Time, ...result } = line
+                Time = `${Time}`
                 if (!cabezera.length) {
-                    cabezera.push({ ClpCode, ClpName, Date })
+                    cabezera.push({ ClpCode, ClpName, Date, })
                 }
+
                 if (Modality == 'efectivo') {
                     if (!Efectivo.length) {
                         Efectivo.push({ Modality, TotalDay })
                     }
-                    recibosEfec.push({ ...result })
+                    long = Time.length
+                    if (long == 4){
+                        recibosEfec.push({ ...result, Time: `${Time[0]}${Time[1]}:${Time[2]}${Time[3]}` })
+                    }else{
+                        recibosEfec.push({ ...result, Time: `0${Time[0]}:${Time[1]}${Time[2]}` })
+                    }
                 } else if (Modality == 'transferencia') {
                     if (!Transferencia.length) {
                         Transferencia.push({ Modality, TotalDay })
                     }
-                    recibosTrans.push({ ...result })
+
+                    long = Time.length
+                    if (long == 4) {
+                        recibosTrans.push({ ...result, Time: `${Time[0]}${Time[1]}:${Time[2]}${Time[3]}` })
+                    }else{
+                        recibosTrans.push({ ...result, Time: `0${Time[0]}:${Time[1]}${Time[2]}` })
+                    }
+                    
                 } else {
                     if (!Cheque.length) {
                         Cheque.push({ Modality, TotalDay })
                     }
-                    recibosCheque.push({ ...result })
+
+                    long = Time.length
+                    if (long == 4) {
+                        recibosCheque.push({ ...result, Time: `${Time[0]}${Time[1]}:${Time[2]}${Time[3]}` })
+                    }else{
+                        recibosCheque.push({ ...result, Time: `0${Time[0]}:${Time[1]}${Time[2]}` })
+                    }
                 }
             }
             Efectivo[0] = {
@@ -1227,7 +1247,7 @@ const resumenCobranzasController = async (req, res) => {
                 ...cabezera[0],
                 Recibos
             }
-            // return res.json({comprobante})
+            // return res.json({ comprobante })
             console.log(comprobante.Date)
             nombreVendedor = comprobante.ClpName
             const fechaObj = new Date(comprobante.Date);
@@ -1257,12 +1277,13 @@ TEXT 7 0 30 210 Vendedor: ${comprobante.ClpName || ''}\r\n
                     }
 
                     comprobante.Recibos[i].Recibos.forEach((recibo) => {
-                        const { CardCode, CardName, DocTotal, NumAtCard } = recibo;
+                        const { CardCode, CardName, DocTotal, NumAtCard,Time } = recibo;
                         cpclContent += `
 TEXT 7 0 60 ${yPosition + 50} Cod: ${CardCode}                 ${Intl.NumberFormat('en-US').format(parseFloat(DocTotal).toFixed(2))} Bs.\r\n
 TEXT 7 0 60 ${yPosition + 70} ${CardName}\r\n
-TEXT 7 0 60 ${yPosition + 90} Nros Fact: ${NumAtCard}\r\n
-LINE 60 ${yPosition + 110} 570 ${yPosition + 110} 1\r\n`;
+TEXT 7 0 60 ${yPosition + 90} Hora: ${Time}\r\n
+TEXT 7 0 60 ${yPosition + 110} Nros Fact: ${NumAtCard}\r\n
+LINE 60 ${yPosition + 130} 570 ${yPosition + 130} 1\r\n`;
                         yPosition += 80
                     });
                     yPosition += 50
@@ -1570,7 +1591,7 @@ const getCobradoresBySucursalController = async (req, res) => {
     try {
         const { sucCode } = req.query
         let cobradores = await getVendedoresBySuc(sucCode)
-        
+
         return res.json(cobradores)
     } catch (error) {
         console.log({ error })
@@ -1631,10 +1652,10 @@ const getAllLinesController = async (req, res) => {
 
 const getYearToDayController = async (req, res) => {
     try {
-        const {sucCode, cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2} = req.body
-        console.log({body: req.body})
+        const { sucCode, cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2 } = req.body
+        console.log({ body: req.body })
         let response
-        if(sucCode)
+        if (sucCode)
             response = await getYearToDayBySuc(sucCode, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
         else
             response = await getYearToDayByCobrador(cobradorName, dim2, fechaInicio1, fechaFin1, fechaInicio2, fechaFin2)
@@ -1651,9 +1672,9 @@ const getYearToDayController = async (req, res) => {
 
 const getYTDCobradorController = async (req, res) => {
     try {
-        const {sucCode,fechaInicio1, fechaFin1} = req.body
-        console.log({body: req.body})
-        const response = await getYTDCobrador(sucCode,fechaInicio1, fechaFin1)
+        const { sucCode, fechaInicio1, fechaFin1 } = req.body
+        console.log({ body: req.body })
+        const response = await getYTDCobrador(sucCode, fechaInicio1, fechaFin1)
 
         return res.json(response)
     } catch (error) {
@@ -1667,9 +1688,9 @@ const getYTDCobradorController = async (req, res) => {
 
 const getPendientesBajaPorCobradorController = async (req, res) => {
     try {
-        const {id} = req.query
+        const { id } = req.query
         let cobranzas = await getPendientesBajaPorCobrador(id)
-        cobranzas.map((item)=>{
+        cobranzas.map((item) => {
             item.TotalPending = +((+item.TotalPending).toFixed(2))
             item.DocTotal = +((+item.DocTotal).toFixed(2))
             item.AppliedToDate = +((+item.AppliedToDate).toFixed(2))
@@ -1677,7 +1698,7 @@ const getPendientesBajaPorCobradorController = async (req, res) => {
         return res.json(cobranzas)
     } catch (error) {
         console.log({ error })
-        const mensaje =  `${error.message||'Error en el controlador getPendientesBajaPorCobradorController'}`
+        const mensaje = `${error.message || 'Error en el controlador getPendientesBajaPorCobradorController'}`
         return res.status(500).json({
             mensaje
         })
@@ -1715,27 +1736,27 @@ const getCuentasBancoParaBajaCobranzaController = async (req, res) => {
 
 const darDeBajaController = async (req, res) => {
     try {
-        const {body} = req.body
+        const { body } = req.body
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const responsePostIncomming =await postIncommingPayments(body)
-        if(responsePostIncomming.status==400){
-            const mensaje=responsePostIncomming.errorMessage
-            grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
-                `${mensaje.value||mensaje||'Error de postIncommingPayments.'}`,
-                'postIncommingPayments','cobranza/baja', process.env.DBSAPPRD)
-            return res.status(400).json({mensaje: `${mensaje.value||mensaje||'Error de postIncommingPayments'}`, body})
+        const responsePostIncomming = await postIncommingPayments(body)
+        if (responsePostIncomming.status == 400) {
+            const mensaje = responsePostIncomming.errorMessage
+            grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
+                `${mensaje.value || mensaje || 'Error de postIncommingPayments.'}`,
+                'postIncommingPayments', 'cobranza/baja', process.env.DBSAPPRD)
+            return res.status(400).json({ mensaje: `${mensaje.value || mensaje || 'Error de postIncommingPayments'}`, body })
         }
-        console.log({responsePostIncomming})
-        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+        console.log({ responsePostIncomming })
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
             `Exito en la baja de cobranza`,
-            'postIncommingPayments','cobranza/baja', process.env.DBSAPPRD)
-        return res.json({docEntry: responsePostIncomming.orderNumber})
+            'postIncommingPayments', 'cobranza/baja', process.env.DBSAPPRD)
+        return res.json({ docEntry: responsePostIncomming.orderNumber })
     } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const mensaje =  `Error en el controlador darDeBajaController: ${error.message||'No definido'}`
-        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
-            mensaje, 'catch controller','cobranza/baja', process.env.DBSAPPRD)
+        const mensaje = `Error en el controlador darDeBajaController: ${error.message || 'No definido'}`
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
+            mensaje, 'catch controller', 'cobranza/baja', process.env.DBSAPPRD)
         return res.status(500).json({
             mensaje
         })
@@ -1743,37 +1764,39 @@ const darDeBajaController = async (req, res) => {
 }
 
 const darVariasDeBajaController = async (req, res) => {
-    let responses=[]
+    let responses = []
     try {
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const {body} = req.body
-        for(const farmacia of body){
-            const {CardCode, CardName, CounterReference, ...rest}=farmacia
-            const responsePostIncomming =await postIncommingPayments({CounterReference, ...rest})
-            console.log({responsePostIncomming})
-            if(responsePostIncomming.status==400){
-                const mensaje=responsePostIncomming.errorMessage
-                grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
-                    `${mensaje.value||mensaje||'Error de postIncommingPayments.'} Cliente del error: ${CardCode}- ${CardName}`,
-                    'postIncommingPayments','cobranza/baja-varias', process.env.DBSAPPRD)
+        const { body } = req.body
+        for (const farmacia of body) {
+            const { CardCode, CardName, CounterReference, ...rest } = farmacia
+            const responsePostIncomming = await postIncommingPayments({ CounterReference, ...rest })
+            console.log({ responsePostIncomming })
+            if (responsePostIncomming.status == 400) {
+                const mensaje = responsePostIncomming.errorMessage
+                grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
+                    `${mensaje.value || mensaje || 'Error de postIncommingPayments.'} Cliente del error: ${CardCode}- ${CardName}`,
+                    'postIncommingPayments', 'cobranza/baja-varias', process.env.DBSAPPRD)
                 return res.status(400).json(
-                    {mensaje: `${mensaje.value||mensaje||'Error de postIncommingPayments.'} Cliente del error: ${CardCode}- ${CardName}`, 
-                    farmacia, responses})
+                    {
+                        mensaje: `${mensaje.value || mensaje || 'Error de postIncommingPayments.'} Cliente del error: ${CardCode}- ${CardName}`,
+                        farmacia, responses
+                    })
             }
-            responses.push({CardCode, CardName, DocNum: CounterReference, DocEntry: responsePostIncomming.orderNumber})
+            responses.push({ CardCode, CardName, DocNum: CounterReference, DocEntry: responsePostIncomming.orderNumber })
         }
-        
-        console.log({responses})
-        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+
+        console.log({ responses })
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
             `Exito en las bajas`,
-            'postIncommingPayments','cobranza/baja-varias', process.env.DBSAPPRD)
-        return res.json({responses})
+            'postIncommingPayments', 'cobranza/baja-varias', process.env.DBSAPPRD)
+        return res.json({ responses })
     } catch (error) {
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ error })
-        const mensaje =  `Error en el controlador darVariasDeBajaController: ${error.message||'No definido'}`
-        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
-            mensaje, 'catch del controller','cobranza/baja-varias', process.env.DBSAPPRD)
+        const mensaje = `Error en el controlador darVariasDeBajaController: ${error.message || 'No definido'}`
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
+            mensaje, 'catch del controller', 'cobranza/baja-varias', process.env.DBSAPPRD)
         return res.status(500).json({
             mensaje, responses
         })
@@ -1782,54 +1805,54 @@ const darVariasDeBajaController = async (req, res) => {
 
 const comprobanteContableController = async (req, res) => {
     try {
-        const {id} = req.query
-        const baja =await getBaja(id)
-        console.log({baja})
-        if(baja.length==0){
-            return res.status(400).json({mensaje: `No se encontro una baja con DocEntry: ${id}`})
+        const { id } = req.query
+        const baja = await getBaja(id)
+        console.log({ baja })
+        if (baja.length == 0) {
+            return res.status(400).json({ mensaje: `No se encontro una baja con DocEntry: ${id}` })
         }
-        const {TransId} = baja[0]
+        const { TransId } = baja[0]
         const {ClpCode, ClpName} = baja[0]
 
         const layout = await getLayoutComprobanteContable(TransId)
         // return res.json({layout})
-        if(layout.length==0){
-            return res.status(400).json({mensaje: `No se encontro datos para TransId: ${TransId}, DocEntry: ${id} en el procedure ACB_INV_LayOutCoomprobanteContablePR`})
+        if (layout.length == 0) {
+            return res.status(400).json({ mensaje: `No se encontro datos para TransId: ${TransId}, DocEntry: ${id} en el procedure ACB_INV_LayOutCoomprobanteContablePR` })
         }
 
         let cabecera = []
-        let detalle=[]
-        let sumDebit=0; let sumSYSDeb=0; let sumCredit=0; let sumSYSCred=0
+        let detalle = []
+        let sumDebit = 0; let sumSYSDeb = 0; let sumCredit = 0; let sumSYSCred = 0
         // console.log(layout);
-        layout.forEach((line)=>{
-            const {TransId,
-                    RefDate,
-                    DueDate,
-                    TaxDate,
-                    Ref1,
-                    Ref2,
-                    Ref3,
-                    Memo,
-                    RateUsd,
-                    RateEur,
-                    Debit,
-                    Credit,
-                    SYSDeb,
-                    SYSCred,
-                    DocNumFiscal,
-                    BaseRef,
-                    NumAtCard,
-                    U_NAME,
-                    Voucher,
-                    Ref3Line,
-                    ...rest} = line
-            const fechaTax= formattedDataInvoice(TaxDate)
+        layout.forEach((line) => {
+            const { TransId,
+                RefDate,
+                DueDate,
+                TaxDate,
+                Ref1,
+                Ref2,
+                Ref3,
+                Memo,
+                RateUsd,
+                RateEur,
+                Debit,
+                Credit,
+                SYSDeb,
+                SYSCred,
+                DocNumFiscal,
+                BaseRef,
+                NumAtCard,
+                U_NAME,
+                Voucher,
+                Ref3Line,
+                ...rest } = line
+            const fechaTax = formattedDataInvoice(TaxDate)
             sumDebit += +Debit
             sumSYSDeb += +SYSDeb
             sumCredit += +Credit
             sumSYSCred += +SYSCred
 
-            if(cabecera.length==0){
+            if (cabecera.length == 0) {
                 cabecera.push({
                     ClpCode,
                     ClpName,
@@ -1856,17 +1879,18 @@ const comprobanteContableController = async (req, res) => {
                 Credit: (+Credit).toFixed(2),
                 SYSDeb: (+SYSDeb).toFixed(2),
                 SYSCred: (+SYSCred).toFixed(2),
-                ...rest})
+                ...rest
+            })
         })
-        cabecera[0].sumDebit= (+sumDebit).toFixed(2)
-        cabecera[0].sumSYSDeb=(+sumSYSDeb).toFixed(2)
-        cabecera[0].sumCredit=(+sumCredit).toFixed(2)
-        cabecera[0].sumSYSCred=(+sumSYSCred).toFixed(2)
+        cabecera[0].sumDebit = (+sumDebit).toFixed(2)
+        cabecera[0].sumSYSDeb = (+sumSYSDeb).toFixed(2)
+        cabecera[0].sumCredit = (+sumCredit).toFixed(2)
+        cabecera[0].sumSYSCred = (+sumSYSCred).toFixed(2)
 
         let comprobante = {
             ...cabecera[0], detalle
         }
-        
+
 
         // return res.json({comprobante, layout, baja})
         console.log(comprobante);
@@ -1902,7 +1926,7 @@ const comprobanteContableController = async (req, res) => {
 
     } catch (error) {
         console.log({ error })
-        const mensaje =  `${error.message||'Error en el controlador comprobanteContableController'}`
+        const mensaje = `${error.message || 'Error en el controlador comprobanteContableController'}`
         return res.status(500).json({
             mensaje
         })
@@ -1912,14 +1936,14 @@ const comprobanteContableController = async (req, res) => {
 
 const getBajasByUserController = async (req, res) => {
     try {
-        const {id_sap} = req.query
-        const response =await getBajasByUser(id_sap)
+        const { id_sap } = req.query
+        const response = await getBajasByUser(id_sap)
 
-        console.log({response})
+        console.log({ response })
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        const mensaje =  `${error.message||'Error en el controlador getBajasByUserController'}`
+        const mensaje = `${error.message || 'Error en el controlador getBajasByUserController'}`
         return res.status(500).json({
             mensaje
         })
@@ -1928,26 +1952,26 @@ const getBajasByUserController = async (req, res) => {
 
 const anularBajaController = async (req, res) => {
     try {
-        const {id} = req.query
+        const { id } = req.query
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const response =await cancelIncommingPayments(id)
-        if(response.status==400){
-            grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
-                `${response.errorMessage || 'Error de cancelIncommingPayments id: '+id}`,
-                'cancelIncommingPayments','cobranza/anular-baja', process.env.DBSAPPRD)
-            return res.status(400).json({mensaje: response.errorMessage || 'Error de cancelIncommingPayments.'})
+        const response = await cancelIncommingPayments(id)
+        if (response.status == 400) {
+            grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
+                `${response.errorMessage || 'Error de cancelIncommingPayments id: ' + id}`,
+                'cancelIncommingPayments', 'cobranza/anular-baja', process.env.DBSAPPRD)
+            return res.status(400).json({ mensaje: response.errorMessage || 'Error de cancelIncommingPayments.' })
         }
-        console.log({response})
-        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
+        console.log({ response })
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
             `Exito en la anulacion de baja: ${id}`,
-            'cancelIncommingPayments','cobranza/anular-baja', process.env.DBSAPPRD)
+            'cancelIncommingPayments', 'cobranza/anular-baja', process.env.DBSAPPRD)
         return res.json(response)
     } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        const mensaje =  `Error en el controlador anularBajaController: ${error.message||'No definido'}`
-        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas', 
-            mensaje, 'catch controller','cobranza/anular-baja', process.env.DBSAPPRD)
+        const mensaje = `Error en el controlador anularBajaController: ${error.message || 'No definido'}`
+        grabarLog(user.USERCODE, user.USERNAME, 'Cobranzas Bajas',
+            mensaje, 'catch controller', 'cobranza/anular-baja', process.env.DBSAPPRD)
         return res.status(500).json({
             mensaje
         })
@@ -1956,7 +1980,7 @@ const anularBajaController = async (req, res) => {
 
 const reporteBajaCobranzasController = async (req, res) => {
     try {
-        const {UserSign, month, year} = req.body
+        const { UserSign, month, year } = req.body
         const response = await reporteBajaCobranzas(UserSign, month, year)
 
         return res.json(response)
@@ -2032,7 +2056,7 @@ module.exports = {
     getAllSublinesController,
     getAllLinesController,
     getCobradoresBySucursalController,
-    getYearToDayController,getCuentasBancoParaBajaCobranzaController,
+    getYearToDayController, getCuentasBancoParaBajaCobranzaController,
     getYTDCobradorController, getPendientesBajaPorCobradorController,
     darDeBajaController, getCuentasParaBajaController, comprobanteContableController,
     darVariasDeBajaController,
