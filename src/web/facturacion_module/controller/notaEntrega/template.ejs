@@ -8,9 +8,17 @@
     <style>
         body {
             font-family: "Courier New", Courier, monospace;
+            color: black !important;
             font-size: 12px;
             padding: 10px;
             margin: 0;
+        }
+
+        *,
+        *::before,
+        *::after {
+            color: black !important;
+            border-color: black !important;
         }
 
         .qr-code {
@@ -67,7 +75,7 @@
         table,
         th,
         td {
-            border: 1px solid #ddd;
+            border: 1px solid black !important;
         }
 
         th,
@@ -81,13 +89,11 @@
         .header-top,
         .table {
             margin-bottom: 5px !important;
-            /* Reduce espacio entre secciones */
         }
 
         .header-left p,
         .header-right p {
             margin: 2px 0 !important;
-            /* Reduce separación entre párrafos */
         }
 
         th {
@@ -99,11 +105,8 @@
         th:nth-child(1),
         td:nth-child(1) {
             width: 10%;
-            /* Ajusta el porcentaje según el tamaño que desees */
             min-width: 100px;
-            /* Para evitar que se encoja demasiado */
             text-align: left;
-            /* Alineación opcional */
         }
 
         tbody tr:nth-child(odd) {
@@ -123,7 +126,6 @@
 
         .footer-signatures {
             margin-top: 55px;
-            /* margin: 0 5px; */
             display: flex;
             justify-content: space-around;
             text-align: center;
@@ -134,7 +136,7 @@
             width: 20%;
             border-top: 1px solid black;
             margin: 0 5px;
-            margin-top: 30px
+            margin-top: 30px;
         }
 
         .comments {
@@ -144,18 +146,14 @@
     </style>
 </head>
 
-<body>
-    <div class="content">
+<body class="text-black">
+    <div class="content text-black">
         <div class="header-top">
             <div class="title-container">
                 <h6 class="text-center">LABORATORIOS IFA</h6>
-                <h6 class="text-center">NOTA DE ENTREGA #<%= data.DocNum %>
-                </h6>
-                <h6 class="text-center">ALMACEN : <%= data.WhsCode %>
-                </h6>
-                <h6 class="text-center">
-                    <%= data.WhsName %>
-                </h6>
+                <h6 class="text-center">NOTA DE ENTREGA #<%= data.DocNum %></h6>
+                <h6 class="text-center">ALMACEN : <%= data.WhsCode %></h6>
+                <h6 class="text-center"><%= data.WhsName %></h6>
             </div>
             <div class="qr-container">
                 <img class="qr-code" src="<%= qrCode %>" alt="QR Code">
@@ -164,34 +162,17 @@
         <hr>
 
         <div class="header-container">
-
             <div class="header-left">
-                <p><strong>Usuario:</strong>
-                    <%= data.USER_CODE %>
-                </p>
-                <p><strong>Creado por:</strong>
-                    <%= data.U_NAME %>
-                </p>
-                <p><strong>Fecha de creación:</strong>
-                    <%= new Date(data.DocDate).toLocaleDateString('es-ES') %>
-                </p>
-                <p><strong>Hora:</strong>
-                    <%= data.time %>
-                </p>
+                <p><strong>Usuario: <%= data.USER_CODE %></strong></p>
+                <p><strong>Creado por: <%= data.U_NAME %></strong></p>
+                <p><strong>Fecha de creación: <%= new Date(data.DocDate).toLocaleDateString('es-ES') %> </strong></p>
+                <p><strong>Hora:<%= data.time %></strong></p>
             </div>
             <div class="header-right">
-                <p><strong>Teléfono:</strong>
-                    <%= data.Phone1 %>
-                </p>
-                <p><strong>Dirección:</strong>
-                    <%= data.Address2 %>
-                </p>
-                <p><strong>Zona:</strong>
-                    <%= data.U_Zona %>
-                </p>
-                <p><strong>Cliente:</strong>
-                    <%= data.CardCode %> - <%= data.CardName %>
-                </p>
+                <p><strong>Teléfono: <%= data.Phone1 %> </strong></p>
+                <p><strong>Dirección: <%= data.Address2 %> </strong></p>
+                <p><strong>Zona: <%= data.U_Zona %></strong></p>
+                <p><strong>Cliente: <%= data.CardCode %> - <%= data.CardName %></strong></p>
             </div>
         </div>
         <hr>
@@ -209,74 +190,37 @@
                 </tr>
             </thead>
             <tbody>
-                <% let totalGeneral=0; %>
-                    <% data.detailsList.forEach(item=> {
-                        totalGeneral += parseFloat(item.LineTotal); %>
-                        <tr>
-                            <td>
-                                <%= item.ItemCode %>
-                            </td>
-                            <td>
-                                <%= item.Dscription %>
-                            </td>
-                            <td>
-                                <%= item.BatchNum %>
-                            </td>
-                            <td>
-                                <%= new Date(item.ExpDate).toLocaleDateString('es-ES') %>
-                            </td>
-                            <td>
-                                <%= item.Quantity %>
-                            </td>
-                            <td>
-                                <%= parseFloat(item.Price).toFixed(2) %>
-                            </td>
-                            <td>
-                                <%= parseFloat(item.LineTotal).toFixed(2) %>
-                            </td>
-                        </tr>
-                        <% }); %>
+                <% let totalGeneral = 0; %>
+                <% data.detailsList.forEach(item => {
+                    totalGeneral += parseFloat(item.LineTotal); %>
+                    <tr>
+                        <td><strong> <%= item.ItemCode %> </strong> </td>
+                        <td><strong><%= item.Dscription %></strong></td>
+                        <td><strong> <%= item.BatchNum %></strong></td>
+                        <td><strong><%= new Date(item.ExpDate).toLocaleDateString('es-ES') %></strong></td>
+                        <td><strong><%= item.Quantity %></strong></td>
+                        <td><strong><%= parseFloat(item.Price).toFixed(2) %></strong></td>
+                        <td><strong><%= parseFloat(item.LineTotal).toFixed(2) %></strong></td>
+                    </tr>
+                <% }); %>
             </tbody>
-            <tfoot>
-                <!-- <tr class="total-row">
-                    <td colspan="6" class="text-end">Total General:</td>
-                    <td>
-                        <%= totalGeneral.toFixed(2) %> BOB
-                    </td>
-                </tr> -->
-            </tfoot>
         </table>
+
         <div class="comments">
-            <p><strong>Comentario:</strong>
-                <%= data.Comments %>
-            </p>
-            <p><strong>Vendedor:</strong>
-                <%= data.SlpName %>
-            </p>
-        </div>
-        <div class="footer-text">
-            <tr class="total-row">
-                <td colspan="6" class="text-end"><strong>Total General:</strong></td>
-                <td>
-                    <%= totalGeneral.toFixed(2) %> BOB
-                </td>
-            </tr>
-            <!-- <p><strong></strong></p> -->
-            <p><strong>Condición de pago:</strong>
-                <%= data.PymntGroup %>
-            </p>
+            <p><strong>Comentario: <%= data.Comments %></strong> </p>
+            <p><strong>Vendedor: <%= data.SlpName %></strong> </p>
         </div>
 
+        <div class="footer-text">
+            <p><strong>Total General: <%= totalGeneral.toFixed(2) %> BOB</strong> </p>
+            <p><strong>Condición de pago: <%= data.PymntGroup %></strong> </p>
+        </div>
 
         <div class="footer-signatures">
-            <div style="margin-top: 2rem;">Creado por <%= data.U_NAME %>
-            </div>
-            <div>Preparado por <%= data.U_N %>
-            </div>
-            <div>Revisado por <%= data.U_N %>
-            </div>
-            <div>Recibí conforme <%= data.U_N %>
-            </div>
+            <div><strong> Creado por <%= data.U_NAME %></strong></div>
+            <div><strong>Preparado por <%= data.U_N %></strong></div>
+            <div><strong>Revisado por <%= data.U_N %></strong></div>
+            <div><strong>Recibí conforme <%= data.U_N %></strong></div>
         </div>
     </div>
 </body>

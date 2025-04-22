@@ -117,42 +117,32 @@
 <body>
     <div class="content">
         <h2 class="text-center">LABORATORIOS IFA</h2>
-        <h5 class="text-center">NOTA DEL PEDIDO #<%= data.DocNum %>
+        <h5 class="text-center"><strong>NOTA DEL PEDIDO #<%= data.DocNum %></strong>
         </h5>
-        <h5 class="text-center">ALMACEN : <%= data.WhsCode %>
+        <h5 class="text-center"><strong>ALMACEN : <%= data.WhsCode %></strong>
         </h5>
-        <h5 class="text-center"><%= data.WhsName %>
+        <h5 class="text-center"><strong><%= data.WhsName %></strong>
         </h5>
         <hr>
         <div class="d-flex justify-content-between">
             <div class="">
-                <p><strong>Usuario:</strong>
-                    <%= data.USER_CODE %>
+                <p><strong>Usuario: <%= data.USER_CODE %></strong>
                 </p>
-                <p><strong>Creado por:</strong>
-                    <%= data.U_NAME %>
+                <p><strong>Creado por: <%= data.U_NAME %></strong>
                 </p>
-                <p><strong>Fecha de creación:</strong>
-                    <%= new Date(data.DocDate).toLocaleDateString('es-ES') %>
+                <p><strong>Fecha de creación: <%= new Date(data.DocDate).toLocaleDateString('es-ES') %></strong>
                 </p>
-                <p><strong>Hora:</strong>
-                    <%= data.time %>
+                <p><strong>Hora: <%= data.time %></strong>
                 </p>
-                <p><strong>Teléfono:</strong>
-                    <%= data.Phone1 %>
+                <p><strong>Teléfono: <%= data.Phone1 %></strong>
                 </p>
-                <p><strong>Dirección:</strong>
-                    <%= data.Address2 %>
+                <p><strong>Dirección: <%= data.Address2 %></strong>
                 </p>
-                <p><strong>Zona:</strong>
-                    <%= data.U_Zona %>
+                <p><strong>Zona: <%= data.U_Zona %></strong>
                 </p>
-                <p><strong>Cliente:</strong>
-                    <%= data.CardCode %> - <%= data.CardName %>
+                <p><strong>Cliente: <%= data.CardCode %> - <%= data.CardName %></strong>
                 </p>
-                <p><strong>Condición de pago:</strong>
-                    <%= data.PymntGroup %>
-                </p>
+                <p><strong>Condición de pago: <%= data.PymntGroup %></strong></p>
             </div>
         </div>
         <hr>
@@ -174,22 +164,23 @@
                         %>
                         <tr>
                             <td>
-                                <%= item.ItemCode %>
+                                <strong><%= item.ItemCode %></strong>
+                                
                             </td>
                             <td>
-                                <%= item.Dscription %>
+                                <strong><%= item.Dscription %></strong>
                             </td>
                             <td>
-                                <%= Math.round(item.Quantity) %>
+                                <strong><%= Math.round(item.Quantity) %></strong>
                             </td>
                             <td>
-                                <%= parseFloat(item.Price).toFixed(2) %>
+                                <strong><%= parseFloat(item.Price).toFixed(2) %></strong>
                             </td>
                             <td>
-                                <%= parseFloat(item.DescLinea).toFixed(2) %>
+                                <strong><%= parseFloat(item.DescLinea).toFixed(2) %></strong>
                             </td>
                             <td>
-                                <%= parseFloat(item.LineTotal).toFixed(2) %>
+                                <strong><%= parseFloat(item.LineTotal).toFixed(2) %></strong>
                             </td>
                         </tr>
                         <% }); %>
@@ -198,7 +189,7 @@
                 <tr class="total-row">
                     <td colspan="5" class="text-end">Total General:</td>
                     <td>
-                        <%= totalGeneral.toFixed(2) %> BOB
+                        <strong><%= totalGeneral.toFixed(2) %> BOB</strong>
                     </td>
                 </tr>
             </tfoot>
@@ -206,8 +197,8 @@
         <div class="footer-text">
             <!-- <p><strong>Empleado:</strong> MEDLING ARDAYA JENNIFER</p> -->
             
-            <p><strong>Glosa:</strong>
-                <%= data.JrnlMemo %>
+            <p><strong>Glosa: <%= data.JrnlMemo %></strong>
+                
             </p>
             <!-- <p><strong>Glosa:</strong> solicitado por correo ent. hoy en el trans de la tarde basado en pedidos de cliente 240006460.</p> -->
             <!-- <p><strong>Total en texto:</strong> Eleven Thousand Four Hundred Ninety-Five And 39/100 Bolivianos</p> -->
@@ -225,8 +216,8 @@
 
     </div>
 <footer class="footer">
-    <p>LABORATORIOS IFA - Todos los derechos reservados</p>
-    <p>Documento generado el <%= new Date().toLocaleDateString() %></p>
+    <p><strong>LABORATORIOS IFA - Todos los derechos reservados</strong></p>
+    <p><strong>Documento generado el <%= new Date().toLocaleDateString() %></strong></p>
 </footer>
 
 </body>

@@ -5,7 +5,11 @@ const path = require('path');
 const { generarToken } = require("../../../helpers/generar_token.helper");
 const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveUser, findDimension, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, findUserByUsercode, dimensionUnoByUser, dimensionDosByUser, dimensionTresByUser, roleByUser, updatePasswordByUser, rollBackDimensionUnoByUser, rollBackDimensionDosByUser, rollBackDimensionTresByUser, activeUser, addRolUser, deleteRolUser, deleteOneRolUser, findAllRoles, userVendedor,
     getDmUsers, getAllAlmacenes, getAlmacenesByUser, addAlmacenUsuario, deleteAlmacenUsuario,
-    addRutasDespachadores, getRutasLibresPorDespachador, getRutasAsignadasPorDespachador, getDespachadores, deleteRutasDespachadores
+    addRutasDespachadores, getRutasLibresPorDespachador, getRutasAsignadasPorDespachador, getDespachadores, deleteRutasDespachadores,
+    addUsuarioDimensionSublinea,
+    dimensionSublineaByUser,
+    rollBackDimensionSublineaByUser,
+    findAllSubLines
 } = require("./hana.controller")
 const { postSalesPersons, patchSalesPersons } = require("./sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -51,19 +55,20 @@ const authLoginV2 = async (req, res) => {
         const dimensionUno = await dimensionUnoByUser(user.ID)
         const dimensionDos = await dimensionDosByUser(user.ID)
         const dimension = await dimensionTresByUser(user.ID)
+        const dimensionSublinea = await dimensionSublineaByUser(user.ID)
         let dimensionTres = []
         dimension.map((item) => {
             dimensionTres.push({
                 ID: item.LineItemCode,
                 DIMROLE: item.LineItemName,
-                CREATED_AT:new Date(),
+                CREATED_AT: new Date(),
                 ID_USUARIO: item.ID_USUARIO,
-                ISACTIVE:true,
+                ISACTIVE: true,
                 ID_DIMENSION_TRES: item.LineItemCode,
             })
         })
         // return res.json({ UserCode:user.USERCODE })
-        return res.json({ user, rol, dimensionUno, dimensionDos, dimensionTres, token })
+        return res.json({ user, rol, dimensionUno, dimensionDos, dimensionTres, dimensionSublinea, token })
     } catch (error) {
         console.log({ error })
     }
@@ -82,6 +87,7 @@ const createUserController = async (req, res) => {
             dimensionUno,
             dimensionDos,
             dimensionTres,
+            dimensionSublinea,
             roles
         } = req.body
 
@@ -96,9 +102,23 @@ const createUserController = async (req, res) => {
             dimensionUno: [...dimensionUno],
             dimensionDos: [...dimensionDos],
             dimensionTres: [...dimensionTres],
+            dimensionSublinea: [...dimensionSublinea],
             roles: [...roles]
         })
-
+        // return res.status(400).json({
+        //     usercode,
+        //     username,
+        //     pass,
+        //     codemp,
+        //     confirm_pass,
+        //     superuser,
+        //     etiqueta,
+        //     dimensionUno: [...dimensionUno],
+        //     dimensionDos: [...dimensionDos],
+        //     dimensionTres: [...dimensionTres],
+        //     dimensionSublinea: [...dimensionSublinea],
+        //     roles: [...roles]
+        // })
         if (pass !== confirm_pass) {
             return res.status(400).json({ mensaje: 'las contraseñas son distintas' })
         }
@@ -162,6 +182,18 @@ const createUserController = async (req, res) => {
                     console.log({ valueDim })
                     if (valueDim == 409) {
                         console.log({ mensaje: 'conflicto ya existe dim1 y usuario' })
+                    } else {
+                        console.log({ mensaje: 'ok' })
+                    }
+                })
+
+                dimensionSublinea.map(async (item) => {
+                    const id_dim = item.ID
+                    const responseDim = await addUsuarioDimensionSublinea(id, id_dim)
+                    const valueDim = responseDim["response"]
+                    console.log({ valueDim })
+                    if (valueDim == 409) {
+                        console.log({ mensaje: 'conflicto ya existe dim sublinea y usuario' })
                     } else {
                         console.log({ mensaje: 'ok' })
                     }
@@ -320,6 +352,7 @@ const updateUserController = async (req, res) => {
             dimensionUno,
             dimensionDos,
             dimensionTres,
+            dimensionSublinea,
             roles
         } = req.body
 
@@ -353,10 +386,12 @@ const updateUserController = async (req, res) => {
         const rollBackDim1 = await rollBackDimensionUnoByUser(id_user)
         const rollBackDim2 = await rollBackDimensionDosByUser(id_user)
         const rollBackDim3 = await rollBackDimensionTresByUser(id_user)
+        const rollBackDimSublinea = await rollBackDimensionSublineaByUser(id_user)
 
         console.log({ rollBackDim1 })
         console.log({ rollBackDim2 })
         console.log({ rollBackDim3 })
+        console.log({ rollBackDimSublinea })
 
         const responseRole = await deleteRolUser(id_user)
         console.log({ responseRole })
@@ -400,6 +435,18 @@ const updateUserController = async (req, res) => {
             console.log({ valueDim })
             if (valueDim == 409) {
                 console.log({ mensaje: 'conflicto ya existe dim1 y usuario' })
+            } else {
+                console.log({ mensaje: 'ok' })
+            }
+        })
+
+        dimensionSublinea.map(async (item) => {
+            const id_dim = item.ID
+            const responseDim = await addUsuarioDimensionSublinea(id_user, id_dim)
+            const valueDim = responseDim["response"]
+            console.log({ valueDim })
+            if (valueDim == 409) {
+                console.log({ mensaje: 'conflicto ya existe dim sublinea y usuario' })
             } else {
                 console.log({ mensaje: 'ok' })
             }
@@ -494,22 +541,35 @@ const findAllDimensionDosByUserController = async (req, res) => {
 const findAllDimensionTresByUserController = async (req, res) => {
     try {
         const id = req.params.id
-        const dimension = await dimensionTresByUser(id)
-        let dimensionTres = []
-        dimension.map((item) => {
-            dimensionTres.push({
-                ID: item.LineItemCode,
-                DIMROLE: item.LineItemName,
-                CREATED_AT:new Date(),
-                ID_USUARIO: item.ID_USUARIO,
-                ISACTIVE:true,
-                ID_DIMENSION_TRES: item.LineItemCode,
-            })
-        })
-        return res.json({ dimensionTres })
+        const dimensionTres = await dimensionTresByUser(id)
+        return res.json({ dimensionTres})
     } catch (error) {
         return res.status(500).json({
             mensaje: 'Error en findDimensionController',
+            error
+        })
+    }
+}
+
+const findAllDimensionSublineasByUserController = async (req, res) => {
+    try {
+        const id = req.params.id
+        const dimension = await dimensionSublineaByUser(id)
+        let dimensionTres = []
+        dimension.map((item) => {
+            dimensionTres.push({
+                ID: item.ID,
+                DIMROLE: item.LineItemName,
+                CREATED_AT: new Date(),
+                ID_USUARIO: item.ID_USUARIO,
+                ISACTIVE: true,
+                ID_DIMENSION_TRES: item.LineItemCode,
+            })
+        })
+        return res.json( dimension )
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: 'Error en findAllDimensionSublineasByUserController',
             error
         })
     }
@@ -595,6 +655,16 @@ const findAllRolesController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en updateRolesByUserController' })
+    }
+}
+
+const findAllSublineasController = async (req, res) => {
+    try {
+        const sublineas = await findAllSubLines()
+        return res.json(sublineas)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en findAllSublineasController' })
     }
 }
 
@@ -967,5 +1037,7 @@ module.exports = {
     getAlmacenesLibresController,
     validarTokenController,
     postSalesPersonsController,
-    patchSalesPersonsController
+    patchSalesPersonsController,
+    findAllSublineasController,
+    findAllDimensionSublineasByUserController
 }

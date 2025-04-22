@@ -497,6 +497,8 @@ const crearOrderCadenaController = async (req, res) => {
         // ordenBody.DocTotal = DocTotal
         const DocumentLinesToBody = []
         let idx = 0
+        // console.log({docLine})
+        // return res.json({docLine,detalle})
         docLine.map((item) => {
             const {
                 GrossTotal,
@@ -507,6 +509,7 @@ const crearOrderCadenaController = async (req, res) => {
                 WhsCode,
             } = item
             let data = detalle.data.find((item2) => item2.ItemCode == ItemCode)
+            console.log({ data })
             let baseLine = data.LineNum
             const qty = Quantity > data.Quantity ? Number(data.Quantity) : Number(Quantity)
             const prcMax = Number(GrossPrice)
@@ -537,12 +540,29 @@ const crearOrderCadenaController = async (req, res) => {
         console.log("body de post orden: =====================================");
         console.log(JSON.stringify(ordenBody, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        let totalOrden = 0
+        ordenBody.DocumentLines.map((item) => {
+            const { GrossTotal } = item
+
+            console.log({GrossTotal})
+            totalOrden += GrossTotal
+            console.log({totalOrden})
+        })
+
+        if (totalOrden !== ordenBody.DocTotal) {
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
+            return res.status(400).json({
+                mensaje: `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`,
+                detalle, DocumentLines, ordenBody
+            })
+        }
+        ordenBody.DocTotal = totalOrden
         // return res.json({ detalle, DocumentLines, ordenBody })
         const ordenResponse = await postOrden(ordenBody)
         console.log(ordenResponse)
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
-            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`,ordenBody })
         }
         console.log({ usuario })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
@@ -1255,6 +1275,31 @@ const pedidosPorVendedorFacturadosOrdenadoController = async (req, res) => {
     }
 }
 
+const patchQuotationsWhscodeController = async (req, res) => {
+    try {
+        const { lineNum, whsCode, id } = req.body
+        const DocumentLines = []
+
+        DocumentLines.push({ LineNum: lineNum, WarehouseCode: whsCode })
+        console.log({ id, DocumentLines })
+        const sapResponse = await patchQuotations(id, { DocumentLines })
+        console.log({ sapResponse })
+        if (sapResponse.status == 400) {
+            const { errorMessage } = sapResponse
+            return res.status(400).json({ mensaje: `Error del SAP. ${errorMessage.value || 'No definido'}` })
+        }
+
+        return res.json({ lineNum, whsCode, id, sapResponse })
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(400).json({
+            mensaje: 'Error en el controlador',
+            error
+        })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -1287,5 +1332,6 @@ module.exports = {
     pedidoOfertaInstitucionesController,
     listaNegraDescuentosController,
     crearOrderIfaController,
-    pedidosPorVendedorFacturadosOrdenadoController
+    pedidosPorVendedorFacturadosOrdenadoController,
+    patchQuotationsWhscodeController
 }

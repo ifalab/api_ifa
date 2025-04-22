@@ -776,6 +776,25 @@ const searchVendedores = async (cadena) => {
     }
 }
 
+const searchVendedorByIDSAP = async (idSap) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SlpCode" = ${idSap} `
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        return {
+            status: 400,
+            message: `Error en searchVendedores: ${error.message || ''}`
+        }
+    }
+}
+
 const listaPrecioSuc = async (sucCode) => {
     try {
         if (!connection) {
@@ -916,6 +935,20 @@ const lineas = async () => {
     } catch (err) {
         console.log({ err })
         throw new Error(`Error al procesar la solicitud lineas: ${err.message}`);
+    }
+}
+
+const sublineas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_SUBLINEAS`;
+        console.log({ query })
+        return await executeQuery(query);
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error al procesar la solicitud sublineas: ${err.message}`);
     }
 }
 
@@ -1181,7 +1214,7 @@ const vendedorPorSucCode = async (sucCode) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SucCode" = ${sucCode}`
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SucCode" = ${sucCode} AND "Rol" <> 'Despachador' and "SlpCode" in (SELECT ID_VENDEDOR_SAP FROM LAB_IFA_LAPP.LAPP_USUARIO)`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -1370,6 +1403,38 @@ agencyBySucCode = async (sucCode) => {
     }
 }
 
+const reporteConUbicacionCliente = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.LAPP}.LAPP_CLIENTES_UBICACION_BY_SUCODE(${sucCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reporteConUbicacionCliente: ${error.message || ''}`
+        }
+    }
+}
+
+const reporteSinUbicacionCliente = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.LAPP}.LAPP_CLIENTES_SIN_UBICACION_BY_SUCCODE(${sucCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reporteSinUbicacionCliente: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1453,4 +1518,8 @@ module.exports = {
     agencyBySucCode,
     oneCampaignById,
     rollBackCampaignById,
+    sublineas,
+    reporteConUbicacionCliente,
+    reporteSinUbicacionCliente,
+    searchVendedorByIDSAP,
 }

@@ -238,8 +238,8 @@ const findDimension = async (dimension) => {
         if (dimension == 1) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONUNO`
         // if (dimension == 2) query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES_TIPOS`
         if (dimension == 2) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONDOS`
-        if (dimension == 3) query = `SELECT "LineItemCode" as "ID", "LineItemName" as "DIMROLE" FROM ${process.env.PRD}.IFA_DM_LINEAS`
-        // if (dimension == 3) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONTRES`
+        // if (dimension == 3) query = `SELECT "LineItemCode" as "ID", "LineItemName" as "DIMROLE" FROM ${process.env.PRD}.IFA_DM_LINEAS`
+        if (dimension == 3) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONTRES`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -296,6 +296,23 @@ const addUsuarioDimensionTres = async (id_user, id_dimension) => {
     }
 }
 
+
+const addUsuarioDimensionSublinea = async (id_user, id_dimension) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('addUsuarioDimensionSublinea execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ADD_USUARIO_DIMENSION_SUBLINEA(${id_user},${id_dimension})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en addUsuarioDimensionSublinea')
+    }
+}
+
 const rollBackDimensionUnoByUser = async (id_user) => {
     try {
         if (!connection) {
@@ -344,6 +361,22 @@ const rollBackDimensionTresByUser = async (id_user) => {
     }
 }
 
+const rollBackDimensionSublineaByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('rollBackDimensionSublineaByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_ROLLBACK_DIMENSION_SUBLINEA_BY_USER(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en rollBackDimensionSublineaByUser')
+    }
+}
+
 const dimensionUnoByUser = async (id_user) => {
     try {
         if (!connection) {
@@ -389,6 +422,22 @@ const dimensionTresByUser = async (id_user) => {
     } catch (error) {
         console.log({ error })
         throw new Error('error en dimensionTresByUser')
+    }
+}
+
+const dimensionSublineaByUser = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('dimensionSublineaByUser execute')
+        const query = `call LAB_IFA_LAPP.LAPP_DIMENSION_SUBLINEA_X_USUARIO(${id_user})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en dimensionSublineaByUser')
     }
 }
 
@@ -509,6 +558,25 @@ const findAllRoles = async()=>{
     } catch (error) {
         console.log({ error })
         throw new Error('error en findAllRoles')
+    }
+}
+
+const findAllSubLines = async()=>{
+    try {
+        
+        if (!connection) {
+            await connectHANA();
+        }
+
+        console.log('findAllLines execute')
+        const query = `SELECT * FROM ${process.env.LAPP}.LAPP_dimension_sublinea;`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en findAllLines')
     }
 }
 
@@ -719,5 +787,9 @@ module.exports = {
     getRutasAsignadasPorDespachador,
     addRutasDespachadores,
     getDespachadores,
-    deleteRutasDespachadores
+    deleteRutasDespachadores,
+    addUsuarioDimensionSublinea,
+    dimensionSublineaByUser,
+    rollBackDimensionSublineaByUser,
+    findAllSubLines,
 }

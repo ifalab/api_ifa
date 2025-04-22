@@ -75,7 +75,9 @@ const {
     excelClientesMoraController,
     allCampaignController,
     allAgenciesController,
-    campaignByIdController
+    campaignByIdController,
+    sublineasController,
+    reporteUbicacionClienteController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -145,6 +147,7 @@ router.post('/cant-ventas-zona', [validarToken, validarCampos], cantidadVentasPo
 router.post('/cant-ventas-zona-mes-ant', [validarToken, validarCampos], cantidadVentasPorZonaMesAnteriosController)
 router.post('/clientes-by-vendedor', [validarToken, validarCampos], clienteByVendedorController)
 router.get('/lineas', [validarToken, validarCampos], lineasController)
+router.get('/sublineas', [validarToken, validarCampos], sublineasController)
 router.get('/reporte-ventas-cliente-lineas', [validarToken, validarCampos], reporteVentasClienteLineas)
 router.get('/cliente-by-cardcode', [validarToken, validarCampos], clienteByCardCodeController)
 
@@ -176,5 +179,7 @@ router.get('/facturas-mora-by-clientes', [validarToken, validarCampos], facturas
 router.get('/clientes-mora-by-sucode-slpcode', [validarToken, validarCampos], clientesMoraController)
 router.get('/vendedores-by-sucode', [validarToken, validarCampos], vendedorPorSucCodeController)
 router.get('/excel-clientes-mora', [validarToken, validarCampos], excelClientesMoraController)
+
+router.get('/reporte-ubicacion-cliente', [validarToken, validarCampos], reporteUbicacionClienteController)
 
 module.exports = router

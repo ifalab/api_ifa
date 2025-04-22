@@ -14,7 +14,10 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     stockDisponiblePorSucursal,
     clientesBySucCode, getClienteByCardCode,
     devolucionLayout, getDeudaDelCliente,
-    findCliente, getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo } = require("./hana.controller")
+    findCliente, getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo,
+    articuloDiccionario,
+    relacionArticulo,
+    articulos } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -25,7 +28,7 @@ const { notaDebitoCredito } = require("../../facturacion_module/service/apiFactu
 const path = require('path');
 const fs = require('fs');
 const { facturacionProsin } = require("../../facturacion_module/service/apiFacturacionProsin")
-const {getFacturasParaDevolucion, getDetalleFacturasParaDevolucion} = require("./sql_genesis.controller")
+const { getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("./sql_genesis.controller")
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -84,13 +87,6 @@ const postHabilitacionController = async (req, res) => {
         }
         if (formulario.inventario !== null) inventario = formulario.inventario
 
-        // console.log({ code })
-        // console.log({ concepto })
-        // console.log({ inventario })
-        // console.log({ warehouseCode })
-        // console.log({ id })
-        // return res.json({ id: userLocal.user.ID })
-
         if (formulario.almacen == null) {
             grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error, el inventario es obligatorio. ${formulario.almacen || 'No definido'}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'El almacen es obligatorio' })
@@ -105,10 +101,10 @@ const postHabilitacionController = async (req, res) => {
         }
 
         if (userLocal.user) {
-            if (userLocal.user.ID) {
-                id = userLocal.user.ID
+            if (userLocal.user.ID_SAP) {
+                id = userLocal.user.ID_SAP
             } else {
-                return res.status(400).json({ mensaje: 'El usuario es obligatorio' })
+                return res.status(400).json({ mensaje: 'El usuario es obligatorio, no tiene ID SAP' })
             }
         } else {
             return res.status(400).json({ mensaje: 'El usuario es obligatorio' })
@@ -161,7 +157,7 @@ const postHabilitacionController = async (req, res) => {
                 "WarehouseCode": `${warehouseCode}`,
                 "Quantity": `${item.cantidadIngreso}`,
                 "U_DIM_ARTICULO": `${item.articuloDict}`,
-                "AccountCode": "6110401",
+                "AccountCode": "1130201",
                 "BatchNumbers": [
                     {
                         "BatchNumber": `${item.lote}`,
@@ -373,6 +369,73 @@ const stockDisponibleController = async (req, res) => {
             return formattedItem;
         });
 
+        formattedStock.map((item) => {
+            const {
+                santaCruz,
+                sczTransito,
+                montero,
+                mtroTransito,
+                laPaz,
+                lpzTransito,
+                elAlto,
+                altoTransito,
+                cochabamba,
+                cbbaTransito,
+                quillacollo,
+                quillTransito,
+                tropico,
+                tropTransito,
+                tarija,
+                tjaTransito,
+                sucre,
+                scrTransito,
+                trinidad,
+                tddTransito,
+                amazonia,
+                amazTransito,
+                oruro,
+                oruTransito,
+                potosi,
+                ptsTransito,
+                pando,
+                panTransito,
+                plDespacho,
+                plTransito,
+                productoTerminado,
+            } = item
+
+            item.total = Number(santaCruz)
+                + Number(sczTransito)
+                + Number(montero)
+                + Number(laPaz)
+                + Number(mtroTransito)
+                + Number(lpzTransito)
+                + Number(elAlto)
+                + Number(altoTransito)
+                + Number(cochabamba)
+                + Number(cbbaTransito)
+                + Number(quillacollo)
+                + Number(quillTransito)
+                + Number(tropico)
+                + Number(tropTransito)
+                + Number(tarija)
+                + Number(tjaTransito)
+                + Number(sucre)
+                + Number(scrTransito)
+                + Number(trinidad)
+                + Number(tddTransito)
+                + Number(amazonia)
+                + Number(amazTransito)
+                + Number(oruro)
+                + Number(oruTransito)
+                + Number(potosi)
+                + Number(ptsTransito)
+                + Number(pando)
+                + Number(panTransito)
+                + Number(plDespacho)
+                + Number(plTransito)
+                + Number(productoTerminado)
+        })
         return res.json({ stock: formattedStock });
     } catch (error) {
         console.log({ error })
@@ -522,7 +585,7 @@ const facturasClienteLoteItemCodeController = async (req, res) => {
         console.log({ response })
         const responseGenesis = await getFacturasParaDevolucion(cardCode, itemCode, batchNum)
         console.log({ responseGenesis })
-        if(responseGenesis.message){
+        if (responseGenesis.message) {
             return res.json(response)
         }
         responseGenesis.map(item => {
@@ -542,25 +605,30 @@ const facturasClienteLoteItemCodeController = async (req, res) => {
 
 const detalleFacturasGenesisController = async (req, res) => {
     try {
-        const {nro_cuentas} = req.body
+        const { nro_cuentas } = req.body
         let responses = {}
-        for(const nro_cuenta of nro_cuentas){
+        for (const nro_cuenta of nro_cuentas) {
             const response = await getDetalleFacturasParaDevolucion(nro_cuenta)
-            if(response.message){
-                console.log({response: response.message})
-                return res.json(responses)
+            // return res.json(response)
+            if (response.message) {
+                console.log({ response: response.message })
+                // return res.json(responses)
+            } else {
+                response.map(item => {
+                    item.DiscPrcnt = item.Porcentaje_Descuento
+                    item.ItemCode = item.Articulo
+                    item.Dscription = item.NombreArticulo
+                    item.Articulo = undefined
+                    item.NombreArticulo = undefined
+                    item.Quantity = item.Cantidad
+                    item.UnitPrice = item.Precio
+                    item.DocNum = item.Nro_Cuenta
+                    item.Cuf = String(item.cuf).trim()
+                    item.cuf = undefined
+                    item.NumPerMsr = item.NumInSale
+                })
+                responses[nro_cuenta] = response
             }
-            response.map(item => {
-                item.DiscPrcnt = item.Porcentaje_Descuento
-                item.ItemCode = item.Articulo
-                item.Dscription = item.NombreArticulo
-                item.Quantity = item.Cantidad
-                item.UnitPrice = item.Precio
-                item.DocNum = item.Nro_Cuenta
-                item.Cuf = item.cuf
-                item.cuf = undefined
-            })
-            responses[nro_cuenta] = response
         }
         return res.json(responses)
     } catch (error) {
@@ -572,7 +640,26 @@ const detalleFacturasGenesisController = async (req, res) => {
 const detalleVentasController = async (req, res) => {
     try {
         const id = req.query.id
-        const response = await detalleVentas(id)
+        let response = await detalleVentas(id)
+        if (response.length == 0) {
+            response = await getDetalleFacturasParaDevolucion(id)
+            // return res.json(response)
+            if (response.message) {
+                console.log({ response: response.message })
+                // return res.json(responses)
+            } else {
+                response.map(item => {
+                    item.DiscPrcnt = item.Porcentaje_Descuento
+                    item.ItemCode = item.Articulo
+                    item.Dscription = item.NombreArticulo
+                    item.Quantity = item.Cantidad
+                    item.UnitPrice = item.Precio
+                    item.DocNum = item.Nro_Cuenta
+                    item.Cuf = String(item.cuf).trim()
+                    item.cuf = undefined
+                })
+            }
+        }
         // console.log({ response })
         let cabecera = []
         let detalle = []
@@ -585,6 +672,8 @@ const detalleVentasController = async (req, res) => {
         })
         detalle.sort((a, b) => a.LineNum - b.LineNum);
         const venta = { ...cabecera[0], detalle }
+
+
         return res.json(venta)
     } catch (error) {
         console.log({ error })
@@ -1120,7 +1209,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         if (!docEntry || docEntry <= 0) {
             return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
         }
-        
+
         const fechaFormater = new Date(DocDate)
         const year = fechaFormater.getUTCFullYear();
         const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
@@ -1142,7 +1231,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error al entregaDetallerFactura: ${entregas.message || ""}, cuf: ${Cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/devolucion-completa", process.env.PRD)
             return res.status(400).json({ mensaje: `Esta factura ${BaseEntry}, no tiene entregas`, entregas })
         }
-        if(!idReturnHecho || idReturnHecho==''){    
+        if (!idReturnHecho || idReturnHecho == '') {
             //*-------------------------------------------------- OBTENER ENTREGA DETALLE DEV
             const batchEntrega = await obtenerEntregaDetalleDevolucion(docEntry);
             if (batchEntrega.length == 0) {
@@ -1229,7 +1318,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             //*--------------------------------------------------- POST RETURN 
             const responceReturn = await postReturn(finalDataEntrega)
             // return res.json({responceReturn, finalDataEntrega, newDocumentLines})
-        
+
             if (responceReturn.status > 300) {
                 console.log({ errorMessage: responceReturn.errorMessage })
                 let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
@@ -1245,12 +1334,12 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             idReturn = responceReturn.orderNumber
             console.log({ idReturn })
 
-        }else{
-            idReturn=idReturnHecho
+        } else {
+            idReturn = idReturnHecho
         }
         //*------------------------------------------------ DETALLE TO PROSIN
         // return res.json({idReturn})
-        
+
         const entregasFromProsin = await entregaDetalleToProsin(idReturn)
         console.log({ entregasFromProsin })
         if (!entregasFromProsin || entregasFromProsin.length == 0) {
@@ -1346,16 +1435,16 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //     "data": {
         //         "estado": 500,
         //         "datos": {
-                //     "cuf": "4661A21FEE5F87E3008F04279BE82C53D4967D314157731EBCE091F74",
-                //     "factura": 162
-                // },
+        //     "cuf": "4661A21FEE5F87E3008F04279BE82C53D4967D314157731EBCE091F74",
+        //     "factura": 162
+        // },
         //         "fecha": "28/02/2025 17:09:48",
         //         "mensaje": "PA.alta_nota_credito_debito_sfl.§PA.leer_factura_sfl.§LA FACTURA NO EXISTE. MATRIZ=1 SUCURSAL=0 PUNTO=0 CUF=4661A21FEE5F743C66BF05E76615094F54F6FA54C614B9CA572971F74 ERROR=0 ROWCOUNT=0"
         //     },
         //     "query": "https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito"
         // }
         //*------------------------------------------------------------------------ RESPONSE PROSIN
-        
+
         console.log({ datosProsin: responseProsin.data.datos })
         cufndc = responseProsin.data.datos.cuf
         const facturandc = responseProsin.data.datos.factura
@@ -1386,7 +1475,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         let numDev = 0
 
         let link = `https://siat.impuestos.gob.bo/consulta/QR?nit=1028625022&cuf=${cufndc}&numero=${facturandc}&t=1`
-        console.log({link})
+        console.log({ link })
         for (const lineDevolucion of devolucionDetalle) {
             const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
                 CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
@@ -1398,14 +1487,14 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             } = lineDevolucion
             if (cabeceraCN.length == 0) {
                 const deudaCliente = await getDeudaDelCliente(CardCodeDev)
-                console.log({deudaCliente})
+                console.log({ deudaCliente })
                 let ControlAccount = '2110401'
-                if(deudaCliente.length>0){
-                    if(!(deudaCliente[0].Balance==0)){
+                if (deudaCliente.length > 0) {
+                    if (!(deudaCliente[0].Balance == 0)) {
                         ControlAccount = '1120101'
                     }
                 }
-                
+
                 cabeceraCN.push({
                     DocDate: responseProsin.data.fecha,
                     DocDueDate: DocDueDateDev,
@@ -2288,10 +2377,10 @@ const getAllCreditNotesController = async (req, res) => {
 }
 
 const devolucionMalEstadoController = async (req, res) => {
-    let idReturn
+    let idEntrega
     try {
         const { Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
-        const idReturnBody = req.body.idReturn
+        const idEntregaBody = req.body.idEntrega
         console.log({ Devoluciones, AlmacenIngreso, CardCode, id_sap })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         let numRet = 0
@@ -2309,7 +2398,10 @@ const devolucionMalEstadoController = async (req, res) => {
                 ItemCode: ItemCode
             })
 
-            const newLine = {
+            const newLineReturn = {
+                BaseEntry: 0,
+                BaseType: 15,
+                BaseLine: numRet,
                 ItemCode,
                 WarehouseCode: AlmacenIngreso,
                 Quantity: Cantidad,
@@ -2320,10 +2412,10 @@ const devolucionMalEstadoController = async (req, res) => {
                 GrossPrice: Precio,
                 BatchNumbers: batchNumbers
             };
-            console.log('------newLine-----')
-            console.log({ newLine })
+            console.log('------newLineReturn-----')
+            console.log({ newLineReturn })
 
-            newDocumentLinesReturn.push(newLine)
+            newDocumentLinesReturn.push(newLineReturn)
 
             let batchNumbersEntrega = []
             const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
@@ -2331,7 +2423,7 @@ const devolucionMalEstadoController = async (req, res) => {
             if (batchData.message) {
                 endTime = Date.now();
                 // grabarLog(user.USERCODE, user.USERNAME, "Dovolucion Mal Estado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-mal-estado", process.env.PRD)
-                return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
+                return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, idEntrega })
             }
             if (batchData.length > 0) {
                 let new_quantity = 0
@@ -2345,14 +2437,14 @@ const devolucionMalEstadoController = async (req, res) => {
                     Quantity: Number(batch.Quantity).toFixed(6),
                     ItemCode: batch.ItemCode
                 }))
-            }else{
-                return res.status(400).json({ mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}` })
+            } else {
+                return res.status(400).json({
+                    mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
+                    idEntrega
+                })
             }
-            
+
             const newLineEntrega = {
-                BaseEntry: 0,
-                BaseType: 16,
-                BaseLine: numRet,
                 ItemCode,
                 WarehouseCode: AlmacenSalida,
                 Quantity: Cantidad,
@@ -2367,94 +2459,95 @@ const devolucionMalEstadoController = async (req, res) => {
             newDocumentLinesEntrega.push(newLineEntrega)
             numRet += 1
         }
+
         let bodyReturn
         let responceReturn
-        if(!idReturnBody){ //Si no hay id de devolucion, entonces se crea una nueva devolucion
-            bodyReturn = {
-                Series: 352,
+        let responseEntrega
+        let bodyEntrega
+        if (!idEntregaBody) { //Si no hay id de entrega, entonces se crea una nueva entrega
+            bodyEntrega = {
+                Series: 353,
                 CardCode: CardCode,
                 U_UserCode: id_sap,
-                JournalMemo:Comentario,
+                JournalMemo: Comentario,
                 Comments: Comentario,
-                DocumentLines: newDocumentLinesReturn,
+                DocumentLines: newDocumentLinesEntrega,
             }
-            console.log(JSON.stringify({ bodyReturn }, null, 2))
-            // return res.status(400).json()
-            responceReturn = await postReturn(bodyReturn)
-            console.log({ responceReturn })
+            console.log(JSON.stringify({ bodyEntrega }, null, 2))
+            responseEntrega = await postEntrega(bodyEntrega)
 
-            if (responceReturn.status > 300) {
-                console.log({ errorMessage: responceReturn.errorMessage })
-                let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
-                if (mensaje.value)
-                    mensaje = mensaje.value
-                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-mal-estado", process.env.PRD)
-                return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn })
+            if (responseEntrega.lang) {
+                const outputDir = path.join(__dirname, 'outputs');
+                if (!fs.existsSync(outputDir)) {
+                    fs.mkdirSync(outputDir);
+                }
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+                const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
+                fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
+                console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
+                return res.status(400).json({
+                    mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
+                    idEntrega,
+                    bodyReturn,
+                    responseEntrega,
+                    bodyEntrega
+                })
             }
-            // return res.json({
-            //     idReturn: responceReturn.orderNumber,
-            //     bodyReturn
-            // })
-            idReturn = responceReturn.orderNumber
-        }else{//Existe id de devolucion
-            idReturn = idReturnBody
+
+            idEntrega = responseEntrega.deliveryN44umber
+
+        } else {//Existe id de entrega
+            idEntrega = idEntregaBody
         }
-        console.log({ idReturn })
-        newDocumentLinesEntrega.map((item) => {
-            item.BaseEntry = idReturn
+
+        console.log({ idEntrega })
+        newDocumentLinesReturn.map((item) => {
+            item.BaseEntry = idEntrega
         })
 
-        const bodyEntrega = {
-            Series: 353,
+        bodyReturn = {
+            Series: 352,
             CardCode: CardCode,
             U_UserCode: id_sap,
             JournalMemo: Comentario,
             Comments: Comentario,
-            DocumentLines: newDocumentLinesEntrega,
+            DocumentLines: newDocumentLinesReturn,
         }
-        console.log(JSON.stringify({ bodyEntrega }, null, 2))
-        const responseEntrega = await postEntrega(bodyEntrega)
+        console.log(JSON.stringify({ bodyReturn }, null, 2))
+        responceReturn = await postReturn(bodyReturn)
+        console.log({ responceReturn })
 
-        if (responseEntrega.lang) {
-            const outputDir = path.join(__dirname, 'outputs');
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir);
-            }
-            const now = new Date();
-            const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-            // Generar el nombre del archivo con el timestamp
-            const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
-            fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
-            console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
-            endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
-            return res.status(400).json({
-                mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
-                idReturn,
-                bodyReturn,
-                responseEntrega,
-                bodyEntrega
-            })
+        if (responceReturn.status > 300) {
+            console.log({ errorMessage: responceReturn.errorMessage })
+            let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
+            if (typeof mensaje != 'string' && mensaje.value)
+                mensaje = mensaje.value
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-mal-estado", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn, idEntrega, bodyEntrega })
         }
 
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Exito en la devolucion`, ``, "inventario/dev-mal-estado", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Exito en el cambio por Mal Estado/Vencimiento`, ``, "inventario/dev-mal-estado", process.env.PRD)
 
         return res.json({
-            responceReturn,
-            idReturn,
+            idEntrega,
+            idReturn: responceReturn.orderNumber,
+            bodyEntrega,
             bodyReturn,
             responseEntrega,
-            idEntrega: responseEntrega.deliveryN44umber,
-            bodyEntrega
+            responceReturn,
         })
     } catch (error) {
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ error })
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Mal Estado", `Error en el devolucionMalEstadoController: ${error.message || ''}`, `catch del controller devolucionMalEstadoController`, "inventario/dev-mal-estado", process.env.PRD)
-        return res.status(500).json({ 
+        return res.status(500).json({
             mensaje: `Error en en controlador devolucionMalEstadoController: ${error.message}`,
-            idReturn })
+            idEntrega
+        })
     }
 }
 
@@ -2550,14 +2643,14 @@ const devolucionPorValoradoController = async (req, res) => {
                         Quantity: Number(batch.Quantity).toFixed(6),
                         ItemCode: batch.ItemCode
                     }))
-                }else{
+                } else {
                     endTime = Date.now();
                     const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenIngreso}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
                     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
-                    
+
                     return res.status(400).json({
                         mensaje,
-                        allResponseReturn, 
+                        allResponseReturn,
                         allResponseCreditNote,
                         allResponseEntrega,
                         allResponseInvoice,
@@ -2622,7 +2715,7 @@ const devolucionPorValoradoController = async (req, res) => {
                         Quantity: Number(batch.Quantity).toFixed(6),
                         ItemCode: batch.ItemCode
                     }))
-                }else{
+                } else {
 
                     const outputDir = path.join(__dirname, 'outputs');
                     if (!fs.existsSync(outputDir)) {
@@ -2639,10 +2732,10 @@ const devolucionPorValoradoController = async (req, res) => {
                     endTime = Date.now();
                     const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
                     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
-                    
+
                     return res.status(400).json({
                         mensaje,
-                        allResponseReturn, 
+                        allResponseReturn,
                         allResponseCreditNote,
                         allResponseEntrega,
                         allResponseInvoice,
@@ -2701,7 +2794,7 @@ const devolucionPorValoradoController = async (req, res) => {
             }
             console.log('body enterga -----------------------------------------------')
             console.log(JSON.stringify({ bodyEntrega }, null, 2))
-            allBodies[DocEntry]= {bodyEntrega}
+            allBodies[DocEntry] = { bodyEntrega }
 
             //? ----------------------------------------------------------------      entrega .
             const responseEntrega = await postEntrega(bodyEntrega)
@@ -2762,7 +2855,7 @@ const devolucionPorValoradoController = async (req, res) => {
                 const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
                 fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
                 console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-                
+
                 return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura' })
             }
             const DocumentLinesHana = [];
@@ -2806,10 +2899,10 @@ const devolucionPorValoradoController = async (req, res) => {
 
             console.log('body invoice -----------------------------------------------')
             console.log(JSON.stringify({ responseHanaB }, null, 2))
-            allBodies[DocEntry]= {bodyEntrega, bodyInvoice: responseHanaB}
+            allBodies[DocEntry] = { bodyEntrega, bodyInvoice: responseHanaB }
             const responseInvoice = await postInvoice(responseHanaB)
             allResponseInvoice.push(responseInvoice)
-            if(responseInvoice.status == 400){
+            if (responseInvoice.status == 400) {
 
                 const outputDir = path.join(__dirname, 'outputs');
                 if (!fs.existsSync(outputDir)) {
@@ -2823,10 +2916,12 @@ const devolucionPorValoradoController = async (req, res) => {
                 fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
                 console.log(`Objeto allBodies guardado en ${fileNameJson}`);
 
-                return res.status(400).json({mensaje:`Error en postInvoice: ${responseInvoice.errorMessage.value || 'No definido'}. Factura Nro: ${DocEntry}`, responseHanaB, bodyEntrega, bodyReturn,
-                 allResponseReturn, allResponseCreditNote, allResponseEntrega, allResponseInvoice,
-                 allResponseReconciliacion,
-                 facturasCompletadas})
+                return res.status(400).json({
+                    mensaje: `Error en postInvoice: ${responseInvoice.errorMessage.value || 'No definido'}. Factura Nro: ${DocEntry}`, responseHanaB, bodyEntrega, bodyReturn,
+                    allResponseReturn, allResponseCreditNote, allResponseEntrega, allResponseInvoice,
+                    allResponseReconciliacion,
+                    facturasCompletadas
+                })
             }
 
             // return res.json({bodyInvoice, responseHanaB, idInvoice: responseInvoice.idInvoice, bodyEntrega, bodyReturn})
@@ -2835,8 +2930,8 @@ const devolucionPorValoradoController = async (req, res) => {
             console.log('body return -----------------------------------------------')
             bodyReturn.Series = 352
             console.log(JSON.stringify({ bodyReturn }, null, 2))
-            allBodies[DocEntry]= {bodyEntrega, bodyInvoice: responseHanaB, bodyReturn}
-            
+            allBodies[DocEntry] = { bodyEntrega, bodyInvoice: responseHanaB, bodyReturn }
+
             const responceReturn = await postReturn(bodyReturn)
             console.log({ responceReturn })
 
@@ -2936,7 +3031,7 @@ const devolucionPorValoradoController = async (req, res) => {
                 DocumentLines: DocumentLinesCN,
                 DocumentAdditionalExpenses
             }
-            allBodies[DocEntry]= {bodyEntrega, bodyInvoice: responseHanaB, bodyReturn, bodyCreditNotes}
+            allBodies[DocEntry] = { bodyEntrega, bodyInvoice: responseHanaB, bodyReturn, bodyCreditNotes }
 
             const responseCreditNote = await postCreditNotes(bodyCreditNotes)
             allResponseCreditNote.push(responseCreditNote)
@@ -3000,18 +3095,18 @@ const devolucionPorValoradoController = async (req, res) => {
                     Selected: "tYES",
                 }
             ]
-            
-            let bodyReconciliacion={
+
+            let bodyReconciliacion = {
                 ReconDate: `${year}-${month}-${day}`,
                 CardOrAccount: "coaCard",
                 // ReconType: "rtManual",
                 // Total: totalFactura,
                 InternalReconciliationOpenTransRows,
             }
-            console.log({bodyReconciliacion})
-            allBodies[DocEntry]= {bodyEntrega, bodyInvoice: responseHanaB, bodyReturn, bodyCreditNotes, bodyReconciliacion}
-            const responseReconciliacion =  await postReconciliacion(bodyReconciliacion)
-            console.log({responseReconciliacion})
+            console.log({ bodyReconciliacion })
+            allBodies[DocEntry] = { bodyEntrega, bodyInvoice: responseHanaB, bodyReturn, bodyCreditNotes, bodyReconciliacion }
+            const responseReconciliacion = await postReconciliacion(bodyReconciliacion)
+            console.log({ responseReconciliacion })
             allResponseReconciliacion.push(responseReconciliacion)
 
             if (responseReconciliacion.status == 400) {
@@ -3123,11 +3218,11 @@ const detalleFacturasController = async (req, res) => {
 const imprimibleDevolucionController = async (req, res) => {
     try {
         const { id, cambio } = req.body
-        console.log({id, cambio})
+        console.log({ id, cambio })
         const user = req.usuarioAutorizado
         const layout = await devolucionLayout(id)
         console.log({ layout })
-        
+
         if (layout.length == 0) {
             // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota entrega", `Error de SAP al crear la nota de entrega`, response.query, "facturacion/nota-entrega", process.env.PRD)
             return res.status(400).json({ mensaje: `Error de SAP, no hay devoluCion con el id: ${id}` });
@@ -3273,8 +3368,8 @@ const imprimibleSalidaController = async (req, res) => {
         } = layout[0];
         let totalCant = 0
         layout.map((item) => {
-            const {Quantity, ...restData } = item;
-            detailsList.push({Quantity, ...restData });
+            const { Quantity, ...restData } = item;
+            detailsList.push({ Quantity, ...restData });
             totalCant += +Quantity
         });
         const docDueDate = DocDueDate;
@@ -3362,30 +3457,31 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
     let responseEntrega
     let responseInvoice
     let responseReconciliacion
-    let devolucionFinished=false
-    let entregaFinished=false
+    let devolucionFinished = false
+    let entregaFinished = false
     let allBodies = {}
     const startTime = Date.now();
     try {
-        const { facturas, id_sap, CardCode, AlmacenIngreso, 
+        const { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
             // AlmacenSalida, nuevosArticulos 
         } = req.body
-        console.log(JSON.stringify({ facturas, id_sap, CardCode, AlmacenIngreso
+        console.log(JSON.stringify({
+            facturas, id_sap, CardCode, AlmacenIngreso
             // , AlmacenSalida, nuevosArticulos 
         }, null, 2))
-       
+
         // return res.json({ facturas, id_sap, AlmacenIngreso, AlmacenSalida, CardCode, nuevosArticulos })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         let totalFacturas = 0
-        let totalesFactura=[]
+        let totalesFactura = []
 
         const deudaCliente = await getDeudaDelCliente(CardCode)
-        console.log({deudaCliente})
+        console.log({ deudaCliente })
         let ControlAccount = '2110401'
-        if(deudaCliente.length>0 && (deudaCliente[0].Balance>0)){
+        if (deudaCliente.length > 0 && (deudaCliente[0].Balance > 0)) {
             ControlAccount = '1120101'
         }
-        
+
         for (const factura of facturas) {
             const {
                 Cuf,
@@ -3406,51 +3502,59 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                     UnitPrice,
                     Total,
                     U_DESCLINEA,
+                    Lote,
+                    NumPerMsr
                 } = devolucion
 
                 totalFactura += +Total
 
                 let batchNumbers = []
-                const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenIngreso, Cantidad);
-                console.log({ batch: batchData })
-                if (batchData.message) {
-                    endTime = Date.now();
-                    // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)
-                    return res.status(400).json({
-                        mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`,
-                        allResponseReturn, allResponseCreditNote,
-                        facturasCompletadas,
-                        devolucionFinished, 
-                        // entregaFinished
-                    })
-                }
-                if (batchData.length > 0) {
-                    let new_quantity = 0
-                    batchData.map((item) => {
-                        new_quantity += Number(item.Quantity).toFixed(6)
-                    })
+                // const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenIngreso, Cantidad);
+                // console.log({ batch: batchData })
+                // if (batchData.message) {
+                //     endTime = Date.now();
+                //     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)
+                //     return res.status(400).json({
+                //         mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`,
+                //         allResponseReturn, allResponseCreditNote,
+                //         facturasCompletadas,
+                //         devolucionFinished, 
+                //         // entregaFinished
+                //     })
+                // }
+                // if (batchData.length > 0) {
+                //     let new_quantity = 0
+                //     batchData.map((item) => {
+                //         new_quantity += Number(item.Quantity).toFixed(6)
+                //     })
 
-                    batchNumbers = batchData.map(batch => ({
-                        BaseLineNumber: numRet,
-                        BatchNumber: batch.BatchNum,
-                        Quantity: Number(batch.Quantity).toFixed(6),
-                        ItemCode: batch.ItemCode
-                    }))
-                }else{
-                    endTime = Date.now();
-                    const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenIngreso}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
-                    // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
-                    
-                    return res.status(400).json({
-                        mensaje,
-                        allResponseReturn, 
-                        allResponseCreditNote,
-                        facturasCompletadas,
-                        devolucionFinished, 
-                        // entregaFinished
-                    })
-                }
+                //     batchNumbers = batchData.map(batch => ({
+                //         BaseLineNumber: numRet,
+                //         BatchNumber: batch.BatchNum,
+                //         Quantity: Number(batch.Quantity).toFixed(6),
+                //         ItemCode: batch.ItemCode
+                //     }))
+                // }else{
+                //     endTime = Date.now();
+                //     const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenIngreso}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
+                //     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
 
+                //     return res.status(400).json({
+                //         mensaje,
+                //         allResponseReturn, 
+                //         allResponseCreditNote,
+                //         facturasCompletadas,
+                //         devolucionFinished, 
+                //         // entregaFinished
+                //     })
+                // }
+
+                batchNumbers.push({
+                    BaseLineNumber: numRet,
+                    BatchNumber: Lote,
+                    Quantity: Cantidad * NumPerMsr,
+                    ItemCode: ItemCode
+                })
                 const newLine = {
                     ItemCode,
                     WarehouseCode: AlmacenIngreso,
@@ -3476,16 +3580,18 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 CardCode: CardCode,
                 U_UserCode: id_sap,
                 U_B_cufd: Cuf,
+                JournalMemo: Comentario,
+                Comments: Comentario,
                 DocumentLines: newDocumentLinesReturn,
             }
-            
+
 
             //? ---------------------------------------------------------------- return.
             console.log('body return -----------------------------------------------')
             bodyReturn.Series = 352
             console.log(JSON.stringify({ bodyReturn }, null, 2))
-            allBodies[DocEntry]= {bodyReturn}
-            
+            allBodies[DocEntry] = { bodyReturn }
+
             const responceReturn = await postReturn(bodyReturn)
             console.log({ responceReturn })
 
@@ -3515,7 +3621,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                     allResponseReturn,
                     allResponseCreditNote,
                     facturasCompletadas,
-                    devolucionFinished, 
+                    devolucionFinished,
                     // entregaFinished
                 })
             }
@@ -3537,7 +3643,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                     ...restDev
                 } = lineDevolucion
                 if (cabeceraCN.length == 0) {
-                    
+
                     cabeceraCN.push({
                         DocDate: DocDateDev,
                         DocDueDate: DocDueDateDev,
@@ -3585,7 +3691,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 DocumentLines: DocumentLinesCN,
                 DocumentAdditionalExpenses
             }
-            allBodies[DocEntry]= {bodyReturn, bodyCreditNotes}
+            allBodies[DocEntry] = { bodyReturn, bodyCreditNotes }
 
             const responseCreditNote = await postCreditNotes(bodyCreditNotes)
             allResponseCreditNote.push(responseCreditNote)
@@ -3619,15 +3725,15 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                     allResponseCreditNote,
                     allResponseReturn,
                     facturasCompletadas,
-                    devolucionFinished, 
+                    devolucionFinished,
                     // entregaFinished
                 })
             }
-            totalFacturas+= +totalFactura
+            totalFacturas += +totalFactura
             totalesFactura.push(totalFactura)
             facturasCompletadas.push(DocEntry)
         }
-        devolucionFinished=true
+        devolucionFinished = true
 
         // const bodyEntrega = {
         //     Series: 353,
@@ -3665,7 +3771,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         //         devolucionFinished, entregaFinished
         //     })
         // }
-        
+
         // entregaFinished=true
 
         //---------------------------- INVOICE
@@ -3696,7 +3802,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         //     const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
         //     fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
         //     console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-            
+
         //     return res.status(400).json({ mensaje: `Error al procesar la solicitud: entregaDetallerFactura`, message:responseHana.message, bodyEntrega, responseEntrega,
         //         allResponseReturn, allResponseCreditNote, 
         //         facturasCompletadas,
@@ -3812,7 +3918,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         //     InternalReconciliationOpenTransRows.push(internalRecLine)
         //     numInternalRec +=1
         // }
-        
+
         // let bodyReconciliacion={
         //     ReconDate: `${year}-${month}-${day}`,
         //     CardOrAccount: "coaCard",
@@ -3916,11 +4022,11 @@ const entregaCambioValoradoController = async (req, res) => {
     let responseEntrega
     let bodyEntrega
     try {
-        const {nuevosArticulos, AlmacenSalida, CardCode, id_sap}=req.body
+        const { nuevosArticulos, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
 
         ///////////////////////// Entregas
         let newDocumentLinesEntrega = []
-        let numLines =0
+        let numLines = 0
         for (const nuevoArticulo of nuevosArticulos) {
             const {
                 ItemCode,
@@ -3929,7 +4035,7 @@ const entregaCambioValoradoController = async (req, res) => {
                 Total,
                 U_DESCLINEA,
             } = nuevoArticulo
-            
+
             let batchNumbersentrega = []
             const batchDataEntrega = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
             console.log({ batchDataEntrega })
@@ -3953,14 +4059,14 @@ const entregaCambioValoradoController = async (req, res) => {
                     Quantity: Number(batch.Quantity).toFixed(6),
                     ItemCode: batch.ItemCode
                 }))
-            }else{
+            } else {
 
                 endTime = Date.now();
                 const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}.`
                 // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
-                
+
                 return res.status(400).json({
-                    mensaje,newDocumentLinesEntrega, entregaFinished
+                    mensaje, newDocumentLinesEntrega, entregaFinished
                 })
             }
 
@@ -3978,17 +4084,19 @@ const entregaCambioValoradoController = async (req, res) => {
             };
             console.log({ newLineEntrega })
             newDocumentLinesEntrega.push(newLineEntrega)
-            numLines +=1
+            numLines += 1
         }
         bodyEntrega = {
             Series: 353,
             CardCode: CardCode,
             U_UserCode: id_sap,
+            JournalMemo: Comentario,
+            Comments: Comentario,
             DocumentLines: newDocumentLinesEntrega,
         }
         // console.log('body enterga -----------------------------------------------')
         console.log(JSON.stringify({ bodyEntrega }, null, 2))
-        const allBodies= {bodyEntrega}
+        const allBodies = { bodyEntrega }
 
         //? ----------------------------------------------------------------      entrega .
         responseEntrega = await postEntrega(bodyEntrega)
@@ -4012,8 +4120,8 @@ const entregaCambioValoradoController = async (req, res) => {
                 bodyEntrega, entregaFinished
             })
         }
-        
-        entregaFinished=true
+
+        entregaFinished = true
 
         return res.json({
             responseEntrega, entregaFinished,
@@ -4035,19 +4143,19 @@ const entregaCambioValoradoController = async (req, res) => {
 const facturacionCambioValoradoController = async (req, res) => {
     let cuf
     try {
-        const { CardCode, totalFacturas, allResponseCreditNote, idEntrega, totalesFactura} = req.body
+        const { CardCode, totalFacturas, allResponseCreditNote, idEntrega, totalesFactura } = req.body
         const deliveryData = idEntrega
         const deliveryBody = await obtenerEntregaDetalle(deliveryData)
         // return res.json({deliveryBody})
         let totalDeLaEntrega = 0
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        
+
         const detalle = [];
         const cabezera = [];
         for (const line of deliveryBody) {
             const { producto, descripcion, cantidad, precioUnitario, montoDescuento,
-                 subTotal, numeroImei, numeroSerie, complemento, ...result
-                 } = line
+                subTotal, numeroImei, numeroSerie, complemento, ...result
+            } = line
             if (!cabezera.length) {
                 cabezera.push({ ...result, complemento: complemento || "" })
             }
@@ -4086,7 +4194,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             endTime = Date.now()
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
         }
-        let invoiceResponse 
+        let invoiceResponse
         let responseHanaB
         //? si existe el cuf:
         if (responseGenesis.length != 0) {
@@ -4112,18 +4220,20 @@ const facturacionCambioValoradoController = async (req, res) => {
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
                 endTime = Date.now()
-                return res.status(400).json({ 
+                return res.status(400).json({
                     mensaje: `Error al procesar la solicitud: patchEntrega ${responsePatchEntrega.errorMessage.value}`,
-                cuf })
+                    cuf
+                })
             }
             //TODO ------------------------------------------------------------ ENTREGA DETALLER TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, formater)
             console.log({ responseHana })
             if (responseHana.message) {
                 endTime = Date.now()
-                return res.status(400).json({ mensaje: 'Error al procesar la solicitud: entregaDetallerFactura',
+                return res.status(400).json({
+                    mensaje: 'Error al procesar la solicitud: entregaDetallerFactura',
                     cuf
-                 })
+                })
             }
             const DocumentLinesHana = [];
             let cabezeraHana = [];
@@ -4169,9 +4279,10 @@ const facturacionCambioValoradoController = async (req, res) => {
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
                 endTime = Date.now()
-                return res.status(400).json({ 
+                return res.status(400).json({
                     mensaje: `Error del SAP en el PostInvoice: ${invoiceResponse.errorMessage.value || ''}`,
-                cuf })
+                    cuf
+                })
             }
             const response = {
                 status: invoiceResponse.status || {},
@@ -4200,9 +4311,10 @@ const facturacionCambioValoradoController = async (req, res) => {
             if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion != 1 && dataToProsin.tipo_identificacion != 5)) {
                 endTime = Date.now()
-                return res.status(400).json({ 
-                    mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, 
-                    dataToProsin, bodyFinalFactura, cuf })
+                return res.status(400).json({
+                    mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `,
+                    dataToProsin, bodyFinalFactura, cuf
+                })
             }
 
             if (dataToProsin.correo == null || dataToProsin.correo == '') {
@@ -4225,7 +4337,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
             cuf = dataProsin.datos.cuf
-            
+
             console.log({ fecha })
             const formater = fecha.split('/')
             const day = formater[0]
@@ -4316,9 +4428,9 @@ const facturacionCambioValoradoController = async (req, res) => {
         }
 
         let diferencia = totalFacturas - totalDeLaEntrega
-        let ReconcileAmountInv= +totalDeLaEntrega
-        if(diferencia<0){
-            ReconcileAmountInv+= +diferencia
+        let ReconcileAmountInv = +totalDeLaEntrega
+        if (diferencia < 0) {
+            ReconcileAmountInv += +diferencia
         }
         const InternalReconciliationOpenTransRows = [
             {
@@ -4334,12 +4446,12 @@ const facturacionCambioValoradoController = async (req, res) => {
             }
         ]
 
-        let numInternalRec =0
-        for(const creditNote of allResponseCreditNote){
-            let ReconcileAmountCN= +totalesFactura[numInternalRec]
-            if(diferencia>0 && (ReconcileAmountCN-diferencia) > 0){
+        let numInternalRec = 0
+        for (const creditNote of allResponseCreditNote) {
+            let ReconcileAmountCN = +totalesFactura[numInternalRec]
+            if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
                 ReconcileAmountCN -= +diferencia
-                diferencia=0
+                diferencia = 0
             }
             const internalRecLine = {
                 ShortName: CardCode,
@@ -4354,7 +4466,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             }
 
             InternalReconciliationOpenTransRows.push(internalRecLine)
-            numInternalRec +=1
+            numInternalRec += 1
         }
 
         const fechaFormater = new Date()
@@ -4363,7 +4475,7 @@ const facturacionCambioValoradoController = async (req, res) => {
         const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
         const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
 
-        let bodyReconciliacion={
+        let bodyReconciliacion = {
             ReconDate: `${year}-${month}-${day}`,
             CardOrAccount: "coaCard",
             // ReconType: "rtManual",
@@ -4371,9 +4483,9 @@ const facturacionCambioValoradoController = async (req, res) => {
             InternalReconciliationOpenTransRows,
         }
 
-        console.log({bodyReconciliacion})
-        responseReconciliacion =  await postReconciliacion(bodyReconciliacion)
-        console.log({responseReconciliacion})
+        console.log({ bodyReconciliacion })
+        let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
+        console.log({ responseReconciliacion })
 
         if (responseReconciliacion.status == 400) {
             let mensaje = responseReconciliacion.errorMessage
@@ -4393,14 +4505,16 @@ const facturacionCambioValoradoController = async (req, res) => {
             })
         }
 
-        return res.json({bodyReconciliacion,
+        return res.json({
+            bodyReconciliacion,
             invoiceResponse,
             responseHanaB,
             cuf,
-            responseReconciliacion})
-    }catch (error) {
+            responseReconciliacion
+        })
+    } catch (error) {
         console.log({ error })
-        return res.status(500).json({ 
+        return res.status(500).json({
             mensaje: `Error en el controlador entregaFacturaCambioValoradoController: ${error.message || ''}`,
             cuf
         })
@@ -4434,7 +4548,7 @@ const getAlmacenesSucursalController = async (req, res) => {
         return res.json(listClients)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({mensaje: `Error en getAlmacenesSucursalController: ${error.message || 'No definido'}`})
+        return res.status(500).json({ mensaje: `Error en getAlmacenesSucursalController: ${error.message || 'No definido'}` })
     }
 }
 
@@ -4445,24 +4559,24 @@ const getStockdeItemAlmacenController = async (req, res) => {
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({mensaje: `Error en getStockdeItemAlmacenController: ${error.message || 'No definido'}`})
+        return res.status(500).json({ mensaje: `Error en getStockdeItemAlmacenController: ${error.message || 'No definido'}` })
     }
 }
 
 const getStockVariosItemsAlmacenController = async (req, res) => {
     try {
         const { itemCodes, whsCode } = req.body
-        let responses =[]
+        let responses = []
         //const response = await getStockdeItemAlmacen(itemCode, whsCode)
         //return res.json(response)
-        for(const itemCode of itemCodes){
+        for (const itemCode of itemCodes) {
             const response = await getStockdeItemAlmacen(itemCode, whsCode)
             responses.push(...response)
         }
         return res.json(responses)
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({mensaje: `Error en getStockVariosItemsAlmacenController: ${error.message || 'No definido'}`})
+        return res.status(500).json({ mensaje: `Error en getStockVariosItemsAlmacenController: ${error.message || 'No definido'}` })
     }
 }
 
@@ -4470,14 +4584,47 @@ const getLineaArticuloController = async (req, res) => {
     try {
         const { itemCode } = req.query
         const response = await getLineaArticulo(itemCode)
-        if(response.length == 0){
+        if (response.length == 0) {
             return res.json({})
         }
 
         return res.json(response[0])
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({mensaje: `Error en getLineaArticuloController: ${error.message || 'No definido'}`})
+        return res.status(500).json({ mensaje: `Error en getLineaArticuloController: ${error.message || 'No definido'}` })
+    }
+}
+
+
+const articuloDiccionarioController = async (req, res) => {
+    try {
+        const data = await articuloDiccionario()
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en articuloDiccionarioController: ${error.message || 'No definido'}` })
+    }
+}
+
+const relacionArticuloController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const data = await relacionArticulo(itemCode)
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en relacionArticuloController: ${error.message || 'No definido'}` })
+    }
+}
+
+const articulosController = async (req, res) => {
+    try {
+
+        const data = await articulos()
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en articulosController : ${error.message || 'No definido'}` })
     }
 }
 
@@ -4520,5 +4667,8 @@ module.exports = {
     getAlmacenesSucursalController,
     getStockdeItemAlmacenController, getStockVariosItemsAlmacenController,
     facturacionCambioValoradoController, entregaCambioValoradoController,
-    detalleFacturasGenesisController, getLineaArticuloController
+    detalleFacturasGenesisController, getLineaArticuloController,
+    relacionArticuloController,
+    articuloDiccionarioController,
+    articulosController,
 }
