@@ -202,11 +202,8 @@ const getVisitasParaHoyController = async (req, res) => {
 
 const marcarVisitaController = async (req, res) => {
     try {
-        const {IdPlan,
-            Latitud,
-            Longitud,
-            Comentario,
-            IdVendedor} = req.body
+        const {SlpCode, SlpName, ClientCode, ClientName, IdPlan, IdPlanDetail, VisitDate,
+            VisitStatus, Comments, Longitude, Latitude, ReasonNotVisit, usuario} = req.body
 
         let Hora= new Date().toLocaleTimeString('es-PE', {
             hour12: false,
@@ -214,13 +211,14 @@ const marcarVisitaController = async (req, res) => {
             minute: '2-digit'
         })
         Hora = Hora.replace(':', '')
-        let response = await marcarVisita(IdPlan, Hora,
-            Latitud,
-            Longitud,
-            Comentario,
-            IdVendedor)
+        let response = await marcarVisita(SlpCode, SlpName, ClientCode, ClientName, 
+            IdPlan, IdPlanDetail, VisitDate, Hora,
+            VisitStatus, Comments, Longitude, Latitude, ReasonNotVisit, usuario)
         console.log({response})
-        return res.json({visitaId: response})
+        if(response.length > 0){
+            response = response[0]
+        }
+        return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({
@@ -231,7 +229,7 @@ const marcarVisitaController = async (req, res) => {
 
 const getCabeceraVisitasCreadasController = async (req, res) => {
     try {
-        const {id_vendedor} = req.body
+        const {id_vendedor} = req.query
         let response = await getCabeceraVisitasCreadas(id_vendedor)
 
         return res.json(response)
@@ -271,9 +269,12 @@ const getDetalleVisitasCreadasController = async (req, res) => {
 
 const aniadirDetalleVisitaController = async (req, res) => {
     try {
-        const {} = req.body
-        let response = await aniadirDetalleVisita()
-
+        const {VisitID, ClientCode, ClientName, EventType, Comments, SaleAmount, CollectionAmount, usuario} = req.body
+        let response = await aniadirDetalleVisita(VisitID, ClientCode, ClientName, EventType, Comments, SaleAmount, CollectionAmount, usuario)
+        console.log({response})
+        if(response.length > 0){
+            response = response[0]
+        }
         return res.json(response)
     } catch (error) {
         console.log({ error })

@@ -34,6 +34,8 @@ const ejs = require('ejs');
 const pdf = require('html-pdf');
 const { detalleOfertaCadena } = require("../../ventas_module/controller/hana.controller");
 const { getDocDueDate } = require("../../../controllers/hanaController");
+const { body } = require("express-validator");
+const { aniadirDetalleVisita } = require("../../planificacion_module/controller/hana.controller");
 
 const clientesVendedorController = async (req, res) => {
     try {
@@ -150,7 +152,7 @@ const descuentoArticuloController = async (req, res) => {
         return res.json({ articulos })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `error en el controlador: ${error.message}` })
+        return res.status(500).json({ mensaje: `${error.message}` })
     }
 }
 
@@ -160,7 +162,7 @@ const descuentoCondicionController = async (req, res) => {
         return res.json({ condicion })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador' })
+        return res.status(500).json({ mensaje: `${error.message}` })
     }
 }
 
@@ -236,7 +238,7 @@ const findZonasXVendedorController = async (req, res) => {
 }
 
 const crearOrderController = async (req, res) => {
-    const body = req.body
+    const {VisitID, CardName, ...body}= req.body
     try {
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -272,6 +274,17 @@ const crearOrderController = async (req, res) => {
 
         console.log({ usuario })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
+
+        if(VisitID){
+            const responseAniadirVisita = await aniadirDetalleVisita(
+                VisitID, body.CardCode, CardName, 'Venta', body.Comments, body.DocTotal, 0,body.U_UserCode
+            )
+            console.log({ responseAniadirVisita })
+            if(responseAniadirVisita.message){
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `¡Error al añadir Visita a la Orden!. ${responseAniadirVisita.message}`, 'USP_ADD_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
+            }
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Exito al añadir Visita a la Orden.`, 'USP_ADD_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
+        }
 
         return res.json({ ...ordenResponse })
     } catch (error) {
