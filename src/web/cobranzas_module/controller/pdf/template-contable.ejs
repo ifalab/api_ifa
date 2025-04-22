@@ -172,12 +172,14 @@
                 <p><strong>Origen del asiento:</strong> Cobranzas Nro. <%= comprobante.BaseRef %></p>
                 <p><strong>Tipo de asiento:</strong> Modulo</p>
                 <p><strong>Nro de documento fiscal base:</strong> <%= comprobante.NumAtCard %></p>
+                <p><strong>Codigo del Cobrador:</strong> <%= comprobante.ClpCode %></p>
+                <p><strong>Nombre del Cobrador:</strong> <%= comprobante.ClpName %></p>
             </div>
             <div class="detalle-right">
                 <p><strong>Referencia 1:</strong> <%= comprobante.Ref1 %></p>
                 <p><strong>Referencia 2:</strong> <%= comprobante.Ref2 %></p>
                 <p><strong>Referencia 3:</strong> <%= comprobante.Ref3 %></p>
-                <p><strong>Referencia 4:</strong>  <%= comprobante.Ref3Line %></p> 
+                <p><strong>Voucher:</strong>  <%= comprobante.Ref3Line %></p> 
             </div>
         </DIV>
 
@@ -227,7 +229,7 @@
         <div class="footer-signatures">
             <div>
                 <div style="align-items: center;"> <%= comprobante.U_NAME %></div>
-                <div class="div-signature" style="width: 100%;">AUTOR</div>
+                <div class="div-signature" style="width: 100%;">CREADO POR</div>
             </div>
             <div class="div-signature">REVISADO POR</div>
             <div class="div-signature">APROBADO POR</div>
