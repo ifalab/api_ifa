@@ -14,7 +14,10 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     stockDisponiblePorSucursal,
     clientesBySucCode, getClienteByCardCode,
     devolucionLayout, getDeudaDelCliente,
-    findCliente, getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo } = require("./hana.controller")
+    findCliente, getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo,
+    articuloDiccionario,
+    relacionArticulo,
+    articulos } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -365,7 +368,7 @@ const stockDisponibleController = async (req, res) => {
             });
             return formattedItem;
         });
-        
+
         formattedStock.map((item) => {
             const {
                 santaCruz,
@@ -402,36 +405,36 @@ const stockDisponibleController = async (req, res) => {
             } = item
 
             item.total = Number(santaCruz)
-            + Number(sczTransito)
-            + Number(montero)
-            + Number(laPaz)
-            + Number(mtroTransito)
-            + Number(lpzTransito)
-            + Number(elAlto)
-            + Number(altoTransito)
-            + Number(cochabamba)
-            + Number(cbbaTransito)
-            + Number(quillacollo)
-            + Number(quillTransito)
-            + Number(tropico)
-            + Number(tropTransito)
-            + Number(tarija)
-            + Number(tjaTransito)
-            + Number(sucre)
-            + Number(scrTransito)
-            + Number(trinidad)
-            + Number(tddTransito)
-            + Number(amazonia)
-            + Number(amazTransito)
-            + Number(oruro)
-            + Number(oruTransito)
-            + Number(potosi)
-            + Number(ptsTransito)
-            + Number(pando)
-            + Number(panTransito)
-            + Number(plDespacho)
-            + Number(plTransito)
-            + Number(productoTerminado)
+                + Number(sczTransito)
+                + Number(montero)
+                + Number(laPaz)
+                + Number(mtroTransito)
+                + Number(lpzTransito)
+                + Number(elAlto)
+                + Number(altoTransito)
+                + Number(cochabamba)
+                + Number(cbbaTransito)
+                + Number(quillacollo)
+                + Number(quillTransito)
+                + Number(tropico)
+                + Number(tropTransito)
+                + Number(tarija)
+                + Number(tjaTransito)
+                + Number(sucre)
+                + Number(scrTransito)
+                + Number(trinidad)
+                + Number(tddTransito)
+                + Number(amazonia)
+                + Number(amazTransito)
+                + Number(oruro)
+                + Number(oruTransito)
+                + Number(potosi)
+                + Number(ptsTransito)
+                + Number(pando)
+                + Number(panTransito)
+                + Number(plDespacho)
+                + Number(plTransito)
+                + Number(productoTerminado)
         })
         return res.json({ stock: formattedStock });
     } catch (error) {
@@ -607,8 +610,8 @@ const detalleFacturasGenesisController = async (req, res) => {
         for (const nro_cuenta of nro_cuentas) {
             const response = await getDetalleFacturasParaDevolucion(nro_cuenta)
             // return res.json(response)
-            if(response.message){
-                console.log({response: response.message})
+            if (response.message) {
+                console.log({ response: response.message })
                 // return res.json(responses)
             } else {
                 response.map(item => {
@@ -638,13 +641,13 @@ const detalleVentasController = async (req, res) => {
     try {
         const id = req.query.id
         let response = await detalleVentas(id)
-        if(response.length==0){
+        if (response.length == 0) {
             response = await getDetalleFacturasParaDevolucion(id)
             // return res.json(response)
-            if(response.message){
-                console.log({response: response.message})
+            if (response.message) {
+                console.log({ response: response.message })
                 // return res.json(responses)
-            }else{
+            } else {
                 response.map(item => {
                     item.DiscPrcnt = item.Porcentaje_Descuento
                     item.ItemCode = item.Articulo
@@ -2435,9 +2438,10 @@ const devolucionMalEstadoController = async (req, res) => {
                     ItemCode: batch.ItemCode
                 }))
             } else {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
-                    idEntrega })
+                    idEntrega
+                })
             }
 
             const newLineEntrega = {
@@ -2471,7 +2475,7 @@ const devolucionMalEstadoController = async (req, res) => {
             }
             console.log(JSON.stringify({ bodyEntrega }, null, 2))
             responseEntrega = await postEntrega(bodyEntrega)
-            
+
             if (responseEntrega.lang) {
                 const outputDir = path.join(__dirname, 'outputs');
                 if (!fs.existsSync(outputDir)) {
@@ -2479,7 +2483,7 @@ const devolucionMalEstadoController = async (req, res) => {
                 }
                 const now = new Date();
                 const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-    
+
                 const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
                 fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
                 console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
@@ -2493,7 +2497,7 @@ const devolucionMalEstadoController = async (req, res) => {
                     bodyEntrega
                 })
             }
-            
+
             idEntrega = responseEntrega.deliveryN44umber
 
         } else {//Existe id de entrega
@@ -3534,7 +3538,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 //     endTime = Date.now();
                 //     const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenIngreso}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
                 //     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
-                    
+
                 //     return res.status(400).json({
                 //         mensaje,
                 //         allResponseReturn, 
@@ -3548,7 +3552,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 batchNumbers.push({
                     BaseLineNumber: numRet,
                     BatchNumber: Lote,
-                    Quantity: Cantidad*NumPerMsr,
+                    Quantity: Cantidad * NumPerMsr,
                     ItemCode: ItemCode
                 })
                 const newLine = {
@@ -4591,6 +4595,39 @@ const getLineaArticuloController = async (req, res) => {
     }
 }
 
+
+const articuloDiccionarioController = async (req, res) => {
+    try {
+        const data = await articuloDiccionario()
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en articuloDiccionarioController: ${error.message || 'No definido'}` })
+    }
+}
+
+const relacionArticuloController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const data = await relacionArticulo(itemCode)
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en relacionArticuloController: ${error.message || 'No definido'}` })
+    }
+}
+
+const articulosController = async (req, res) => {
+    try {
+
+        const data = await articulos()
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en articulosController : ${error.message || 'No definido'}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -4630,5 +4667,8 @@ module.exports = {
     getAlmacenesSucursalController,
     getStockdeItemAlmacenController, getStockVariosItemsAlmacenController,
     facturacionCambioValoradoController, entregaCambioValoradoController,
-    detalleFacturasGenesisController, getLineaArticuloController
+    detalleFacturasGenesisController, getLineaArticuloController,
+    relacionArticuloController,
+    articuloDiccionarioController,
+    articulosController,
 }

@@ -1214,7 +1214,7 @@ const vendedorPorSucCode = async (sucCode) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SucCode" = ${sucCode}`
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SucCode" = ${sucCode} AND "Rol" <> 'Despachador' and "SlpCode" in (SELECT ID_VENDEDOR_SAP FROM LAB_IFA_LAPP.LAPP_USUARIO)`
         console.log({ query })
         const result = await executeQuery(query)
         return result
