@@ -484,6 +484,7 @@ const getStockdeItemAlmacen = async (itemCode, whsCode) => {
         throw { message: `Error en getStockdeItemAlmacen: ${error.message}`, error }
     }
 }
+
 const getLineaArticulo= async (itemCode) => {
     try {
         if (!connection) {
@@ -501,6 +502,66 @@ const getLineaArticulo= async (itemCode) => {
     }
 }
 
+const articuloDiccionario= async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `
+        select 
+    ITEMCODE, 
+    dmArt."ItemName" as ItemNamePrincipal, 
+    ITEMEQ, 
+    dmArt2."ItemName" as ItemNameEquivalente,
+    ISACTIVE 
+    from ${process.env.LAPP}.LAPP_HABILITACION_DICCIONARIO as hd
+    join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt on hd.ITEMCODE = dmArt."ItemCode" 
+    join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt2 on hd.ITEMEQ = dmArt2."ItemCode" 
+        `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en articuloDiccionario:', error.message);
+        throw { 
+            message: `Error al procesar articuloDiccionario: ${error.message || ''}` 
+        }
+    }
+}
+
+const relacionArticulo = async(itemCode) =>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFA_LAPP_INV_HABILITACION_DICT('${itemCode}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en relacionArticulo:', error.message);
+        throw { 
+            message: `Error al procesar relacionArticulo: ${error.message || ''}` 
+        }
+    }
+}
+
+const articulos = async() =>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "ItemCode","ItemName","SalUnitMsr","UomSinName","UserText" from ${process.env.PRD}.ifa_dm_articulos WHERE "validFor" = 'Y' AND "ItmsGrpCod" = 105`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en articulos:', error.message);
+        throw { 
+            message: `Error al procesar articulos: ${error.message || ''}` 
+        }
+    }
+}
 
 module.exports = {
     clientesPorDimensionUno,
@@ -531,5 +592,8 @@ module.exports = {
     findCliente,
     getAlmacenesSucursal,
     getStockdeItemAlmacen,
-    getLineaArticulo
+    getLineaArticulo,
+    relacionArticulo,
+    articuloDiccionario,
+    articulos
 }

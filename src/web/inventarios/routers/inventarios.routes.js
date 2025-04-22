@@ -22,7 +22,10 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     imprimibleSalidaController, findClienteController, getAlmacenesSucursalController,
     getStockdeItemAlmacenController, getStockVariosItemsAlmacenController,
     facturacionCambioValoradoController, entregaCambioValoradoController,
-    detalleFacturasGenesisController, getLineaArticuloController
+    detalleFacturasGenesisController, getLineaArticuloController,
+    relacionArticuloController,
+    articuloDiccionarioController,
+    articulosController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -72,5 +75,8 @@ router.post('/facturacion-cambio', [validarToken, validarCampos], facturacionCam
 router.post('/entrega-cambio-valorado', [validarToken, validarCampos], entregaCambioValoradoController)
 router.post('/detalle-fact-genesis', [validarToken, validarCampos], detalleFacturasGenesisController)
 router.get('/linea-articulo', [validarToken, validarCampos], getLineaArticuloController)
+router.get('/articulos-diccionario', [validarToken, validarCampos], articuloDiccionarioController)
+router.get('/relacion-articulos-diccionario', [validarToken, validarCampos], relacionArticuloController)
+router.get('/articulos', [validarToken, validarCampos], articulosController)
 
 module.exports = router

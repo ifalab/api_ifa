@@ -1789,6 +1789,7 @@ const comprobanteContableController = async (req, res) => {
             return res.status(400).json({mensaje: `No se encontro una baja con DocEntry: ${id}`})
         }
         const {TransId} = baja[0]
+        const {ClpCode, ClpName} = baja[0]
 
         const layout = await getLayoutComprobanteContable(TransId)
         // return res.json({layout})
@@ -1799,6 +1800,7 @@ const comprobanteContableController = async (req, res) => {
         let cabecera = []
         let detalle=[]
         let sumDebit=0; let sumSYSDeb=0; let sumCredit=0; let sumSYSCred=0
+        // console.log(layout);
         layout.forEach((line)=>{
             const {TransId,
                     RefDate,
@@ -1829,6 +1831,8 @@ const comprobanteContableController = async (req, res) => {
 
             if(cabecera.length==0){
                 cabecera.push({
+                    ClpCode,
+                    ClpName,
                     TransId,
                     RefDate,
                     DueDate,
@@ -1865,6 +1869,7 @@ const comprobanteContableController = async (req, res) => {
         
 
         // return res.json({comprobante, layout, baja})
+        console.log(comprobante);
 
         const ejs = require('ejs');
         const htmlTemplate = path.join(__dirname, './pdf/template-contable.ejs');
