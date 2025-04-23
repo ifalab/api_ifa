@@ -549,6 +549,8 @@ const crearOrderCadenaController = async (req, res) => {
             console.log({totalOrden})
         })
 
+        totalOrden = Number(totalOrden.toFixed(2))
+
         if (totalOrden !== ordenBody.DocTotal) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
             return res.status(400).json({
