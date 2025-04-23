@@ -2421,8 +2421,7 @@ const devolucionMalEstadoController = async (req, res) => {
             const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
             console.log({ batch: batchData })
             if (batchData.message) {
-                endTime = Date.now();
-                // grabarLog(user.USERCODE, user.USERNAME, "Dovolucion Mal Estado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-mal-estado", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Devolucion Mal Estado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-mal-estado", process.env.PRD)
                 return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, idEntrega })
             }
             if (batchData.length > 0) {
@@ -2438,7 +2437,8 @@ const devolucionMalEstadoController = async (req, res) => {
                     ItemCode: batch.ItemCode
                 }))
             } else {
-                return res.status(400).json({
+                grabarLog(user.USERCODE, user.USERNAME, "Devolucion Mal Estado", `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-mal-estado", process.env.PRD)
+                return res.status(400).json({ 
                     mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
                     idEntrega
                 })
@@ -3217,8 +3217,8 @@ const detalleFacturasController = async (req, res) => {
 
 const imprimibleDevolucionController = async (req, res) => {
     try {
-        const { id, cambio } = req.body
-        console.log({ id, cambio })
+        const { id } = req.body
+        console.log({ id })
         const user = req.usuarioAutorizado
         const layout = await devolucionLayout(id)
         console.log({ layout })
@@ -3286,8 +3286,7 @@ const imprimibleDevolucionController = async (req, res) => {
             U_Comentario,
             Comments,
             SlpName: `${SlpName || 'No Asignado'}`,
-            detailsList,
-            cambio
+            detailsList
         };
         // return res.json({data, layout})
 
@@ -3333,7 +3332,7 @@ const imprimibleDevolucionController = async (req, res) => {
 
 const imprimibleSalidaController = async (req, res) => {
     try {
-        const { id, cambio } = req.body
+        const { id } = req.body
 
         const user = req.usuarioAutorizado
         const response = await notaEntrega(id)
@@ -3405,7 +3404,6 @@ const imprimibleSalidaController = async (req, res) => {
             Comments,
             SlpName: `${SlpName || 'No Asignado'}`,
             detailsList,
-            cambio,
             totalCant
         };
         // return res.json({data, layout})
@@ -3580,8 +3578,8 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 CardCode: CardCode,
                 U_UserCode: id_sap,
                 U_B_cufd: Cuf,
-                JournalMemo: Comentario,
-                Comments: Comentario,
+                JournalMemo: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
+                Comments: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
                 DocumentLines: newDocumentLinesReturn,
             }
 
@@ -3614,7 +3612,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
                 if (mensaje.value)
                     mensaje = mensaje.value
-                // grabarLog(user.USERCODE, user.USERNAME, "Inventario alorado", `Error en postReturn: ${mensaje}. Nro Factura ${DocEntry}`, `postReturn()`, "inventario/dev-valorado", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Cambio Valorado", `Error en postReturn: ${mensaje}. Nro Factura ${DocEntry}`, `postReturn()`, "inventario/dev-valorado-dif-art", process.env.PRD)
                 return res.status(400).json({
                     mensaje: `Error en postReturn: ${mensaje}. Nro Factura: ${DocEntry}`,
                     bodyReturn,
@@ -3715,7 +3713,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 }
 
                 mensaje = `Error en creditNote: ${mensaje}. Factura Nro: ${DocEntry}`
-
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario DEvolucion Valorado`, mensaje, 'postCreditNotes', `inventario/dev-valorado-dif-art`,process.env.PRD)
                 return res.status(400).json({
                     mensaje,
                     bodyCreditNotes,
@@ -3975,7 +3973,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
         console.log(`Objeto allBodies guardado en ${fileNameJson}`);
 
-        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Exito en la devolucion. Facturas realizadas: ${facturasCompletadas}`, ``, "inventario/dev-valorado", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Exito en el return y credit note. Facturas realizadas: ${facturasCompletadas}`, ``, "inventario/dev-valorado-dif-art", process.env.PRD)
         return res.json({
             allResponseReturn,
             allResponseCreditNote,
@@ -3987,7 +3985,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
             // entregaFinished
         })
     } catch (error) {
-        // const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ error })
 
         const outputDir = path.join(__dirname, 'outputs');
@@ -4002,7 +4000,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
         console.log(`Objeto allBodies guardado en ${fileNameJson}`);
 
-        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Error en el devolucionPorValoradoController: ${error.message || ''}`, `catch del controller devolucionMalEstadoController`, "inventario/dev-mal-estado", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Error en el devolucionPorValoradoController: ${error.message || ''}`, `catch del controller devolucionMalEstadoController`, "inventario/dev-valorado-dif-art", process.env.PRD)
         return res.status(500).json({
             mensaje: `Error en en controlador devolucionPorValoradoController: ${error.message}`,
             allResponseReturn,
@@ -4023,7 +4021,7 @@ const entregaCambioValoradoController = async (req, res) => {
     let bodyEntrega
     try {
         const { nuevosArticulos, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
-
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         ///////////////////////// Entregas
         let newDocumentLinesEntrega = []
         let numLines = 0
@@ -4041,7 +4039,7 @@ const entregaCambioValoradoController = async (req, res) => {
             console.log({ batchDataEntrega })
             if (batchDataEntrega.message) {
                 endTime = Date.now();
-                // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Mal Estado", `${batchDataEntrega.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-mal-estado", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Entrega Valorado", 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-valorado-dif-art", process.env.PRD)
                 return res.status(400).json({
                     mensaje: `${batchDataEntrega.message || 'Error en lotesArticuloAlmacenCantidad'}`,
                     newDocumentLinesEntrega,
@@ -4060,11 +4058,8 @@ const entregaCambioValoradoController = async (req, res) => {
                     ItemCode: batch.ItemCode
                 }))
             } else {
-
-                endTime = Date.now();
                 const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}.`
-                // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
-
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Entrega Valorado", mensaje, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-valorado-dif-art", process.env.PRD)                    
                 return res.status(400).json({
                     mensaje, newDocumentLinesEntrega, entregaFinished
                 })
@@ -4090,8 +4085,8 @@ const entregaCambioValoradoController = async (req, res) => {
             Series: 353,
             CardCode: CardCode,
             U_UserCode: id_sap,
-            JournalMemo: Comentario,
-            Comments: Comentario,
+            JournalMemo: `CAMBIO X VALORADO.  ${Comentario? Comentario.toUpperCase():''}`,
+            Comments: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
             DocumentLines: newDocumentLinesEntrega,
         }
         // console.log('body enterga -----------------------------------------------')
@@ -4112,8 +4107,7 @@ const entregaCambioValoradoController = async (req, res) => {
             const fileNameJson = path.join(outputDir, `bodie_entrega_${timestamp}.json`);
             fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
             console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-            endTime = Date.now();
-            // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Entrega Valorado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, `postEntrega`, "inventario/dev-mal-estado-dif-art", process.env.PRD)
             return res.status(400).json({
                 mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}.`,
                 responseEntrega,
@@ -4123,13 +4117,16 @@ const entregaCambioValoradoController = async (req, res) => {
 
         entregaFinished = true
 
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Entrega Valorado", `Entrega de sap exitosa`, ``, "inventario/dev-valorado-dif-art", process.env.PRD)
         return res.json({
             responseEntrega, entregaFinished,
             bodyEntrega,
             idEntrega: responseEntrega.deliveryN44umber
         })
     } catch (error) {
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Entrega Valorado", `Error en el controlador entregaCambioValoradoController: ${error.message || ''}`, `catch de entregaCambioValoradoController`, "inventario/dev-valorado-dif-art", process.env.PRD)
         return res.status(500).json({
             mensaje: `Error en el controlador entregaCambioValoradoController: ${error.message || ''}`,
             error: error.message,
@@ -4145,10 +4142,14 @@ const facturacionCambioValoradoController = async (req, res) => {
     try {
         const { CardCode, totalFacturas, allResponseCreditNote, idEntrega, totalesFactura } = req.body
         const deliveryData = idEntrega
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const deliveryBody = await obtenerEntregaDetalle(deliveryData)
+        if (deliveryBody.message) {
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Facturacion Cambio Valorado", `${deliveryBody.message}`, `IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE`, "inventario/facturacion-cambio", process.env.PRD)
+            return res.json({mensaje: deliveryBody.message})
+        }
         // return res.json({deliveryBody})
         let totalDeLaEntrega = 0
-        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
 
         const detalle = [];
         const cabezera = [];
@@ -4191,7 +4192,7 @@ const facturacionCambioValoradoController = async (req, res) => {
         //TODO --------------------------------------------------------------  PROSIN
         const responseGenesis = await spObtenerCUF(deliveryData)
         if (responseGenesis.message) {
-            endTime = Date.now()
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Facturacion Cambio Valorado", `${responseGenesis.message}`, `spObtenerCUF`, "inventario/facturacion-cambio", process.env.PRD)
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
         }
         let invoiceResponse
@@ -4278,9 +4279,12 @@ const facturacionCambioValoradoController = async (req, res) => {
             invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
-                endTime = Date.now()
+                const mensaje = `Error del SAP en el PostInvoice: ${invoiceResponse.errorMessage.value || ''}`
+                grabarLog(user.USERCODE, user.USERNAME, 'Inventario Facturacion Cambio Valorado',  
+                    mensaje, 'postInvoice','inventario/facturacion-cambio', process.env.DBSAPPRD
+                )
                 return res.status(400).json({
-                    mensaje: `Error del SAP en el PostInvoice: ${invoiceResponse.errorMessage.value || ''}`,
+                    mensaje,
                     cuf
                 })
             }
@@ -4292,11 +4296,9 @@ const facturacionCambioValoradoController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-            endTime = Date.now()
 
         } else {
             //? si no existe el cuf:
-            endTime = Date.now()
             let dataToProsin = {}
             const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
             if (direccion == null || direccion == undefined) {
@@ -4310,7 +4312,7 @@ const facturacionCambioValoradoController = async (req, res) => {
 
             if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion != 1 && dataToProsin.tipo_identificacion != 5)) {
-                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, 'facturacionProsin','inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json({
                     mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `,
                     dataToProsin, bodyFinalFactura, cuf
@@ -4318,7 +4320,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             }
 
             if (dataToProsin.correo == null || dataToProsin.correo == '') {
-                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `No existe el correo `, 'facturacionProsin','inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura, cuf })
             }
             dataToProsin.usuario = user.USERNAME || 'No definido'
@@ -4327,11 +4329,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             const { data: dataProsin } = responseProsin
             console.log({ dataProsin })
             if (dataProsin && dataProsin.estado != 200) {
-                endTime = Date.now()
-                return res.status(400).json({ mensaje: `Error de facturacionProsin ${dataProsin.mensaje || ''}`, dataProsin, dataToProsin, bodyFinalFactura, cuf })
-            }
-            if (dataProsin.mensaje != null) {
-                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error de facturacionProsin ${dataProsin.mensaje || ''}`, 'facturacionProsin','inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json({ mensaje: `Error de facturacionProsin ${dataProsin.mensaje || ''}`, dataProsin, dataToProsin, bodyFinalFactura, cuf })
             }
             const fecha = dataProsin.fecha
@@ -4346,10 +4344,6 @@ const facturacionCambioValoradoController = async (req, res) => {
             const yearFomater = yearTime.split(' ')
             const year = yearFomater[0]
             console.log({ day, month, year })
-            if (year.length > 4) {
-                endTime = Date.now()
-                return res.status(400).json({ mensaje: 'error al formateo de la fecha', cuf })
-            }
             const fechaFormater = year + month + day
             console.log({ deliveryData, cuf, nroFactura, fechaFormater })
             //TODO --------------------------------------------------------------  PATCH ENTREGA
@@ -4360,14 +4354,15 @@ const facturacionCambioValoradoController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                endTime = Date.now()
-                return res.status(400).json({ mensaje: `error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}`, cuf })
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}`, 'patchEntrega','inventario/facturacion-cambio', process.env.PRD)
+                return res.status(400).json({ mensaje: `Error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}`, cuf })
             }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
             console.log({ responseHana })
             if (responseHana.message) {
-                endTime = Date.now()
+                
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, 'entregaDetallerFactura','inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json(
                     { mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, cuf })
             }
@@ -4412,9 +4407,9 @@ const facturacionCambioValoradoController = async (req, res) => {
             invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
-                endTime = Date.now()
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en la solicitud postInvoice ${invoiceResponse.errorMessage.value || ''}`, 'postInvoice','inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json(
-                    { mensaje: `error del SAP ${invoiceResponse.errorMessage.value || ''}`, cuf })
+                    { mensaje: `Error del SAP postInvoice ${invoiceResponse.errorMessage.value || ''}`, cuf })
             }
             const response = {
                 status: invoiceResponse.status || {},
@@ -4424,7 +4419,6 @@ const facturacionCambioValoradoController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-            endTime = Date.now()
         }
 
         let diferencia = totalFacturas - totalDeLaEntrega
@@ -4494,7 +4488,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             }
 
             mensaje = `Error en postReconciliacion: ${mensaje}.`
-
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion','inventario/facturacion-cambio', process.env.PRD)
             return res.status(400).json({
                 mensaje,
                 bodyReconciliacion,
@@ -4505,6 +4499,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             })
         }
 
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Facturacion y Reconciliacion exitosa`, '','inventario/facturacion-cambio', process.env.PRD)
         return res.json({
             bodyReconciliacion,
             invoiceResponse,
@@ -4514,6 +4509,8 @@ const facturacionCambioValoradoController = async (req, res) => {
         })
     } catch (error) {
         console.log({ error })
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en el controlador entregaFacturaCambioValoradoController: ${error.message || ''}. Cuf: ${cuf||''}`, 'catch del controller','inventario/facturacion-cambio', process.env.PRD)
         return res.status(500).json({
             mensaje: `Error en el controlador entregaFacturaCambioValoradoController: ${error.message || ''}`,
             cuf
