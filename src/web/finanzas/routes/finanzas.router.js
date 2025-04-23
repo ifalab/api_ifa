@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController } = require('../controller/finanzas.controller')
+const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController } = require('../controller/finanzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -17,8 +17,9 @@ router.get('/find-all-line', [validarToken, validarCampos], findAllLineControlle
 router.get('/find-all-subline', [validarToken, validarCampos], findAllSublineController)
 router.get('/find-all-group-almacen', [validarToken, validarCampos], findAllGroupAlmacenController)
 router.get('/find-all-gastos', [validarToken, validarCampos], findAllGastosController)
-router.get('/find-all-simple-gastos', [validarToken, validarCampos],findAllSimpleGastosController)
-router.get('/find-xagencia-simple-gastos', [validarToken, validarCampos],findXAgenciaSimpleGastosController)
-router.get('/find-gastos-gestion-agencia', [validarToken, validarCampos],gastosGestionAgenciaController)
+router.get('/find-all-simple-gastos', [validarToken, validarCampos], findAllSimpleGastosController)
+router.get('/find-xagencia-simple-gastos', [validarToken, validarCampos], findXAgenciaSimpleGastosController)
+router.get('/find-gastos-gestion-agencia', [validarToken, validarCampos], gastosGestionAgenciaController)
+router.get('/reporte-articulos-pendientes', [validarToken, validarCampos], reporteArticulosPendientesController)
 
 module.exports = router

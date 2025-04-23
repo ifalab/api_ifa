@@ -228,6 +228,22 @@ const findAllGroupAlmacenes = async () => {
         throw new Error('error en findAllGroupAlmacenes')
     }
 }
+
+const reporteArticuloPendientes = async (startDate,endDate) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_inv_analisis_de_pendientes_por_fecha('${startDate}','${endDate}')`
+        console.log({query})
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log('error en reporteArticuloPendientes')
+        console.log(error)
+    }
+}
+
 module.exports = {
     parteDiario,
     abastecimiento,
@@ -240,4 +256,5 @@ module.exports = {
     abastecimientoPorFecha,
     abastecimientoPorFechaAnual,
     abastecimientoPorFecha_24_meses,
+    reporteArticuloPendientes,
 }
