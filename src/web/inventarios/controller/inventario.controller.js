@@ -3578,8 +3578,8 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 CardCode: CardCode,
                 U_UserCode: id_sap,
                 U_B_cufd: Cuf,
-                JournalMemo: `CAMBIO X VALORADO. ` + Comentario.toUpperCase(),
-                Comments: `CAMBIO X VALORADO. ` + Comentario.toUpperCase(),
+                JournalMemo: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
+                Comments: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
                 DocumentLines: newDocumentLinesReturn,
             }
 
@@ -4085,8 +4085,8 @@ const entregaCambioValoradoController = async (req, res) => {
             Series: 353,
             CardCode: CardCode,
             U_UserCode: id_sap,
-            JournalMemo: `CAMBIO X VALORADO. ` + Comentario.toUpperCase(),
-            Comments: `CAMBIO X VALORADO. ` + Comentario.toUpperCase(),
+            JournalMemo: `CAMBIO X VALORADO.  ${Comentario? Comentario.toUpperCase():''}`,
+            Comments: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
             DocumentLines: newDocumentLinesEntrega,
         }
         // console.log('body enterga -----------------------------------------------')
