@@ -669,7 +669,7 @@ const busquedaProveedor = async (parametro) => {
             await connectHANA();
         }
         console.log('actualizarCCRendicion EXECUTE')
-        const query = `select * from ${process.env.PRD}.IFA_DM_PROVEEDORES where "CardName" like '%${parametro}%' limit 30 `
+        const query = `select * from ${process.env.PRD}.IFA_DM_PROVEEDORES where "CardName" like '%${parametro}%' OR "CardFName" like '%${parametro}%' limit 30 `
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -700,7 +700,6 @@ const idJournalPreliminar = async () => {
 
     }
 }
-
 const lineaDetalleCC = async (
     idCom,
     Line_ID,
@@ -804,6 +803,23 @@ const lineaDetalleCC = async (
     }
 }
 
+const getRendicionesByEstado = async (estado) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.lapp_rendicion where "ESTADO"=${estado}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en getRendicionesByEstado: ${error.message | ''}`
+        }
+    }
+}
+
 
 module.exports = {
     findAllAperturaCaja,
@@ -839,5 +855,5 @@ module.exports = {
     busquedaProveedor,
     lineaDetalleCC,
     idJournalPreliminar,
-
+    getRendicionesByEstado
 }

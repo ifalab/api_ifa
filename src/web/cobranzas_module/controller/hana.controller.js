@@ -878,6 +878,22 @@ const reporteBajaCobranzas = async (UserSign, month, year) => {
     }
 }
 
+const getClienteById = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where 
+            "CardCode" ='${id}'`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getClienteById: ${error.message || ''}`)
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -929,5 +945,6 @@ module.exports = {
     getPendientesBajaPorCobrador, cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza,
     getBaja, getLayoutComprobanteContable,
     getBajasByUser,
-    reporteBajaCobranzas, getCobradoresBySucursales
+    reporteBajaCobranzas, getCobradoresBySucursales,
+    getClienteById
 }

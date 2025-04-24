@@ -2293,7 +2293,7 @@ const excelClientesMoraController = async (req, res) => {
                     CardName: '',
                     ZoneName: '',
                     DocNum: factura.DocNum,
-                    DocTotal: factura.DocTotal,
+                    DocTotal: +factura.DocTotal,
                     FiscalDate: factura.FiscalDate,
                     U_B_cuf: factura.U_B_cuf,
                 });

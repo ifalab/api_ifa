@@ -9,7 +9,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     busquedaProd,
     busquedaProveedor,
     lineaDetalleCC,
-    idJournalPreliminar
+    idJournalPreliminar, getRendicionesByEstado,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -338,9 +338,15 @@ const crearActualizarGastoController = async (req, res) => {
                 new_cod_proveedor
             } = item
 
-            const fecha = new_fecha.split('/')
-            const fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
-            console.log({ fechaFormateada, fecha, new_fecha })
+            let fechaFormateada
+            if(String(new_fecha).includes('/')){
+                const fecha = new_fecha.split('/')
+                fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
+                console.log({ fechaFormateada, fecha, new_fecha })
+            }else{
+                fechaFormateada=new_fecha
+            }
+            
             if (id_gasto == 0) {
                 const responseHana = await crearGasto(
                     new_nit,
@@ -1590,6 +1596,16 @@ const proveedoresController = async (req, res) => {
     }
 }
 
+const getRendicionesByEstadoController = async (req, res) => {
+    try {
+        const estado = req.query.estado
+        const rendiciones = await getRendicionesByEstado(estado)
+        return res.status(200).json(rendiciones)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
 
 module.exports = {
     findAllAperturaController,
@@ -1620,5 +1636,6 @@ module.exports = {
     actualizarCCRendController,
     actualizarGlosaPRDGastoController,
     buscarCuentaProdController,
-    proveedoresController
+    proveedoresController,
+    getRendicionesByEstadoController,
 }

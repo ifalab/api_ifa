@@ -1,4 +1,4 @@
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
@@ -1045,6 +1045,18 @@ function agruparPorMes(data) {
   return resultado;
 }
 
+const reporteArticulosPendientesController = async (req, res) => {
+  try {
+    const startDate = req.query.startDate
+    const endDate = req.query.endDate
+    const response  = await reporteArticuloPendientes(startDate,endDate)
+    return res.json(response)
+  } catch (error) {
+    console.log({ error })
+    return res.status(500).json({ mensaje: 'error en el controlador' })
+  }
+}
+
 
 module.exports = {
   parteDiaroController,
@@ -1062,5 +1074,6 @@ module.exports = {
   findAllGastosController,
   findAllSimpleGastosController,
   findXAgenciaSimpleGastosController,
-  gastosGestionAgenciaController
+  gastosGestionAgenciaController,
+  reporteArticulosPendientesController
 }

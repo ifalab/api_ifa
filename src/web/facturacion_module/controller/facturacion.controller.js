@@ -82,13 +82,13 @@ const facturacionController = async (req, res) => {
 
         if (U_B_State == 'R') {
             endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado R - Procesado , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturar-exportacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado R - Procesado , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado R - Procesado', })
         }
 
         if (U_B_State == 'E') {
             endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado E - Error , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturar-exportacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado E - Error , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado E - Error', })
         }
         // return {id}
