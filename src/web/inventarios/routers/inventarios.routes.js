@@ -25,7 +25,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     detalleFacturasGenesisController, getLineaArticuloController,
     relacionArticuloController,
     articuloDiccionarioController,
-    articulosController
+    articulosController,
+    saveArticuloDiccionario
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -78,5 +79,8 @@ router.get('/linea-articulo', [validarToken, validarCampos], getLineaArticuloCon
 router.get('/articulos-diccionario', [validarToken, validarCampos], articuloDiccionarioController)
 router.get('/relacion-articulos-diccionario', [validarToken, validarCampos], relacionArticuloController)
 router.get('/articulos', [validarToken, validarCampos], articulosController)
+
+router.post('/articulos-diccionario', [validarToken, validarCampos], saveArticuloDiccionario)
+
 
 module.exports = router

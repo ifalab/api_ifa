@@ -17,7 +17,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     findCliente, getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo,
     articuloDiccionario,
     relacionArticulo,
-    articulos } = require("./hana.controller")
+    articulos, 
+    saveDiccionario} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -4594,17 +4595,41 @@ const getLineaArticuloController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en getLineaArticuloController: ${error.message || 'No definido'}` })
     }
 }
-
-
 const articuloDiccionarioController = async (req, res) => {
     try {
-        const data = await articuloDiccionario()
-        return res.json(data)
+        const data = await articuloDiccionario();
+
+        // Agrupamos por ITEMCODE
+        const agrupado = {};
+
+        data.forEach(item => {
+            const key = item.ItemCode;
+
+            if (!agrupado[key]) {
+                agrupado[key] = {
+                    ItemCode: item.ItemCode,
+                    ItemName: item.ItemName,
+                    Relacionados: []
+                };
+            }
+
+            agrupado[key].Relacionados.push({
+                ItemEq: item.ItemEq,
+                ItemNameEq: item.ItemNameEq,
+            });
+        });
+
+        const resultado = Object.values(agrupado);
+        return res.json(resultado);
+
     } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: `Error en articuloDiccionarioController: ${error.message || 'No definido'}` })
+        console.log({ error });
+        return res.status(500).json({
+            mensaje: `Error en articuloDiccionarioController: ${error.message || 'No definido'}`
+        });
     }
-}
+};
+
 
 const relacionArticuloController = async (req, res) => {
     try {
@@ -4625,6 +4650,70 @@ const articulosController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en articulosController : ${error.message || 'No definido'}` })
+    }
+}
+
+const saveArticuloDiccionario = async(req, res) => {
+    try {
+        const {principal, relacionados} = req.body;
+        console.log(principal, relacionados);
+
+        const data = await articuloDiccionario();
+        const relacionesAInsertar = [];
+
+        for (const relacionado of relacionados) {
+          const existeDirecta = data.some(relacion =>
+            relacion.ItemCode === principal.ItemCode && relacion.ItemEq === relacionado.ItemCode
+          );
+    
+          const existeInversa = data.some(relacion =>
+            relacion.ItemCode === relacionado.ItemCode && relacion.ItemEq === principal.ItemCode
+          );
+    
+          if (!existeDirecta && !existeInversa) {
+            // No existe ni directa ni inversa: insertamos ambas
+            relacionesAInsertar.push({
+              desdeCode: principal.ItemCode,
+              desdeName: principal.ItemName,
+              haciaCode: relacionado.ItemCode,
+              haciaName: relacionado.ItemName
+            });
+            relacionesAInsertar.push({
+              desdeCode: relacionado.ItemCode,
+              desdeName: relacionado.ItemName,
+              haciaCode: principal.ItemCode,
+              haciaName: principal.ItemName
+            });
+          } else if (!existeDirecta && existeInversa) {
+            // Solo falta la directa
+            relacionesAInsertar.push({
+              desdeCode: principal.ItemCode,
+              desdeName: principal.ItemName,
+              haciaCode: relacionado.ItemCode,
+              haciaName: relacionado.ItemName
+            });
+          } else if (existeDirecta && !existeInversa) {
+            // Solo falta la inversa
+            relacionesAInsertar.push({
+              desdeCode: relacionado.ItemCode,
+              desdeName: relacionado.ItemName,
+              haciaCode: principal.ItemCode,
+              haciaName: principal.ItemName
+            });
+          }
+        }
+    
+        if (relacionesAInsertar.length === 0) {
+          return res.status(200).json({ mensaje: 'Todas las relaciones ya existen.', status: 200 });
+        }
+    
+        // Aquí insertarías las relaciones nuevas
+        await saveDiccionario(relacionesAInsertar);
+    
+        return res.json({ mensaje: 'Todas las relaciones han sido insertadas', status: 200 });
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en saveArticuloDiccionario : ${error.message || 'No definido'}` })
     }
 }
 
@@ -4671,4 +4760,5 @@ module.exports = {
     relacionArticuloController,
     articuloDiccionarioController,
     articulosController,
+    saveArticuloDiccionario,
 }

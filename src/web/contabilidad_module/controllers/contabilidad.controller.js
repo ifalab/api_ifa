@@ -1,5 +1,5 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja } = require("./hana.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
@@ -703,6 +703,35 @@ const getSublineasCC = async (req, res) => {
     }
 }
 
+const getJournalPreliminarCC = async (req, res) => {
+    try {
+        const {id} = req.query;
+        const data = await asientosPreliminaresCC(id);
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getJournalPreliminarCC], ${mensaje}` })
+    }
+}
+
+const getJournalPreliminarCCIds = async (req, res) => {
+    try {
+        const data = await asientosPreliminaresCCIds();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getJournalPreliminarCCIds], ${mensaje}` })
+    }
+}
+
 const rendicionesPorCajaController = async (req, res) => {
     try {
 
@@ -749,4 +778,6 @@ module.exports = {
     getLineasCC,
     getSublineasCC,
     rendicionesPorCajaController,
+    getJournalPreliminarCC,
+    getJournalPreliminarCCIds,
 }

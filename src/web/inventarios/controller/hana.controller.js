@@ -502,22 +502,39 @@ const getLineaArticulo= async (itemCode) => {
     }
 }
 
-const articuloDiccionario= async (itemCode) => {
+// const articuloDiccionario= async (itemCode) => {
+//     try {
+//         if (!connection) {
+//             await connectHANA();
+//         }
+//         const query = `
+//         select 
+//         ITEMCODE, 
+//         dmArt."ItemName" as ItemNamePrincipal, 
+//         ITEMEQ, 
+//         dmArt2."ItemName" as ItemNameEquivalente,
+//         ISACTIVE 
+//         from ${process.env.LAPP}.LAPP_HABILITACION_DICCIONARIO as hd
+//         join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt on hd.ITEMCODE = dmArt."ItemCode" 
+//         join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt2 on hd.ITEMEQ = dmArt2."ItemCode" 
+//         `;
+//         console.log({ query })
+//         const result = await executeQuery(query)
+//         return result
+//     } catch (error) {
+//         console.error('Error en articuloDiccionario:', error.message);
+//         throw { 
+//             message: `Error al procesar articuloDiccionario: ${error.message || ''}` 
+//         }
+//     }
+// }
+
+const articuloDiccionario= async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `
-        select 
-    ITEMCODE, 
-    dmArt."ItemName" as ItemNamePrincipal, 
-    ITEMEQ, 
-    dmArt2."ItemName" as ItemNameEquivalente,
-    ISACTIVE 
-    from ${process.env.LAPP}.LAPP_HABILITACION_DICCIONARIO as hd
-    join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt on hd.ITEMCODE = dmArt."ItemCode" 
-    join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt2 on hd.ITEMEQ = dmArt2."ItemCode" 
-        `;
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_ARTICULOS_DICCIONARIO_HABILITACION ORDER BY "ItemCode"`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -563,6 +580,30 @@ const articulos = async() =>{
     }
 }
 
+const saveDiccionario = async (relaciones) => {
+    try {
+      if (!connection) {
+        await connectHANA();
+      }
+  
+      for (const relacion of relaciones) {
+        const query = `
+          CALL "LAB_IFA_LAPP"."LAPP_SAVE_DICCIONARIO"('${relacion.desdeCode}', '${relacion.haciaCode}')
+        `;
+        console.log(`Ejecutando: ${query}`);
+        await executeQuery(query);
+      }
+  
+      return { mensaje: `${relaciones.length} relaciones guardadas correctamente.` };
+  
+    } catch (error) {
+      console.error('Error en saveDiccionario:', error.message);
+      throw {
+        message: `Error al procesar el diccionario: ${error.message || ''}`
+      };
+    }
+  };
+  
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -595,5 +636,6 @@ module.exports = {
     getLineaArticulo,
     relacionArticulo,
     articuloDiccionario,
-    articulos
+    articulos,
+    saveDiccionario
 }

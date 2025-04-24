@@ -249,6 +249,37 @@ const asientosContablesCC= async() => {
     }
 }
 
+const asientosPreliminaresCC= async(id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('IFA_CC_JOURNAL_PRELIMINAR EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_COM."IFA_CC_JOURNAL_PRELIMINAR" WHERE "TransId" = ${id}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en asientosPreliminaresCC')
+    }
+}
+
+const asientosPreliminaresCCIds= async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('IFA_CC_JOURNAL_PRELIMINAR_IDS EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_COM."IFA_CC_JOURNAL_PRELIMINAR_IDS"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en asientosPreliminaresCCIds')
+    }
+}
 
 const rendicionesPorCaja= async(idCaja) => {
     try {
@@ -281,4 +312,6 @@ module.exports = {
     lineaCC,
     subLineaCC,
     rendicionesPorCaja,
+    asientosPreliminaresCC,
+    asientosPreliminaresCCIds,
 }
