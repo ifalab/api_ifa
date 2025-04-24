@@ -231,7 +231,11 @@ const getCabeceraVisitasCreadasController = async (req, res) => {
     try {
         const {id_vendedor} = req.query
         let response = await getCabeceraVisitasCreadas(id_vendedor)
-
+        response.map(item => {
+            item.VISITTIME = String(item.VISITTIME).length === 3 ?
+            `0${String(item.VISITTIME).slice(0,1)}:${String(item.VISITTIME).slice(1,3)}`:
+            `${String(item.VISITTIME).slice(0,2)}:${String(item.VISITTIME).slice(2,4)}`
+        })
         return res.json(response)
     } catch (error) {
         console.log({ error })

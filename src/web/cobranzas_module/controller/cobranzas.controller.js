@@ -895,7 +895,7 @@ const saldoDeudorInstitucionesController = async (req, res) => {
 
 const realizarCobroController = async (req, res) => {
     try {
-        const body = req.body
+        const {  VisitID, CardName, Total, ...body} = req.body
         let CashSum = body.CashSum
         const CashAccount = body.CashAccount
         let TransferSum = body.TransferSum
@@ -947,6 +947,18 @@ const realizarCobroController = async (req, res) => {
         }
 
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", "Cobranza realizada con exito", `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+        
+        if(VisitID){
+            const responseAniadirVisita = await aniadirDetalleVisita(
+                VisitID, body.CardCode, CardName, 'Cobranza', body.JournalRemarks, 0, Total, body.U_OSLP_ID
+            )
+            console.log({ responseAniadirVisita })
+            if(responseAniadirVisita.message){
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `¡Error al añadir Visita a la Cobranza!. ${responseAniadirVisita.message}`, 'USP_ADD_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD)
+            }
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `Exito al añadir Visita a la Cobranza.`, 'USP_ADD_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD)
+        }
+        
         return res.json({ ...responseSap, body })
     } catch (error) {
         console.log({ error })

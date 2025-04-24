@@ -804,6 +804,23 @@ const lineaDetalleCC = async (
     }
 }
 
+const getRendicionesByEstado = async (estado) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.lapp_rendicion where "ESTADO"=${estado}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en getRendicionesByEstado: ${error.message | ''}`
+        }
+    }
+}
+
 
 module.exports = {
     findAllAperturaCaja,
@@ -839,5 +856,5 @@ module.exports = {
     busquedaProveedor,
     lineaDetalleCC,
     idJournalPreliminar,
-
+    getRendicionesByEstado
 }

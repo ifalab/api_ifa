@@ -10,6 +10,7 @@ const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDeta
     actualizarGlosaPRDGastoController,
     buscarCuentaProdController,
     proveedoresController,
+    getRendicionesByEstadoController
  } = require('../controller/rendiciones.controller')
 const router = Router()
 
@@ -44,6 +45,7 @@ router.get('/cc-by-id/:id', [validarToken, validarCampos], conceptoComercialById
 router.get('/buscar-cuenta-prod', [validarToken, validarCampos], buscarCuentaProdController)
 router.get('/proveedores', [validarToken, validarCampos], proveedoresController)
 
+router.get('/rendiciones-by-estado', [validarToken, validarCampos], getRendicionesByEstadoController)
 
 
 module.exports = router
