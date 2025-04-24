@@ -9,7 +9,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     busquedaProd,
     busquedaProveedor,
     lineaDetalleCC,
-    idJournalPreliminar
+    idJournalPreliminar,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -1590,7 +1590,6 @@ const proveedoresController = async (req, res) => {
     }
 }
 
-
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1620,5 +1619,5 @@ module.exports = {
     actualizarCCRendController,
     actualizarGlosaPRDGastoController,
     buscarCuentaProdController,
-    proveedoresController
+    proveedoresController,
 }

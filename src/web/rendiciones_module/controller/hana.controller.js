@@ -700,7 +700,6 @@ const idJournalPreliminar = async () => {
 
     }
 }
-
 const lineaDetalleCC = async (
     idCom,
     Line_ID,

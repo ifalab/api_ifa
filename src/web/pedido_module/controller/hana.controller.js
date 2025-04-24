@@ -414,6 +414,22 @@ const articuloPorItemCode= async (itemCode) => {
     }
 }
 
+const descuentosCortoVencimiento = async()=>{
+    // IFA_VM_DESCUENTOS_POR_ARTICULO_CORTO_VENCIMIENTO
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_VM_DESCUENTOS_POR_ARTICULO_CORTO_VENCIMIENTO`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en listaNegraDescuentos:', error.message);
+        throw { message: `Error al procesar articuloPorItemCode: ${error.message}` }
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -440,4 +456,5 @@ module.exports = {
     listaNegraDescuentos,
     clientePorCardCode,
     articuloPorItemCode,
+    descuentosCortoVencimiento,
 }

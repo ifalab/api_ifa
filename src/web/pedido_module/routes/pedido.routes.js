@@ -16,7 +16,8 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     listaNegraDescuentosController,
     pedidosPorVendedorFacturadosOrdenadoController, 
     crearOrderIfaController,
-    patchQuotationsWhscodeController} = require('../controller/pedido.controller')
+    patchQuotationsWhscodeController,
+    descuentoCortoVencimientoController} = require('../controller/pedido.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const router = Router()
 
@@ -53,6 +54,7 @@ router.get('/lista-negra-desc', [validarToken, validarCampos], listaNegraDescuen
 
 router.get('/facturados-vendedor-ord', [validarToken, validarCampos], pedidosPorVendedorFacturadosOrdenadoController)
 router.patch('/patch-quotation-whscode', [validarToken, validarCampos], patchQuotationsWhscodeController)
+router.get('/descuento-corto-vencimiento', [validarToken, validarCampos], descuentoCortoVencimientoController)
 
 
 module.exports = router

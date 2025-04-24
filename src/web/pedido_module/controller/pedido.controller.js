@@ -24,7 +24,8 @@ const { findClientePorVendedor,
     stockInstitucionPorArticulo,
     listaNegraDescuentos,
     clientePorCardCode,
-    articuloPorItemCode
+    articuloPorItemCode,
+    descuentosCortoVencimiento
 } = require("./hana.controller");
 const { postOrden, postQuotations, patchQuotations, getQuotation } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -1315,6 +1316,19 @@ const patchQuotationsWhscodeController = async (req, res) => {
     }
 }
 
+const descuentoCortoVencimientoController = async (req, res) => {
+    try {
+        const data = await descuentosCortoVencimiento()
+        return res.json({articulos:data})
+    } catch (error) {
+        console.log({ error })
+        return res.status(400).json({
+            mensaje: 'Error en el controlador',
+            error
+        })
+    }
+}
+
 module.exports = {
     clientesVendedorController,
     clientesMoraController,
@@ -1348,5 +1362,6 @@ module.exports = {
     listaNegraDescuentosController,
     crearOrderIfaController,
     pedidosPorVendedorFacturadosOrdenadoController,
-    patchQuotationsWhscodeController
+    patchQuotationsWhscodeController,
+    descuentoCortoVencimientoController,
 }
