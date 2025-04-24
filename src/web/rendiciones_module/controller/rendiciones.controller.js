@@ -338,9 +338,15 @@ const crearActualizarGastoController = async (req, res) => {
                 new_cod_proveedor
             } = item
 
-            const fecha = new_fecha.split('/')
-            const fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
-            console.log({ fechaFormateada, fecha, new_fecha })
+            let fechaFormateada
+            if(String(new_fecha).includes('/')){
+                const fecha = new_fecha.split('/')
+                fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
+                console.log({ fechaFormateada, fecha, new_fecha })
+            }else{
+                fechaFormateada=new_fecha
+            }
+            
             if (id_gasto == 0) {
                 const responseHana = await crearGasto(
                     new_nit,
