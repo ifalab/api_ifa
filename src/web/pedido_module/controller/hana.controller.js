@@ -415,7 +415,6 @@ const articuloPorItemCode= async (itemCode) => {
 }
 
 const descuentosCortoVencimiento = async()=>{
-    // IFA_VM_DESCUENTOS_POR_ARTICULO_CORTO_VENCIMIENTO
     try {
         if (!connection) {
             await connectHANA();
