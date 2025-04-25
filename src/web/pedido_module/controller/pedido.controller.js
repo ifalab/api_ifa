@@ -239,7 +239,7 @@ const findZonasXVendedorController = async (req, res) => {
 }
 
 const crearOrderController = async (req, res) => {
-    const {VisitID, CardName, ...body}= req.body
+    const { VisitID, CardName, ...body } = req.body
     try {
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -276,12 +276,12 @@ const crearOrderController = async (req, res) => {
         console.log({ usuario })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
 
-        if(VisitID){
+        if (VisitID) {
             const responseAniadirVisita = await aniadirDetalleVisita(
-                VisitID, body.CardCode, CardName, 'Venta', body.Comments, body.DocTotal, 0,body.U_UserCode
+                VisitID, body.CardCode, CardName, 'Venta', body.Comments, body.DocTotal, 0, body.U_UserCode
             )
             console.log({ responseAniadirVisita })
-            if(responseAniadirVisita.message){
+            if (responseAniadirVisita.message) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `¡Error al añadir Visita a la Orden!. ${responseAniadirVisita.message}`, 'USP_ADD_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
             }
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Exito al añadir Visita a la Orden.`, 'USP_ADD_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
@@ -558,9 +558,9 @@ const crearOrderCadenaController = async (req, res) => {
         ordenBody.DocumentLines.map((item) => {
             const { GrossTotal } = item
 
-            console.log({GrossTotal})
+            console.log({ GrossTotal })
             totalOrden += GrossTotal
-            console.log({totalOrden})
+            console.log({ totalOrden })
         })
 
         totalOrden = Number(totalOrden.toFixed(2))
@@ -578,7 +578,7 @@ const crearOrderCadenaController = async (req, res) => {
         console.log(ordenResponse)
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
-            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`,ordenBody })
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, ordenBody })
         }
         console.log({ usuario })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
@@ -1293,10 +1293,10 @@ const pedidosPorVendedorFacturadosOrdenadoController = async (req, res) => {
 
 const patchQuotationsWhscodeController = async (req, res) => {
     try {
-        const { lineNum, whsCode, id } = req.body
+        const { lineNum, whsCode, id, itemCode } = req.body
         const DocumentLines = []
 
-        DocumentLines.push({ LineNum: lineNum, WarehouseCode: whsCode })
+        DocumentLines.push({ LineNum: lineNum, WarehouseCode: whsCode, itemCode })
         console.log({ id, DocumentLines })
         const sapResponse = await patchQuotations(id, { DocumentLines })
         console.log({ sapResponse })
@@ -1319,7 +1319,7 @@ const patchQuotationsWhscodeController = async (req, res) => {
 const descuentoCortoVencimientoController = async (req, res) => {
     try {
         const data = await descuentosCortoVencimiento()
-        return res.json({articulos:data})
+        return res.json({ articulos: data })
     } catch (error) {
         console.log({ error })
         return res.status(400).json({

@@ -10,6 +10,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     busquedaProveedor,
     lineaDetalleCC,
     idJournalPreliminar, getRendicionesByEstado,
+    cambiarPreliminarRendicion,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -1607,6 +1608,17 @@ const getRendicionesByEstadoController = async (req, res) => {
     }
 }
 
+const cambiarPreliminarController = async (req, res) => {
+    try {
+        const idRend = req.query.idRend
+        const rendiciones = await cambiarPreliminarRendicion(idRend)
+        return res.status(200).json(rendiciones)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1638,4 +1650,5 @@ module.exports = {
     buscarCuentaProdController,
     proveedoresController,
     getRendicionesByEstadoController,
+    cambiarPreliminarController,
 }
