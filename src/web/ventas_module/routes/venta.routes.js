@@ -176,7 +176,7 @@ router.post('/cobertura', [validarToken, validarCampos], getCoberturaController)
 router.post('/clientes-no-venta', [validarToken, validarCampos], clientesNoVentaPorVendedorController)
 router.get('/vendedores-clientes', [validarToken, validarCampos], getVendedoresThatHasClientsController)
 router.get('/facturas-mora-by-clientes', [validarToken, validarCampos], facturasMoraByClientController)
-router.get('/clientes-mora-by-sucode-slpcode', [validarToken, validarCampos], clientesMoraController)
+router.post('/clientes-mora-by-sucode-slpcode', [validarToken, validarCampos], clientesMoraController)
 router.get('/vendedores-by-sucode', [validarToken, validarCampos], vendedorPorSucCodeController)
 router.get('/excel-clientes-mora', [validarToken, validarCampos], excelClientesMoraController)
 
