@@ -122,6 +122,22 @@ const insertarDetalleVisitaController = async (req, res) => {
     }
 }
 
+const insertarDetallesFechasVisitaController = async (req, res) => {
+    try {
+        const {cabecera_id, cod_cliente, nom_cliente, fechas, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario } = req.body
+        let responses = []
+        for(const fecha of fechas){
+            let response = await insertarDetalleVisita(cabecera_id, cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario)
+            responses.push(response)
+        }
+        return res.json({responses})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador insertarDetallesFechasVisitaController: ${error.message}` })
+    }
+}
+
+
 const actualizarDetalleVisitaController = async (req, res) => {
     try {
         const {id, fecha, hora_ini, hora_fin, usuario } = req.body
@@ -295,5 +311,5 @@ module.exports = {
     actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController,
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
-    getCabeceraVisitaCreadaController
+    getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController
 }
