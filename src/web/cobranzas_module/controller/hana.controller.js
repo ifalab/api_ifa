@@ -894,6 +894,37 @@ const getClienteById = async (id) => {
     }
 }
 
+const getClientes = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes WHERE "validFor" = 'Y'`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getClientes: ${error.message || ''}`)
+    }
+}
+
+
+const getEstadoCuentaCliente = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = ` CALL ${process.env.PRD}.ifa_lapp_cob_estado_de_cuenta_por_cliente('${id}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getEstadoCuentaCliente: ${error.message || ''}`)
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -946,5 +977,7 @@ module.exports = {
     getBaja, getLayoutComprobanteContable,
     getBajasByUser,
     reporteBajaCobranzas, getCobradoresBySucursales,
-    getClienteById
+    getClienteById,
+    getClientes,
+    getEstadoCuentaCliente
 }
