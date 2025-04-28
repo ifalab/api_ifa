@@ -13,12 +13,17 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
     cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
     getBajasByUser, reporteBajaCobranzas,
-    getClienteById
+    getClienteById,
+    getComprobantesBajasByUser,
+    getClientes,
+    getEstadoCuentaCliente
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { aniadirDetalleVisita } = require('../../planificacion_module/controller/hana.controller');
+const formatData = require('../utils/formatEstadoCuenta');
+
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -1961,6 +1966,21 @@ const getBajasByUserController = async (req, res) => {
         })
     }
 }
+const getComprobantesBajasController = async (req, res) => {
+    try {
+        const { id_sap } = req.query
+        const response = await getComprobantesBajasByUser(id_sap)
+
+        console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `${error.message || 'Error en el controlador getComprobantesBajasController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
 
 const anularBajaController = async (req, res) => {
     try {
@@ -2022,6 +2042,122 @@ const getClienteByIdController = async (req, res) => {
     }
 }
 
+const getClientesController = async (req, res) => {
+    try {
+        let response = await getClientes()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getClientesController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getEstadoCuentaClienteController = async (req, res) => {
+    try {
+        const {id} = req.query
+        let response = await getEstadoCuentaCliente(id)
+        const responseFormatted = formatData(response);
+        return res.json(responseFormatted)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getEstadoCuentaClienteController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getEstadoCuentaClientePDFController = async (req, res) => {
+    try {
+        const { codCliente } = req.query;
+    
+        let response = await getEstadoCuentaCliente(codCliente);
+    
+        if (!response || response.length === 0) {
+            return res.status(404).json({ mensaje: "No se encontraron datos" });
+        }
+        
+        // console.log(response);
+    
+        const { CardCode, CardName, CardFName, Descr, LicTradNum, Phone1, Cellular, E_Mail, PymntGroup, Balance } = response[0];
+    
+        const detalles = response.map(item => {
+            const {
+            CardCode, CardName, CardFName, Descr, LicTradNum, Phone1, Cellular, E_Mail, PymntGroup, Balance,
+            ...resto
+            } = item;
+            return resto;
+        });
+
+        // respuesta final como un objeto
+        console.log(Balance);
+        const resultadoFinal = {
+            TotalSaldo: parseFloat(Balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ,
+            CardCode,
+            CardName,
+            CardFName,
+            Descr,
+            LicTradNum,
+            Phone1,
+            Cellular,
+            E_Mail,
+            PymntGroup,
+            detalles
+        };
+
+        const ejs = require('ejs');
+        const filePath = path.join(__dirname, './pdf/template-estado-cuenta.ejs');
+        const html = await ejs.renderFile(filePath, { data: resultadoFinal, staticBaseUrl: process.env.STATIC_BASE_URL,});
+
+        // 2. Usamos Puppeteer para convertir HTML a PDF
+        const browser = await puppeteer.launch({ headless: true });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            displayHeaderFooter: true,
+            margin: {
+                bottom: '45px',
+                top: '40px',
+            },
+            headerTemplate: `<div></div>`,
+            footerTemplate: `
+                <div style="width: 100%; margin-left: 60px; margin-right: 20px; font-size: 10px; color: #555;">
+                    
+                    <!-- Footer content -->
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="width: 50%; text-align: left;">
+                            <p style="margin: 0;">Página <span class="pageNumber"></span> de <span class="totalPages"></span></p>
+                        </div>
+                        <div style="width: 50%; text-align: right;">
+                            <p>Impreso el <span class="date"></span></p>
+                        </div>
+                    </div>
+                </div>`,
+        });
+        
+
+        await browser.close();
+
+        // 3. Respondemos con el PDF
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="estado-cuenta.pdf"',
+        });
+        res.end(pdfBuffer);
+      
+    } catch (error) {
+      console.log({ error });
+      const mensaje = error.message || 'Error en el controlador getEstadoCuentaClientePDFController';
+      return res.status(500).json({ mensaje });
+    }
+};
+  
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -2075,5 +2211,9 @@ module.exports = {
     getBajasByUserController,
     anularBajaController, reporteBajaCobranzasController,
     getCobradoresBySucursalesController,
-    getClienteByIdController
+    getClienteByIdController,
+    getComprobantesBajasController,
+    getClientesController,
+    getEstadoCuentaClienteController,
+    getEstadoCuentaClientePDFController,
 }

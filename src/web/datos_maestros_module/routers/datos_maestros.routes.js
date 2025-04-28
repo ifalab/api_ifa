@@ -15,7 +15,8 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getIdsDescuentoEspecialController, getDescuentosEspecialesByIdController, getVendedoresController,
     getZonasController, getAllTiposController, getZonasTiposPorVendedorController, asignarZonasYTiposAVendedoresController,
     deleteZonasYTiposAVendedoresController, getDescuentosEspecialesLineaController, deleteDescuentosEspecialesLineaController,
-    cargarPreciosExcelController
+    cargarPreciosExcelController,
+    setDescuentoOfertasPorCortoVencimientoController
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
@@ -37,6 +38,8 @@ router.patch('/actualizar-cliente', [validarToken, validarCampos], actualizarDat
 router.post('/descuento-linea', [validarToken, validarCampos], descuentoOfertasPorLineaController)
 router.get('/lineas', [validarToken, validarCampos], getAllLineasController)
 router.post('/descuento-cantidad', [validarToken, validarCampos], setDescuentoOfertasPorCantidadController)
+router.post('/descuento-corto-vencimiento', [validarToken, validarCampos], setDescuentoOfertasPorCortoVencimientoController)
+
 router.get('/articulos', [validarToken, validarCampos], getArticulosController)
 router.post('/find-cliente', [validarToken, validarCampos], findClienteController)
 router.get('/get-id-desc', [validarToken, validarCampos], getIdDescuentosCantidadController)
