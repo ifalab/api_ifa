@@ -289,6 +289,24 @@ const verRendicionesEnRevision = async () => {
     }
 }
 
+const findAllRendiciones = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('findAllRendiciones EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudieron traer las rendiciones desde la base de datos`
+        }
+    }
+}
+
 const employedByCardCode = async (cardCode) => {
     try {
         if (!connection) {
@@ -872,5 +890,6 @@ module.exports = {
     lineaDetalleCC,
     idJournalPreliminar,
     getRendicionesByEstado,
-    cambiarPreliminarRendicion
+    cambiarPreliminarRendicion,
+    findAllRendiciones
 }

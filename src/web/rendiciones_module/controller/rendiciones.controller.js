@@ -11,6 +11,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     lineaDetalleCC,
     idJournalPreliminar, getRendicionesByEstado,
     cambiarPreliminarRendicion,
+    findAllRendiciones,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -340,14 +341,14 @@ const crearActualizarGastoController = async (req, res) => {
             } = item
 
             let fechaFormateada
-            if(String(new_fecha).includes('/')){
+            if (String(new_fecha).includes('/')) {
                 const fecha = new_fecha.split('/')
                 fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
                 console.log({ fechaFormateada, fecha, new_fecha })
-            }else{
-                fechaFormateada=new_fecha
+            } else {
+                fechaFormateada = new_fecha
             }
-            
+
             if (id_gasto == 0) {
                 const responseHana = await crearGasto(
                     new_nit,
@@ -621,6 +622,7 @@ const verRendicionesEnRevisionController = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
+
 
 const sendToSapController = async (req, res) => {
     const {
@@ -1029,10 +1031,10 @@ const sendToSapController = async (req, res) => {
         let idx = 0
         const idJournalCom = await idJournalPreliminar()
         if (idJournalCom.length == 0) {
-            return res.status(400).json({mensaje:'No hay datos al buscar el ID en IFA COM'})
+            return res.status(400).json({ mensaje: 'No hay datos al buscar el ID en IFA COM' })
         }
         const idCom = idJournalCom[0].TransId
-        
+
         for (const item of journalLines) {
             item.Line_ID = idx
             const response = await lineaDetalleCC(
@@ -1079,8 +1081,8 @@ const sendToSapController = async (req, res) => {
                 item.U_BenefCode,
                 item.U_CardCode
             )
-            if(response.error){
-                return res.status(400).json({response})
+            if (response.error) {
+                return res.status(400).json({ response })
             }
             idx++
         }
@@ -1619,6 +1621,34 @@ const cambiarPreliminarController = async (req, res) => {
     }
 }
 
+const findAllRendicionesController = async (req, res) => {
+    try {
+        const response = await findAllRendiciones()
+        const listaRendiciones = []
+
+        await Promise.all(response.map(async (item) => {
+            const { CODEMP, ...rest } = item
+            Empleado = await employedByCardCode(CODEMP)
+            if (Empleado && Empleado[0]) {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: Empleado[0]
+                })
+            } else {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: null
+                })
+            }
+
+        }))
+
+        return res.json(listaRendiciones)
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1651,4 +1681,5 @@ module.exports = {
     proveedoresController,
     getRendicionesByEstadoController,
     cambiarPreliminarController,
+    findAllRendicionesController,
 }
