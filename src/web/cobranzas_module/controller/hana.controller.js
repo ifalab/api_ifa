@@ -859,6 +859,21 @@ const getBajasByUser = async (id_sap) => {
         throw new Error(`Error en getBajasByUser: ${error.message || ''}`)
     }
 }
+
+const getComprobantesBajasByUser = async (id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_cob_bajas_por_usuario_comprobante(${id_sap})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getComprobantesBajasByUser: ${error.message || ''}`)
+    }
+}
+
 const reporteBajaCobranzas = async (UserSign, month, year) => {
     try {
         if (!connection) {
@@ -946,5 +961,6 @@ module.exports = {
     getBaja, getLayoutComprobanteContable,
     getBajasByUser,
     reporteBajaCobranzas, getCobradoresBySucursales,
-    getClienteById
+    getClienteById,
+    getComprobantesBajasByUser,
 }

@@ -398,6 +398,32 @@ const setDescuentoOfertasPorCantidadController = async (req, res) => {
     }
 }
 
+const setDescuentoOfertasPorCortoVencimientoController = async (req, res) => {
+    try {
+        const { body } = req
+        console.log({ body })
+        let responses = []
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        for (const descuento of body) {
+            const { Row, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete } = descuento
+            const response = await setDescuentoOfertasPorCantidad(Row, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
+            responses.push(response)
+            if (response.status != 200) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Corto Vencimiento", `Error: ${response.message || 'setDescuentoOfertasPorCortoVencimiento'} `, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-corto-vencimiento", process.env.PRD)
+                return res.status(400).json({ mensaje: `${response.message || 'Error en setDescuentoOfertasPorCortoVencimiento'}` })
+            }
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Corto Vencimiento", `Exito en la actualizacion de descuentos por Corto Vencimiento`, ``, "datos-maestros/descuento-corto-vencimiento", process.env.PRD)
+        return res.json(responses)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `Error en el controlador setDescuentoOfertasPorCortoVencimientoController: ${error.message || ''}`
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Corto Vencimiento", mensaje, ``, "datos-maestros/descuento-cantidad", process.env.PRD)
+        return res.status(500).json({ mensaje })
+    }
+}
+
 const findClienteController = async (req, res) => {
     try {
         const body = req.body
@@ -902,5 +928,6 @@ module.exports = {
     deleteZonasYTiposAVendedoresController,
     getDescuentosEspecialesLineaController,
     deleteDescuentosEspecialesLineaController,
-    cargarPreciosExcelController
+    cargarPreciosExcelController,
+    setDescuentoOfertasPorCortoVencimientoController,
 }
