@@ -40,7 +40,6 @@ const { aniadirDetalleVisita } = require("../../planificacion_module/controller/
 
 const clientesVendedorController = async (req, res) => {
     try {
-
         const { name } = req.body;
         const response = await findClientesByVendedor(name);
         let clientes = [];
@@ -62,6 +61,35 @@ const clientesVendedorController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const findClienteController = async (req, res) => {
+    try {
+
+        const { name, cardCode } = req.body;
+        const response = await findClientesByVendedor(name);
+        let cliente;
+        for (const item of response) {
+            if(item.CardCode == cardCode){
+                const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
+                const saldoDisponible = (+CreditLine) - (+AmountDue);
+                cliente= {
+                    ...restCliente,
+                    CreditLine,
+                    AmountDue,
+                    mora: HvMora,
+                    saldoDisponible,
+                };
+                break;
+            }
+            
+        }
+
+        return res.json(cliente);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en findClienteController: ${error.message}` })
     }
 }
 
@@ -282,9 +310,9 @@ const crearOrderController = async (req, res) => {
             )
             console.log({ responseAniadirVisita })
             if (responseAniadirVisita.message) {
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `¡Error al añadir Visita a la Orden!. ${responseAniadirVisita.message}`, 'USP_ADD_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `¡Error al añadir Visita a la Orden!. ${responseAniadirVisita.message}`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
             }
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Exito al añadir Visita a la Orden.`, 'USP_ADD_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Exito al añadir Visita a la Orden.`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
         }
 
         return res.json({ ...ordenResponse })
@@ -1364,4 +1392,6 @@ module.exports = {
     pedidosPorVendedorFacturadosOrdenadoController,
     patchQuotationsWhscodeController,
     descuentoCortoVencimientoController,
+    findClienteController,
+
 }

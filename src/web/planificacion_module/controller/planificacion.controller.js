@@ -3,7 +3,7 @@ const {
     getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita, getDetalleVisitasCreadas,
-    getCabeceraVisitaCreada
+    getCabeceraVisitaCreada, getClienteByCode
 } = require("./hana.controller")
 
 const vendedoresPorSucCodeController = async (req, res) => {
@@ -43,6 +43,19 @@ const getClientesDelVendedorController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getClientesDelVendedorController: ${error.message}` })
+    }
+}
+const getClienteByCodeController = async (req, res) => {
+    try {
+        const { id } = req.query
+        let response = await getClienteByCode(id)
+        if(response.length>0){
+            response = response[0]
+        }
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getClienteByCodeController: ${error.message}` })
     }
 }
 
@@ -311,5 +324,5 @@ module.exports = {
     actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController,
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
-    getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController
+    getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController, getClienteByCodeController
 }
