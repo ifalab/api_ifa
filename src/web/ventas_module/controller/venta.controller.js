@@ -2007,55 +2007,59 @@ const facturasMoraByClientController = async (req, res) => {
 
 const clientesMoraController = async (req, res) => {
     try {
-        const { sucCode, slpCode } = req.query
-        const response = await clientesConMora(sucCode, slpCode)
-        /**
-         * LicTradNum//nit
-         * Comments
-         * JrnlMemo
-         * DocTotal
-         * U_RAZSOC
-         * FiscalDate
-         * NumAtCard//nro factura
-         * U_B_cuf
-         * U_B_path
-         * C002519
-         */
-        // let listCardCode = []
-        const cardMap = new Map();
-        response.map((item) => {
-            if (item.CardCode && item.CardCode !== '') {
-                const {
-                    LicTradNum,
-                    Comments,
-                    JrnlMemo,
-                    DocTotal,
-                    DocEntry,
-                    DocNum,
-                    U_RAZSOC,
-                    NumAtCard,
-                    FiscalDate,
-                    U_B_cuf,
-                    U_B_path,
-                    ...restData
-                } = item
+        const { listSucCode, slpCode } = req.body
+        let listResult = []
+        for (const sucCode of listSucCode) {
+            const response = await clientesConMora(sucCode, slpCode)
+            const cardMap = new Map();
+            response.map((item) => {
+                if (item.CardCode && item.CardCode !== '') {
+                    const {
+                        LicTradNum,
+                        Comments,
+                        JrnlMemo,
+                        DocTotal,
+                        DocEntry,
+                        DocNum,
+                        U_RAZSOC,
+                        NumAtCard,
+                        FiscalDate,
+                        U_B_cuf,
+                        U_B_path,
+                        ...restData
+                    } = item
 
-                const {
-                    PymntGroup,
-                    CardCode,
-                    CardName,
-                    GroupName,
-                    SucName,
-                    AreaName,
-                    ZoneName,
-                    SlpNameCli,
-                    CardFName,
-                    DaysDue
-                } = restData
+                    const {
+                        PymntGroup,
+                        CardCode,
+                        CardName,
+                        GroupName,
+                        SucName,
+                        AreaName,
+                        ZoneName,
+                        SlpNameCli,
+                        CardFName,
+                        DaysDue
+                    } = restData
 
-                if (cardMap.has(CardCode)) {
-                    const existing = cardMap.get(CardCode);
-                    if (DaysDue > existing.DaysDue) {
+                    if (cardMap.has(CardCode)) {
+                        const existing = cardMap.get(CardCode);
+                        if (DaysDue > existing.DaysDue) {
+                            cardMap.set(CardCode, {
+                                PymntGroup,
+                                CardCode,
+                                CardName,
+                                GroupName,
+                                SucName,
+                                AreaName,
+                                ZoneName,
+                                SlpNameCli,
+                                CardFName,
+                                DaysDue,
+                                Facturas: []
+                            });
+                        }
+                    } else {
                         cardMap.set(CardCode, {
                             PymntGroup,
                             CardCode,
@@ -2070,66 +2074,53 @@ const clientesMoraController = async (req, res) => {
                             Facturas: []
                         });
                     }
-                } else {
-                    cardMap.set(CardCode, {
-                        PymntGroup,
-                        CardCode,
-                        CardName,
-                        GroupName,
-                        SucName,
-                        AreaName,
-                        ZoneName,
-                        SlpNameCli,
-                        CardFName,
-                        DaysDue,
-                        Facturas: []
-                    });
                 }
-            }
-        })
+            })
 
-        const listCardCode = Array.from(cardMap.values())
+            const listCardCode = Array.from(cardMap.values())
 
-        listCardCode.map((itemData) => {
+            listCardCode.map((itemData) => {
 
-            const listDataFacturas = response
-                .filter(item => item.CardCode === itemData.CardCode)
-                .map(item => {
-                    const {
-                        LicTradNum,
-                        Comments,
-                        JrnlMemo,
-                        DocTotal,
-                        DocEntry,
-                        DocNum,
-                        U_RAZSOC,
-                        NumAtCard,
-                        FiscalDate,
-                        U_B_cuf,
-                        U_B_path,
-                        DaysDue,
-                    } = item;
+                const listDataFacturas = response
+                    .filter(item => item.CardCode === itemData.CardCode)
+                    .map(item => {
+                        const {
+                            LicTradNum,
+                            Comments,
+                            JrnlMemo,
+                            DocTotal,
+                            DocEntry,
+                            DocNum,
+                            U_RAZSOC,
+                            NumAtCard,
+                            FiscalDate,
+                            U_B_cuf,
+                            U_B_path,
+                            DaysDue,
+                        } = item;
 
-                    return {
-                        LicTradNum,
-                        Comments,
-                        JrnlMemo,
-                        DocTotal,
-                        DocEntry,
-                        DocNum,
-                        U_RAZSOC,
-                        NumAtCard,
-                        FiscalDate,
-                        U_B_cuf,
-                        DaysDue,
-                        U_B_path,
-                    }
-                })
+                        return {
+                            LicTradNum,
+                            Comments,
+                            JrnlMemo,
+                            DocTotal,
+                            DocEntry,
+                            DocNum,
+                            U_RAZSOC,
+                            NumAtCard,
+                            FiscalDate,
+                            U_B_cuf,
+                            DaysDue,
+                            U_B_path,
+                        }
+                    })
 
-            itemData.Facturas = listDataFacturas
-        })
+                itemData.Facturas = listDataFacturas
+            })
+            listResult = [...listResult,...listCardCode]
+        }
 
-        return res.json(listCardCode)
+        return res.json(listResult)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en facturasMoraByClientController: ${error.message}` })
@@ -2330,9 +2321,9 @@ const reporteUbicacionClienteController = async (req, res) => {
         console.log({ sucCode, SlpCode })
         let responseConUbi = await reporteConUbicacionCliente(sucCode)
         let responseSinUbi = await reporteSinUbicacionCliente(sucCode)
-       
+
         if (SlpCode && SlpCode !== '0') {
-            console.log({SlpCode})
+            console.log({ SlpCode })
             responseConUbi = responseConUbi.filter((item) => item.SlpCodeCli == +SlpCode)
             responseSinUbi = responseSinUbi.filter((item) => item.SlpCodeCli == +SlpCode)
         }

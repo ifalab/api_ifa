@@ -12,6 +12,7 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getCuentasParaBajaController,getCuentasBancoParaBajaCobranzaController,comprobanteContableController, 
     darVariasDeBajaController, getBajasByUserController, anularBajaController,
     reporteBajaCobranzasController, getCobradoresBySucursalesController, getClienteByIdController,
+    getComprobantesBajasController,
     getClientesController,
     getEstadoCuentaClienteController,
     getEstadoCuentaClientePDFController
@@ -79,6 +80,7 @@ router.get('/cuentas-banco-baja',[validarToken, validarCampos], getCuentasBancoP
 router.get('/comprobante-contable',[validarToken, validarCampos], comprobanteContableController)
 router.post('/baja-varias',[validarToken, validarCampos], darVariasDeBajaController)
 router.get('/get-bajas',[validarToken, validarCampos], getBajasByUserController)
+router.get('/get-comprobantes-bajas',[validarToken, validarCampos], getComprobantesBajasController)
 router.get('/anular-baja',[validarToken, validarCampos], anularBajaController)
 
 router.post('/reporte-baja',[validarToken, validarCampos], reporteBajaCobranzasController)

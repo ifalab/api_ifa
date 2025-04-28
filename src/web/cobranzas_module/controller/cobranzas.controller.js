@@ -14,6 +14,7 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
     getBajasByUser, reporteBajaCobranzas,
     getClienteById,
+    getComprobantesBajasByUser,
     getClientes,
     getEstadoCuentaCliente
 } = require("./hana.controller")
@@ -1965,6 +1966,21 @@ const getBajasByUserController = async (req, res) => {
         })
     }
 }
+const getComprobantesBajasController = async (req, res) => {
+    try {
+        const { id_sap } = req.query
+        const response = await getComprobantesBajasByUser(id_sap)
+
+        console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `${error.message || 'Error en el controlador getComprobantesBajasController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
 
 const anularBajaController = async (req, res) => {
     try {
@@ -2196,6 +2212,7 @@ module.exports = {
     anularBajaController, reporteBajaCobranzasController,
     getCobradoresBySucursalesController,
     getClienteByIdController,
+    getComprobantesBajasController,
     getClientesController,
     getEstadoCuentaClienteController,
     getEstadoCuentaClientePDFController,

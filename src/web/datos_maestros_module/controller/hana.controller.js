@@ -387,6 +387,40 @@ const setDescuentoOfertasPorCantidad = async (row, itemCode, cantMin, cantMax, d
     }
 }
 
+const setDescuentoOfertasPorCortoVencimiento = async (row, itemCode, cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del) => {
+    let query = ''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos_detalle_corto_vencimiento(${row},'${itemCode}',${cantMin}, ${cantMax}, ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap}, '${del}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        console.log(result)
+        if (typeof result === 'number')
+            return {
+                status: 200,
+                message: '',
+                data: result,
+                query
+            }
+        return {
+            status: result[0].response || 200,
+            message: result[0].message || '',
+            data: result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en setDescuentoOfertasPorCortoVencimiento:', error);
+        return {
+            status: 400,
+            message: `Error en setDescuentoOfertasPorCortoVencimiento: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
 const getArticulos = async (lineCode) => {
     try {
         if (!connection) {
@@ -932,4 +966,5 @@ module.exports = {
     articuloByItemCode,
     updateListaPrecios,
     desactivePriceList,
+    setDescuentoOfertasPorCortoVencimiento,
 }

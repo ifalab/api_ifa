@@ -8,7 +8,7 @@ const {
     actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController,
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController, 
-    getCabeceraVisitaCreadaController
+    getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -21,6 +21,9 @@ router.post('/ciclo-vendedor', [validarToken, validarCampos], getCicloVendedorCo
 router.get('/detalle-ciclo-vendedor', [validarToken, validarCampos], getDetalleCicloVendedorController)
 router.post('/insertar-visita', [validarToken, validarCampos], insertarVisitaController)
 router.post('/detalle-visita', [validarToken, validarCampos], insertarDetalleVisitaController)
+
+router.post('/detalle-fechas-visita', [validarToken, validarCampos], insertarDetallesFechasVisitaController)
+
 router.post('/cabecera-visita', [validarToken, validarCampos], insertarCabeceraVisitaController)
 router.post('/actualizar-visita', [validarToken, validarCampos], actualizarDetalleVisitaController)
 router.post('/estado-ciclo', [validarToken, validarCampos], cambiarEstadoCicloController)
