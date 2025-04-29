@@ -77,7 +77,8 @@ const {
     allAgenciesController,
     campaignByIdController,
     sublineasController,
-    reporteUbicacionClienteController
+    reporteUbicacionClienteController,
+    agregarSolicitudDeDescuentoController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -181,5 +182,9 @@ router.get('/vendedores-by-sucode', [validarToken, validarCampos], vendedorPorSu
 router.get('/excel-clientes-mora', [validarToken, validarCampos], excelClientesMoraController)
 
 router.get('/reporte-ubicacion-cliente', [validarToken, validarCampos], reporteUbicacionClienteController)
+
+//Solicitud Descuento
+router.post('/solicitar-descuento', [validarToken, validarCampos], agregarSolicitudDeDescuentoController)
+
 
 module.exports = router

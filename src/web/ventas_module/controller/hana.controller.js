@@ -1435,6 +1435,27 @@ const reporteSinUbicacionCliente = async (sucCode) => {
     }
 }
 
+///Solicitud Descuentos
+const agregarSolicitudDeDescuento = async (p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
+    p_ItemCode, p_ItemName, p_CantMin,  p_CantMax, p_DescPrct,  p_FechaIni, p_FechaFin,  p_CreatedBy) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_crm_solicitar_descuento(${p_SlpCode}, 
+        '${p_SlpName}', '${p_ClientCode}', '${p_ClientName}', '${p_ItemCode}', '${p_ItemName}', ${p_CantMin}, ${p_CantMax}, ${p_DescPrct}, 
+        '${p_FechaIni}', '${p_FechaFin}', ${p_CreatedBy})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en agregarSolicitudDeDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1522,4 +1543,5 @@ module.exports = {
     reporteConUbicacionCliente,
     reporteSinUbicacionCliente,
     searchVendedorByIDSAP,
+    agregarSolicitudDeDescuento
 }

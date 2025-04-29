@@ -85,7 +85,8 @@ const {
     sublineas,
     reporteSinUbicacionCliente,
     reporteConUbicacionCliente,
-    searchVendedorByIDSAP
+    searchVendedorByIDSAP,
+    agregarSolicitudDeDescuento
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2338,6 +2339,28 @@ const reporteUbicacionClienteController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en reporteUbicacionClienteController: ${error.message}` })
     }
 }
+
+const agregarSolicitudDeDescuentoController = async (req, res) => {
+    try {
+        const {solicitudes, p_SlpCode, p_SlpName, p_CreatedBy} = req.body
+        let responses = []
+        for(const solicitud of solicitudes) {
+            const { p_ClientCode, p_ClientName, p_ItemCode, p_ItemName, p_CantMin,  p_CantMax, p_DescPrct,  p_FechaIni, p_FechaFin } = solicitud
+            
+            const response = await agregarSolicitudDeDescuento(p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
+                p_ItemCode, p_ItemName, p_CantMin,  p_CantMax, p_DescPrct,  p_FechaIni, p_FechaFin,  p_CreatedBy)
+            responses.push(response)
+        }
+        return res.json({
+            responses
+        })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en agregarSolicitudDeDescuentoController: ${error.message}` })
+    }
+}
+
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2417,4 +2440,5 @@ module.exports = {
     campaignByIdController,
     sublineasController,
     reporteUbicacionClienteController,
+    agregarSolicitudDeDescuentoController
 };

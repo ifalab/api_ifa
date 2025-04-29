@@ -323,7 +323,7 @@ const getAllArticulos= async (itemName) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') and "ItmsGrpCod" = 105 and "validFor"='Y' order by "ItemName" limit 15`;
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') and "ItmsGrpCod" = 105 and "validFor"='Y' order by "ItemName" limit 20`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
