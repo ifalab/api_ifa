@@ -98,7 +98,14 @@
         thead th:first-child {
             border-top-left-radius: 10px;
         }
-
+        thead th:nth-child(2) {
+            max-width: 70px;
+            word-break: break-word;
+        }
+        thead th:nth-child(5) {
+            max-width: 30px;
+            word-break: break-word;
+        }
         thead th:last-child {
             border-top-right-radius: 10px;
         }
@@ -112,20 +119,20 @@
         th, td {
             padding: 4px;
         }
-        th:nth-child(1), th:nth-child(2), th:nth-child(3), th:nth-child(4), th:nth-child(5) {
+        th:nth-child(1), th:nth-child(2), th:nth-child(3), th:nth-child(4), th:nth-child(5), th:nth-child(6) {
             text-align: left;
         }
-        th:nth-child(6), th:nth-child(7), th:nth-child(8){
+        th:nth-child(7), th:nth-child(8), th:nth-child(9){
             text-align: right;
         }
-        td:nth-child(2), td:nth-child(5) {
+        td:nth-child(3), td:nth-child(6) {
             max-width: 100px;
             word-break: break-word;
         }
-        td:nth-child(1), td:nth-child(2), td:nth-child(3), td:nth-child(4), td:nth-child(5) {
+        td:nth-child(1), td:nth-child(2), td:nth-child(3), td:nth-child(4), td:nth-child(5),td:nth-child(6) {
             text-align: left;
         }
-        td:nth-child(6), td:nth-child(7), td:nth-child(8){
+        td:nth-child(7), td:nth-child(8), td:nth-child(9){
             text-align: right;
         }
         .fila-borde {
@@ -133,6 +140,12 @@
         }
         .fila-pago {
             background-color: #fcc5c5;
+        }
+        .texto-verde {
+            color: green;
+        }
+        .texto-rojo {
+            color: red;
         }
     </style>
 </head>
@@ -189,6 +202,7 @@
         <thead>
             <tr>
                 <th>Fecha</th>
+                <th>Fecha Vencimiento</th>
                 <th>Documento</th>
                 <th>Trans</th>
                 <th>Vigencia</th>
@@ -202,17 +216,40 @@
             <% data.detalles.forEach(detalle => { %>
                 <% 
                     let clasesFila = 'fila-borde'; 
+                    let clasesTexto = '';
                     
                     if (detalle.Transaccion === 'Pago') {
                         clasesFila += ' fila-pago';
+
+                        if (detalle.pagovsvenc) {
+                            const pagovsvencLower = detalle.pagovsvenc.toLowerCase();
+                            if (pagovsvencLower.includes('mora')) {
+                                clasesTexto = ' texto-rojo';
+                            } else if (pagovsvencLower.includes('a')) {
+                                clasesTexto = ' texto-verde';
+                            }
+                        }
+                    }
+
+                    if (detalle.Transaccion === 'Factura' || detalle.Transaccion === 'Carga') {
+
+                        if (detalle.vencimiento) {
+                            const vencimientoNumero = detalle.vencimiento;
+                            if( parseFloat(detalle.Saldo || 0) === 0 || vencimientoNumero > 0){
+                                clasesTexto = 'texto-verde';
+                            }else if ( parseFloat(detalle.Saldo || 0) > 0 || vencimientoNumero < 0){
+                                clasesTexto='texto-rojo'
+                            }
+                        }
                     }
                 %>
                 <tr class="<%= clasesFila  %>">
                     <% if (detalle.Transaccion === "Factura" || detalle.Transaccion === "Carga") { %>
                         <td><%= (detalle.Fecha || '').substring(0,10) %></td>
+                        <td><%= (detalle.FechaVencimiento || '').substring(0,10) %></td>
                         <td><%= detalle.Documento %></td>
                         <td><%= detalle.Transaccion %></td>
-                        <td>
+                        <td class="<%= clasesTexto %>">
                             <%= parseFloat(detalle.Saldo || 0) === 0 ? 'Pagada' : (detalle.vencimiento + ' d') %>
                         </td>                        
                         <td><%= detalle.Comentarios %></td>
@@ -221,9 +258,11 @@
                         <td><%= parseFloat(detalle.Saldo || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
                     <% } else if (detalle.Transaccion === "Pago") { %>
                         <td><%= (detalle.FechaPago || '').substring(0,10) %></td>
+                        <td><hr style="background-color: white; color: white; border: none; height: 2px;">
+                        </td>
                         <td><%= detalle.NroPago %></td>
                         <td><%= detalle.Transaccion %></td>
-                        <td><%= detalle.pagovsvenc %></td>
+                        <td class="<%= clasesTexto %>"><%= detalle.pagovsvenc %></td>
                         <td><%= detalle.Comentarios %></td>
                         <td><%= parseFloat(detalle.Cargo || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
                         <td><%= parseFloat(detalle.Abono || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
@@ -234,7 +273,7 @@
         </tbody>        
         <tfoot>
             <tr style="border-top: 2px solid #000; background-color: rgb(207, 14, 14); color: white;">
-                <td colspan="4"></td>
+                <td colspan="5"></td>
                 <td style="font-weight: bold;">Saldo pendiente</td>
                 <td></td>
                 <td style="font-weight: bold;">Bs</td>

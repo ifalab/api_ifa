@@ -2,6 +2,7 @@ const formatData = (data) => {
   const clientesMap = {};
 
   data.forEach(transaccion => {
+    console.log(transaccion);
     const clienteId = transaccion.CardCode;
     if (!clientesMap[clienteId]) {
       clientesMap[clienteId] = {
@@ -14,6 +15,7 @@ const formatData = (data) => {
         Cellular: transaccion.Cellular,
         E_Mail: transaccion.E_Mail,
         PymntGroup: transaccion.PymntGroup,
+        Balance: transaccion.Balance,
         transacciones: []
       };
     }
@@ -35,6 +37,7 @@ const formatData = (data) => {
         vencimiento: transaccion.vencimiento,
         Balance: transaccion.Balance,
         Fecha: transaccion.Fecha,
+        FechaVencimiento: transaccion.FechaVencimiento,
         Documento: transaccion.Documento,
         Transaccion: transaccion.Transaccion,
         Nro: transaccion.Nro,

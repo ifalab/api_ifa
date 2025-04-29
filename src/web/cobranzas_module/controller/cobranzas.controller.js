@@ -2091,6 +2091,7 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
             } = item;
             return resto;
         });
+        console.log(detalles);
 
         // respuesta final como un objeto
         console.log(Balance);
