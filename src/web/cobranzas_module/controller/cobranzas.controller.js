@@ -959,9 +959,9 @@ const realizarCobroController = async (req, res) => {
             )
             console.log({ responseAniadirVisita })
             if(responseAniadirVisita.message){
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `¡Error al añadir Visita a la Cobranza!. ${responseAniadirVisita.message}`, 'USP_ADD_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD)
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `¡Error al añadir Visita a la Cobranza!. ${responseAniadirVisita.message}`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD)
             }
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `Exito al añadir Visita a la Cobranza.`, 'USP_ADD_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `Exito al añadir Visita a la Cobranza.`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD)
         }
         
         return res.json({ ...responseSap, body })

@@ -81,7 +81,9 @@ const getClientesDelVendedor = async (code) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select "CardCode", "CardName", "SlpCodeCli", "SlpNameCli" from ${process.env.PRD}.ifa_dm_clientes
+        const query = `select "CardCode", "CardName", "CardFName",
+        "SlpCodeCli", "SlpNameCli", "GroupNum", "LicTradNum", "GroupCode",
+        "DftWhsCode", "NoDiscount", "GroupName", "PymntGroup" from ${process.env.PRD}.ifa_dm_clientes
         where "SlpCodeCli"=${code}`
         console.log({ query })
         const result = await executeQuery(query)
@@ -89,6 +91,25 @@ const getClientesDelVendedor = async (code) => {
     } catch (error) {
         throw {
             message: `Error en getClientesDelVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const getClienteByCode = async (code) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "CardCode", "CardName", "CardFName",
+        "SlpCodeCli", "SlpNameCli", "GroupNum", "LicTradNum", "GroupCode",
+        "DftWhsCode", "NoDiscount", "GroupName", "PymntGroup" from ${process.env.PRD}.ifa_dm_clientes
+        where "CardCode"='${code}'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getClienteByCode: ${error.message || ''}`
         }
     }
 }
@@ -121,18 +142,28 @@ const getDetalleCicloVendedor = async (planId) => {
         }
         const query = `
             select 
-                "PlanDetailID",
-                "PlanID",
-                "ClientCode",
-                "ClientName",
-                "PlanVisitDate",
-                "PlanVisitTimeFrom",
-                "PlanVisitTimeTo",
-                "Comments",
-                "CreatedBy","CreateDate", "CreateTime",
-                "STATUS"
-            from ${process.env.PRD}.ifa_crm_visit_plan_detail 
-            where "PlanID"='${planId}'
+                b."PlanDetailID",
+                b."PlanID",
+                b."ClientCode",
+                b."ClientName",
+                b."PlanVisitDate",
+                b."PlanVisitTimeFrom",
+                b."PlanVisitTimeTo",
+                b."Comments",
+                b."CreatedBy",b."CreateDate", b."CreateTime",
+                b."STATUS",
+                (
+                    case when c."PLANDETAILID" is null 
+                        then false 
+                        else true 
+                    end
+                ) as "VISITADO"
+            from ${process.env.PRD}.ifa_crm_visit_plan_detail b
+            left join (
+                select "PLANID", "PLANDETAILID" from ${process.env.PRD}.IFA_CRM_VISIT_HEADER
+                where "PLANID"=${planId}
+            ) c on c."PLANDETAILID" = b."PlanDetailID"
+            where b."PlanID"='${planId}'
         `
         console.log({ query })
         const result = await executeQuery(query)
@@ -344,7 +375,6 @@ const getCabeceraVisitasCreadas = async (id_vendedor) => {
     CreateDate
     CreateTime
 */
-
 const getCabeceraVisitaCreada = async () => {
     try {
         if(!connection) {
@@ -373,7 +403,6 @@ const getCabeceraVisitaCreada = async () => {
     ReasonNotVisit
     Comments
 */
-
 const getDetalleVisitasCreadas = async (id_visita) => {
     try {
         if(!connection) {
@@ -388,16 +417,6 @@ const getDetalleVisitasCreadas = async (id_visita) => {
         }
     }
 }
-/*
-procedure USP_CREATE_VISIT_HEADER (
-	in	p_SlpCode integer, in p_SlpName nvarchar(200), 
-	in p_ClientCode nvarchar(20), in p_ClientName nvarchar(200),
-	in p_PlanID integer, in p_PlanDetailID integer,
-	in p_VisitDate date, in p_VisitTime integer, in p_VisitStatus integer,
-	in p_Comments nvarchar(250), in p_Longitude nvarchar(200), in p_Latitude nvarchar(200),
-	in p_ReasonNotVisit nvarchar(250), in p_CreatedBy integer
-)
-*/
 
 const marcarVisita = async (SlpCode, SlpName, ClientCode, ClientName, IdPlan, IdPlanDetail, VisitDate, VisitTime,
     VisitStatus, Comments, Longitude, Latitude, ReasonNotVisit, CreatedBy) => {
@@ -405,13 +424,13 @@ const marcarVisita = async (SlpCode, SlpName, ClientCode, ClientName, IdPlan, Id
         if(!connection) {
             await connectHANA()
         }
-        const query = `call ${process.env.PRD}.USP_CREATE_VISIT_HEADER(
+        const query = `call ${process.env.PRD}.IFA_CRM_AGREGAR_VISIT_HEADER(
             ${SlpCode}, '${SlpName}', '${ClientCode}', '${ClientName}',
             ${IdPlan}, ${IdPlanDetail}, '${VisitDate}', ${VisitTime}, ${VisitStatus},
             '${Comments}', '${Longitude}', '${Latitude}', '${ReasonNotVisit}', ${CreatedBy}
         )`
         console.log({ query })
-        return await executeQuery(query)
+        return await executeQuery(query) // returns VISITID
     } catch (error) {
         throw {
             message: `Error en marcarVisita: ${error.message || ''}`
@@ -419,31 +438,17 @@ const marcarVisita = async (SlpCode, SlpName, ClientCode, ClientName, IdPlan, Id
     }
 }
 
-/*
-CREATE PROCEDURE "USP_ADD_VISIT_DETAIL"
-(
-    IN p_VisitID             INTEGER,
-    IN p_ClientCode         NVARCHAR(20),
-    IN p_ClientName         NVARCHAR(100),
-    IN p_EventType      NVARCHAR(50),
-    IN p_Comments           NVARCHAR(250),
-    IN p_SaleAmount      DECIMAL(15,2), //DocTotal
-    IN p_CollectionAmount     DECIMAL(15,2),     
-    IN p_CreatedBy          INTEGER //U_UserCode
-)
-*/
-
 const aniadirDetalleVisita = async (VisitID, ClientCode, ClientName, EventType, Comments, SaleAmount, CollectionAmount, CreatedBy) => { 
     try {
         if(!connection) {
             await connectHANA()
         }
-        const query = `CALL ${process.env.PRD}."USP_ADD_VISIT_DETAIL"(
+        const query = `CALL ${process.env.PRD}."IFA_CRM_AGREGAR_VISIT_DETAIL"(
                 ${VisitID}, '${ClientCode}', '${ClientName}', '${EventType}', '${Comments}',
                 ${SaleAmount}, ${CollectionAmount}, ${CreatedBy}
             );`
         console.log({ query })
-        return await executeQuery(query)
+        return await executeQuery(query)//  returns {EVENTID}
     } catch (error) {
         return {
             message: `Error en aniadirDetalleVisita: ${error.message || ''}`
@@ -451,10 +456,12 @@ const aniadirDetalleVisita = async (VisitID, ClientCode, ClientName, EventType, 
     }
 }
 
+
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita,
-    getDetalleVisitasCreadas, getCabeceraVisitaCreada
+    getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode
 }
