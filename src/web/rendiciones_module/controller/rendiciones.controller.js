@@ -659,6 +659,7 @@ const sendToSapController = async (req, res) => {
         }, null, 2))
         for (const iterator of listaGastos) {
             if (iterator.new_estado !== '2') {
+                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error Todas las filas deben estar EN REVISION`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Todas las filas deben estar EN REVISION' });
                 break
             }
