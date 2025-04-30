@@ -884,7 +884,6 @@ const getDescuentosEspecialesLinea = async (cardCode) => {
             await connectHANA();
         }
         const query = `SELECT * FROM ${process.env.PRD}.IFA_CRM_DESCUENTOS_POR_LINEA WHERE CURRENT_DATE BETWEEN "FromDate" AND "ToDate" AND "CardCode" = '${cardCode}'`;
-        // const query = `SELECT * FROM LAB_IFA_PRD.IFA_CRM_DESCUENTOS_POR_LINEA WHERE CURRENT_DATE BETWEEN "FromDate" AND "ToDate" AND "CardCode" = '${cardCode}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result

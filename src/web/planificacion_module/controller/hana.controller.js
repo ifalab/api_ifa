@@ -352,7 +352,8 @@ const getCabeceraVisitasCreadas = async (id_vendedor) => {
         if(!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.IFA_CRM_VISIT_HEADER where "SLPCODE"=${id_vendedor} `   
+        const query = `select * from ${process.env.PRD}.IFA_CRM_VISIT_HEADER where "SLPCODE"=${id_vendedor} 
+        order by "VISITDATE" desc, "VISITTIME" desc limit 50`
 
         return await executeQuery(query)
     } catch (error) {
@@ -456,6 +457,24 @@ const aniadirDetalleVisita = async (VisitID, ClientCode, ClientName, EventType, 
     }
 }
 
+const actualizarVisita = async (VisitID, comentario) => { 
+    try {
+        if(!connection) {
+            await connectHANA()
+        }
+        const query = `
+            UPDATE ${process.env.PRD}.IFA_CRM_VISIT_HEADER
+            SET "COMMENTS" = '${comentario}'
+            WHERE "VISITID" = ${VisitID};`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en actualizarVisita: ${error.message || ''}`
+        }
+    }
+}
+
 
 
 module.exports = {
@@ -463,5 +482,5 @@ module.exports = {
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita,
-    getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode
+    getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode, actualizarVisita
 }
