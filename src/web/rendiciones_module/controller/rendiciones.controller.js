@@ -1,4 +1,5 @@
 const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module/controllers/hana.controller")
+const { grabarLog } = require("../../shared/controller/hana.controller")
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
     getProveedor, searchBeneficiarios,
@@ -637,6 +638,7 @@ const sendToSapController = async (req, res) => {
         fechaContabilizado,
         listaGastos,
     } = req.body
+    const user = req.usuarioAutorizado
 
     try {
         let listRecibos = []
@@ -644,6 +646,7 @@ const sendToSapController = async (req, res) => {
         let listFacturasND = []
         let listResHana = []
         let errores = []
+        
 
         console.log(JSON.stringify({
             codEmp,
@@ -654,15 +657,6 @@ const sendToSapController = async (req, res) => {
             fechaContabilizado,
             listaGastos,
         }, null, 2))
-        // return res.json({
-        //     codEmp,
-        //     estado,
-        //     idRendicion,
-        //     transacId,
-        //     glosaRend,
-        //     fechaContabilizado,
-        //     listaGastos,
-        // })
         for (const iterator of listaGastos) {
             if (iterator.new_estado !== '2') {
                 return res.status(400).json({ mensaje: 'Todas las filas deben estar EN REVISION' });
@@ -701,8 +695,7 @@ const sendToSapController = async (req, res) => {
             listRecibos,
             listFacturasND
         })
-
-        //!------------------------------------------- PRUEBA
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Send to Sap ejecutado`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
         const { statusCode, data } = await sapService.sendRendiciones({
             usd,
             codEmp,
@@ -715,24 +708,9 @@ const sendToSapController = async (req, res) => {
             listRecibos,
             listFacturasND,
         });
-
         console.log({ data, statusCode })
-        // console.log(JSON.stringify({
-        //     usd,
-        //     codEmp,
-        //     estado,
-        //     idRendicion,
-        //     transacId,
-        //     glosaRend,
-        //     fechaContabilizado,
-        //     listFacturas,
-        //     listRecibos,
-        //     listFacturasND,
-        // }, null, 2))
-        // console.log('DATOS de REND-----------------------------------------------------------')
-        // console.log({ statusCode, data })
-        // // return res.json({ statusCode, data })
         if (data.status >= 400) {
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Hubo un Error al Enviar las Rendiciones. ${data.message||'Error no definido'}`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
                 const responseSap = await actualizarEstadoComentario(id_gasto, 2, `No se pudo contabilizar, error del SAP. ${data.message || ''}`)
@@ -1034,6 +1012,7 @@ const sendToSapController = async (req, res) => {
         let idx = 0
         const idJournalCom = await idJournalPreliminar()
         if (idJournalCom.length == 0) {
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error no hay datos al buscar el ID en IFA COM`, "CALL LAB_IFA_COM.IFA_INSERT_JOURNALS_PRELIMINAR();", process.env.PRD)
             return res.status(400).json({ mensaje: 'No hay datos al buscar el ID en IFA COM' })
         }
         const idCom = idJournalCom[0].TransId
@@ -1085,6 +1064,7 @@ const sendToSapController = async (req, res) => {
                 item.U_CardCode
             )
             if (response.error) {
+                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error al intentar enviar datos LineaDetalle,IDCOM:${idCom||'No definido'},AccountCode:${item.AccountCode||'No definido'},U_B_cuf:${item.U_B_cuf||'No definido'} `, `CALL "LAB_IFA_COM"."spInsertarLineaDetalle" (....)`, process.env.PRD)
                 return res.status(400).json({ response })
             }
             idx++
@@ -1256,7 +1236,8 @@ const sendToSapController = async (req, res) => {
         estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
         console.log({ data })
         if (error.message.error?.message) {
-            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${error.message.error?.message || ''}`, estadoRend });
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data||''} ${error.message.error?.message || ''}`, `rendicion/send-to-sap`, process.env.PRD)
+            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data||''} ${error.message.error?.message || ''}`, estadoRend });
         }
         if (error.response) {
             if (error.response.length > 0) {
@@ -1281,6 +1262,7 @@ const sendToSapController = async (req, res) => {
 
         }
         console.log({ data, listResSap, estadoRend })
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data|| ''}`, `rendicion/send-to-sap`, process.env.PRD)
         return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion`, data, listResSap, estadoRend, listErrores });
     }
 }
