@@ -615,6 +615,7 @@ const cobranzaPorSucursalYTipo = async (sucCode, tipo) => {
             await connectHANA()
         }
         const query = `call "LAB_IFA_LAPP".LAPP_COB_COBRANZA_ZONA_POR_SUCURSAL_Y_TIPO(${sucCode}, '${tipo}')`
+        console.log({query})
         const result = await executeQuery(query)
         return {
             status: 200,
