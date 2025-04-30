@@ -326,6 +326,25 @@ const employedByCardCode = async (cardCode) => {
     }
 }
 
+const empleadoConCajaChicas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('empleadoConCajaChicas EXECUTE')
+        const query = `select * from ${process.env.LAPP}.lapp_usuario WHERE CODEMP IN (select CODEMP from ${process.env.LAPP}.lapp_rendicion)`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `empleadoConCajaChicas`
+        }
+
+    }
+}
+
 const actualizarEstadoComentario = async (id, estado, comentario) => {
 
     try {
@@ -389,7 +408,6 @@ const costoComercialAreas = async () => {
             await connectHANA();
         }
         console.log('costoComercialAreas EXECUTE')
-        // const query = `select * from ${process.env.PRD}."IFA_CC_AREAS"`
         const query = `select * from LAB_IFA_PRD."IFA_CC_AREAS"`
         console.log({ query })
         const result = await executeQuery(query)
@@ -855,6 +873,40 @@ const cambiarPreliminarRendicion = async (idRend) => {
     }
 }
 
+const listaRendicionesByCODEMP= async (codEmp) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.LAPP}.lapp_rendicion WHERE CODEMP = '${codEmp}'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en listaRendicionesByCODEMP: ${error.message | ''}`
+        }
+    }
+}
+
+const allGastosRange= async (starDate,endDate) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.LAPP}.LAPP_TODOS_GASTO_FECHA('${starDate}','${endDate}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en allGastosRange: ${error.message | ''}`
+        }
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -891,5 +943,8 @@ module.exports = {
     idJournalPreliminar,
     getRendicionesByEstado,
     cambiarPreliminarRendicion,
-    findAllRendiciones
+    findAllRendiciones,
+    empleadoConCajaChicas,
+    listaRendicionesByCODEMP,
+    allGastosRange,
 }

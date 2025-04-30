@@ -12,6 +12,9 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     idJournalPreliminar, getRendicionesByEstado,
     cambiarPreliminarRendicion,
     findAllRendiciones,
+    empleadoConCajaChicas,
+    listaRendicionesByCODEMP,
+    allGastosRange,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -1649,6 +1652,42 @@ const findAllRendicionesController = async (req, res) => {
     }
 }
 
+const empleadoConCajaChicasController = async (req, res) => {
+    try {
+        const response = await empleadoConCajaChicas()
+        let result = response.map((item) => {
+            const { PASSWORD, ...rest } = item
+            return {
+                ...rest
+            }
+        })
+        return res.json(result)
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const listaRendicionesByCodEmpController = async (req, res) => {
+    try {
+        const codEmp = req.query.codEmp
+        const response = await listaRendicionesByCODEMP(codEmp)
+        return res.json(response)
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const allGastosRangeController = async (req, res) => {
+    try {
+        const starDate = req.query.starDate
+        const endDate = req.query.endDate
+        const response = await allGastosRange(starDate,endDate)
+        return res.json(response)
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1682,4 +1721,7 @@ module.exports = {
     getRendicionesByEstadoController,
     cambiarPreliminarController,
     findAllRendicionesController,
+    empleadoConCajaChicasController,
+    listaRendicionesByCodEmpController,
+    allGastosRangeController,
 }

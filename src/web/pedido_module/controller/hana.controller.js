@@ -155,6 +155,20 @@ const listaPrecioOficial = async (cardCode) => {
     }
 }
 
+const listaPrecioOficialCortoVencimiento = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_catalogo_cv('${cardCode}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la listaPrecioOficialCortoVencimiento: ${error.message}`);
+    }
+}
+
 const pedidoSugeridoXZona = async (zoneCode, cardCode) => {
     try {
         if (!connection) {
@@ -456,4 +470,5 @@ module.exports = {
     clientePorCardCode,
     articuloPorItemCode,
     descuentosCortoVencimiento,
+    listaPrecioOficialCortoVencimiento,
 }

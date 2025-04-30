@@ -17,7 +17,8 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     pedidosPorVendedorFacturadosOrdenadoController, 
     crearOrderIfaController,
     patchQuotationsWhscodeController,
-    descuentoCortoVencimientoController, findClienteController} = require('../controller/pedido.controller')
+    descuentoCortoVencimientoController, findClienteController,
+    listaPreciosOficilaCVController} = require('../controller/pedido.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const router = Router()
 
@@ -28,6 +29,7 @@ router.get('/catalogo', [validarToken, validarCampos], catalogoController)
 router.get('/regla-articulo', [validarToken, validarCampos], descuentoArticuloController)
 router.get('/regla-condicion', [validarToken, validarCampos], descuentoCondicionController)
 router.get('/lista-precio', [validarToken, validarCampos], listaPreciosOficilaController)
+router.get('/lista-precio-cv', [validarToken, validarCampos], listaPreciosOficilaCVController)
 router.get('/sugerido-zona', [validarToken, validarCampos], sugeridosXZonaController)
 router.get('/sugerido-cliente', [validarToken, validarCampos], sugeridosXClienteController)
 router.get('/zonas-vendedor', [validarToken, validarCampos], findZonasXVendedorController)
