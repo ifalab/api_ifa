@@ -469,7 +469,7 @@ const updatePasswordByUser = async (id_user,pass) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en updatePasswordByUser')
+        throw new Error(`error en updatePasswordByUser. ${error.message}`)
     }
 }
 

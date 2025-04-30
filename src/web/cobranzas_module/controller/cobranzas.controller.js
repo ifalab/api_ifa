@@ -1483,12 +1483,13 @@ const detalleFacturaController = async (req, res) => {
 const cobranzaPorSucursalesYTiposController = async (req, res) => {
     try {
         const { sucCodes, tipos } = req.body
-        console.log({ sucCodes })
+        console.log({ sucCodes,tipos })
         let listResponse = [];
         let totalCobranza = 0
         for (const sucCode of sucCodes) {
             const porTipo = []
             for (const tipo of tipos) {
+                console.log({sucCode, tipo})
                 const cobranza = await cobranzaPorSucursalYTipo(sucCode, tipo)
                 // console.log({ cobranza })
                 if (cobranza.status == 400) {

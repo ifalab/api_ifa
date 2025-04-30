@@ -1066,7 +1066,7 @@ const sendToSapController = async (req, res) => {
             )
             if (response.error) {
                 await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error al intentar enviar datos LineaDetalle,IDCOM:${idCom||'No definido'},AccountCode:${item.AccountCode||'No definido'},U_B_cuf:${item.U_B_cuf||'No definido'} `, `CALL "LAB_IFA_COM"."spInsertarLineaDetalle" (....)`, process.env.PRD)
-                return res.status(400).json({ response })
+                return res.status(400).json({mensaje:`Error al guardar el detalle en COM. ${response.error||'No definido'}`, response })
             }
             idx++
         }

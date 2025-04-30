@@ -786,55 +786,55 @@ const lineaDetalleCC = async (
         }
         console.log('actualizarCCRendicion EXECUTE')
         const query = `CALL "LAB_IFA_COM"."spInsertarLineaDetalle" (
-        ${idCom},
-        ${Line_ID},
-    '${AccountCode}',
-    '${ShortName}',
-    '${ContraAccount}',
-    ${Debit},
-    ${Credit},
-    ${DebitSys},
-    ${CreditSys},
-   '${ProjectCode}',
-    ${AdditionalReference},
-    '${Reference1}',
-    '${Reference2}',
-    ${CostingCode},
-    ${CostingCode2},
-    ${CostingCode3},
-    ${CostingCode4},
-    ${CostingCode5},
-    '${LineMemo}',
-    '${U_ComercialComments}',
-    '${U_TIPODOC}',
-    '${U_NIT}',
-    '${U_RSocial}',
-    ${U_NumAuto},
-    '${U_B_cuf}',
-    '${U_NumDoc}',
-    '${U_FECHAFAC}',
-    ${U_IMPORTE},
-    ${U_ICE},
-    ${U_IEHD},
-    ${U_IPJ},
-    ${U_TASAS},
-    ${U_OP_EXENTO},
-    ${U_EXENTO},
-    ${U_TASACERO},
-    ${U_DESCTOBR},
-    ${U_GIFTCARD},
-    '${U_ESTADOFC}',
-    ${U_TIPOCOM},
-    '${U_CODALFA}',
-    '${U_BenefCode}',
-    '${U_CardCode || ''}')`
+            ${idCom || 0},
+            ${Line_ID || 0},
+        '${AccountCode || ''}',
+        '${ShortName || ''}',
+        '${ContraAccount || ''}',
+        ${Debit || 0},
+        ${Credit || 0},
+        ${DebitSys || 0},
+        ${CreditSys || 0},
+       '${ProjectCode || ''}',
+        ${AdditionalReference || 0},
+        '${Reference1 || ''}',
+        '${Reference2 || ''}',
+        '${CostingCode || ''}',
+        '${CostingCode2 || ''}',
+        '${CostingCode3 || ''}',
+        '${CostingCode4 || ''}',
+        '${CostingCode5 || ''}',
+        '${LineMemo || ''}',
+        '${U_ComercialComments || ''}',
+        '${U_TIPODOC || ''}',
+        '${U_NIT || ''}',
+        '${U_RSocial || ''}',
+        '${U_NumAuto || ''}',
+        '${U_B_cuf || ''}',
+        '${U_NumDoc || ''}',
+        '${U_FECHAFAC || ''}',
+        ${U_IMPORTE || 0},
+        ${U_ICE || 0},
+        ${U_IEHD || 0},
+        ${U_IPJ || 0},
+        ${U_TASAS || 0},
+        ${U_OP_EXENTO || 0},
+        ${U_EXENTO || 0},
+        ${U_TASACERO || 0},
+        ${U_DESCTOBR || 0},
+        ${U_GIFTCARD || 0},
+        '${U_ESTADOFC || ''}',
+        ${U_TIPOCOM || 0},
+        '${U_CODALFA || ''}',
+        '${U_BenefCode || ''}',
+        '${U_CardCode || ''}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
         return {
-            error: `No se pudo insertar el detalle en COM`
+            error: `No se pudo insertar el detalle en COM. ${error.message | ''}`
         }
     }
 }
@@ -873,7 +873,7 @@ const cambiarPreliminarRendicion = async (idRend) => {
     }
 }
 
-const listaRendicionesByCODEMP= async (codEmp) => {
+const listaRendicionesByCODEMP = async (codEmp) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -890,7 +890,7 @@ const listaRendicionesByCODEMP= async (codEmp) => {
     }
 }
 
-const allGastosRange= async (starDate,endDate) => {
+const allGastosRange = async (starDate, endDate) => {
     try {
         if (!connection) {
             await connectHANA();

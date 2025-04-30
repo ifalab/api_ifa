@@ -542,7 +542,7 @@ const findAllDimensionTresByUserController = async (req, res) => {
     try {
         const id = req.params.id
         const dimensionTres = await dimensionTresByUser(id)
-        return res.json({ dimensionTres})
+        return res.json({ dimensionTres })
     } catch (error) {
         return res.status(500).json({
             mensaje: 'Error en findDimensionController',
@@ -566,7 +566,7 @@ const findAllDimensionSublineasByUserController = async (req, res) => {
                 ID_DIMENSION_TRES: item.LineItemCode,
             })
         })
-        return res.json( dimension )
+        return res.json(dimension)
     } catch (error) {
         return res.status(500).json({
             mensaje: 'Error en findAllDimensionSublineasByUserController',
@@ -997,6 +997,74 @@ const patchSalesPersonsController = async (req, res) => {
     }
 }
 
+const updatePasswordController = async (req, res) => {
+    const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const { id, password, newPassword, confirmPassword } = req.body
+
+        if (!id) {
+            return res.status(400).json({ mensaje: 'No se Encontro el ID del usuario' })
+        }
+
+        if (!password) {
+            return res.status(400).json({ mensaje: 'No se Encontro el LA CONTRASEÑA ACTUAL del usuario' })
+        }
+
+        if (!newPassword) {
+            return res.status(400).json({ mensaje: 'No se Encontro el LA NUEVA CONTRASEÑA  del usuario' })
+        }
+
+        if (!confirmPassword) {
+            return res.status(400).json({ mensaje: 'No se Encontro el LA CONTRASEÑA DE CONFIRMACION del usuario' })
+        }
+
+        if (confirmPassword !== newPassword) {
+            return res.status(400).json({ mensaje: 'Las contraseñas para la actualizacion son diferentes' })
+        }
+
+        const user = await findUserById(id)
+
+        if (user.length == 0) {
+            return res.status(400).json({ mensaje: 'No se Encontro al usuario' })
+        }
+
+        let userData = user[0]
+        const passwordUser = userData.PASSWORD
+        const isMatch = await bcrypt.compare(password, passwordUser)
+
+        if (!isMatch) {
+            return res.status(404).json({ mensaje: 'La contraseña actual es diferente' })
+        }
+
+        const salt = await bcrypt.genSalt()
+        console.log({ newPassword, salt})
+        const encrypt = bcrypt.hashSync(newPassword, salt)
+        console.log({ id, encrypt })
+        const responsePass = await updatePasswordByUser(id, encrypt)
+        console.log({ responsePass })
+        return res.json({ mensaje: 'Se actualizaron las contraseñas con Exito' })
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: `Error en updatePasswordController: ${error.message || ''}`
+        })
+    }
+}
+
+const updateUserCodeController = async (req, res) => {
+    try {
+
+        // if (new_pass) {
+        //     if (new_pass !== confirm_pass) return res.status(400).json({ mensaje: 'las contraseñas son distintas' })
+        //     const salt = bcrypt.genSaltSync()
+        //     const encryptPassword = bcrypt.hashSync(new_pass, salt)
+        //     const responsePass = await updatePasswordByUser(id_user, encryptPassword)
+        //     console.log({ responsePass })
+        // }
+    } catch (error) {
+
+    }
+}
+
 
 
 
@@ -1039,5 +1107,7 @@ module.exports = {
     postSalesPersonsController,
     patchSalesPersonsController,
     findAllSublineasController,
-    findAllDimensionSublineasByUserController
+    findAllDimensionSublineasByUserController,
+    updatePasswordController,
+    updateUserCodeController,
 }

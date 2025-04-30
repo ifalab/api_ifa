@@ -17,7 +17,9 @@ const { authLoginPost, createUserController, findAllUserController, findUserById
     postSalesPersonsController,
     patchSalesPersonsController,
     findAllSublineasController,
-    findAllDimensionSublineasByUserController
+    findAllDimensionSublineasByUserController,
+    updatePasswordController,
+    updateUserCodeController
  } = require('../controllers/auth.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -61,5 +63,10 @@ router.get('/get-despachador-por-id',[validarToken, validarCampos],getDespachado
 router.get('/almacenes-libres',[validarToken, validarCampos],getAlmacenesLibresController)
 router.post('/sales-person',[validarToken, validarCampos],postSalesPersonsController)
 router.patch('/sales-person',[validarToken, validarCampos],patchSalesPersonsController)
+
+router.patch('/update-password',[validarToken, validarCampos],updatePasswordController)
+router.patch('/update-usercode',[validarToken, validarCampos],updateUserCodeController)
+
+
 
 module.exports = router

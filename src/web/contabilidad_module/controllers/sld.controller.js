@@ -99,13 +99,15 @@ const asientoContable = async (data) => {
 
         // Realiza la solicitud POST
         data.Series = process.env.SAP_SERIES_JOURNAL_ENTRY
+        console.log('DATA')
+        console.log(JSON.stringify(data,null,2))
         const response = await axios.post(url, { ...data }, {
             httpsAgent: agent,
             headers: headers
         });
 
         // Retorna la respuesta en caso de éxito
-        console.log({ response })
+        // console.log({ response })
         const status = response.status
         const locationHeader = response.headers.location;
         const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
