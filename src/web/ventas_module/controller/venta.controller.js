@@ -86,7 +86,11 @@ const {
     reporteSinUbicacionCliente,
     reporteConUbicacionCliente,
     searchVendedorByIDSAP,
-    agregarSolicitudDeDescuento
+    agregarSolicitudDeDescuento, agregarSolicitudDescuentoDetalle, 
+    actualizarStatusSolicitudDescuento, getVendedoresSolicitudDescByStatus,
+    getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
+    actualizarSolicitudDescuentoDetalle,
+    getClientName
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2345,11 +2349,28 @@ const agregarSolicitudDeDescuentoController = async (req, res) => {
         const {solicitudes, p_SlpCode, p_SlpName, p_CreatedBy} = req.body
         let responses = []
         for(const solicitud of solicitudes) {
-            const { p_ClientCode, p_ClientName, p_ItemCode, p_ItemName, p_CantMin,  p_CantMax, p_DescPrct,  p_FechaIni, p_FechaFin } = solicitud
-            
+            let { p_ClientCode, p_ClientName, p_ItemCode, p_ItemName, p_CantMin, p_DescPrct,  p_FechaIni, p_FechaFin } = solicitud
+            if(!p_FechaIni || p_FechaIni === '') {
+                const fecha = new Date()
+                p_FechaIni = fecha.toISOString().split('T')[0]
+            }
+            if(!p_FechaFin || p_FechaFin === '') {
+                const fechaIni = new Date(p_FechaIni)
+                fechaIni.setDate(fechaIni.getDate() + 3)
+                p_FechaFin = fechaIni.toISOString().split('T')[0]
+            }
             const response = await agregarSolicitudDeDescuento(p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
-                p_ItemCode, p_ItemName, p_CantMin,  p_CantMax, p_DescPrct,  p_FechaIni, p_FechaFin,  p_CreatedBy)
-            responses.push(response)
+                p_ItemCode, p_ItemName, p_FechaIni, p_FechaFin, p_CreatedBy)
+
+            console.log({ response })
+            responses.push({response})
+
+            const responseDetalle1 = await agregarSolicitudDescuentoDetalle(response[0].ID, 0, p_CantMin -1, 1)
+            responses.push({responseDetalle1})
+            console.log({responseDetalle1})
+            const responseDetalle2 = await agregarSolicitudDescuentoDetalle(response[0].ID, p_CantMin, 9999999, p_DescPrct)
+            responses.push({responseDetalle2})
+            console.log({responseDetalle2})
         }
         return res.json({
             responses
@@ -2357,6 +2378,91 @@ const agregarSolicitudDeDescuentoController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en agregarSolicitudDeDescuentoController: ${error.message}` })
+    }
+}
+
+const getClientNameController = async (req, res) => {
+    try {
+        const {cardCode} = req.body
+        let response = await getClientName(cardCode)
+        if(response.length > 0) {
+            return res.json(response[0].CardName)
+        }else{
+            return res.status(400).json({mensaje: 'No se encontró el cliente'})
+        }
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getClientNameController: ${error.message}` })
+    }
+}
+
+const actualizarStatusSolicitudDescuentoController = async (req, res) => {
+    try {
+        const {id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode} = req.body
+        const response =  await actualizarStatusSolicitudDescuento(id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode)
+        return res.json(
+            response
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarStatusSolicitudDescuentoController: ${error.message}` })
+    }
+}
+
+const getVendedoresSolicitudDescByStatusController = async (req, res) => {
+    try {
+        const {status} = req.query
+        const response =  await getVendedoresSolicitudDescByStatus(status)
+        console.log({response})
+        return res.json(
+            response
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getVendedoresSolicitudDescByStatusController: ${error.message}` })
+    }
+}
+
+const getSolicitudesDescuentoByStatusController = async (req, res) => {
+    try {
+        const {status, slpCode, createdAt} = req.body
+        const response =  await getSolicitudesDescuentoByStatus(status, slpCode, createdAt)
+
+        console.log({cabecera})
+        return res.json(
+            response
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getSolicitudesDescuentoByStatusController: ${error.message}` })
+    }
+}
+
+const actualizarSolicitudDescuentoController = async (req, res) => {
+    try {
+        const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct, ids_detalle } = req.body
+        let responses = []
+        if(!p_FechaIni) {
+            const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin)
+            console.log({response})
+            responses.push({response})
+        }
+        if(p_CantMin){
+          if(ids_detalle.length > 0){
+            const responseDetalle1 = await actualizarSolicitudDescuentoDetalle(ids_detalle[0], 0, p_CantMin - 1, p_DescPrct)
+            console.log({responseDetalle1})
+            responses.push({responseDetalle1})
+          }
+          if(ids_detalle.length > 1) {
+            const responseDetalle2 = await actualizarSolicitudDescuentoDetalle(ids_detalle[1], p_CantMin, 9999999, p_DescPrct)
+            console.log({responseDetalle2})
+            responses.push({responseDetalle2})
+          }
+        }
+        return res.json( responses )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarSolicitudDescuentoController: ${error.message}` })
     }
 }
 
@@ -2440,5 +2546,8 @@ module.exports = {
     campaignByIdController,
     sublineasController,
     reporteUbicacionClienteController,
-    agregarSolicitudDeDescuentoController
+    agregarSolicitudDeDescuentoController, actualizarStatusSolicitudDescuentoController,
+    getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
+    actualizarSolicitudDescuentoController,
+    getClientNameController
 };
