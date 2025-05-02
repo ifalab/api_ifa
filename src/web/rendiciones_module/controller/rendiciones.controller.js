@@ -725,7 +725,6 @@ const sendToSapController = async (req, res) => {
             return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, listResHana });
 
         }
-        //!------------------------------------------- PRUEBA
         //! enviar centro de costo:
 
         let journalLines = []

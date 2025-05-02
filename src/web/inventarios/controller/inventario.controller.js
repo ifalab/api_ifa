@@ -17,8 +17,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     findCliente, getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo,
     articuloDiccionario,
     relacionArticulo,
-    articulos, 
-    saveDiccionario} = require("./hana.controller")
+    articulos,
+    saveDiccionario } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -29,7 +29,8 @@ const { notaDebitoCredito } = require("../../facturacion_module/service/apiFactu
 const path = require('path');
 const fs = require('fs');
 const { facturacionProsin } = require("../../facturacion_module/service/apiFacturacionProsin")
-const { getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("./sql_genesis.controller")
+const { getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("./sql_genesis.controller");
+const { postInventoryTransferRequests } = require("../../service/sapService");
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -2439,7 +2440,7 @@ const devolucionMalEstadoController = async (req, res) => {
                 }))
             } else {
                 grabarLog(user.USERCODE, user.USERNAME, "Devolucion Mal Estado", `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-mal-estado", process.env.PRD)
-                return res.status(400).json({ 
+                return res.status(400).json({
                     mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
                     idEntrega
                 })
@@ -3579,8 +3580,8 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 CardCode: CardCode,
                 U_UserCode: id_sap,
                 U_B_cufd: Cuf,
-                JournalMemo: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
-                Comments: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
+                JournalMemo: `CAMBIO X VALORADO. ${Comentario ? Comentario.toUpperCase() : ''}`,
+                Comments: `CAMBIO X VALORADO. ${Comentario ? Comentario.toUpperCase() : ''}`,
                 DocumentLines: newDocumentLinesReturn,
             }
 
@@ -3714,7 +3715,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 }
 
                 mensaje = `Error en creditNote: ${mensaje}. Factura Nro: ${DocEntry}`
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario DEvolucion Valorado`, mensaje, 'postCreditNotes', `inventario/dev-valorado-dif-art`,process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario DEvolucion Valorado`, mensaje, 'postCreditNotes', `inventario/dev-valorado-dif-art`, process.env.PRD)
                 return res.status(400).json({
                     mensaje,
                     bodyCreditNotes,
@@ -4060,7 +4061,7 @@ const entregaCambioValoradoController = async (req, res) => {
                 }))
             } else {
                 const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}.`
-                grabarLog(user.USERCODE, user.USERNAME, "Inventario Entrega Valorado", mensaje, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-valorado-dif-art", process.env.PRD)                    
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Entrega Valorado", mensaje, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-valorado-dif-art", process.env.PRD)
                 return res.status(400).json({
                     mensaje, newDocumentLinesEntrega, entregaFinished
                 })
@@ -4086,8 +4087,8 @@ const entregaCambioValoradoController = async (req, res) => {
             Series: 353,
             CardCode: CardCode,
             U_UserCode: id_sap,
-            JournalMemo: `CAMBIO X VALORADO.  ${Comentario? Comentario.toUpperCase():''}`,
-            Comments: `CAMBIO X VALORADO. ${Comentario? Comentario.toUpperCase():''}`,
+            JournalMemo: `CAMBIO X VALORADO.  ${Comentario ? Comentario.toUpperCase() : ''}`,
+            Comments: `CAMBIO X VALORADO. ${Comentario ? Comentario.toUpperCase() : ''}`,
             DocumentLines: newDocumentLinesEntrega,
         }
         // console.log('body enterga -----------------------------------------------')
@@ -4147,7 +4148,7 @@ const facturacionCambioValoradoController = async (req, res) => {
         const deliveryBody = await obtenerEntregaDetalle(deliveryData)
         if (deliveryBody.message) {
             grabarLog(user.USERCODE, user.USERNAME, "Inventario Facturacion Cambio Valorado", `${deliveryBody.message}`, `IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE`, "inventario/facturacion-cambio", process.env.PRD)
-            return res.json({mensaje: deliveryBody.message})
+            return res.json({ mensaje: deliveryBody.message })
         }
         // return res.json({deliveryBody})
         let totalDeLaEntrega = 0
@@ -4281,8 +4282,8 @@ const facturacionCambioValoradoController = async (req, res) => {
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
                 const mensaje = `Error del SAP en el PostInvoice: ${invoiceResponse.errorMessage.value || ''}`
-                grabarLog(user.USERCODE, user.USERNAME, 'Inventario Facturacion Cambio Valorado',  
-                    mensaje, 'postInvoice','inventario/facturacion-cambio', process.env.DBSAPPRD
+                grabarLog(user.USERCODE, user.USERNAME, 'Inventario Facturacion Cambio Valorado',
+                    mensaje, 'postInvoice', 'inventario/facturacion-cambio', process.env.DBSAPPRD
                 )
                 return res.status(400).json({
                     mensaje,
@@ -4313,7 +4314,7 @@ const facturacionCambioValoradoController = async (req, res) => {
 
             if (dataToProsin.tipo_identificacion == null ||
                 (dataToProsin.tipo_identificacion != 1 && dataToProsin.tipo_identificacion != 5)) {
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, 'facturacionProsin','inventario/facturacion-cambio', process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `, 'facturacionProsin', 'inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json({
                     mensaje: `No existe el tipo de identificacion o es distinto de 1 y 5 . valor: ${dataToProsin.tipo_identificacion || 'No definido'} `,
                     dataToProsin, bodyFinalFactura, cuf
@@ -4321,7 +4322,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             }
 
             if (dataToProsin.correo == null || dataToProsin.correo == '') {
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `No existe el correo `, 'facturacionProsin','inventario/facturacion-cambio', process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `No existe el correo `, 'facturacionProsin', 'inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura, cuf })
             }
             dataToProsin.usuario = user.USERNAME || 'No definido'
@@ -4330,7 +4331,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             const { data: dataProsin } = responseProsin
             console.log({ dataProsin })
             if (dataProsin && dataProsin.estado != 200) {
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error de facturacionProsin ${dataProsin.mensaje || ''}`, 'facturacionProsin','inventario/facturacion-cambio', process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error de facturacionProsin ${dataProsin.mensaje || ''}`, 'facturacionProsin', 'inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json({ mensaje: `Error de facturacionProsin ${dataProsin.mensaje || ''}`, dataProsin, dataToProsin, bodyFinalFactura, cuf })
             }
             const fecha = dataProsin.fecha
@@ -4355,15 +4356,15 @@ const facturacionCambioValoradoController = async (req, res) => {
             })
             if (responsePatchEntrega.status == 400) {
                 console.error({ error: responsePatchEntrega.errorMessage })
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}`, 'patchEntrega','inventario/facturacion-cambio', process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}`, 'patchEntrega', 'inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json({ mensaje: `Error en la solicitud patch entrega ${responsePatchEntrega.errorMessage.value || ''}`, cuf })
             }
             //TODO --------------------------------------------------------------  ENTREGA DETALLE TO FACTURA
             const responseHana = await entregaDetallerFactura(+deliveryData, cuf, +nroFactura, fechaFormater)
             console.log({ responseHana })
             if (responseHana.message) {
-                
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, 'entregaDetallerFactura','inventario/facturacion-cambio', process.env.PRD)
+
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, 'entregaDetallerFactura', 'inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json(
                     { mensaje: `Error al procesar entregaDetallerFactura: ${responseHana.message || ""}`, cuf })
             }
@@ -4408,7 +4409,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en la solicitud postInvoice ${invoiceResponse.errorMessage.value || ''}`, 'postInvoice','inventario/facturacion-cambio', process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en la solicitud postInvoice ${invoiceResponse.errorMessage.value || ''}`, 'postInvoice', 'inventario/facturacion-cambio', process.env.PRD)
                 return res.status(400).json(
                     { mensaje: `Error del SAP postInvoice ${invoiceResponse.errorMessage.value || ''}`, cuf })
             }
@@ -4489,7 +4490,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             }
 
             mensaje = `Error en postReconciliacion: ${mensaje}.`
-            grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion','inventario/facturacion-cambio', process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
             return res.status(400).json({
                 mensaje,
                 bodyReconciliacion,
@@ -4500,7 +4501,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             })
         }
 
-        grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Facturacion y Reconciliacion exitosa`, '','inventario/facturacion-cambio', process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Facturacion y Reconciliacion exitosa`, '', 'inventario/facturacion-cambio', process.env.PRD)
         return res.json({
             bodyReconciliacion,
             invoiceResponse,
@@ -4511,7 +4512,7 @@ const facturacionCambioValoradoController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en el controlador entregaFacturaCambioValoradoController: ${error.message || ''}. Cuf: ${cuf||''}`, 'catch del controller','inventario/facturacion-cambio', process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error en el controlador entregaFacturaCambioValoradoController: ${error.message || ''}. Cuf: ${cuf || ''}`, 'catch del controller', 'inventario/facturacion-cambio', process.env.PRD)
         return res.status(500).json({
             mensaje: `Error en el controlador entregaFacturaCambioValoradoController: ${error.message || ''}`,
             cuf
@@ -4650,64 +4651,88 @@ const articulosController = async (req, res) => {
     }
 }
 
-const saveArticuloDiccionario = async(req, res) => {
+const saveArticuloDiccionario = async (req, res) => {
     try {
-        const {principal, relacionados} = req.body;
+        const { principal, relacionados } = req.body;
         console.log(principal, relacionados);
 
         const data = await articuloDiccionario();
         const relacionesAInsertar = [];
 
         for (const relacionado of relacionados) {
-          const existeDirecta = data.some(relacion =>
-            relacion.ItemCode === principal.ItemCode && relacion.ItemEq === relacionado.ItemCode
-          );
-    
-          const existeInversa = data.some(relacion =>
-            relacion.ItemCode === relacionado.ItemCode && relacion.ItemEq === principal.ItemCode
-          );
-    
-          if (!existeDirecta && !existeInversa) {
-            // No existe ni directa ni inversa: insertamos ambas
-            relacionesAInsertar.push({
-              desdeCode: principal.ItemCode,
-              desdeName: principal.ItemName,
-              haciaCode: relacionado.ItemCode,
-              haciaName: relacionado.ItemName
-            });
-            relacionesAInsertar.push({
-              desdeCode: relacionado.ItemCode,
-              desdeName: relacionado.ItemName,
-              haciaCode: principal.ItemCode,
-              haciaName: principal.ItemName
-            });
-          } else if (!existeDirecta && existeInversa) {
-            // Solo falta la directa
-            relacionesAInsertar.push({
-              desdeCode: principal.ItemCode,
-              desdeName: principal.ItemName,
-              haciaCode: relacionado.ItemCode,
-              haciaName: relacionado.ItemName
-            });
-          } else if (existeDirecta && !existeInversa) {
-            // Solo falta la inversa
-            relacionesAInsertar.push({
-              desdeCode: relacionado.ItemCode,
-              desdeName: relacionado.ItemName,
-              haciaCode: principal.ItemCode,
-              haciaName: principal.ItemName
-            });
-          }
+            const existeDirecta = data.some(relacion =>
+                relacion.ItemCode === principal.ItemCode && relacion.ItemEq === relacionado.ItemCode
+            );
+
+            const existeInversa = data.some(relacion =>
+                relacion.ItemCode === relacionado.ItemCode && relacion.ItemEq === principal.ItemCode
+            );
+
+            if (!existeDirecta && !existeInversa) {
+                // No existe ni directa ni inversa: insertamos ambas
+                relacionesAInsertar.push({
+                    desdeCode: principal.ItemCode,
+                    desdeName: principal.ItemName,
+                    haciaCode: relacionado.ItemCode,
+                    haciaName: relacionado.ItemName
+                });
+                relacionesAInsertar.push({
+                    desdeCode: relacionado.ItemCode,
+                    desdeName: relacionado.ItemName,
+                    haciaCode: principal.ItemCode,
+                    haciaName: principal.ItemName
+                });
+            } else if (!existeDirecta && existeInversa) {
+                // Solo falta la directa
+                relacionesAInsertar.push({
+                    desdeCode: principal.ItemCode,
+                    desdeName: principal.ItemName,
+                    haciaCode: relacionado.ItemCode,
+                    haciaName: relacionado.ItemName
+                });
+            } else if (existeDirecta && !existeInversa) {
+                // Solo falta la inversa
+                relacionesAInsertar.push({
+                    desdeCode: relacionado.ItemCode,
+                    desdeName: relacionado.ItemName,
+                    haciaCode: principal.ItemCode,
+                    haciaName: principal.ItemName
+                });
+            }
         }
-    
+
         if (relacionesAInsertar.length === 0) {
-          return res.status(200).json({ mensaje: 'Todas las relaciones ya existen.', status: 200 });
+            return res.status(200).json({ mensaje: 'Todas las relaciones ya existen.', status: 200 });
         }
-    
+
         // Aquí insertarías las relaciones nuevas
         await saveDiccionario(relacionesAInsertar);
-    
+
         return res.json({ mensaje: 'Todas las relaciones han sido insertadas', status: 200 });
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en saveArticuloDiccionario : ${error.message || 'No definido'}` })
+    }
+}
+
+const solicitudTrasladoController = async (req, res) => {
+    try {
+        const { Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines } = req.body
+        // return res.json({Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines})
+        const sapResponse = await postInventoryTransferRequests({ Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines })
+        const { status, errorMessage } = sapResponse
+        if (status && status == 400) {
+            const { value } = errorMessage
+            let mensaje = 'Error en la solicitud de traslado. '
+            if (value && value.includes('This entry already exists')) {
+                mensaje += 'Ya existe la Solicitud';
+            } else {
+                mensaje += value || 'No definido';
+            }
+            
+            return res.status(400).json({ mensaje })
+        }
+        return res.json({ sapResponse })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en saveArticuloDiccionario : ${error.message || 'No definido'}` })
@@ -4758,4 +4783,5 @@ module.exports = {
     articuloDiccionarioController,
     articulosController,
     saveArticuloDiccionario,
+    solicitudTrasladoController,
 }
