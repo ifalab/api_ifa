@@ -14,7 +14,10 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getDescuentosEspecialesLinea, deleteDescuentosEspecialesLinea,
     articuloByItemCode, 
     updateListaPrecios,
-    desactivePriceList} = require("./hana.controller")
+    desactivePriceList,
+    getIdDescuentosCortoCantidad,
+    getDescuentosCantidadCorto,
+    setDescuentoOfertasPorCantidadCortoVencimiento} = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 const { validateDataExcel } = require('./helpers');
@@ -406,7 +409,7 @@ const setDescuentoOfertasPorCortoVencimientoController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         for (const descuento of body) {
             const { Row, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete } = descuento
-            const response = await setDescuentoOfertasPorCantidad(Row, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
+            const response = await setDescuentoOfertasPorCantidadCortoVencimiento(Row, ItemCode, CantMin, CantMax, Desc, FechaInicial, FechaFinal, id_sap, Delete)
             responses.push(response)
             if (response.status != 200) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Descuento Ofertas Corto Vencimiento", `Error: ${response.message || 'setDescuentoOfertasPorCortoVencimiento'} `, `${response.query || 'setDescuentoOfertasPorCantidad'}`, "datos-maestros/descuento-corto-vencimiento", process.env.PRD)
@@ -451,6 +454,18 @@ const getIdDescuentosCantidadController = async (req, res) => {
     }
 }
 
+const getIdDescuentosCantidadCortoController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const response = await getIdDescuentosCortoCantidad(itemCode)
+        console.log(response)
+        response.sort((a, b) => a.Id - b.Id);
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getIdDescuentosCantidadCortoController: ${error.message || ''}` })
+    }
+}
 const getDescuentosCantidadController = async (req, res) => {
     try {
         const body = req.body
@@ -467,6 +482,25 @@ const getDescuentosCantidadController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getDescuentosCantidadController: ${error.message || ''}` })
+    }
+}
+
+const getDescuentosCantidadCortoController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({ body })
+        const response = await getDescuentosCantidadCorto(body.Id, body.ItemCode)
+        // console.log(response)
+        response.forEach((value) => {
+            value.ToDate = value.ToDate.split(' ')[0]
+            value.FromDate = value.FromDate.split(' ')[0]
+        })
+        response.sort((a, b) => a.Row - b.Row);
+
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getDescuentosCantidadCortoController: ${error.message || ''}` })
     }
 }
 
@@ -930,4 +964,6 @@ module.exports = {
     deleteDescuentosEspecialesLineaController,
     cargarPreciosExcelController,
     setDescuentoOfertasPorCortoVencimientoController,
+    getIdDescuentosCantidadCortoController,
+    getDescuentosCantidadCortoController,
 }

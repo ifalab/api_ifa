@@ -87,7 +87,12 @@ const {
     reporteConUbicacionCliente,
     searchVendedorByIDSAP,
     getVentasPrespuestosSubLinea,
-    getVentasPrespuestosSubLineaAnterior
+    getVentasPrespuestosSubLineaAnterior,
+    agregarSolicitudDeDescuento, 
+    actualizarStatusSolicitudDescuento, getVendedoresSolicitudDescByStatus,
+    getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
+    deleteSolicitudDescuento,
+    getClientName
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2341,6 +2346,152 @@ const reporteUbicacionClienteController = async (req, res) => {
     }
 }
 
+const agregarSolicitudDeDescuentoController = async (req, res) => {
+    try {
+        const {solicitudes, p_SlpCode, p_SlpName, p_CreatedBy} = req.body
+        let responses = []
+        for(const solicitud of solicitudes) {
+            let { p_ClientCode, p_ClientName, p_ItemCode, p_ItemName, p_CantMin, p_DescPrct,  p_FechaIni, p_FechaFin } = solicitud
+            if(!p_FechaIni || p_FechaIni === '') {
+                const fecha = new Date()
+                p_FechaIni = fecha.toISOString().split('T')[0]
+            }
+            if(!p_FechaFin || p_FechaFin === '') {
+                const fechaIni = new Date(p_FechaIni)
+                fechaIni.setDate(fechaIni.getDate() + 3)
+                p_FechaFin = fechaIni.toISOString().split('T')[0]
+            }
+            const response = await agregarSolicitudDeDescuento(p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
+                p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin, p_CreatedBy)
+
+            console.log({ response })
+            responses.push({response})
+        }
+        return res.json({
+            responses
+        })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en agregarSolicitudDeDescuentoController: ${error.message}` })
+    }
+}
+
+const getClientNameController = async (req, res) => {
+    try {
+        const {cardCode} = req.body
+        let response = await getClientName(cardCode)
+        if(response.length > 0) {
+            return res.json(response[0].CardName)
+        }else{
+            return res.status(400).json({mensaje: 'No se encontró el cliente'})
+        }
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getClientNameController: ${error.message}` })
+    }
+}
+
+const actualizarStatusSolicitudDescuentoController = async (req, res) => {
+    try {
+        const {id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode} = req.body
+        const response =  await actualizarStatusSolicitudDescuento(id??-1, status, p_CreatedBy, p_SlpCode??-1, p_ClientCode, p_ItemCode)
+        return res.json(
+            response
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarStatusSolicitudDescuentoController: ${error.message}` })
+    }
+}
+
+const actualizarVariosStatusSolicitudDescuentoController = async (req, res) => {
+    try {
+        const {ids, status, p_CreatedBy} = req.body
+        const responses = []
+        for(const id of ids) {
+            const response =  await actualizarStatusSolicitudDescuento(id??-1, status, p_CreatedBy, -1, '', '')
+            responses.push(response)
+        }
+        return res.json(
+            responses
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarStatusSolicitudDescuentoController: ${error.message}` })
+    }
+}
+
+const getVendedoresSolicitudDescByStatusController = async (req, res) => {
+    try {
+        const {status} = req.query
+        const response =  await getVendedoresSolicitudDescByStatus(status)
+        console.log({response})
+        return res.json(
+            response
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getVendedoresSolicitudDescByStatusController: ${error.message}` })
+    }
+}
+
+const getSolicitudesDescuentoByStatusController = async (req, res) => {
+    try {
+        const {status, slpCode, createdAt} = req.body
+        const response =  await getSolicitudesDescuentoByStatus(status, slpCode, createdAt)
+        return res.json(
+            response
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getSolicitudesDescuentoByStatusController: ${error.message}` })
+    }
+}
+
+const actualizarSolicitudDescuentoController = async (req, res) => {
+    try {
+        const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct } = req.body
+        const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
+        console.log({response})
+        return res.json( response )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarSolicitudDescuentoController: ${error.message}` })
+    }
+}
+
+const actualizarSolicitudesDescuentoController = async (req, res) => {
+    try {
+        const {solicitudes} = req.body
+        const responses = []
+        for(const solicitud of solicitudes) {
+            const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct } = solicitud
+            const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
+            console.log({response})
+            responses.push(response)
+        }
+        return res.json( responses )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarSolicitudesDescuentoController: ${error.message}` })
+    }
+}
+
+const deleteSolicitudDescuentoController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response =  await deleteSolicitudDescuento(id)
+        console.log({response})
+        return res.json( response )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en deleteSolicitudDescuentoController: ${error.message}` })
+    }
+}
+
+
+
+
 const ventasPresupuestoSubLinea = async(req, res) => {
     try {
         let response = await getVentasPrespuestosSubLinea();
@@ -2554,6 +2705,11 @@ module.exports = {
     campaignByIdController,
     sublineasController,
     reporteUbicacionClienteController,
+    agregarSolicitudDeDescuentoController, actualizarStatusSolicitudDescuentoController,
+    getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
+    actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
+    actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
+    getClientNameController,
     ventasPresupuestoSubLinea,
     ventasPresupuestoSubLineaAnterior,
 };

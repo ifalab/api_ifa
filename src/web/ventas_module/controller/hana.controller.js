@@ -1435,6 +1435,134 @@ const reporteSinUbicacionCliente = async (sucCode) => {
     }
 }
 
+const getClientName = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "CardName" from ${process.env.PRD}.ifa_dm_clientes where "CardCode" = '${cardCode}'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getClientName: ${error.message || ''}`
+        }
+    }
+}
+
+///Solicitud Descuentos
+const agregarSolicitudDeDescuento = async (p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
+    p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin,  p_CreatedBy) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_crm_solicitar_descuento(${p_SlpCode}, 
+        '${p_SlpName}', '${p_ClientCode}', '${p_ClientName}', '${p_ItemCode}', '${p_ItemName}', 
+        ${p_CantMin}, ${p_DescPrct}, '${p_FechaIni}', '${p_FechaFin}', ${p_CreatedBy})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en agregarSolicitudDeDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const actualizarStatusSolicitudDescuento = async (id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO(
+            ${id}, ${status}, ${p_CreatedBy}, ${p_SlpCode}, '${p_ClientCode}', '${p_ItemCode}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en actualizarStatusSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const getVendedoresSolicitudDescByStatus = async (status) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "SlpCode", "SlpName", "CreatedAt", "Status"
+        from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
+        where "Status" = ${status} and "Deleted"=0
+        group by "SlpCode", "SlpName", "CreatedAt", "Status"`
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedoresSolicitudDescByStatus: ${error.message || ''}`
+        }
+    }
+}
+
+const getSolicitudesDescuentoByStatus = async (status, slpCode, createdAt) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+            const query = `select *
+            from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
+            where  "Status" = ${status} and "SlpCode" = ${slpCode} 
+            and "CreatedAt" = '${createdAt}' and "Deleted" = 0`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en actualizarStatusSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const actualizarSolicitudDescuento = async (id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+            const query = `call ${process.env.PRD}.IFA_CRM_EDITAR_SOLICITUD_DESCUENTO(
+                ${id}, '${p_FechaIni}', '${p_FechaFin}', ${p_CantMin}, ${p_DescPrct}
+            )`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en actualizarSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const deleteSolicitudDescuento = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+            const query = `UPDATE ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
+                set "Deleted" = 1
+                where "Id"=${id};`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en deleteSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
 const getVentasPrespuestosSubLinea = async() => {
     try {
         if (!connection) {
@@ -1556,6 +1684,11 @@ module.exports = {
     reporteConUbicacionCliente,
     reporteSinUbicacionCliente,
     searchVendedorByIDSAP,
+    agregarSolicitudDeDescuento,
+    getVendedoresSolicitudDescByStatus, actualizarStatusSolicitudDescuento,
+    getSolicitudesDescuentoByStatus,
+    getClientName,
+    actualizarSolicitudDescuento, deleteSolicitudDescuento,
     getVentasPrespuestosSubLinea,
     getVentasPrespuestosSubLineaAnterior,
 }

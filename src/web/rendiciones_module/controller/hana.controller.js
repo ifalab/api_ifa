@@ -326,6 +326,25 @@ const employedByCardCode = async (cardCode) => {
     }
 }
 
+const empleadoConCajaChicas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('empleadoConCajaChicas EXECUTE')
+        const query = `select * from ${process.env.LAPP}.lapp_usuario WHERE CODEMP IN (select CODEMP from ${process.env.LAPP}.lapp_rendicion)`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `empleadoConCajaChicas`
+        }
+
+    }
+}
+
 const actualizarEstadoComentario = async (id, estado, comentario) => {
 
     try {
@@ -389,7 +408,6 @@ const costoComercialAreas = async () => {
             await connectHANA();
         }
         console.log('costoComercialAreas EXECUTE')
-        // const query = `select * from ${process.env.PRD}."IFA_CC_AREAS"`
         const query = `select * from LAB_IFA_PRD."IFA_CC_AREAS"`
         console.log({ query })
         const result = await executeQuery(query)
@@ -729,6 +747,7 @@ const lineaDetalleCC = async (
     DebitSys,
     CreditSys,
     ProjectCode,
+    I_IdConceptoComercial,
     AdditionalReference,
     Reference1,
     Reference2,
@@ -768,48 +787,49 @@ const lineaDetalleCC = async (
         }
         console.log('actualizarCCRendicion EXECUTE')
         const query = `CALL "LAB_IFA_COM"."spInsertarLineaDetalle" (
-        ${idCom},
-        ${Line_ID},
-    '${AccountCode}',
-    '${ShortName}',
-    '${ContraAccount}',
-    ${Debit},
-    ${Credit},
-    ${DebitSys},
-    ${CreditSys},
-   '${ProjectCode}',
-    ${AdditionalReference},
-    '${Reference1}',
-    '${Reference2}',
-    ${CostingCode},
-    ${CostingCode2},
-    ${CostingCode3},
-    ${CostingCode4},
-    ${CostingCode5},
-    '${LineMemo}',
-    '${U_ComercialComments}',
-    '${U_TIPODOC}',
-    '${U_NIT}',
-    '${U_RSocial}',
-    ${U_NumAuto},
-    '${U_B_cuf}',
-    '${U_NumDoc}',
-    '${U_FECHAFAC}',
-    ${U_IMPORTE},
-    ${U_ICE},
-    ${U_IEHD},
-    ${U_IPJ},
-    ${U_TASAS},
-    ${U_OP_EXENTO},
-    ${U_EXENTO},
-    ${U_TASACERO},
-    ${U_DESCTOBR},
-    ${U_GIFTCARD},
-    '${U_ESTADOFC}',
-    ${U_TIPOCOM},
-    '${U_CODALFA}',
-    '${U_BenefCode}',
-    '${U_CardCode || ''}')`
+            ${idCom || 0},
+            ${Line_ID || 0},
+        '${AccountCode || ''}',
+        '${ShortName || ''}',
+        '${ContraAccount || ''}',
+        ${Debit || 0},
+        ${Credit || 0},
+        ${DebitSys || 0},
+        ${CreditSys || 0},
+       '${ProjectCode || ''}',
+       ${I_IdConceptoComercial || 0},
+        ${AdditionalReference || 0},
+        '${Reference1 || ''}',
+        '${Reference2 || ''}',
+        '${CostingCode || ''}',
+        '${CostingCode2 || ''}',
+        '${CostingCode3 || ''}',
+        '${CostingCode4 || ''}',
+        '${CostingCode5 || ''}',
+        '${LineMemo || ''}',
+        '${U_ComercialComments || ''}',
+        '${U_TIPODOC || ''}',
+        '${U_NIT || ''}',
+        '${U_RSocial || ''}',
+        '${U_NumAuto || ''}',
+        '${U_B_cuf || ''}',
+        '${U_NumDoc || ''}',
+        '${U_FECHAFAC || ''}',
+        ${U_IMPORTE || 0},
+        ${U_ICE || 0},
+        ${U_IEHD || 0},
+        ${U_IPJ || 0},
+        ${U_TASAS || 0},
+        ${U_OP_EXENTO || 0},
+        ${U_EXENTO || 0},
+        ${U_TASACERO || 0},
+        ${U_DESCTOBR || 0},
+        ${U_GIFTCARD || 0},
+        '${U_ESTADOFC || ''}',
+        ${U_TIPOCOM || 0},
+        '${U_CODALFA || ''}',
+        '${U_BenefCode || ''}',
+        '${U_CardCode || ''}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -834,7 +854,7 @@ const detallePreliminarCC = async () => {
     } catch (error) {
         console.log({ error })
         return {
-            error: `No se pudo insertar el detalle preliminar en COM`
+            error: `No se pudo insertar el detalle preliminar en COM. ${error.message | ''}`
         }
     }
 }
@@ -869,6 +889,40 @@ const cambiarPreliminarRendicion = async (idRend) => {
         console.log({ error })
         throw {
             message: `Error en getRendicionesByEstado: ${error.message | ''}`
+        }
+    }
+}
+
+const listaRendicionesByCODEMP = async (codEmp) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.LAPP}.lapp_rendicion WHERE CODEMP = '${codEmp}'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en listaRendicionesByCODEMP: ${error.message | ''}`
+        }
+    }
+}
+
+const allGastosRange = async (starDate, endDate) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.LAPP}.LAPP_TODOS_GASTO_FECHA('${starDate}','${endDate}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en allGastosRange: ${error.message | ''}`
         }
     }
 }
@@ -910,5 +964,8 @@ module.exports = {
     getRendicionesByEstado,
     cambiarPreliminarRendicion,
     findAllRendiciones,
+    empleadoConCajaChicas,
+    listaRendicionesByCODEMP,
+    allGastosRange,
     detallePreliminarCC
 }

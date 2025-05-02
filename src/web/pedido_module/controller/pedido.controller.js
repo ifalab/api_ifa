@@ -25,7 +25,8 @@ const { findClientePorVendedor,
     listaNegraDescuentos,
     clientePorCardCode,
     articuloPorItemCode,
-    descuentosCortoVencimiento
+    descuentosCortoVencimiento,
+    listaPrecioOficialCortoVencimiento
 } = require("./hana.controller");
 const { postOrden, postQuotations, patchQuotations, getQuotation } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -199,6 +200,17 @@ const listaPreciosOficilaController = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
         const listaPrecioResponse = await listaPrecioOficial(cardCode)
+        return res.json({ listaPrecio: listaPrecioResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
+    }
+}
+
+const listaPreciosOficilaCVController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const listaPrecioResponse = await listaPrecioOficialCortoVencimiento(cardCode)
         return res.json({ listaPrecio: listaPrecioResponse })
     } catch (error) {
         console.log({ error })
@@ -1393,5 +1405,6 @@ module.exports = {
     patchQuotationsWhscodeController,
     descuentoCortoVencimientoController,
     findClienteController,
+    listaPreciosOficilaCVController,
 
 }
