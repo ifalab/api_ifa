@@ -78,7 +78,10 @@ const {
     campaignByIdController,
     sublineasController,
     reporteUbicacionClienteController,
-    agregarSolicitudDeDescuentoController
+    agregarSolicitudDeDescuentoController, actualizarStatusSolicitudDescuentoController,
+    getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
+    actualizarSolicitudDescuentoController,
+    getClientNameController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -182,9 +185,14 @@ router.get('/vendedores-by-sucode', [validarToken, validarCampos], vendedorPorSu
 router.get('/excel-clientes-mora', [validarToken, validarCampos], excelClientesMoraController)
 
 router.get('/reporte-ubicacion-cliente', [validarToken, validarCampos], reporteUbicacionClienteController)
+router.get('/client-name', [validarToken, validarCampos], getClientNameController)
 
 //Solicitud Descuento
 router.post('/solicitar-descuento', [validarToken, validarCampos], agregarSolicitudDeDescuentoController)
+router.post('/cambiar-status-solicitud-dec', [validarToken, validarCampos], actualizarStatusSolicitudDescuentoController)
+router.get('/vendedores-solicitud-desc', [validarToken, validarCampos], getVendedoresSolicitudDescByStatusController)
+router.post('/solicitud-desc-vendedor', [validarToken, validarCampos], getSolicitudesDescuentoByStatusController)
+router.post('/actualizar-solicitud-desc', [validarToken, validarCampos], actualizarSolicitudDescuentoController)
 
 
 module.exports = router
