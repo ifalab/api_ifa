@@ -13,6 +13,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     idJournalPreliminar, getRendicionesByEstado,
     cambiarPreliminarRendicion,
     findAllRendiciones,
+    detallePreliminarCC,
     empleadoConCajaChicas,
     listaRendicionesByCODEMP,
     allGastosRange,
@@ -1075,6 +1076,11 @@ const sendToSapController = async (req, res) => {
                 return res.status(400).json({ mensaje: `Error al guardar el detalle en COM. ${response.error || 'No definido'}`, response })
             }
             idx++
+        }
+
+        const responsePreliminar = await detallePreliminarCC();
+        if (responsePreliminar.error) {
+            return res.status(400).json({ responsePreliminar })
         }
         // return res.json({
         //     usd,

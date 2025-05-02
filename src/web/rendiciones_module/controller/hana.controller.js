@@ -836,7 +836,25 @@ const lineaDetalleCC = async (
     } catch (error) {
         console.log({ error })
         return {
-            error: `No se pudo insertar el detalle en COM. ${error.message | ''}`
+            error: `No se pudo insertar el detalle preliminar bruto en COM`
+        }
+    }
+}
+
+const detallePreliminarCC = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('detallePreliminarCC EXECUTE')
+        const query = `CALL "LAB_IFA_COM".ifa_copiar_journal_preliminar()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo insertar el detalle preliminar en COM. ${error.message | ''}`
         }
     }
 }
@@ -949,4 +967,5 @@ module.exports = {
     empleadoConCajaChicas,
     listaRendicionesByCODEMP,
     allGastosRange,
+    detallePreliminarCC
 }

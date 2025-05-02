@@ -1453,35 +1453,20 @@ const getClientName = async (cardCode) => {
 
 ///Solicitud Descuentos
 const agregarSolicitudDeDescuento = async (p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
-    p_ItemCode, p_ItemName,  p_FechaIni, p_FechaFin,  p_CreatedBy) => {
+    p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin,  p_CreatedBy) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.ifa_crm_solicitar_descuento(${p_SlpCode}, 
         '${p_SlpName}', '${p_ClientCode}', '${p_ClientName}', '${p_ItemCode}', '${p_ItemName}', 
-        '${p_FechaIni}', '${p_FechaFin}', ${p_CreatedBy})`
+        ${p_CantMin}, ${p_DescPrct}, '${p_FechaIni}', '${p_FechaFin}', ${p_CreatedBy})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         throw {
             message: `Error en agregarSolicitudDeDescuento: ${error.message || ''}`
-        }
-    }
-}
-const agregarSolicitudDescuentoDetalle = async (id_solicitud,  p_CantMin,  p_CantMax, p_DescPrct) => {
-    try {
-        if (!connection) {
-            await connectHANA()
-        }
-        const query = `call ${process.env.PRD}.IFA_CRM_INSERTAR_SOLICITUD_DESCUENTO_DETALLE(${id_solicitud}, ${p_CantMin}, ${p_CantMax}, ${p_DescPrct})`
-        console.log({ query })
-        const result = await executeQuery(query)
-        return result
-    } catch (error) {
-        throw {
-            message: `Error en agregarSolicitudDeDescuentoDetalle: ${error.message || ''}`
         }
     }
 }
@@ -1508,10 +1493,10 @@ const getVendedoresSolicitudDescByStatus = async (status) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select SlpCode, SlpName, CreatedAt
+        const query = `select "SlpCode", "SlpName", "CreatedAt", "Status"
         from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
-        where Status = ${status}
-        group by SlpCode, SlpName, CreatedAt`
+        where "Status" = ${status} and "Deleted"=0
+        group by "SlpCode", "SlpName", "CreatedAt", "Status"`
 
         console.log({ query })
         const result = await executeQuery(query)
@@ -1530,7 +1515,8 @@ const getSolicitudesDescuentoByStatus = async (status, slpCode, createdAt) => {
         }
             const query = `select *
             from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
-            where  Status = ${status} and SlpCode = ${slpCode} and CreatedAt = '${createdAt}'`
+            where  "Status" = ${status} and "SlpCode" = ${slpCode} 
+            and "CreatedAt" = '${createdAt}' and "Deleted" = 0`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -1541,13 +1527,13 @@ const getSolicitudesDescuentoByStatus = async (status, slpCode, createdAt) => {
     }
 }
 
-const actualizarSolicitudDescuento = async (id, p_FechaIni, p_FechaFin) => {
+const actualizarSolicitudDescuento = async (id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct) => {
     try {
         if (!connection) {
             await connectHANA()
         }
             const query = `call ${process.env.PRD}.IFA_CRM_EDITAR_SOLICITUD_DESCUENTO(
-                ${id}, '${p_FechaIni}', '${p_FechaFin}'
+                ${id}, '${p_FechaIni}', '${p_FechaFin}', ${p_CantMin}, ${p_DescPrct}
             )`
         console.log({ query })
         const result = await executeQuery(query)
@@ -1559,20 +1545,54 @@ const actualizarSolicitudDescuento = async (id, p_FechaIni, p_FechaFin) => {
     }
 }
 
-const actualizarSolicitudDescuentoDetalle = async (id, p_CantMin, p_CantMax, p_DescPrct) => {
+const deleteSolicitudDescuento = async (id) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-            const query = `call ${process.env.PRD}.IFA_CRM_EDITAR_SOLICITUD_DESCUENTO_DETALLE(
-                ${id}, ${p_CantMin}, ${p_CantMax}, ${p_DescPrct}
-            )`
+            const query = `UPDATE ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
+                set "Deleted" = 1
+                where "Id"=${id};`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         throw {
-            message: `Error en actualizarSolicitudDescuentoDetalle: ${error.message || ''}`
+            message: `Error en deleteSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const getVentasPrespuestosSubLinea = async() => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            SELECT * FROM LAB_IFA_DATA.ven_ventas_resumen_by_dim ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
+        `
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVentasPrespuestosSubLinea: ${error.message || ''}`
+        }
+    }
+}
+
+const getVentasPrespuestosSubLineaAnterior = async() => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            SELECT * FROM LAB_IFA_DATA.VEN_VENTAS_RESUMEN_BY_DIM_ANT ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
+        `
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVentasPrespuestosSubLineaAnterior: ${error.message || ''}`
         }
     }
 }
@@ -1664,9 +1684,11 @@ module.exports = {
     reporteConUbicacionCliente,
     reporteSinUbicacionCliente,
     searchVendedorByIDSAP,
-    agregarSolicitudDeDescuento, agregarSolicitudDescuentoDetalle,
+    agregarSolicitudDeDescuento,
     getVendedoresSolicitudDescByStatus, actualizarStatusSolicitudDescuento,
     getSolicitudesDescuentoByStatus,
     getClientName,
-    actualizarSolicitudDescuento, actualizarSolicitudDescuentoDetalle
+    actualizarSolicitudDescuento, deleteSolicitudDescuento,
+    getVentasPrespuestosSubLinea,
+    getVentasPrespuestosSubLineaAnterior,
 }
