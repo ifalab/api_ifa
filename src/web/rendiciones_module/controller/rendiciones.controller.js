@@ -646,7 +646,7 @@ const sendToSapController = async (req, res) => {
         let listFacturasND = []
         let listResHana = []
         let errores = []
-        
+
 
         console.log(JSON.stringify({
             codEmp,
@@ -711,7 +711,7 @@ const sendToSapController = async (req, res) => {
         });
         console.log({ data, statusCode })
         if (data.status >= 400) {
-            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Hubo un Error al Enviar las Rendiciones. ${data.message||'Error no definido'}`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Hubo un Error al Enviar las Rendiciones. ${data.message || 'Error no definido'}`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
                 const responseSap = await actualizarEstadoComentario(id_gasto, 2, `No se pudo contabilizar, error del SAP. ${data.message || ''}`)
@@ -745,6 +745,7 @@ const sendToSapController = async (req, res) => {
                     DebitSys: 0,
                     CreditSys: Number(totalDolar),
                     ProjectCode: '',
+                    I_IdConceptoComercial: factura.new_id_cuenta,
                     AdditionalReference: factura.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -787,6 +788,7 @@ const sendToSapController = async (req, res) => {
                     DebitSys: +totalDolar,
                     CreditSys: 0,
                     ProjectCode: '',
+                    I_IdConceptoComercial: factura.new_id_cuenta,
                     AdditionalReference: factura.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -837,6 +839,7 @@ const sendToSapController = async (req, res) => {
                     DebitSys: 0,
                     CreditSys: Number(totalDolar),
                     ProjectCode: '',
+                    I_IdConceptoComercial: recibos.new_id_cuenta,
                     AdditionalReference: recibos.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -879,6 +882,7 @@ const sendToSapController = async (req, res) => {
                     DebitSys: +totalDolar,
                     CreditSys: 0,
                     ProjectCode: '',
+                    I_IdConceptoComercial: recibos.new_id_cuenta,
                     AdditionalReference: recibos.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -930,6 +934,7 @@ const sendToSapController = async (req, res) => {
                     DebitSys: 0,
                     CreditSys: Number(totalDolar),
                     ProjectCode: '',
+                    I_IdConceptoComercial: fnd.new_id_cuenta,
                     AdditionalReference: fnd.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -972,6 +977,7 @@ const sendToSapController = async (req, res) => {
                     DebitSys: +totalDolar,
                     CreditSys: 0,
                     ProjectCode: '',
+                    I_IdConceptoComercial: fnd.new_id_cuenta,
                     AdditionalReference: fnd.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -1031,6 +1037,7 @@ const sendToSapController = async (req, res) => {
                 item.DebitSys,
                 item.CreditSys,
                 item.ProjectCode,
+                item.I_IdConceptoComercial,
                 item.AdditionalReference,
                 item.Reference1,
                 item.Reference2,
@@ -1065,8 +1072,8 @@ const sendToSapController = async (req, res) => {
                 item.U_CardCode
             )
             if (response.error) {
-                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error al intentar enviar datos LineaDetalle,IDCOM:${idCom||'No definido'},AccountCode:${item.AccountCode||'No definido'},U_B_cuf:${item.U_B_cuf||'No definido'} `, `CALL "LAB_IFA_COM"."spInsertarLineaDetalle" (....)`, process.env.PRD)
-                return res.status(400).json({mensaje:`Error al guardar el detalle en COM. ${response.error||'No definido'}`, response })
+                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error al intentar enviar datos LineaDetalle,IDCOM:${idCom || 'No definido'},AccountCode:${item.AccountCode || 'No definido'},U_B_cuf:${item.U_B_cuf || 'No definido'} `, `CALL "LAB_IFA_COM"."spInsertarLineaDetalle" (....)`, process.env.PRD)
+                return res.status(400).json({ mensaje: `Error al guardar el detalle en COM. ${response.error || 'No definido'}`, response })
             }
             idx++
         }
@@ -1237,8 +1244,8 @@ const sendToSapController = async (req, res) => {
         estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
         console.log({ data })
         if (error.message.error?.message) {
-            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data||''} ${error.message.error?.message || ''}`, `rendicion/send-to-sap`, process.env.PRD)
-            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data||''} ${error.message.error?.message || ''}`, estadoRend });
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, `rendicion/send-to-sap`, process.env.PRD)
+            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, estadoRend });
         }
         if (error.response) {
             if (error.response.length > 0) {
@@ -1263,7 +1270,7 @@ const sendToSapController = async (req, res) => {
 
         }
         console.log({ data, listResSap, estadoRend })
-        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data|| ''}`, `rendicion/send-to-sap`, process.env.PRD)
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''}`, `rendicion/send-to-sap`, process.env.PRD)
         return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion`, data, listResSap, estadoRend, listErrores });
     }
 }
@@ -1664,7 +1671,7 @@ const allGastosRangeController = async (req, res) => {
     try {
         const starDate = req.query.starDate
         const endDate = req.query.endDate
-        const response = await allGastosRange(starDate,endDate)
+        const response = await allGastosRange(starDate, endDate)
         return res.json(response)
     } catch (error) {
         return res.status(500).json({ mensaje: 'Error en el controlador' })
