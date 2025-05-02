@@ -12,6 +12,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     idJournalPreliminar, getRendicionesByEstado,
     cambiarPreliminarRendicion,
     findAllRendiciones,
+    detallePreliminarCC,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -1085,6 +1086,11 @@ const sendToSapController = async (req, res) => {
                 return res.status(400).json({ response })
             }
             idx++
+        }
+
+        const responsePreliminar = await detallePreliminarCC();
+        if (responsePreliminar.error) {
+            return res.status(400).json({ responsePreliminar })
         }
         // return res.json({
         //     usd,

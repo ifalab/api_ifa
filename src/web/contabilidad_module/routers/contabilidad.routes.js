@@ -23,6 +23,7 @@ const { asientoContableController,
     rendicionesPorCajaController,
     getJournalPreliminarCC,
     getJournalPreliminarCCIds,
+    getSociosNegocio,
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -48,5 +49,6 @@ router.get('/lineas', [validarToken, validarCampos], getLineasCC);
 router.get('/tipo-cliente', [validarToken, validarCampos], getTipoClienteCC);
 router.get('/sublineas', [validarToken, validarCampos], getSublineasCC);
 router.get('/rendiciones-por-caja', [validarToken, validarCampos], rendicionesPorCajaController);
+router.get('/socios-negocio', [validarToken, validarCampos], getSociosNegocio);
 
 module.exports = router

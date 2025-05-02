@@ -1,5 +1,5 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds } = require("./hana.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
@@ -759,6 +759,20 @@ const rendicionesPorCajaController = async (req, res) => {
     }
 }
 
+const getSociosNegocio = async (req, res) => {
+    try {
+        const data = await sociosNegocio();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getJournalPreliminarCCIds], ${mensaje}` })
+    }
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -780,4 +794,5 @@ module.exports = {
     rendicionesPorCajaController,
     getJournalPreliminarCC,
     getJournalPreliminarCCIds,
+    getSociosNegocio,
 }

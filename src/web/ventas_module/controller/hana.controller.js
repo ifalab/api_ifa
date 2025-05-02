@@ -1435,6 +1435,40 @@ const reporteSinUbicacionCliente = async (sucCode) => {
     }
 }
 
+const getVentasPrespuestosSubLinea = async() => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            SELECT * FROM LAB_IFA_DATA.ven_ventas_resumen_by_dim ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
+        `
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVentasPrespuestosSubLinea: ${error.message || ''}`
+        }
+    }
+}
+
+const getVentasPrespuestosSubLineaAnterior = async() => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            SELECT * FROM LAB_IFA_DATA.VEN_VENTAS_RESUMEN_BY_DIM_ANT ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
+        `
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVentasPrespuestosSubLineaAnterior: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1522,4 +1556,6 @@ module.exports = {
     reporteConUbicacionCliente,
     reporteSinUbicacionCliente,
     searchVendedorByIDSAP,
+    getVentasPrespuestosSubLinea,
+    getVentasPrespuestosSubLineaAnterior,
 }

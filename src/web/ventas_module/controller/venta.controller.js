@@ -85,7 +85,9 @@ const {
     sublineas,
     reporteSinUbicacionCliente,
     reporteConUbicacionCliente,
-    searchVendedorByIDSAP
+    searchVendedorByIDSAP,
+    getVentasPrespuestosSubLinea,
+    getVentasPrespuestosSubLineaAnterior
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2338,6 +2340,141 @@ const reporteUbicacionClienteController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en reporteUbicacionClienteController: ${error.message}` })
     }
 }
+
+const ventasPresupuestoSubLinea = async(req, res) => {
+    try {
+        let response = await getVentasPrespuestosSubLinea();
+        const resultado = [];
+        console.log(response);
+
+        for (const item of response) {
+          const {
+            DimensionACode,
+            DimensionA,
+            DimensionBCode,
+            DimensionB,
+            DimensionC,
+            DimensionCCode,
+            DimensionC1Code,
+            DimensionC1,
+            Sales,
+            Quota
+          } = item;
+    
+          // Nivel A
+          let grupoA = resultado.find(a => a.DimensionACode === DimensionACode);
+          if (!grupoA) {
+            grupoA = {
+              DimensionACode,
+              DimensionA,
+              data: []
+            };
+            resultado.push(grupoA);
+          }
+    
+          // Nivel B dentro de A
+          let grupoB = grupoA.data.find(b => b.DimensionBCode === DimensionBCode);
+          if (!grupoB) {
+            grupoB = {
+              DimensionBCode,
+              DimensionB,
+              data: []
+            };
+            grupoA.data.push(grupoB);
+          }
+    
+          // Nivel C1 dentro de B
+          let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
+          if (!grupoC) {
+            grupoC = {
+              DimensionC,
+              DimensionCCode,
+              DimensionC1Code,
+              DimensionC1,
+              Sales: 0,
+              Quota: 0
+            };
+            grupoB.data.push(grupoC);
+          }
+    
+          // Sumar valores
+          grupoC.Sales += parseFloat(Sales);
+          grupoC.Quota += parseFloat(Quota);
+        }
+        return res.status(200).json(resultado);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPresupuestoSubLinea: ${error.message}` })
+    }
+}
+
+const ventasPresupuestoSubLineaAnterior = async(req, res) => {
+    try {
+        let response = await getVentasPrespuestosSubLineaAnterior();
+        const resultado = [];
+        console.log(response);
+
+        for (const item of response) {
+          const {
+            DimensionACode,
+            DimensionA,
+            DimensionBCode,
+            DimensionB,
+            DimensionC,
+            DimensionCCode,
+            DimensionC1Code,
+            DimensionC1,
+            Sales,
+            Quota
+          } = item;
+    
+          // Nivel A
+          let grupoA = resultado.find(a => a.DimensionACode === DimensionACode);
+          if (!grupoA) {
+            grupoA = {
+              DimensionACode,
+              DimensionA,
+              data: []
+            };
+            resultado.push(grupoA);
+          }
+    
+          // Nivel B dentro de A
+          let grupoB = grupoA.data.find(b => b.DimensionBCode === DimensionBCode);
+          if (!grupoB) {
+            grupoB = {
+              DimensionBCode,
+              DimensionB,
+              data: []
+            };
+            grupoA.data.push(grupoB);
+          }
+    
+          // Nivel C1 dentro de B
+          let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
+          if (!grupoC) {
+            grupoC = {
+              DimensionC,
+              DimensionCCode,
+              DimensionC1Code,
+              DimensionC1,
+              Sales: 0,
+              Quota: 0
+            };
+            grupoB.data.push(grupoC);
+          }
+    
+          // Sumar valores
+          grupoC.Sales += parseFloat(Sales);
+          grupoC.Quota += parseFloat(Quota);
+        }
+        return res.status(200).json(resultado);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPresupuestoSubLinea: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2417,4 +2554,6 @@ module.exports = {
     campaignByIdController,
     sublineasController,
     reporteUbicacionClienteController,
+    ventasPresupuestoSubLinea,
+    ventasPresupuestoSubLineaAnterior,
 };
