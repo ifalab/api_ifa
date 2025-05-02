@@ -86,10 +86,10 @@ const {
     reporteSinUbicacionCliente,
     reporteConUbicacionCliente,
     searchVendedorByIDSAP,
-    agregarSolicitudDeDescuento, agregarSolicitudDescuentoDetalle, 
+    agregarSolicitudDeDescuento, 
     actualizarStatusSolicitudDescuento, getVendedoresSolicitudDescByStatus,
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
-    actualizarSolicitudDescuentoDetalle,
+    deleteSolicitudDescuento,
     getClientName
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
@@ -2360,17 +2360,10 @@ const agregarSolicitudDeDescuentoController = async (req, res) => {
                 p_FechaFin = fechaIni.toISOString().split('T')[0]
             }
             const response = await agregarSolicitudDeDescuento(p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
-                p_ItemCode, p_ItemName, p_FechaIni, p_FechaFin, p_CreatedBy)
+                p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin, p_CreatedBy)
 
             console.log({ response })
             responses.push({response})
-
-            const responseDetalle1 = await agregarSolicitudDescuentoDetalle(response[0].ID, 0, p_CantMin -1, 1)
-            responses.push({responseDetalle1})
-            console.log({responseDetalle1})
-            const responseDetalle2 = await agregarSolicitudDescuentoDetalle(response[0].ID, p_CantMin, 9999999, p_DescPrct)
-            responses.push({responseDetalle2})
-            console.log({responseDetalle2})
         }
         return res.json({
             responses
@@ -2399,9 +2392,26 @@ const getClientNameController = async (req, res) => {
 const actualizarStatusSolicitudDescuentoController = async (req, res) => {
     try {
         const {id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode} = req.body
-        const response =  await actualizarStatusSolicitudDescuento(id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode)
+        const response =  await actualizarStatusSolicitudDescuento(id??-1, status, p_CreatedBy, p_SlpCode??-1, p_ClientCode, p_ItemCode)
         return res.json(
             response
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarStatusSolicitudDescuentoController: ${error.message}` })
+    }
+}
+
+const actualizarVariosStatusSolicitudDescuentoController = async (req, res) => {
+    try {
+        const {ids, status, p_CreatedBy} = req.body
+        const responses = []
+        for(const id of ids) {
+            const response =  await actualizarStatusSolicitudDescuento(id??-1, status, p_CreatedBy, -1, '', '')
+            responses.push(response)
+        }
+        return res.json(
+            responses
         )
     } catch (error) {
         console.log({ error })
@@ -2427,8 +2437,6 @@ const getSolicitudesDescuentoByStatusController = async (req, res) => {
     try {
         const {status, slpCode, createdAt} = req.body
         const response =  await getSolicitudesDescuentoByStatus(status, slpCode, createdAt)
-
-        console.log({cabecera})
         return res.json(
             response
         )
@@ -2440,31 +2448,45 @@ const getSolicitudesDescuentoByStatusController = async (req, res) => {
 
 const actualizarSolicitudDescuentoController = async (req, res) => {
     try {
-        const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct, ids_detalle } = req.body
-        let responses = []
-        if(!p_FechaIni) {
-            const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin)
-            console.log({response})
-            responses.push({response})
-        }
-        if(p_CantMin){
-          if(ids_detalle.length > 0){
-            const responseDetalle1 = await actualizarSolicitudDescuentoDetalle(ids_detalle[0], 0, p_CantMin - 1, p_DescPrct)
-            console.log({responseDetalle1})
-            responses.push({responseDetalle1})
-          }
-          if(ids_detalle.length > 1) {
-            const responseDetalle2 = await actualizarSolicitudDescuentoDetalle(ids_detalle[1], p_CantMin, 9999999, p_DescPrct)
-            console.log({responseDetalle2})
-            responses.push({responseDetalle2})
-          }
-        }
-        return res.json( responses )
+        const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct } = req.body
+        const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
+        console.log({response})
+        return res.json( response )
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en actualizarSolicitudDescuentoController: ${error.message}` })
     }
 }
+
+const actualizarSolicitudesDescuentoController = async (req, res) => {
+    try {
+        const {solicitudes} = req.body
+        const responses = []
+        for(const solicitud of solicitudes) {
+            const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct } = solicitud
+            const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
+            console.log({response})
+            responses.push(response)
+        }
+        return res.json( responses )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarSolicitudesDescuentoController: ${error.message}` })
+    }
+}
+
+const deleteSolicitudDescuentoController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response =  await deleteSolicitudDescuento(id)
+        console.log({response})
+        return res.json( response )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en deleteSolicitudDescuentoController: ${error.message}` })
+    }
+}
+
 
 
 module.exports = {
@@ -2548,6 +2570,7 @@ module.exports = {
     reporteUbicacionClienteController,
     agregarSolicitudDeDescuentoController, actualizarStatusSolicitudDescuentoController,
     getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
-    actualizarSolicitudDescuentoController,
-    getClientNameController
+    actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
+    actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
+    getClientNameController,
 };

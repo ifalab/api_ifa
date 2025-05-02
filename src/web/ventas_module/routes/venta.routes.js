@@ -80,7 +80,8 @@ const {
     reporteUbicacionClienteController,
     agregarSolicitudDeDescuentoController, actualizarStatusSolicitudDescuentoController,
     getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
-    actualizarSolicitudDescuentoController,
+    actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
+    actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
     getClientNameController
 } = require('../controller/venta.controller')
 
@@ -189,10 +190,13 @@ router.get('/client-name', [validarToken, validarCampos], getClientNameControlle
 
 //Solicitud Descuento
 router.post('/solicitar-descuento', [validarToken, validarCampos], agregarSolicitudDeDescuentoController)
-router.post('/cambiar-status-solicitud-dec', [validarToken, validarCampos], actualizarStatusSolicitudDescuentoController)
 router.get('/vendedores-solicitud-desc', [validarToken, validarCampos], getVendedoresSolicitudDescByStatusController)
 router.post('/solicitud-desc-vendedor', [validarToken, validarCampos], getSolicitudesDescuentoByStatusController)
 router.post('/actualizar-solicitud-desc', [validarToken, validarCampos], actualizarSolicitudDescuentoController)
+router.post('/cambiar-status-solicitud-desc', [validarToken, validarCampos], actualizarStatusSolicitudDescuentoController)
+router.post('/cambiar-status-solicitudes-desc', [validarToken, validarCampos], actualizarVariosStatusSolicitudDescuentoController)
+router.post('/actualizar-solicitudes-desc', [validarToken, validarCampos], actualizarSolicitudesDescuentoController)
+router.get('/delete-solicitud-desc', [validarToken, validarCampos], deleteSolicitudDescuentoController)
 
 
 module.exports = router
