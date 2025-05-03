@@ -607,9 +607,12 @@ const getAsientosContablesCC = async (req, res) => {
                 acc[current.TransId].lines.push({
                     Line_ID: current.Line_ID,
                     Account: current.Account,
+                    ContraAct: current.ContraAct,
                     Debit: current.Debit,
                     Credit: current.Credit,
-                    LineMemo: current.LineMemo
+                    LineMemo: current.LineMemo,
+                    ShortName: current.ShortName,
+                    U_IdComlConcept: current.U_IdComlConcept
                 });
             } else {
                 acc[current.TransId] = {
@@ -625,9 +628,12 @@ const getAsientosContablesCC = async (req, res) => {
                     lines: [{
                         Line_ID: current.Line_ID,
                         Account: current.Account,
+                        ContraAct: current.ContraAct,
                         Debit: current.Debit,
                         Credit: current.Credit,
-                        LineMemo: current.LineMemo
+                        LineMemo: current.LineMemo,
+                        ShortName: current.ShortName,
+                        U_IdComlConcept: current.U_IdComlConcept
                     }]
                 };
             }

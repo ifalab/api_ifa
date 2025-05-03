@@ -1237,7 +1237,7 @@ const sendToSapController = async (req, res) => {
         console.log({ estadoRend })
         return res.status(statusCode).json({ mensaje: `Se registro la rendicion en el SAP con exito.`, data, listResHana });
     } catch (error) {
-        console.log('Error: --------------------------------------------')
+        console.error('Error: --------------------------------------------')
         console.error({ error });
         console.error({ errorMessage: error.message });
 
@@ -1248,7 +1248,7 @@ const sendToSapController = async (req, res) => {
         let listErrores = []
         let estadoRend
         estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
-        console.log({ data })
+        console.error({ data })
         if (error.message.error?.message) {
             await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, `rendicion/send-to-sap`, process.env.PRD)
             return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, estadoRend });
