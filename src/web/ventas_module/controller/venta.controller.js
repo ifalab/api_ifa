@@ -879,7 +879,7 @@ const vendedorPorZonaMesAntController = async (req, res) => {
         console.log({
             username, line, groupBy
         })
-        const response = await ventasPorZonasVendedorMesAnt(username, line, groupBy);
+        const response = await ventasPorZonasVendedorMesAnt(+username, line, groupBy);
 
         const data = response.map(r => ({
             ...r,
@@ -1413,7 +1413,7 @@ const cantidadVentasPorZonaController = async (req = request, res = response) =>
         console.log({
             username, line, groupBy
         })
-        const response = await cantidadVentasPorZonasVendedor(username, line, groupBy);
+        const response = await cantidadVentasPorZonasVendedor(+username, line, groupBy);
         console.log({ response })
         const data = response.map(r => ({
             ...r,
