@@ -87,6 +87,8 @@ const {
     reporteSinUbicacionCliente,
     reporteConUbicacionCliente,
     searchVendedorByIDSAP,
+    getVentasPrespuestosSubLinea,
+    getVentasPrespuestosSubLineaAnterior,
     agregarSolicitudDeDescuento, 
     actualizarStatusSolicitudDescuento, getVendedoresSolicitudDescByStatus,
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
@@ -878,7 +880,7 @@ const vendedorPorZonaMesAntController = async (req, res) => {
         console.log({
             username, line, groupBy
         })
-        const response = await ventasPorZonasVendedorMesAnt(username, line, groupBy);
+        const response = await ventasPorZonasVendedorMesAnt(+username, line, groupBy);
 
         const data = response.map(r => ({
             ...r,
@@ -1412,7 +1414,7 @@ const cantidadVentasPorZonaController = async (req = request, res = response) =>
         console.log({
             username, line, groupBy
         })
-        const response = await cantidadVentasPorZonasVendedor(username, line, groupBy);
+        const response = await cantidadVentasPorZonasVendedor(+username, line, groupBy);
         console.log({ response })
         const data = response.map(r => ({
             ...r,
@@ -2527,6 +2529,141 @@ const sendNotificationController = async (req, res) => {
     }
 }
 
+
+const ventasPresupuestoSubLinea = async(req, res) => {
+    try {
+        let response = await getVentasPrespuestosSubLinea();
+        const resultado = [];
+        console.log(response);
+
+        for (const item of response) {
+          const {
+            DimensionACode,
+            DimensionA,
+            DimensionBCode,
+            DimensionB,
+            DimensionC,
+            DimensionCCode,
+            DimensionC1Code,
+            DimensionC1,
+            Sales,
+            Quota
+          } = item;
+    
+          // Nivel A
+          let grupoA = resultado.find(a => a.DimensionACode === DimensionACode);
+          if (!grupoA) {
+            grupoA = {
+              DimensionACode,
+              DimensionA,
+              data: []
+            };
+            resultado.push(grupoA);
+          }
+    
+          // Nivel B dentro de A
+          let grupoB = grupoA.data.find(b => b.DimensionBCode === DimensionBCode);
+          if (!grupoB) {
+            grupoB = {
+              DimensionBCode,
+              DimensionB,
+              data: []
+            };
+            grupoA.data.push(grupoB);
+          }
+    
+          // Nivel C1 dentro de B
+          let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
+          if (!grupoC) {
+            grupoC = {
+              DimensionC,
+              DimensionCCode,
+              DimensionC1Code,
+              DimensionC1,
+              Sales: 0,
+              Quota: 0
+            };
+            grupoB.data.push(grupoC);
+          }
+    
+          // Sumar valores
+          grupoC.Sales += parseFloat(Sales);
+          grupoC.Quota += parseFloat(Quota);
+        }
+        return res.status(200).json(resultado);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPresupuestoSubLinea: ${error.message}` })
+    }
+}
+
+const ventasPresupuestoSubLineaAnterior = async(req, res) => {
+    try {
+        let response = await getVentasPrespuestosSubLineaAnterior();
+        const resultado = [];
+        console.log(response);
+
+        for (const item of response) {
+          const {
+            DimensionACode,
+            DimensionA,
+            DimensionBCode,
+            DimensionB,
+            DimensionC,
+            DimensionCCode,
+            DimensionC1Code,
+            DimensionC1,
+            Sales,
+            Quota
+          } = item;
+    
+          // Nivel A
+          let grupoA = resultado.find(a => a.DimensionACode === DimensionACode);
+          if (!grupoA) {
+            grupoA = {
+              DimensionACode,
+              DimensionA,
+              data: []
+            };
+            resultado.push(grupoA);
+          }
+    
+          // Nivel B dentro de A
+          let grupoB = grupoA.data.find(b => b.DimensionBCode === DimensionBCode);
+          if (!grupoB) {
+            grupoB = {
+              DimensionBCode,
+              DimensionB,
+              data: []
+            };
+            grupoA.data.push(grupoB);
+          }
+    
+          // Nivel C1 dentro de B
+          let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
+          if (!grupoC) {
+            grupoC = {
+              DimensionC,
+              DimensionCCode,
+              DimensionC1Code,
+              DimensionC1,
+              Sales: 0,
+              Quota: 0
+            };
+            grupoB.data.push(grupoC);
+          }
+    
+          // Sumar valores
+          grupoC.Sales += parseFloat(Sales);
+          grupoC.Quota += parseFloat(Quota);
+        }
+        return res.status(200).json(resultado);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPresupuestoSubLinea: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2611,4 +2748,6 @@ module.exports = {
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
     getClientNameController, notificationSubscriptionController, sendNotificationController,
+    ventasPresupuestoSubLinea,
+    ventasPresupuestoSubLineaAnterior,
 };

@@ -235,7 +235,7 @@ const ventasPorZonasVendedor = async (username, line, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA('${username}','${line}','${groupBy}');`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA(${username},'${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en ventas por zona: ', err.message);
@@ -326,7 +326,7 @@ const ventasPorZonasVendedorMesAnt = async (username, line, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT('${username}','${line}','${groupBy}');`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT(${username},'${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.log({ error })
@@ -857,7 +857,7 @@ const cantidadVentasPorZonasVendedor = async (username, line, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA('${username}','${line}','${groupBy}');`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA(${username},'${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en cantidadVentasPorZonasVendedor: ', err.message);
@@ -870,7 +870,7 @@ const cantidadVentasPorZonasMesAnt = async (username, line, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT('${username}','${line}','${groupBy}');`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT(${username},'${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.log({ err })
@@ -1563,6 +1563,40 @@ const deleteSolicitudDescuento = async (id) => {
     }
 }
 
+const getVentasPrespuestosSubLinea = async() => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            SELECT * FROM LAB_IFA_DATA.ven_ventas_resumen_by_dim ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
+        `
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVentasPrespuestosSubLinea: ${error.message || ''}`
+        }
+    }
+}
+
+const getVentasPrespuestosSubLineaAnterior = async() => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            SELECT * FROM LAB_IFA_DATA.VEN_VENTAS_RESUMEN_BY_DIM_ANT ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
+        `
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVentasPrespuestosSubLineaAnterior: ${error.message || ''}`
+        }
+    }
+}
+
 
 const CREATETABLE = async (subscription) => {
     try {
@@ -1709,4 +1743,6 @@ module.exports = {
     getClientName,
     actualizarSolicitudDescuento, deleteSolicitudDescuento, notificationSubscription,
     getSubscriptions, CREATETABLE,
+    getVentasPrespuestosSubLinea,
+    getVentasPrespuestosSubLineaAnterior,
 }

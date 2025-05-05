@@ -78,6 +78,8 @@ const {
     campaignByIdController,
     sublineasController,
     reporteUbicacionClienteController,
+    ventasPresupuestoSubLinea,
+    ventasPresupuestoSubLineaAnterior,
     agregarSolicitudDeDescuentoController, actualizarStatusSolicitudDescuentoController,
     getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
@@ -202,5 +204,8 @@ router.get('/delete-solicitud-desc', [validarToken, validarCampos], deleteSolici
 
 router.post('/notification-subscribe', [validarToken, validarCampos], notificationSubscriptionController)
 router.post('/send-notification', [validarToken, validarCampos], sendNotificationController)
+
+router.get('/presupuesto/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLinea)
+router.get('/presupuesto/anterior/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLineaAnterior)
 
 module.exports = router

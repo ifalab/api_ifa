@@ -13,9 +13,11 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     idJournalPreliminar, getRendicionesByEstado,
     cambiarPreliminarRendicion,
     findAllRendiciones,
+    detallePreliminarCC,
     empleadoConCajaChicas,
     listaRendicionesByCODEMP,
     allGastosRange,
+    importeByRend,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -725,7 +727,6 @@ const sendToSapController = async (req, res) => {
             return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, listResHana });
 
         }
-        //!------------------------------------------- PRUEBA
         //! enviar centro de costo:
 
         let journalLines = []
@@ -1017,7 +1018,7 @@ const sendToSapController = async (req, res) => {
         })
         //***
         let idx = 0
-        const idJournalCom = await idJournalPreliminar()
+        const idJournalCom = await idJournalPreliminar(glosaRend)
         if (idJournalCom.length == 0) {
             await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error no hay datos al buscar el ID en IFA COM`, "CALL LAB_IFA_COM.IFA_INSERT_JOURNALS_PRELIMINAR();", process.env.PRD)
             return res.status(400).json({ mensaje: 'No hay datos al buscar el ID en IFA COM' })
@@ -1076,6 +1077,11 @@ const sendToSapController = async (req, res) => {
                 return res.status(400).json({ mensaje: `Error al guardar el detalle en COM. ${response.error || 'No definido'}`, response })
             }
             idx++
+        }
+
+        const responsePreliminar = await detallePreliminarCC();
+        if (responsePreliminar.error) {
+            return res.status(400).json({ responsePreliminar })
         }
         // return res.json({
         //     usd,
@@ -1231,7 +1237,7 @@ const sendToSapController = async (req, res) => {
         console.log({ estadoRend })
         return res.status(statusCode).json({ mensaje: `Se registro la rendicion en el SAP con exito.`, data, listResHana });
     } catch (error) {
-        console.log('Error: --------------------------------------------')
+        console.error('Error: --------------------------------------------')
         console.error({ error });
         console.error({ errorMessage: error.message });
 
@@ -1242,7 +1248,7 @@ const sendToSapController = async (req, res) => {
         let listErrores = []
         let estadoRend
         estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
-        console.log({ data })
+        console.error({ data })
         if (error.message.error?.message) {
             await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, `rendicion/send-to-sap`, process.env.PRD)
             return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, estadoRend });
@@ -1672,8 +1678,23 @@ const allGastosRangeController = async (req, res) => {
         const starDate = req.query.starDate
         const endDate = req.query.endDate
         const response = await allGastosRange(starDate, endDate)
-        return res.json(response)
+        let result = []
+        for (let element of response) {
+            const { ID_RENDICION_GASTOS } = element
+            const dataImporte = await importeByRend(ID_RENDICION_GASTOS)
+            if (dataImporte.length > 0) {
+                const { IMPORTETOTAL } = dataImporte[0]
+                element = {
+                    ...element,
+                    IMPORTETOTALREND: IMPORTETOTAL
+                }
+            }
+
+            result.push(element)
+        }
+        return res.json(result)
     } catch (error) {
+        console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }

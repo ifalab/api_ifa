@@ -297,6 +297,21 @@ const rendicionesPorCaja= async(idCaja) => {
     }
 }
 
+const sociosNegocio= async(idCaja) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('sociosNegocio EXECUTE')
+        const query = `SELECT "CardCode", "CardName" FROM LAB_IFA_COM.PARTNERS ORDER BY "CardCode"`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en sociosNegocio')
+    }
+}
 module.exports = {
     tipoDeCambio,
     empleadosHana,
@@ -314,4 +329,5 @@ module.exports = {
     rendicionesPorCaja,
     asientosPreliminaresCC,
     asientosPreliminaresCCIds,
+    sociosNegocio
 }
