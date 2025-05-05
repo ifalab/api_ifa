@@ -779,6 +779,116 @@ const getSociosNegocio = async (req, res) => {
     }
 }
 
+const actualizarEstadoCCController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body;
+    
+        console.log(id);
+        console.log(estado);
+        // Validación simple
+        if (!['nc', 'c', 'm'].includes(estado)) {
+        return res.status(400).json({ message: 'Estado inválido' });
+        }
+
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ message: 'ID inválido o no numérico' });
+        }      
+    
+        // Lógica para actualizar en la BD
+        await sapService.actualizarAsientoCC({
+            estado
+        }, id.toString())
+    
+        res.json({ message: 'Estado actualizado correctamente' });
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [actualizarEstadoCCController], ${mensaje}` })
+    }
+    
+};
+
+const guardarAsientoContablePreliminarCCController = async (req, res) => {
+    // console.log(req.usuarioAutorizado)
+    try {
+        const user = req.usuarioAutorizado
+        const {
+            ReferenceDate,
+            DueDate,
+            Memo,
+            Reference1,
+            Reference2,
+            Reference3,
+            TransType,
+            details
+        } = req.body
+        let totalDebe = 0;
+        let totalHaber = 0;
+
+        let formattedDate;
+        let formattedDueDate;
+        if (ReferenceDate) {
+            const referenceDate = new Date(ReferenceDate);
+            const referenceDueDate = new Date(DueDate);
+
+            if (isNaN(referenceDate) || isNaN(referenceDueDate)) {
+                return res.status(400).json({
+                    mensaje: 'La fecha de contabilización o de vencimiento no es válida.'
+                });
+            }
+
+            formattedDate = referenceDate.toISOString();
+            formattedDueDate = referenceDueDate.toISOString();
+        } else {
+            return res.status(400).json({
+                mensaje: 'La fecha de contabilización o de vencimiento es obligatoria.'
+            });
+        }
+
+        console.log(req.body)
+
+        details.map((item) => {
+            // console.log(item);
+            totalDebe += Number(item.Credit)
+            totalHaber += Number(item.Debit)
+        })
+
+        console.log({ totalDebe, totalHaber })
+        if (totalDebe != totalHaber) {
+            return res.status(400).json({
+                mensaje: `La sumatoria del Debe y Haber son diferentes. Total Debe: ${totalDebe}, Total Haber: ${totalHaber}`
+            })
+        }
+
+        console.log(user);
+
+        const comResponse = await sapService.createAsientoCC({
+            fechaContabilizacion: formattedDate,
+            glosa: Memo,
+            referencia1: Reference1,
+            referencia2: Reference2,
+            referencia3: Reference3,
+            transType: Number(TransType),
+            fechaDueDate: formattedDueDate,
+            userSign: Number(user.ID),
+            details
+        })
+        const { data } = comResponse
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador, ${mensaje}` })
+    }
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -801,4 +911,6 @@ module.exports = {
     getJournalPreliminarCC,
     getJournalPreliminarCCIds,
     getSociosNegocio,
+    actualizarEstadoCCController,
+    guardarAsientoContablePreliminarCCController
 }
