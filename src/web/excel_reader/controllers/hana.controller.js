@@ -49,7 +49,7 @@ const insertDataLabVenCuotasDetalle = async (data) => {
             await connectHANA();
         }
         console.log(data);
-        const docDate = '2025-03-01'; 
+        const docDate = '2025-05-01'; 
 
         const tipoCliente = data.Tipo_Cliente || '';
         const linea = data.Linea.trim() || '';
@@ -61,7 +61,7 @@ const insertDataLabVenCuotasDetalle = async (data) => {
         const codArea = data.Cod_Area || 0;
         const codZona = data.Cod_Zona || 0;
 
-        const query = `insert into "LAB_IFA_DATA"."IFA_VEN_CUOTA_DETALLE" values(TO_DATE('${docDate}', 'YYYY-MM-DD'), '','','','${tipoCliente}','${linea}','',${lineNum},'${itemCode}','','',${cuotaCantidad},${cuotaVentaBs},${codAgencia},${codArea},${codZona},${0},${0},${0})`;
+        const query = `insert into "LAB_IFA_DATA"."IFA_VEN_CUOTA_DETALLE" values(${lineNum},TO_DATE('${docDate}', 'YYYY-MM-DD'), '','','','${tipoCliente}','${linea}','',${lineNum},'${itemCode}','',${cuotaCantidad},${cuotaVentaBs},${codAgencia},${codArea},${codZona},${0},${0},${0}, '')`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
