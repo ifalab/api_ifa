@@ -864,7 +864,11 @@ const getRendicionesByEstado = async (estado) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from LAB_IFA_LAPP.lapp_rendicion where "ESTADO"=${estado}`
+        const query = `select * 
+from LAB_IFA_LAPP.lapp_rendicion lr 
+JOIN LAB_IFA_PRD.IFA_DM_EMPLEADOS le
+on le."CardCode" = lr.CODEMP
+where  "ESTADO"=${estado}`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -927,6 +931,23 @@ const allGastosRange = async (starDate, endDate) => {
     }
 }
 
+const importeByRend = async (idRend) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.LAPP}.LAPP_IMPORTETOTAL_BY_REND(${idRend})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en importeByRend: ${error.message | ''}`
+        }
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -967,5 +988,6 @@ module.exports = {
     empleadoConCajaChicas,
     listaRendicionesByCODEMP,
     allGastosRange,
-    detallePreliminarCC
+    detallePreliminarCC,
+    importeByRend
 }

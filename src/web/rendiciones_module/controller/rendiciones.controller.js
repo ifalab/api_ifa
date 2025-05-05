@@ -17,6 +17,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     empleadoConCajaChicas,
     listaRendicionesByCODEMP,
     allGastosRange,
+    importeByRend,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -1677,8 +1678,23 @@ const allGastosRangeController = async (req, res) => {
         const starDate = req.query.starDate
         const endDate = req.query.endDate
         const response = await allGastosRange(starDate, endDate)
-        return res.json(response)
+        let result = []
+        for (let element of response) {
+            const { ID_RENDICION_GASTOS } = element
+            const dataImporte = await importeByRend(ID_RENDICION_GASTOS)
+            if (dataImporte.length > 0) {
+                const { IMPORTETOTAL } = dataImporte[0]
+                element = {
+                    ...element,
+                    IMPORTETOTALREND: IMPORTETOTAL
+                }
+            }
+
+            result.push(element)
+        }
+        return res.json(result)
     } catch (error) {
+        console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
