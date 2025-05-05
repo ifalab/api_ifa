@@ -718,13 +718,13 @@ const busquedaProveedor = async (parametro) => {
     }
 }
 
-const idJournalPreliminar = async () => {
+const idJournalPreliminar = async (glosa) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('idJournalPreliminar EXECUTE')
-        const query = `CALL "LAB_IFA_COM".IFA_INSERT_JOURNALS_PRELIMINAR();`
+        const query = `CALL "LAB_IFA_COM".IFA_INSERT_JOURNALS_PRELIMINAR('${glosa}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result

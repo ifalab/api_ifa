@@ -1018,7 +1018,7 @@ const sendToSapController = async (req, res) => {
         })
         //***
         let idx = 0
-        const idJournalCom = await idJournalPreliminar()
+        const idJournalCom = await idJournalPreliminar(glosaRend)
         if (idJournalCom.length == 0) {
             await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error no hay datos al buscar el ID en IFA COM`, "CALL LAB_IFA_COM.IFA_INSERT_JOURNALS_PRELIMINAR();", process.env.PRD)
             return res.status(400).json({ mensaje: 'No hay datos al buscar el ID en IFA COM' })
