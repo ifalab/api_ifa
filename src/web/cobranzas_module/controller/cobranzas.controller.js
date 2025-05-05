@@ -900,7 +900,7 @@ const saldoDeudorInstitucionesController = async (req, res) => {
 
 const realizarCobroController = async (req, res) => {
     try {
-        const {  VisitID, CardName, Total, ...body} = req.body
+        const {  VisitID, CardName, ...body} = req.body
         let CashSum = body.CashSum
         const CashAccount = body.CashAccount
         let TransferSum = body.TransferSum
@@ -916,9 +916,9 @@ const realizarCobroController = async (req, res) => {
 
         PaymentInvoices.map((item) => {
             const sum = item.SumApplied
-            console.log({ sum })
             total += +sum
         })
+        console.log({ total })
         total = Number(total.toFixed(2))
 
         if (TransferAccount || TransferAccount != null) {
@@ -941,6 +941,7 @@ const realizarCobroController = async (req, res) => {
         }
 
         body.DocDate = null
+        console.log({ body })
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
             let mensaje = `Error del SAP`
@@ -955,7 +956,7 @@ const realizarCobroController = async (req, res) => {
         
         if(VisitID){
             const responseAniadirVisita = await aniadirDetalleVisita(
-                VisitID, body.CardCode, CardName, 'Cobranza', body.JournalRemarks, 0, Total, body.U_OSLP_ID
+                VisitID, body.CardCode, CardName, 'Cobranza', body.JournalRemarks, 0, total, body.U_OSLP_ID
             )
             console.log({ responseAniadirVisita })
             if(responseAniadirVisita.message){
