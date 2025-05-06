@@ -303,7 +303,7 @@ const sociosNegocio= async(idCaja) => {
             await connectHANA();
         }
         console.log('sociosNegocio EXECUTE')
-        const query = `SELECT "CardCode", "CardName" FROM LAB_IFA_COM.PARTNERS ORDER BY "CardCode"`
+        const query = `SELECT "CardCode", "CardName" FROM LAB_IFA_COM.PARTNERS`
         console.log({ query })
         const result = await executeQuery(query)
         return result

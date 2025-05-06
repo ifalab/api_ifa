@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante de Pago</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: "Courier New", Courier, monospace;     
+            margin: 5px;
+            color: #333;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #4d4c4c;
+            margin: 10px 0;
+        }
+
+        h1 {
+            font-size: 25px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        p {
+            font-size: 14px;
+            margin: 4px 0;
+        }
+        .smaller p{
+            font-size: 11px;
+            margin: 1px 0;
+        }
+
+        .total{
+            font-size: 16px;
+        }
+        
+        .container {
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header img {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .detalle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        .detalle-left {
+            width: 60%;
+            text-align: left;
+        }
+
+        .detalle-right {
+            width: 40%;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .detalle-right p{
+            margin: 3.5px 0;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2px;
+        }
+
+        th, td {
+            padding: 2px;
+            text-align: center;
+        }
+
+        td {
+            font-size: 12px;
+        }
+
+        th {
+            font-size: 13px;
+            font-weight: bold;
+            border-top: 1px solid black;
+            border-bottom: 1px solid black;
+        }
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+        }
+        .footer-signatures {
+            margin-top: 50px;
+            /* margin: 0 5px; */
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            align-items: flex-end;
+        }
+
+        .footer-signatures div {
+            display: inline-block;
+            width: 20%;
+            margin: 0 5px;
+        }
+        .div-signature {
+            border-top: 1px solid black;
+            margin-top: 2rem;
+        }
+        tfoot{
+            font-weight: bold;
+            border-top: 0.5px solid black;
+            border-bottom: 0.5px solid black;
+        }
+        .linea-fija {
+          width: 40px;
+        }
+
+    </style>
+</head>
+<body>
+  <div class="container">
+    <strong>LABORATORIOS IFA S.A.</strong>
+
+    <p>FECHA CONTABLE: <%= data.RefDate?.split(' ')[0] %></p>
+
+    <h1>COMPROBANTE CONTABLE CENTRO DE COSTO Nº <%= data.Number %></h1>
+
+    <!-- Detalle cabecera -->
+    <div class="detalle-container">
+        <div class="detalle-left">
+            <p><strong>Referencia 1:</strong> <%= data.Ref1 || '-' %></p>
+            <p><strong>Referencia 2:</strong> <%= data.Ref2 || '-' %></p>
+            <% if (data.Ref3) { %>
+                <p><strong>Referencia 3:</strong> <%= data.Ref3 %></p>
+            <% } %>
+        </div>
+        <div class="detalle-right">
+            <p><strong>Glosa:</strong> <%= data.Memo || '-' %></p>
+            <p><strong>Indicador:</strong> <%= data.Indicator || '-' %></p>
+        </div>
+    </div>
+
+     <!-- Tabla de movimientos contables -->
+     <table>
+      <thead>
+        <tr>
+          <th>Cuenta</th>
+          <th>Nombre Cuenta</th>
+          <th>Código Asociado</th>
+          <th>Nombre Asociado</th>
+          <th>Debe BS.</th>
+          <th>Haber BS.</th>
+          <th>Glosa Linea</th>
+          <th>Ref 1</th>
+          <th>Ref 2</th>
+          <th>Ref 3</th>
+          <th>Area</th>
+          <th>Tipo Cliente</th>
+          <th>Linea</th>
+          <th>Especialidad</th>
+          <th>Clasificación Gastos</th>
+          <th>Conceptos Comerciales</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% data.lines.forEach(function(line) { %>
+          <tr>
+            <td><%= line.Account %></td>
+            <td><%= line.AcctName %></td>
+            <td><%= line.ShortName %></td>
+            <td><%= line.CardName %></td>
+            <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>
+            <td><%= (Number(line.Credit) || 0).toFixed(2) %></td>            
+            <td><%= line.LineMemo %></td>
+            <td><%= line.Ref1Detail || '-' %></td>
+            <td><%= line.Ref2Detail || '-' %></td>
+            <td><%= line.Ref3Deatil || '-' %></td>
+            <td><%= line.Area || '-' %></td>
+            <td><%= line.Tipo_Cliente || '-' %></td>
+            <td><%= line.Linea || '-' %></td>
+            <td><%= line.Especialidad || '-' %></td>
+            <td><%= line.Clasificacion_Gastos || '-' %></td>
+            <td><%= line.Conceptos_Comerciales || '-' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+    <table>
+      <tfoot>
+        <tr>
+          <td>Total</td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td style="width: 35px;"><%= data.sumDebit %></td>
+          <td style="width: 40px;"><%= data.sumCredit %></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+          <td><hr class="linea-fija"></td>
+        </tr>
+      </tfoot>
+    </table>    
+
+    <div class="footer-signatures">
+        <div>
+            <div style="align-items: center;"> <%= data.UserSign %></div>
+            <div class="div-signature" style="width: 100%;">CREADO POR</div>
+        </div>
+        <div class="div-signature">REVISADO POR</div>
+        <div class="div-signature">APROBADO POR</div>
+        <div class="div-signature">RECIBIDO POR</div>
+    </div>
+  </div>
+
+
+</body>
+</html>

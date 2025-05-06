@@ -603,17 +603,32 @@ const getAsientosContablesCC = async (req, res) => {
         const data = await asientosContablesCC();
 
         const groupedData = data.reduce((acc, current) => {
+            const lineData = {
+                Line_ID: current.Line_ID,
+                Account: current.Account,
+                ContraAct: current.ContraAct,
+                Debit: current.Debit,
+                Credit: current.Credit,
+                LineMemo: current.LineMemo,
+                ShortName: current.ShortName,
+                U_IdComlConcept: current.U_IdComlConcept,
+                AcctName: current.AcctName,
+                CardName: current.CardName,
+                Ref1Detail: current.Ref1Detail,
+                Ref2Detail: current.Ref2Detail,
+                Ref3Deatil: current.Ref3Deatil,
+                U_Clasif_Gastos: current.U_Clasif_Gastos,
+                Area: current.Area,
+                Tipo_Cliente: current.Tipo_Cliente,
+                Linea: current.Linea,
+                Especialidad: current.Especialidad,
+                Clasificacion_Gastos: current.Clasificacion_Gastos,
+                Conceptos_Comerciales: current.Conceptos_Comerciales,
+                Cuenta_Contable: current.Cuenta_Contable
+            };
+
             if (acc[current.TransId]) {
-                acc[current.TransId].lines.push({
-                    Line_ID: current.Line_ID,
-                    Account: current.Account,
-                    ContraAct: current.ContraAct,
-                    Debit: current.Debit,
-                    Credit: current.Credit,
-                    LineMemo: current.LineMemo,
-                    ShortName: current.ShortName,
-                    U_IdComlConcept: current.U_IdComlConcept
-                });
+                acc[current.TransId].lines.push(lineData);
             } else {
                 acc[current.TransId] = {
                     TransId: current.TransId,
@@ -625,16 +640,8 @@ const getAsientosContablesCC = async (req, res) => {
                     Ref3: current.Ref3,
                     Number: current.Number,
                     Indicator: current.Indicator,
-                    lines: [{
-                        Line_ID: current.Line_ID,
-                        Account: current.Account,
-                        ContraAct: current.ContraAct,
-                        Debit: current.Debit,
-                        Credit: current.Credit,
-                        LineMemo: current.LineMemo,
-                        ShortName: current.ShortName,
-                        U_IdComlConcept: current.U_IdComlConcept
-                    }]
+                    UserSign: current.UserSign,
+                    lines: [lineData]
                 };
             }
             return acc;
@@ -713,6 +720,7 @@ const getJournalPreliminarCC = async (req, res) => {
     try {
         const {id} = req.query;
         const data = await asientosPreliminaresCC(id);
+        console.log(data);
         return res.json(data)
     } catch (error) {
         console.log({ error })
@@ -812,83 +820,6 @@ const actualizarEstadoCCController = async (req, res) => {
     
 };
 
-const guardarAsientoContablePreliminarCCController = async (req, res) => {
-    // console.log(req.usuarioAutorizado)
-    try {
-        const user = req.usuarioAutorizado
-        const {
-            ReferenceDate,
-            DueDate,
-            Memo,
-            Reference1,
-            Reference2,
-            Reference3,
-            TransType,
-            details
-        } = req.body
-        let totalDebe = 0;
-        let totalHaber = 0;
-
-        let formattedDate;
-        let formattedDueDate;
-        if (ReferenceDate) {
-            const referenceDate = new Date(ReferenceDate);
-            const referenceDueDate = new Date(DueDate);
-
-            if (isNaN(referenceDate) || isNaN(referenceDueDate)) {
-                return res.status(400).json({
-                    mensaje: 'La fecha de contabilización o de vencimiento no es válida.'
-                });
-            }
-
-            formattedDate = referenceDate.toISOString();
-            formattedDueDate = referenceDueDate.toISOString();
-        } else {
-            return res.status(400).json({
-                mensaje: 'La fecha de contabilización o de vencimiento es obligatoria.'
-            });
-        }
-
-        console.log(req.body)
-
-        details.map((item) => {
-            // console.log(item);
-            totalDebe += Number(item.Credit)
-            totalHaber += Number(item.Debit)
-        })
-
-        console.log({ totalDebe, totalHaber })
-        if (totalDebe != totalHaber) {
-            return res.status(400).json({
-                mensaje: `La sumatoria del Debe y Haber son diferentes. Total Debe: ${totalDebe}, Total Haber: ${totalHaber}`
-            })
-        }
-
-        console.log(user);
-
-        const comResponse = await sapService.createAsientoCC({
-            fechaContabilizacion: formattedDate,
-            glosa: Memo,
-            referencia1: Reference1,
-            referencia2: Reference2,
-            referencia3: Reference3,
-            transType: Number(TransType),
-            fechaDueDate: formattedDueDate,
-            userSign: Number(user.ID),
-            details
-        })
-        const { data } = comResponse
-        return res.json(data)
-    } catch (error) {
-        console.log({ error })
-        let mensaje = ''
-        if (error.statusCode >= 400) {
-            mensaje += error.message.message || 'No definido'
-        }
-        return res.status(500).json({ mensaje: `error en el controlador, ${mensaje}` })
-    }
-}
-
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -912,5 +843,4 @@ module.exports = {
     getJournalPreliminarCCIds,
     getSociosNegocio,
     actualizarEstadoCCController,
-    guardarAsientoContablePreliminarCCController
 }

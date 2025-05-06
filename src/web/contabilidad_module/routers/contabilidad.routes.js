@@ -26,6 +26,7 @@ const { asientoContableController,
     getSociosNegocio,
     actualizarEstadoCCController,
     guardarAsientoContablePreliminarCCController,
+    actualizarAsientoContablePreliminarCCController,
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -41,7 +42,6 @@ router.get('/find-all-bancos', [validarToken, validarCampos],findAllBancoControl
 router.get('/find-all-account', [validarToken, validarCampos],findAllAccountController)
 router.patch('/cierre-caja-chica', [validarToken, validarCampos],cerrarCajaChicaController)
 router.post('/create-asiento-contable-centro-costo', [validarToken, validarCampos], createAsientoContableCCController)
-router.post('/guardar-asiento-contable-preliminar-centro-costo', [validarToken, validarCampos], guardarAsientoContablePreliminarCCController)
 router.get('/cuentas', [validarToken, validarCampos], getCuentasCC)
 router.get('/asientos-contables-cc', [validarToken, validarCampos], getAsientosContablesCC)
 router.get('/asientos-contables-preliminares-cc', [validarToken, validarCampos], getJournalPreliminarCC)
