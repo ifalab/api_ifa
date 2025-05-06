@@ -84,7 +84,9 @@ const {
     getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
-    getClientNameController
+    getClientNameController,
+    notificationSubscriptionController,
+    sendNotificationController, getSolicitudesDescuentoByVendedorController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -193,13 +195,16 @@ router.get('/client-name', [validarToken, validarCampos], getClientNameControlle
 //Solicitud Descuento
 router.post('/solicitar-descuento', [validarToken, validarCampos], agregarSolicitudDeDescuentoController)
 router.get('/vendedores-solicitud-desc', [validarToken, validarCampos], getVendedoresSolicitudDescByStatusController)
-router.post('/solicitud-desc-vendedor', [validarToken, validarCampos], getSolicitudesDescuentoByStatusController)
+router.post('/solicitudes-desc-status', [validarToken, validarCampos], getSolicitudesDescuentoByStatusController)
 router.post('/actualizar-solicitud-desc', [validarToken, validarCampos], actualizarSolicitudDescuentoController)
 router.post('/cambiar-status-solicitud-desc', [validarToken, validarCampos], actualizarStatusSolicitudDescuentoController)
 router.post('/cambiar-status-solicitudes-desc', [validarToken, validarCampos], actualizarVariosStatusSolicitudDescuentoController)
 router.post('/actualizar-solicitudes-desc', [validarToken, validarCampos], actualizarSolicitudesDescuentoController)
 router.get('/delete-solicitud-desc', [validarToken, validarCampos], deleteSolicitudDescuentoController)
+router.get('/solicitudes-desc-vendedor', [validarToken, validarCampos], getSolicitudesDescuentoByVendedorController)
 
+router.post('/notification-subscribe', [validarToken, validarCampos], notificationSubscriptionController)
+router.post('/send-notification', [validarToken, validarCampos], sendNotificationController)
 
 router.get('/presupuesto/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLinea)
 router.get('/presupuesto/anterior/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLineaAnterior)

@@ -4,6 +4,7 @@ const fs = require('fs')
 const ExcelJS = require('exceljs');
 const XLSX = require('xlsx');
 const path = require('path');
+const webpush = require('web-push');
 const {
     ventaPorSucursal,
     ventasNormales,
@@ -91,8 +92,8 @@ const {
     agregarSolicitudDeDescuento, 
     actualizarStatusSolicitudDescuento, getVendedoresSolicitudDescByStatus,
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
-    deleteSolicitudDescuento,
-    getClientName
+    deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
+    getClientName, getSolicitudesDescuentoByVendedor, CREATETABLE
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2489,7 +2490,47 @@ const deleteSolicitudDescuentoController = async (req, res) => {
     }
 }
 
+webpush.setVapidDetails(
+    'mailto:melifisher1234@gmail.com',
+    process.env.VAPID_KEY_PUBLIC,
+    process.env.VAPID_KEY_PRIVATE
+);
+const notificationSubscriptionController = async (req, res) => {
+    try {
+        const subscription = JSON.stringify(req.body);
+        const response =  await notificationSubscription(subscription)
+        console.log({response})
+        return res.json( response )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en notificationSubscriptionController: ${error.message}` })
+    }
+}
 
+const sendNotificationController = async (req, res) => {
+    try {
+        const { title , body, vendedor, excludeEndpoint} = req.body
+        console.log({excludeEndpoint})
+        const dato = {
+            title: `${title}`,
+            body: `${body}`,
+            created_at: new Date(), 
+            vendedor: vendedor,
+        }
+        const rows =  await getSubscriptions()
+        console.log({rows})
+        rows.forEach(row => {
+          const sub = JSON.parse(row.Subscription);
+          if(sub.endpoint !== excludeEndpoint)
+            webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
+          });
+      
+        return  res.send(dato);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en sendNotificationController: ${error.message}` })
+    }
+}
 
 
 const ventasPresupuestoSubLinea = async(req, res) => {
@@ -2626,6 +2667,18 @@ const ventasPresupuestoSubLineaAnterior = async(req, res) => {
     }
 }
 
+const getSolicitudesDescuentoByVendedorController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response =  await getSolicitudesDescuentoByVendedor(id)
+        console.log({response})
+        return res.json( response )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getSolicitudesDescuentoByVendedorController: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2709,7 +2762,8 @@ module.exports = {
     getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
-    getClientNameController,
+    getClientNameController, notificationSubscriptionController, sendNotificationController,
+    getSolicitudesDescuentoByVendedorController,
     ventasPresupuestoSubLinea,
     ventasPresupuestoSubLineaAnterior,
 };

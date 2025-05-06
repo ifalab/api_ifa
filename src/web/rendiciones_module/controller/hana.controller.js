@@ -686,7 +686,7 @@ const busquedaProd = async (parametro) => {
             await connectHANA();
         }
         console.log('actualizarCCRendicion EXECUTE')
-        const query = `select "AcctCode", "AcctName" from ${process.env.PRD}.ifa_dm_cuentas where "Postable" = 'Y' and ("AcctCode" like '6%' or "AcctCode" like '21%')  and (concat("AcctName","AcctCode") like '%${parametro}%')order by "AcctCode" limit 40`
+        const query = `select "AcctCode", "AcctName" from ${process.env.PRD}.ifa_dm_cuentas where "Postable" = 'Y' and ("AcctCode" like '6%' or "AcctCode" like '21%' or "AcctCode" = '1121201')  and (concat("AcctName","AcctCode") like '%${parametro}%')order by "AcctCode" limit 40`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -718,13 +718,13 @@ const busquedaProveedor = async (parametro) => {
     }
 }
 
-const idJournalPreliminar = async () => {
+const idJournalPreliminar = async (glosa) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('idJournalPreliminar EXECUTE')
-        const query = `CALL "LAB_IFA_COM".IFA_INSERT_JOURNALS_PRELIMINAR();`
+        const query = `CALL "LAB_IFA_COM".IFA_INSERT_JOURNALS_PRELIMINAR('${glosa}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -736,6 +736,27 @@ const idJournalPreliminar = async () => {
 
     }
 }
+
+const updateSendToAccounting = async(idRend)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('idJournalPreliminar EXECUTE')
+        const query = `UPDATE ${process.env.LAPP}.LAPP_RENDICION_GASTOS SET SENDTOACCOUNTING = CURRENT_DATE WHERE ID_RENDICION_GASTOS = ${idRend}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo ejecutar updateSendToAccounting`
+        }
+
+    }
+}
+
+    
 const lineaDetalleCC = async (
     idCom,
     Line_ID,
@@ -864,7 +885,11 @@ const getRendicionesByEstado = async (estado) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from LAB_IFA_LAPP.lapp_rendicion where "ESTADO"=${estado}`
+        const query = `select * 
+from LAB_IFA_LAPP.lapp_rendicion lr 
+JOIN LAB_IFA_PRD.IFA_DM_EMPLEADOS le
+on le."CardCode" = lr.CODEMP
+where  "ESTADO"=${estado}`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -927,6 +952,23 @@ const allGastosRange = async (starDate, endDate) => {
     }
 }
 
+const importeByRend = async (idRend) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.LAPP}.LAPP_IMPORTETOTAL_BY_REND(${idRend})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en importeByRend: ${error.message | ''}`
+        }
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -967,5 +1009,7 @@ module.exports = {
     empleadoConCajaChicas,
     listaRendicionesByCODEMP,
     allGastosRange,
-    detallePreliminarCC
+    detallePreliminarCC,
+    importeByRend,
+    updateSendToAccounting
 }

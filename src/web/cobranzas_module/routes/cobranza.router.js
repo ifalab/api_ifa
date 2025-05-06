@@ -8,7 +8,7 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getAllLinesController,
     getCobradoresBySucursalController,
     getYearToDayController,
-    getYTDCobradorController, getPendientesBajaPorCobradorController, darDeBajaController,
+    getYtdCobradoresController, getPendientesBajaPorCobradorController, darDeBajaController,
     getCuentasParaBajaController,getCuentasBancoParaBajaCobranzaController,comprobanteContableController, 
     darVariasDeBajaController, getBajasByUserController, anularBajaController,
     reporteBajaCobranzasController, getCobradoresBySucursalesController, getClienteByIdController,
@@ -72,7 +72,7 @@ router.get('/sublineas',[validarToken, validarCampos], getAllSublinesController)
 router.get('/lineas',[validarToken, validarCampos], getAllLinesController)
 router.get('/cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalController)
 router.post('/ytd',[validarToken, validarCampos], getYearToDayController)
-router.post('/ytd-cobrador',[validarToken, validarCampos], getYTDCobradorController)
+router.post('/ytd-cobradores',[validarToken, validarCampos], getYtdCobradoresController)
 router.get('/pendientes-baja',[validarToken, validarCampos], getPendientesBajaPorCobradorController)
 router.post('/baja',[validarToken, validarCampos], darDeBajaController)
 router.get('/cuentas-baja',[validarToken, validarCampos], getCuentasParaBajaController)

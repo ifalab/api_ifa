@@ -3221,13 +3221,15 @@ const imprimibleDevolucionController = async (req, res) => {
     try {
         const { id } = req.body
         console.log({ id })
-        const user = req.usuarioAutorizado
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const layout = await devolucionLayout(id)
         console.log({ layout })
 
         if (layout.length == 0) {
-            // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota entrega", `Error de SAP al crear la nota de entrega`, response.query, "facturacion/nota-entrega", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error de SAP, no hay devoluCion con el id: ${id}` });
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion", 
+                `Error de SAP, no hay devolucion con el id: ${id}`, 'IFA_LAPP_VEN_DEVOLUCION_LAYOUT', 
+                "inventario/imprimible-devolucion", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error de SAP, no hay devolucion con el id: ${id}` });
         }
         const detailsList = [];
         const {
@@ -3325,9 +3327,18 @@ const imprimibleDevolucionController = async (req, res) => {
             'Content-Length': pdfBuffer.length
         });
 
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion", 
+            `Exito en el imprimible Devolucion`, 'IFA_LAPP_VEN_DEVOLUCION_LAYOUT', 
+            "inventario/imprimible-devolucion", process.env.PRD)
+
         return res.end(pdfBuffer);
     } catch (error) {
         console.log({ error })
+        const user = req.usuarioAutorizado|| { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion", 
+            `${error.message || 'Error en el controlador imprimibleDevolucionController'}`, 'catch del controlador', 
+            "inventario/imprimible-devolucion", process.env.PRD)
         return res.status(500).json({ mensaje: `error en el controlador imprimibleDevolucionController. ${error.message || ''}` })
     }
 }
@@ -3336,14 +3347,16 @@ const imprimibleSalidaController = async (req, res) => {
     try {
         const { id } = req.body
 
-        const user = req.usuarioAutorizado
+        const user = req.usuarioAutorizado|| { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await notaEntrega(id)
         const layout = response.result
         console.log({ layout })
         // return res.json({layout})
         if (layout.length == 0) {
-            // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota entrega", `Error de SAP al crear la nota de entrega`, response.query, "facturacion/nota-entrega", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error de SAP, no hay devoluCion con el id: ${id}` });
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida", 
+                `Error de SAP, no hay entrega con el id: ${id}`, 'IFA_LAPP_VEN_ENTREGA_LAYOUT', 
+                "inventario/imprimible-salida", process.env.PRD);
+            return res.status(400).json({ mensaje: `Error de SAP, no hay entrega con el id: ${id}` });
         }
         const detailsList = [];
         const {
@@ -3443,9 +3456,17 @@ const imprimibleSalidaController = async (req, res) => {
             'Content-Length': pdfBuffer.length
         });
 
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida", 
+            `Exito en el imprimible salida`, 'IFA_LAPP_VEN_ENTREGA_LAYOUT', 
+            "inventario/imprimible-salida", process.env.PRD);
         return res.end(pdfBuffer);
     } catch (error) {
         console.log({ error })
+        const user = req.usuarioAutorizado|| { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida", 
+            `${error.message || 'Error en el controller imprimibleSalidaController'}`, 'catch del controller', 
+            "inventario/imprimible-salida", process.env.PRD);
+
         return res.status(500).json({ mensaje: `error en el controlador imprimibleSalidaController. ${error.message || ''}` })
     }
 }
@@ -3735,233 +3756,6 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         }
         devolucionFinished = true
 
-        // const bodyEntrega = {
-        //     Series: 353,
-        //     CardCode: CardCode,
-        //     U_UserCode: id_sap,
-        //     DocumentLines: newDocumentLinesEntrega,
-        // }
-        // // console.log('body enterga -----------------------------------------------')
-        // // console.log(JSON.stringify({ bodyEntrega }, null, 2))
-        // allBodies[0]= {bodyEntrega}
-
-        // //? ----------------------------------------------------------------      entrega .
-        // responseEntrega = await postEntrega(bodyEntrega)
-        // if (responseEntrega.lang) {
-        //     const outputDir = path.join(__dirname, 'outputs');
-        //     if (!fs.existsSync(outputDir)) {
-        //         fs.mkdirSync(outputDir);
-        //     }
-        //     const now = new Date();
-        //     const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-        //     // Generar el nombre del archivo con el timestamp
-        //     const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
-        //     fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
-        //     console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-        //     endTime = Date.now();
-        //     // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
-        //     return res.status(400).json({
-        //         mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}.`,
-        //         responseEntrega,
-        //         bodyEntrega,
-        //         allResponseReturn,
-        //         allResponseCreditNote,
-        //         facturasCompletadas,
-        //         devolucionFinished, entregaFinished
-        //     })
-        // }
-
-        // entregaFinished=true
-
-        //---------------------------- INVOICE
-        // const deliveryData = responseEntrega.deliveryN44umber
-
-        // const fechaFormater = new Date()
-        // // Extraer componentes de la fecha
-        // const year = fechaFormater.getUTCFullYear();
-        // const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
-        // const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
-
-        // // Formatear la fecha en YYYYMMDD
-        // const formater = `${year}${month}${day}`;
-
-        // const responseHana = await entregaDetallerFactura(+deliveryData, '', 0, formater)
-        // console.log({ responseHana })
-        // if (responseHana.message) {
-        //     endTime = Date.now()
-        //     // grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Error al entregaDetallerFactura: ${responseHana.message || "linea 292"}, cuf: ${cuf || ''}, nroFactura: ${nroFactura || ''}, formater: ${formater}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
-        //     const outputDir = path.join(__dirname, 'outputs');
-        //     if (!fs.existsSync(outputDir)) {
-        //         fs.mkdirSync(outputDir);
-        //     }
-        //     const now = new Date();
-        //     const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-        //     // Generar el nombre del archivo con el timestamp
-        //     const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
-        //     fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
-        //     console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-
-        //     return res.status(400).json({ mensaje: `Error al procesar la solicitud: entregaDetallerFactura`, message:responseHana.message, bodyEntrega, responseEntrega,
-        //         allResponseReturn, allResponseCreditNote, 
-        //         facturasCompletadas,
-        //         devolucionFinished  })
-        // }
-        // const DocumentLinesHana = [];
-        // let cabezeraHana = [];
-
-        // let DocumentAdditionalExpensesInv = [];
-        // let totalDeLaEntrega = 0
-        // for (const line of responseHana) {
-        //     const {
-        //         LineNum,
-        //         BaseType,
-        //         BaseEntry, BaseLine, ItemCode, Quantity, GrossPrice, GrossTotal, WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment, U_DESCLINEA,
-        //         ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
-        //         DocTotal, U_OSLP_ID, U_UserCode, Series, ...result } = line
-
-        //     if (!cabezeraHana.length) {
-        //         totalDeLaEntrega=+DocTotal
-        //         cabezeraHana = {
-        //             ...result,
-        //             Series: process.env.SAP_SERIES_BILL,
-        //             DocTotal: Number(DocTotal),
-        //             U_OSLP_ID: U_OSLP_ID || "",
-        //             U_UserCode: U_UserCode || "",
-        //             ControlAccount,
-        //             DocumentSubType: "bod_Bill",
-        //         };
-        //         DocumentAdditionalExpensesInv = [
-        //             { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA' },
-        //             { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA' },
-        //             { ExpenseCode: ExpenseCode3, LineTotal: +LineTotal3, TaxCode: 'IVA' },
-        //             { ExpenseCode: ExpenseCode4, LineTotal: +LineTotal4, TaxCode: 'IVA' },
-        //         ]
-        //     }
-        //     DocumentLinesHana.push({
-        //         LineNum, BaseType, BaseEntry, BaseLine, ItemCode, Quantity: Number(Quantity), GrossPrice: Number(GrossPrice), GrossTotal: Number(GrossTotal), WarehouseCode, AccountCode, TaxCode, MeasureUnit, UnitsOfMeasurment: Number(UnitsOfMeasurment), U_DESCLINEA: Number(U_DESCLINEA)
-        //     })
-        // }
-
-        // const responseHanaB = {
-        //     ...cabezeraHana,
-        //     DocumentLines: DocumentLinesHana,
-        //     DocumentAdditionalExpenses: DocumentAdditionalExpensesInv
-        // }
-        // console.log({ responseHanaB })
-
-        // console.log('body invoice -----------------------------------------------')
-        // console.log(JSON.stringify({ responseHanaB }, null, 2))
-        // allBodies[0]= {...allBodies[0], bodyInvoice: responseHanaB}
-        // responseInvoice = await postInvoice(responseHanaB)
-        // if(responseInvoice.status == 400){
-
-        //     const outputDir = path.join(__dirname, 'outputs');
-        //     if (!fs.existsSync(outputDir)) {
-        //         fs.mkdirSync(outputDir);
-        //     }
-        //     const now = new Date();
-        //     const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-        //     // Generar el nombre del archivo con el timestamp
-        //     const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
-        //     fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
-        //     console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-
-        //     return res.status(400).json({mensaje:`Error en postInvoice: ${responseInvoice.errorMessage.value || 'No definido'}.`, responseHanaB, 
-        //         bodyEntrega, responseEntrega,
-        //         allResponseReturn, allResponseCreditNote, 
-        //         facturasCompletadas,
-        //         devolucionFinished})
-        // }
-
-
-        // let diferencia = totalFacturas - totalDeLaEntrega
-        // let ReconcileAmountInv= +totalDeLaEntrega
-        // if(diferencia<0){
-        //     ReconcileAmountInv+= +diferencia
-        // }
-        // const InternalReconciliationOpenTransRows = [
-        //     {
-        //         ShortName: CardCode,
-        //         TransId: responseInvoice.TransNum,
-        //         TransRowId: 0,
-        //         SrcObjTyp: "13",
-        //         SrcObjAbs: responseInvoice.idInvoice,
-        //         CreditOrDebit: "codDebit",
-        //         ReconcileAmount: ReconcileAmountInv,
-        //         CashDiscount: 0.0,
-        //         Selected: "tYES",
-        //     }
-        // ]
-
-        // let numInternalRec =0
-        // for(const creditNote of allResponseCreditNote){
-        //     let ReconcileAmountCN= +totalesFactura[numInternalRec]
-        //     if(diferencia>0 && (ReconcileAmountCN-diferencia) > 0){
-        //         ReconcileAmountCN -= +diferencia
-        //         diferencia=0
-        //     }
-        //     const internalRecLine = {
-        //         ShortName: CardCode,
-        //         TransId: creditNote.TransNum,
-        //         TransRowId: 0,
-        //         SrcObjTyp: "14",
-        //         SrcObjAbs: creditNote.orderNumber,
-        //         CreditOrDebit: "codCredit",
-        //         ReconcileAmount: ReconcileAmountCN,
-        //         CashDiscount: 0.0,
-        //         Selected: "tYES",
-        //     }
-
-        //     InternalReconciliationOpenTransRows.push(internalRecLine)
-        //     numInternalRec +=1
-        // }
-
-        // let bodyReconciliacion={
-        //     ReconDate: `${year}-${month}-${day}`,
-        //     CardOrAccount: "coaCard",
-        //     InternalReconciliationOpenTransRows,
-        // }
-        // console.log({bodyReconciliacion})
-        // allBodies[0]= {...allBodies[0], bodyReconciliacion}
-        // responseReconciliacion =  await postReconciliacion(bodyReconciliacion)
-        // console.log({responseReconciliacion})
-
-        // if (responseReconciliacion.status == 400) {
-
-        //     const outputDir = path.join(__dirname, 'outputs');
-        //     if (!fs.existsSync(outputDir)) {
-        //         fs.mkdirSync(outputDir);
-        //     }
-        //     const now = new Date();
-        //     const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-        //     // Generar el nombre del archivo con el timestamp
-        //     const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
-        //     fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
-        //     console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-
-        //     let mensaje = responseReconciliacion.errorMessage
-        //     if (typeof mensaje != 'string' && mensaje.lang) {
-        //         mensaje = mensaje.value
-        //     }
-
-        //     mensaje = `Error en postReconciliacion: ${mensaje}.`
-
-        //     return res.status(400).json({
-        //         mensaje,
-        //         bodyReconciliacion,
-        //         responseHanaB,
-        //         responseEntrega,
-        //         // responseInvoice,
-        //         allResponseCreditNote,
-        //         allResponseReturn,
-        //         facturasCompletadas,
-        //         devolucionFinished
-        //     })
-        // }
 
         const outputDir = path.join(__dirname, 'outputs');
         if (!fs.existsSync(outputDir)) {
@@ -3979,12 +3773,8 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         return res.json({
             allResponseReturn,
             allResponseCreditNote,
-            // responseEntrega,
-            // responseInvoice,
-            // responseReconciliacion,
             facturasCompletadas,
             devolucionFinished,
-            // entregaFinished
         })
     } catch (error) {
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }

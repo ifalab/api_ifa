@@ -17,6 +17,8 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     empleadoConCajaChicas,
     listaRendicionesByCODEMP,
     allGastosRange,
+    importeByRend,
+    updateSendToAccounting,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -739,7 +741,7 @@ const sendToSapController = async (req, res) => {
                     Line_ID: 1,
                     AccountCode: '2110401',
                     ShortName: codEmp,
-                    ContraAccount: factura.new_cuenta_productiva,
+                    ContraAccount: factura.new_gasto,
                     Debit: 0,
                     Credit: factura.new_importeTotal,
                     DebitSys: 0,
@@ -780,8 +782,8 @@ const sendToSapController = async (req, res) => {
                 },
                 {
                     Line_ID: 0,
-                    AccountCode: factura.new_cuenta_productiva,
-                    ShortName: factura.new_cuenta_productiva,
+                    AccountCode: factura.new_gasto,
+                    ShortName: factura.new_gasto,
                     ContraAccount: codEmp,
                     Debit: factura.new_importeTotal,
                     Credit: 0,
@@ -833,7 +835,7 @@ const sendToSapController = async (req, res) => {
                     Line_ID: 1,
                     AccountCode: '2110401',
                     ShortName: codEmp,
-                    ContraAccount: recibos.new_cuenta_productiva,
+                    ContraAccount: recibos.new_gasto,
                     Debit: 0,
                     Credit: recibos.new_importeTotal,
                     DebitSys: 0,
@@ -874,8 +876,8 @@ const sendToSapController = async (req, res) => {
                 },
                 {
                     Line_ID: 0,
-                    AccountCode: recibos.new_cuenta_productiva,
-                    ShortName: recibos.new_cuenta_productiva,
+                    AccountCode: recibos.new_gasto,
+                    ShortName: recibos.new_gasto,
                     ContraAccount: codEmp,
                     Debit: recibos.new_importeTotal,
                     Credit: 0,
@@ -928,7 +930,7 @@ const sendToSapController = async (req, res) => {
                     Line_ID: 1,
                     AccountCode: '2110401',
                     ShortName: codEmp,
-                    ContraAccount: fnd.new_cuenta_productiva,
+                    ContraAccount: fnd.new_gasto,
                     Debit: 0,
                     Credit: fnd.new_importeTotal,
                     DebitSys: 0,
@@ -969,8 +971,8 @@ const sendToSapController = async (req, res) => {
                 },
                 {
                     Line_ID: 0,
-                    AccountCode: fnd.new_cuenta_productiva,
-                    ShortName: fnd.new_cuenta_productiva,
+                    AccountCode: fnd.new_gasto,
+                    ShortName: fnd.new_gasto,
                     ContraAccount: codEmp,
                     Debit: fnd.new_importeTotal,
                     Credit: 0,
@@ -1017,7 +1019,7 @@ const sendToSapController = async (req, res) => {
         })
         //***
         let idx = 0
-        const idJournalCom = await idJournalPreliminar()
+        const idJournalCom = await idJournalPreliminar(glosaRend)
         if (idJournalCom.length == 0) {
             await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error no hay datos al buscar el ID en IFA COM`, "CALL LAB_IFA_COM.IFA_INSERT_JOURNALS_PRELIMINAR();", process.env.PRD)
             return res.status(400).json({ mensaje: 'No hay datos al buscar el ID en IFA COM' })
@@ -1677,8 +1679,34 @@ const allGastosRangeController = async (req, res) => {
         const starDate = req.query.starDate
         const endDate = req.query.endDate
         const response = await allGastosRange(starDate, endDate)
-        return res.json(response)
+        let result = []
+        for (let element of response) {
+            const { ID_RENDICION_GASTOS } = element
+            const dataImporte = await importeByRend(ID_RENDICION_GASTOS)
+            if (dataImporte.length > 0) {
+                const { IMPORTETOTAL } = dataImporte[0]
+                element = {
+                    ...element,
+                    IMPORTETOTALREND: IMPORTETOTAL
+                }
+            }
+
+            result.push(element)
+        }
+        return res.json(result)
     } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const updateSenToAccountingController = async (req, res) => {
+    try {
+        const idRend = req.query.idRend
+        const response = await updateSendToAccounting(idRend)
+        return res.json({response})
+    } catch (error) {
+        console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
@@ -1719,4 +1747,5 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
+    updateSenToAccountingController
 }
