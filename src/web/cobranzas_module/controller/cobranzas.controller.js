@@ -10,7 +10,7 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getAllSublines,
     getAllLines,
     getVendedoresBySuc,
-    getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
+    getYearToDayBySuc, getYearToDayByCobrador, getYtdCobradores, getPendientesBajaPorCobrador,
     cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
     getBajasByUser, reporteBajaCobranzas,
     getClienteById,
@@ -956,7 +956,8 @@ const realizarCobroController = async (req, res) => {
         
         if(VisitID){
             const responseAniadirVisita = await aniadirDetalleVisita(
-                VisitID, body.CardCode, CardName, 'Cobranza', body.JournalRemarks, 0, total, body.U_OSLP_ID
+                VisitID, body.CardCode, CardName, 'Cobranza', 
+                body.JournalRemarks, 0, total, body.U_OSLP_ID
             )
             console.log({ responseAniadirVisita })
             if(responseAniadirVisita.message){
@@ -1689,16 +1690,16 @@ const getYearToDayController = async (req, res) => {
     }
 }
 
-const getYTDCobradorController = async (req, res) => {
+const getYtdCobradoresController = async (req, res) => {
     try {
-        const { sucCode, fechaInicio1, fechaFin1 } = req.body
+        const { sucCode, mes, anio } = req.body
         console.log({ body: req.body })
-        const response = await getYTDCobrador(sucCode, fechaInicio1, fechaFin1)
+        const response = await getYtdCobradores(sucCode,  mes, anio)
 
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        const mensaje = error.message || 'Error en el controlador getYTDCobradorController'
+        const mensaje = error.message || 'Error en el controlador getYtdCobradoresController'
         return res.status(500).json({
             mensaje
         })
@@ -2208,7 +2209,7 @@ module.exports = {
     getAllLinesController,
     getCobradoresBySucursalController,
     getYearToDayController, getCuentasBancoParaBajaCobranzaController,
-    getYTDCobradorController, getPendientesBajaPorCobradorController,
+    getYtdCobradoresController, getPendientesBajaPorCobradorController,
     darDeBajaController, getCuentasParaBajaController, comprobanteContableController,
     darVariasDeBajaController,
     getBajasByUserController,

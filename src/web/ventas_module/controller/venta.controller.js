@@ -93,7 +93,7 @@ const {
     actualizarStatusSolicitudDescuento, getVendedoresSolicitudDescByStatus,
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
     deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
-    getClientName, CREATETABLE
+    getClientName, getSolicitudesDescuentoByVendedor, CREATETABLE
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2509,20 +2509,23 @@ const notificationSubscriptionController = async (req, res) => {
 
 const sendNotificationController = async (req, res) => {
     try {
-        const { title , body, vendedor} = req.body
+        const { title , body, vendedor, excludeEndpoint} = req.body
+        console.log({excludeEndpoint})
+        const dato = {
+            title: `${title}`,
+            body: `${body}`,
+            created_at: new Date(), 
+            vendedor: vendedor,
+        }
         const rows =  await getSubscriptions()
         console.log({rows})
         rows.forEach(row => {
-            const sub = JSON.parse(row.Subscription);
-            webpush.sendNotification(sub, JSON.stringify({
-              title: `${title}`,
-              body: `${body}`,
-              created_at: new Date(), 
-              vendedor: vendedor,
-            })).catch(err => console.error('Push error:', err));
+          const sub = JSON.parse(row.Subscription);
+          if(sub.endpoint !== excludeEndpoint)
+            webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
           });
       
-        return  res.send('Notifications sent.');
+        return  res.send(dato);
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en sendNotificationController: ${error.message}` })
@@ -2664,6 +2667,18 @@ const ventasPresupuestoSubLineaAnterior = async(req, res) => {
     }
 }
 
+const getSolicitudesDescuentoByVendedorController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response =  await getSolicitudesDescuentoByVendedor(id)
+        console.log({response})
+        return res.json( response )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getSolicitudesDescuentoByVendedorController: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2748,6 +2763,7 @@ module.exports = {
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
     getClientNameController, notificationSubscriptionController, sendNotificationController,
+    getSolicitudesDescuentoByVendedorController,
     ventasPresupuestoSubLinea,
     ventasPresupuestoSubLineaAnterior,
 };

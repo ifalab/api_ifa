@@ -1527,6 +1527,25 @@ const getSolicitudesDescuentoByStatus = async (status, slpCode, createdAt) => {
     }
 }
 
+const getSolicitudesDescuentoByVendedor = async (slpCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select *
+            from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
+            where "SlpCode" = ${slpCode} and "Deleted" = 0 
+            order by "StatusUpdatedAt" desc, "CreatedAt" desc`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getSolicitudesDescuentoByVendedor: ${error.message || ''}`
+        }
+    }
+}
+
 const actualizarSolicitudDescuento = async (id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct) => {
     try {
         if (!connection) {
@@ -1745,4 +1764,5 @@ module.exports = {
     getSubscriptions, CREATETABLE,
     getVentasPrespuestosSubLinea,
     getVentasPrespuestosSubLineaAnterior,
+    getSolicitudesDescuentoByVendedor
 }

@@ -764,17 +764,17 @@ const getYearToDayByCobrador = async (cobradorName, dim2, fechaInicio1, fechaFin
         throw new Error(`error en getYearToDayByCobrador: ${error.message || ''}`)
     }
 }
-const getYTDCobrador = async (sucCode, fechaInicio1, fechaFin1) => {
+const getYtdCobradores = async (sucCode, mes, anio) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_DATA.ytd_of_cobradores_sucursal(${sucCode},'${fechaInicio1}', '${fechaFin1}')`
+        const query = `call ${process.env.PRD}.cobradores_ytd_sucursal(${sucCode},${mes}, ${anio})`
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error(`error en getYTDCobrador: ${error.message || ''}`)
+        throw new Error(`error en getYtdCobradores: ${error.message || ''}`)
     }
 }
 
@@ -988,7 +988,7 @@ module.exports = {
     getVendedoresBySuc,
     getYearToDayBySuc,
     getYearToDayByCobrador,
-    getYTDCobrador,
+    getYtdCobradores,
     getPendientesBajaPorCobrador, cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza,
     getBaja, getLayoutComprobanteContable,
     getBajasByUser,
