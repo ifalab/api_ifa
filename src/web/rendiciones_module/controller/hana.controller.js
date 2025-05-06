@@ -686,7 +686,7 @@ const busquedaProd = async (parametro) => {
             await connectHANA();
         }
         console.log('actualizarCCRendicion EXECUTE')
-        const query = `select "AcctCode", "AcctName" from ${process.env.PRD}.ifa_dm_cuentas where "Postable" = 'Y' and ("AcctCode" like '6%' or "AcctCode" like '21%')  and (concat("AcctName","AcctCode") like '%${parametro}%')order by "AcctCode" limit 40`
+        const query = `select "AcctCode", "AcctName" from ${process.env.PRD}.ifa_dm_cuentas where "Postable" = 'Y' and ("AcctCode" like '6%' or "AcctCode" like '21%' or "AcctCode" = '1121201')  and (concat("AcctName","AcctCode") like '%${parametro}%')order by "AcctCode" limit 40`
         console.log({ query })
         const result = await executeQuery(query)
         return result
