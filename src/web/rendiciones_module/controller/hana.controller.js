@@ -736,6 +736,27 @@ const idJournalPreliminar = async (glosa) => {
 
     }
 }
+
+const updateSendToAccounting = async(idRend)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('idJournalPreliminar EXECUTE')
+        const query = `UPDATE ${process.env.LAPP}.LAPP_RENDICION_GASTOS SET SENDTOACCOUNTING = CURRENT_DATE WHERE ID_RENDICION_GASTOS = ${idRend}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo ejecutar updateSendToAccounting`
+        }
+
+    }
+}
+
+    
 const lineaDetalleCC = async (
     idCom,
     Line_ID,
@@ -989,5 +1010,6 @@ module.exports = {
     listaRendicionesByCODEMP,
     allGastosRange,
     detallePreliminarCC,
-    importeByRend
+    importeByRend,
+    updateSendToAccounting
 }

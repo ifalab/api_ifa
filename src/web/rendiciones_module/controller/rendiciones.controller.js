@@ -18,6 +18,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     listaRendicionesByCODEMP,
     allGastosRange,
     importeByRend,
+    updateSendToAccounting,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -1699,6 +1700,17 @@ const allGastosRangeController = async (req, res) => {
     }
 }
 
+const updateSenToAccountingController = async (req, res) => {
+    try {
+        const idRend = req.query.idRend
+        const response = await updateSendToAccounting(idRend)
+        return res.json({response})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1735,4 +1747,5 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
+    updateSenToAccountingController
 }

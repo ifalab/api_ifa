@@ -15,7 +15,8 @@ const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDeta
     findAllRendicionesController,
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
-    allGastosRangeController
+    allGastosRangeController,
+    updateSenToAccountingController
 } = require('../controller/rendiciones.controller')
 const router = Router()
 
@@ -56,5 +57,6 @@ router.get('/find-all-rendiciones', [validarToken, validarCampos], findAllRendic
 router.get('/empleados-con-cajas-chicas', [validarToken, validarCampos], empleadoConCajaChicasController)
 router.get('/lista-rendiciones-by-codemp', [validarToken, validarCampos], listaRendicionesByCodEmpController)
 router.get('/all-gastos-range', [validarToken, validarCampos], allGastosRangeController)
+router.get('/update-send-to-accounting', [validarToken, validarCampos], updateSenToAccountingController)
 
 module.exports = router
