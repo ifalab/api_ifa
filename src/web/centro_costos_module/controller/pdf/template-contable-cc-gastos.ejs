@@ -103,7 +103,7 @@
         }
 
         th {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             border-top: 1px solid black;
             border-bottom: 1px solid black;
@@ -132,14 +132,6 @@
         .div-signature {
             border-top: 1px solid black;
             margin-top: 2rem;
-        }
-        tfoot{
-            font-weight: bold;
-            border-top: 0.5px solid black;
-            border-bottom: 0.5px solid black;
-        }
-        .linea-fija {
-          width: 100px;
         }
 
     </style>
@@ -173,50 +165,39 @@
         <tr>
           <th>Cuenta</th>
           <th>Nombre Cuenta</th>
-          <th>Código Asociado</th>
-          <th>Nombre Asociado</th>
           <th>Debe BS.</th>
-          <th>Haber BS.</th>
           <th>Glosa Linea</th>
           <th>Ref 1</th>
           <th>Ref 2</th>
           <th>Ref 3</th>
+          <th>Area</th>
+          <th>Tipo Cliente</th>
+          <th>Linea</th>
+          <th>Especialidad</th>
+          <th>Clasificación Gastos</th>
+          <th>Conceptos Comerciales</th>
         </tr>
       </thead>
       <tbody>
         <% data.lines.forEach(function(line) { %>
           <tr>
             <td><%= line.Account %></td>
-            <td style="width: 100px;"><%= line.AcctName %></td>
-            <td><%= line.ShortName %></td>
-            <td style="width: 100px;"><%= line.CardName %></td>
-            <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>
-            <td><%= (Number(line.Credit) || 0).toFixed(2) %></td>            
-            <td style="width: 100px;"><%= line.LineMemo %></td>
+            <td><%= line.AcctName %></td>
+            <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>      
+            <td><%= line.LineMemo %></td>
             <td><%= line.Ref1Detail || '-' %></td>
             <td><%= line.Ref2Detail || '-' %></td>
             <td><%= line.Ref3Deatil || '-' %></td>
+            <td><%= line.Area || '-' %></td>
+            <td><%= line.Tipo_Cliente || '-' %></td>
+            <td><%= line.Linea || '-' %></td>
+            <td><%= line.Especialidad || '-' %></td>
+            <td><%= line.Clasificacion_Gastos || '-' %></td>
+            <td><%= line.Conceptos_Comerciales || '-' %></td>
           </tr>
         <% }); %>
       </tbody>
     </table>
-    <table>
-      <tfoot>
-        <tr>
-          <td style="width: 55px;">Total</td>
-          <td style="width: 200px;"><hr style="opacity: 0;"></td>
-          <td style="width: 200px;"><hr style="opacity: 0;"></td>
-          <td style="width: 200px;"><hr style="opacity: 0;"></td>
-          <td style="width: 100px;"><%= data.sumDebit %></td>
-          <td style="width: 110px;"><%= data.sumCredit %></td>
-          <td style="width: 100px;"><hr style="opacity: 0;"></td>
-          <td class="linea-fija"><hr style="opacity: 0;"></td>
-          <td class="linea-fija"><hr style="opacity: 0;"></td>
-          <td class="linea-fija"><hr style="opacity: 0;"></td>
-        </tr>
-      </tfoot>
-    </table>    
-
     <div class="footer-signatures">
         <div>
             <div style="align-items: center;"> <%= data.nombre %></div>
@@ -226,10 +207,9 @@
         <div class="div-signature">APROBADO POR</div>
         <div class="div-signature">RECIBIDO POR</div>
     </div>
-    
-    <div style="width: 100%;" class="div-signature"></div>
-    <h1>Libro de Compra</h1>
+
   </div>
+
 
 
 </body>
