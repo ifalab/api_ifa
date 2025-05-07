@@ -64,6 +64,39 @@ const ObtenerLibroMayor = async (cuenta) => {
     }
 }
 
+const cuentasCC = async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('cuentasCC EXECUTE')
+        const query = `SELECT "AcctCode", "AcctName" FROM LAB_IFA_COM.ACCOUNT WHERE "Postable" = 'Y'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en cuentasCC')
+    }
+}
+
+const getNombreUsuario = async(id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('getNombreUsuario EXECUTE')
+        const query = `SELECT id, username FROM lab_ifa_lapp.lapp_usuario WHERE id = ${id}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en getNombreUsuario')
+    }
+}
 module.exports = {
   ObtenerLibroMayor,
+  cuentasCC,
+  getNombreUsuario
 }
