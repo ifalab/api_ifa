@@ -235,7 +235,7 @@ const ventasPorZonasVendedor = async (username, line, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA(${username},'${line}','${groupBy}');`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA('${username}','${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en ventas por zona: ', err.message);
