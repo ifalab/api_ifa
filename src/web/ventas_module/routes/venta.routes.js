@@ -85,8 +85,8 @@ const {
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
     getClientNameController,
-    notificationSubscriptionController,
-    sendNotificationController, getSolicitudesDescuentoByVendedorController
+    notificationSubscriptionController, notificationUnsubscribeController,
+    sendNotificationController, getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -204,7 +204,10 @@ router.get('/delete-solicitud-desc', [validarToken, validarCampos], deleteSolici
 router.get('/solicitudes-desc-vendedor', [validarToken, validarCampos], getSolicitudesDescuentoByVendedorController)
 
 router.post('/notification-subscribe', [validarToken, validarCampos], notificationSubscriptionController)
+router.post('/notification-unsubscribe', [validarToken, validarCampos], notificationUnsubscribeController)
 router.post('/send-notification', [validarToken, validarCampos], sendNotificationController)
+router.post('/get-notifications', [validarToken, validarCampos], getNotificationController)
+router.post('/delete-notification', [validarToken, validarCampos], deleteNotificationController)
 
 router.get('/presupuesto/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLinea)
 router.get('/presupuesto/anterior/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLineaAnterior)
