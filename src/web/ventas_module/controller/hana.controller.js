@@ -471,7 +471,7 @@ const descripcionArticulo = async (itemCode) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en descripcionArticulo')
+        throw new Error(`Error en descripcionArticulo: ${error.message}`)
     }
 }
 
@@ -561,7 +561,7 @@ const unidadMedida = async (itemCode) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en descripcionArticulo')
+        throw new Error(`Error en descripcionArticulo: ${error.message}`)
     }
 }
 
@@ -1488,15 +1488,34 @@ const actualizarStatusSolicitudDescuento = async (id, status, p_CreatedBy, p_Slp
     }
 }
 
+const getVendedoresSolicitudDescuento = async (status) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "SlpCode", "SlpName"
+        from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
+        group by "SlpCode", "SlpName"`
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedoresSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
 const getVendedoresSolicitudDescByStatus = async (status) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select "SlpCode", "SlpName", "CreatedAt", "Status"
+        const query = `select "SlpCode", "SlpName", "Status"
         from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
         where "Status" = ${status} and "Deleted"=0
-        group by "SlpCode", "SlpName", "CreatedAt", "Status"`
+        group by "SlpCode", "SlpName", "Status"`
 
         console.log({ query })
         const result = await executeQuery(query)
@@ -1508,7 +1527,7 @@ const getVendedoresSolicitudDescByStatus = async (status) => {
     }
 }
 
-const getSolicitudesDescuentoByStatus = async (status, slpCode, createdAt) => {
+const getSolicitudesDescuentoByStatus = async (status, slpCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -1516,7 +1535,7 @@ const getSolicitudesDescuentoByStatus = async (status, slpCode, createdAt) => {
             const query = `select *
             from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
             where  "Status" = ${status} and "SlpCode" = ${slpCode} 
-            and "CreatedAt" = '${createdAt}' and "Deleted" = 0`
+            and "Deleted" = 0`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -1535,7 +1554,8 @@ const getSolicitudesDescuentoByVendedor = async (slpCode) => {
         const query = `select *
             from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
             where "SlpCode" = ${slpCode} and "Deleted" = 0 
-            order by "StatusUpdatedAt" desc, "CreatedAt" desc`
+            order by "CreatedAt" desc, "StatusUpdatedAt" desc
+            limit 50`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -1685,14 +1705,13 @@ const getSubscriptions = async () => {
     }
 }
 
-const insertNotification = async (title, body, vendedor=-1, usuario) => {
+const insertNotification = async (title, body, vendedor=-1, created_at, usuario) => {
     try {
         if (!connection) {
             await connectHANA()
         }
 
         let query = `call ${process.env.PRD}.INSERTAR_NOTIFICACION('${title}','${body}', ${vendedor}, ${usuario})`
-        console.log(query)
         const result = await executeQuery(query)
         return {
             status: 200,
@@ -1733,6 +1752,49 @@ const deleteNotification = async (id_notification, subscription) => {
     } catch (error) {
         throw {
             message: `Error en deleteNotification: ${error.message || ''}`
+        }
+    }
+}
+
+const getVendedorByCode = async (code) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SlpCode"=${code}`     
+        console.log(query)
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedorByCode: ${error.message || ''}`
+        }
+    }
+}
+
+const getDescuentosDeVendedoresParaPedido = async (fecha) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        /*
+        ClientCode
+        ItemCode
+        CantMin
+        DescPrct
+        FechaIni
+        FechaFin
+        Status
+        Deleted*/
+        let query = `select "ClientCode", "ItemCode", "CantMin", "DescPrct" 
+        from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
+        where '${fecha}' between "FechaIni" and "FechaFin" and "Status"=2 and "Deleted"=0`     
+        console.log(query)
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedorByCode: ${error.message || ''}`
         }
     }
 }
@@ -1833,5 +1895,6 @@ module.exports = {
     getVentasPrespuestosSubLinea,
     getVentasPrespuestosSubLineaAnterior,
     getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
-    deleteNotification, notificationUnsubscribe
+    deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
+    getVendedorByCode, getVendedorByCode
 }

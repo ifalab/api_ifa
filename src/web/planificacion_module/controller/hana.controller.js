@@ -475,12 +475,29 @@ const actualizarVisita = async (VisitID, comentario) => {
     }
 }
 
-
+const getUltimaVisita= async (idVendedor) => {
+    try {
+        if(!connection) {
+            await connectHANA()
+        }
+        // const query = `select * from ${process.env.PRD}.IFA_CRM_VISIT_HEADER`
+        const query = `select VISITID "VisitID", CLIENTCODE "ClientCode", 
+        PLANDETAILID "IdPlanDetail", SLPCODE "SlpCode"
+        from ${process.env.PRD}.IFA_CRM_VISIT_HEADER where SLPCODE=${idVendedor} 
+        order by VISITID desc limit 1`
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en getUltimaVisita: ${error.message || ''}`
+        }
+    }
+}
 
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita,
-    getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode, actualizarVisita
+    getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode, actualizarVisita,
+    getUltimaVisita
 }
