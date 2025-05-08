@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor } = require('../controller/cc.controller')
+const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes } = require('../controller/cc.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -12,5 +12,7 @@ router.patch('/preliminar/actualizar-asiento-contable-centro-costo/:id', [valida
 router.post('/pdf/asiento-contable-cc', [validarToken, validarCampos], getPDFAsientoContableCC);
 router.get('/cuentas', [validarToken, validarCampos], getCuentasCC);
 router.get('/libro-mayor', [validarToken, validarCampos], getLibroMayor);
+router.post('/excel/libro-mayor', [validarToken, validarCampos], excelLibroMayor)
+router.get('/documentos-fuentes', [validarToken, validarCampos], docFuentes)
 
 module.exports = router
