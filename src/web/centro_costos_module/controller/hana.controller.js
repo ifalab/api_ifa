@@ -95,8 +95,25 @@ const getNombreUsuario = async(id) => {
         throw new Error('error en getNombreUsuario')
     }
 }
+
+const getDocFuentes = async(id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('getNombreUsuario EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_DOCUMENTOS_FUENTES`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error('error en getNombreUsuario')
+    }
+}
 module.exports = {
   ObtenerLibroMayor,
   cuentasCC,
-  getNombreUsuario
+  getNombreUsuario,
+  getDocFuentes
 }

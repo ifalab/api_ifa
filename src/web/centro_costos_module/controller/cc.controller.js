@@ -2,10 +2,11 @@ const path = require('path');
 const ejs = require('ejs');
 const puppeteer = require('puppeteer');
 const { PDFDocument } = require('pdf-lib');
+const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -268,10 +269,97 @@ const getLibroMayor = async (req, res) => {
     }
 }
 
+const excelLibroMayor = async (req, res) => {
+    try {
+      const data = req.body;
+  
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Libro Mayor');
+  
+      // Definir columnas
+      worksheet.columns = [
+        { header: 'Fecha', key: 'RefDate', width: 15 },
+        { header: 'Transacción', key: 'TransId', width: 15 },
+        { header: 'Glosa', key: 'Memo', width: 30 },
+        { header: 'Referencia 1', key: 'Ref1', width: 20, style: { numFmt: '0' } },
+        { header: 'Referencia 2', key: 'Ref2', width: 15, style: { numFmt: '0' } },
+        { header: 'Referencia 3', key: 'Ref3', width: 15, style: { numFmt: '0' } },
+        { header: 'Línea', key: 'Line_ID', width: 10 },
+        { header: 'Cuenta', key: 'Account', width: 20 },
+        { header: 'Nombre Cuenta', key: 'AcctName', width: 40 },
+        { header: 'Código Cuenta Asociada', key: 'ShortName', width: 20 },
+        { header: 'Nombre Cuenta Asociada', key: 'CardName', width: 30 },
+        { header: 'Débito', key: 'Debit', width: 15 },
+        { header: 'Crédito', key: 'Credit', width: 15 },
+      ];
+  
+      data.forEach(row => {
+        const newRow = worksheet.addRow({
+            RefDate: new Date(row.RefDate),
+            TransId: row.TransId,
+            Memo: row.Memo,
+            Ref1: parseInt(row.Ref1),
+            Ref2: parseInt(row.Ref2),
+            Ref3: row.Ref3 ?? parseInt(row.Ref3),
+            Line_ID: row.Line_ID,
+            Account: parseInt(row.Account),
+            AcctName: row.AcctName,
+            ShortName: String(row.ShortName),
+            CardName: row.CardName,
+            Debit: parseFloat(row.Debit),
+            Credit: parseFloat(row.Credit),
+          });
+          
+          // Si deseas asegurar formato con 2 decimales para Débito y Crédito:
+          newRow.getCell('Debit').numFmt = '"Bs"#,##0.00';
+          newRow.getCell('Credit').numFmt = '"Bs"#,##0.00';
+      });
+  
+      // Estilizar encabezado
+      worksheet.getRow(1).eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFCCE5FF' },
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+  
+      // Crear el archivo Excel en memoria
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=libro_mayor.xlsx');
+  
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      console.error({ error });
+      return res.status(500).json({ mensaje: 'Error generando el Excel del libro mayor' });
+    }
+};
+
+const docFuentes = async (req, res) => {
+    try {
+        const data = await getDocFuentes();
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: 'Error obtiendo los documentos fuentes.' });
+    }
+}
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
     getPDFAsientoContableCC,
     getCuentasCC,
-    getLibroMayor
+    getLibroMayor,
+    excelLibroMayor,
+    docFuentes
 }
