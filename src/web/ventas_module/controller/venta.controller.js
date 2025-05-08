@@ -93,7 +93,8 @@ const {
     actualizarStatusSolicitudDescuento, getVendedoresSolicitudDescByStatus,
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
     deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
-    getClientName, getSolicitudesDescuentoByVendedor, CREATETABLE
+    getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
+    deleteNotification, notificationUnsubscribe, CREATETABLE
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2507,11 +2508,23 @@ const notificationSubscriptionController = async (req, res) => {
     }
 }
 
+const notificationUnsubscribeController = async (req, res) => {
+    try {
+        const subscription = JSON.stringify(req.body);
+        const response =  await notificationUnsubscribe(subscription)
+        console.log({response})
+        return res.json( response )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en notificationUnsubscribeController: ${error.message}` })
+    }
+}
+
 const sendNotificationController = async (req, res) => {
     try {
-        const { title , body, vendedor, excludeEndpoint} = req.body
+        const { title , body, vendedor, excludeEndpoint, usuario} = req.body
         console.log({excludeEndpoint})
-        const dato = {
+        let dato = {
             title: `${title}`,
             body: `${body}`,
             created_at: new Date(), 
@@ -2519,11 +2532,20 @@ const sendNotificationController = async (req, res) => {
         }
         const rows =  await getSubscriptions()
         console.log({rows})
+
+        const responseInsert = await insertNotification(title , body, vendedor, usuario)
+        console.log({responseInsert})
+        //{ status: 200,
+        //  result: [ { V_ID_NOTIFICACION: 4 } ]
+        //}
+        if(responseInsert.status==200)
+            dato.id = responseInsert.result[0].V_ID_NOTIFICACION
+
         rows.forEach(row => {
           const sub = JSON.parse(row.Subscription);
           if(sub.endpoint !== excludeEndpoint)
             webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
-          });
+        });
       
         return  res.send(dato);
     } catch (error) {
@@ -2532,6 +2554,29 @@ const sendNotificationController = async (req, res) => {
     }
 }
 
+const getNotificationController = async (req, res) => {
+    try {
+        const {vendedor, usuario, subscription} = req.body
+        
+        const response =  await getNotifications(vendedor, usuario, JSON.stringify(subscription))
+        return res.json(response);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `Error en el controlador getNotificationController: ${error.message || ''}`})
+    }
+}
+
+const deleteNotificationController = async (req, res) => {
+    try {
+        const {id_notification, subscription} = req.body
+        const response =  await deleteNotification(id_notification, JSON.stringify(subscription))
+        console.log(response)
+        return res.json(response);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `Error en el controlador deleteNotificationController: ${error.message || ''}`})
+    }
+}
 
 const ventasPresupuestoSubLinea = async(req, res) => {
     try {
@@ -2763,7 +2808,7 @@ module.exports = {
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
     getClientNameController, notificationSubscriptionController, sendNotificationController,
-    getSolicitudesDescuentoByVendedorController,
+    getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
     ventasPresupuestoSubLinea,
-    ventasPresupuestoSubLineaAnterior,
+    ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController
 };

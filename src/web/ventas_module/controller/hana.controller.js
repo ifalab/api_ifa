@@ -1652,6 +1652,23 @@ const notificationSubscription = async (subscription) => {
     }
 }
 
+const notificationUnsubscribe = async (subscription) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `delete from ${process.env.PRD}.PUSH_SUBSCRIPTIONS 
+        where TO_VARCHAR("Subscription") = TO_VARCHAR('${subscription}')`
+
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en notificationUnsubscribe: ${error.message || ''}`
+        }
+    }
+}
+
 const getSubscriptions = async () => {
     try {
         if (!connection) {
@@ -1668,6 +1685,57 @@ const getSubscriptions = async () => {
     }
 }
 
+const insertNotification = async (title, body, vendedor=-1, usuario) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+
+        let query = `call ${process.env.PRD}.INSERTAR_NOTIFICACION('${title}','${body}', ${vendedor}, ${usuario})`
+        console.log(query)
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            result
+        }
+    } catch (error) {
+        return {
+            status:400,
+            message: `Error en insertNotification: ${error.message || ''}`
+        }
+    }
+}
+
+const getNotifications = async (vendedor=-1, usuario, subscription) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `call ${process.env.PRD}.GET_NOTIFICATIONS(${vendedor}, ${usuario}, '${subscription}')`     
+
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en getNotifications: ${error.message || ''}`
+        }
+    }
+}
+
+const deleteNotification = async (id_notification, subscription) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `call ${process.env.PRD}.DELETE_NOTIFICATION(${id_notification},'${subscription}')`     
+        console.log(query)
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en deleteNotification: ${error.message || ''}`
+        }
+    }
+}
 
 module.exports = {
     ventaPorSucursal,
@@ -1764,5 +1832,6 @@ module.exports = {
     getSubscriptions, CREATETABLE,
     getVentasPrespuestosSubLinea,
     getVentasPrespuestosSubLineaAnterior,
-    getSolicitudesDescuentoByVendedor
+    getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
+    deleteNotification, notificationUnsubscribe
 }
