@@ -168,6 +168,8 @@ const crearRendicionController = async (req, res) => {
             glosaRend,
             listaGastos
         } = req.body
+        const user = req.usuarioAutorizado
+        const code = user.USERCODE || 'no definido'
         const date = new Date()
         const year = date.getFullYear()
         const month = date.getMonth() + 1
@@ -258,7 +260,8 @@ const crearRendicionController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta,
-                new_cod_proveedor
+                new_cod_proveedor,
+                code
             )
             result.push(responseHana[0] || responseHana)
 
@@ -286,6 +289,8 @@ const crearActualizarGastoController = async (req, res) => {
             estado,
             listaGastos
         } = req.body
+        const user = req.usuarioAutorizado
+        const code = user.USERCODE || 'no definido'
         const response = await cambiarEstadoRendicion(idRendicion, estado)
         const status = response[0]
         if (response.error) return res.status(404).json({ mensaje: 'error al cambiar el estado de la rendicion' })
@@ -385,7 +390,8 @@ const crearActualizarGastoController = async (req, res) => {
                     new_beneficiario,
                     new_cod_beneficiario,
                     new_detalle_cuenta,
-                    new_cod_proveedor
+                    new_cod_proveedor,
+                    code
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -418,6 +424,7 @@ const crearActualizarGastoController = async (req, res) => {
                     new_cod_beneficiario,
                     new_detalle_cuenta,
                     new_cod_proveedor,
+                    code
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -447,6 +454,8 @@ const gastosEnRevisionController = async (req, res) => {
             listaGastos
         } = req.body
         const response = await cambiarEstadoRendicion(idRendicion, estado)
+        const user = req.usuarioAutorizado
+        const code = user.USERCODE || 'no definido'
         const status = response[0]
         if (response.error) return res.status(404).json({ mensaje: 'error al cambiar el estado de la rendicion' })
         if (status.reponse != 200) return res.status(404).json({ mensaje: 'no se encontro la rendicion' })
@@ -533,7 +542,8 @@ const gastosEnRevisionController = async (req, res) => {
                     year,
                     new_id_cuenta,
                     new_detalle_cuenta,
-                    new_cod_proveedor
+                    new_cod_proveedor,
+                    code
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -562,7 +572,8 @@ const gastosEnRevisionController = async (req, res) => {
                     idRendicion,
                     '',
                     new_id_cuenta,
-                    new_detalle_cuenta
+                    new_detalle_cuenta,
+                    code
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -649,7 +660,7 @@ const sendToSapController = async (req, res) => {
         let listFacturasND = []
         let listResHana = []
         let errores = []
-
+        const code = user.USERCODE || 'no definido'
 
         console.log(JSON.stringify({
             codEmp,
@@ -1162,7 +1173,8 @@ const sendToSapController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta,
-                new_cod_proveedor
+                new_cod_proveedor,
+                code
             )
             listResHana.push(responseHana)
         }))
@@ -1228,7 +1240,8 @@ const sendToSapController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta,
-                new_cod_proveedor
+                new_cod_proveedor,
+                code
             )
             listResHana.push(responseHana)
 
@@ -1704,7 +1717,7 @@ const updateSenToAccountingController = async (req, res) => {
     try {
         const idRend = req.query.idRend
         const response = await updateSendToAccounting(idRend)
-        return res.json({response})
+        return res.json({ response })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })
