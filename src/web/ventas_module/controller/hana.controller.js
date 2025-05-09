@@ -1772,7 +1772,7 @@ const getVendedorByCode = async (code) => {
     }
 }
 
-const getDescuentosDeVendedoresParaPedido = async (fecha) => {
+const getDescuentosDeVendedoresParaPedido = async (cliente, vendedor,fecha) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -1788,14 +1788,29 @@ const getDescuentosDeVendedoresParaPedido = async (fecha) => {
         Deleted*/
         let query = `select "ClientCode", "ItemCode", "CantMin", "DescPrct" 
         from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
-        where '${fecha}' between "FechaIni" and "FechaFin" and "Status"=2 and "Deleted"=0`     
+        where '${fecha}' between "FechaIni" and "FechaFin" 
+        and "ClientCode"='${cliente}' and "SlpCode"=${vendedor}
+        and "Status"=2 and "Deleted"=0`     
         console.log(query)
         const result = await executeQuery(query)
         return result
     } catch (error) {
         throw {
-            message: `Error en getVendedorByCode: ${error.message || ''}`
+            message: `Error en getDescuentosDeVendedoresParaPedido: ${error.message || ''}`
         }
+    }
+}
+
+const ventasPorZonasVendedor2 = async (username) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call "LAB_IFA_DEV".LAPP_VEN_VENTAS_ZONA2('${username}');`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en ventas por zona: ', err.message);
+        throw new Error(`Error al procesar la solicitud ventasPorZonasVendedor2: ${err.message}`);
     }
 }
 
@@ -1896,5 +1911,6 @@ module.exports = {
     getVentasPrespuestosSubLineaAnterior,
     getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
-    getVendedorByCode, getVendedorByCode
+    getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
+    ventasPorZonasVendedor2
 }
