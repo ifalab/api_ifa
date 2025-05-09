@@ -341,7 +341,7 @@ const createAsientoContableController = async (req, res) => {
                 Debit: 0,
                 CreditSys: parseFloat(newValue.toFixed(2)),
                 DebitSys: 0,
-                ContraAccount: `${cuenta}`,
+                ContraAccount: ``,
                 LineMemo: glosa,
                 // Reference1: `${cheque}`,
                 Reference1: `${reference}`,
@@ -384,8 +384,6 @@ const createAsientoContableController = async (req, res) => {
             return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. Sap Error: ${response.value || 'No definido'}` })
         }
         return res.json({ mensaje: 'Apertura de Caja creado con exito' })
-
-
 
     } catch (error) {
         console.log({ error })
