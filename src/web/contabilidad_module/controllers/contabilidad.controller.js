@@ -609,7 +609,7 @@ const createAsientoContableCCController = async (req, res) => {
         }
 
         console.log(user);
-
+        console.log(details);
         const comResponse = await sapService.createAsientoCC({
             fechaContabilizacion: formattedDate,
             glosa: Memo,

@@ -27,6 +27,41 @@ const sapService = {
             };
         }
     },
+    async crearPlantilla(body, userSign) {
+        try {
+            const { account, lineid, dimensiones, fechaContabilizacion, transId, debe } = body.body;
+
+            // Log de control opcional
+            console.log({ account, lineid, dimensiones,fechaContabilizacion });
+
+            const response = await httpClient.post(`/centro-costo/plantilla`, {
+                account,
+                lineId: +lineid,
+                userSign: userSign,
+                transId: +transId,
+                debe: +debe,
+                fechaContabilizacion: fechaContabilizacion,
+                dimensiones
+            });
+
+            return {
+                statusCode: response.status,
+                data: response.data,
+            };
+        } catch (error) {
+            if (error.response) {
+                throw {
+                    statusCode: error.response.status,
+                    message: error.response.data || 'Error en la solicitud POST',
+                };
+            }
+
+            throw {
+                statusCode: 500,
+                message: error.message || 'Error desconocido en la solicitud POST',
+            };
+        }
+    },
 };
 
 
