@@ -55,9 +55,10 @@ const actualizarAsientoContablePreliminarCCController = async (req, res) => {
             }
         }           
 
-        console.log(req.body)
+        // console.log(req.body)
 
         console.log(user);
+        console.log({details});
 
         const comResponse = await sapService.actualizarAsientoPreliminarCC({
             fechaContabilizacion: formattedDate,
@@ -354,6 +355,22 @@ const docFuentes = async (req, res) => {
     }
 }
 
+const cargarPlantillaDimensiones = async (req, res) => {
+    try {
+        const user = req.usuarioAutorizado
+        const userId = Number(user.ID)
+        const data = req.body;
+        console.log(data);
+        const result = await sapService.crearPlantilla(data, userId);
+
+        const response = result
+        return res.status(200).json(response)
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: 'Error obtiendo la plantilla para estas dimensiones.' });
+    }
+} 
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -361,5 +378,6 @@ module.exports = {
     getCuentasCC,
     getLibroMayor,
     excelLibroMayor,
-    docFuentes
+    docFuentes,
+    cargarPlantillaDimensiones
 }

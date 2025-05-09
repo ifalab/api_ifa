@@ -4507,9 +4507,8 @@ const saveArticuloDiccionario = async (req, res) => {
 
 const solicitudTrasladoController = async (req, res) => {
     try {
-        const { Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines } = req.body
-        // return res.json({Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines})
-        const sapResponse = await postInventoryTransferRequests({ Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines })
+        const { U_UserCode,Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines } = req.body
+        const sapResponse = await postInventoryTransferRequests({U_UserCode, Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines })
         const { status, errorMessage } = sapResponse
         if (status && status == 400) {
             const { value } = errorMessage
