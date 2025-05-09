@@ -15,7 +15,8 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getComprobantesBajasController,
     getClientesController,
     getEstadoCuentaClienteController,
-    getEstadoCuentaClientePDFController
+    getEstadoCuentaClientePDFController,
+    auditoriaSaldoDeudorController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -90,5 +91,6 @@ router.get('/cliente-by-id',[validarToken, validarCampos], getClienteByIdControl
 router.get('/clientes',[validarToken, validarCampos], getClientesController)
 router.get('/cliente/estado-cuenta',[validarToken, validarCampos], getEstadoCuentaClienteController)
 router.get('/cliente/estado-cuenta/pdf', [validarToken, validarCampos], getEstadoCuentaClientePDFController);
+router.get('/auditoria-saldo-dedudor', [validarToken, validarCampos], auditoriaSaldoDeudorController);
 
 module.exports = router
