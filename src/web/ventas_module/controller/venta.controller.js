@@ -94,7 +94,7 @@ const {
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
     deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
-    deleteNotification, notificationUnsubscribe, CREATETABLE
+    deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1039,7 +1039,7 @@ const descripcionArticuloController = async (req, res) => {
         return res.json({ ItemName: response[0].ItemName })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+        return res.status(500).json({ mensaje: `${error.message ||'Error en descripcionArticuloController'}` })
     }
 }
 
@@ -1112,11 +1112,11 @@ const unidadMedidaController = async (req, res) => {
         const itemCode = req.query.itemCode
         const response = await unidadMedida(itemCode)
         console.log({ response })
-        if (response.length == 0) return res.status(404).json({ mensaje: 'La unidad de medida no fue encontrado' })
+        if (response.length == 0) return res.status(404).json({ mensaje: 'La unidad de medida no fue encontrada' })
         return res.json({ SalUnitMsr: response[0].SalUnitMsr })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en unidadMedidaController'}` })
     }
 }
 
@@ -2439,8 +2439,8 @@ const getVendedoresSolicitudDescByStatusController = async (req, res) => {
 
 const getSolicitudesDescuentoByStatusController = async (req, res) => {
     try {
-        const {status, slpCode, createdAt} = req.body
-        const response =  await getSolicitudesDescuentoByStatus(status, slpCode, createdAt)
+        const {status, slpCode} = req.body
+        const response =  await getSolicitudesDescuentoByStatus(status, slpCode)
         return res.json(
             response
         )
@@ -2533,7 +2533,7 @@ const sendNotificationController = async (req, res) => {
         const rows =  await getSubscriptions()
         console.log({rows})
 
-        const responseInsert = await insertNotification(title , body, vendedor, usuario)
+        const responseInsert = await insertNotification(title , body, vendedor, dato.created_at, usuario)
         console.log({responseInsert})
         //{ status: 200,
         //  result: [ { V_ID_NOTIFICACION: 4 } ]
@@ -2724,6 +2724,32 @@ const getSolicitudesDescuentoByVendedorController = async (req, res) => {
     }
 }
 
+const getVendedoresSolicitudDescuentoController = async (req, res) => {
+    try {
+        const response =  await getVendedoresSolicitudDescuento()
+        console.log(response)
+        return res.json(response);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getVendedoresSolicitudDescuentoController'}`})
+    }
+}
+
+const getVendedorByCodeController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response =  await getVendedorByCode(id)
+        console.log(response)
+        if(response.length==0)
+            return res.status(400).json({mensaje: `No existe vendedor con ese codigo`})
+        return res.json(response[0]);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getVendedorByCodeController'}`})
+    }
+}
+
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2810,5 +2836,6 @@ module.exports = {
     getClientNameController, notificationSubscriptionController, sendNotificationController,
     getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
     ventasPresupuestoSubLinea,
-    ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController
+    ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController, 
+    getVendedoresSolicitudDescuentoController, getVendedorByCodeController
 };
