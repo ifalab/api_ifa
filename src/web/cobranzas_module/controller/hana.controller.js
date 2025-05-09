@@ -615,7 +615,7 @@ const cobranzaPorSucursalYTipo = async (sucCode, tipo) => {
             await connectHANA()
         }
         const query = `call "LAB_IFA_LAPP".LAPP_COB_COBRANZA_ZONA_POR_SUCURSAL_Y_TIPO(${sucCode}, '${tipo}')`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return {
             status: 200,
@@ -941,6 +941,21 @@ const getEstadoCuentaCliente = async (id) => {
     }
 }
 
+const auditoriaSaldoDeudor = async (cardCode, date) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_saldo_deudor_analisis_por_fecha('${cardCode}','${date}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en auditoriaSaldoDeudor: ${error.message || ''}`)
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -997,4 +1012,5 @@ module.exports = {
     getClientes,
     getEstadoCuentaCliente,
     getComprobantesBajasByUser,
+    auditoriaSaldoDeudor
 }

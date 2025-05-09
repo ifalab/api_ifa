@@ -9,7 +9,7 @@ const {
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController, 
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController,
-    getClienteByCodeController, actualizarVisitaController
+    getClienteByCodeController, actualizarVisitaController, getUltimaVisitaController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -40,6 +40,7 @@ router.post('/marcar-visita', [validarToken, validarCampos], marcarVisitaControl
 router.post('/aniadir-detalle-visita', [validarToken, validarCampos], aniadirDetalleVisitaController)
 router.get('/detalle-visitas-creadas', [validarToken, validarCampos], getDetalleVisitasCreadasController)
 router.post('/actualizar-visita-creada', [validarToken, validarCampos], actualizarVisitaController)
+router.get('/ultima-visita', [validarToken, validarCampos], getUltimaVisitaController)
 
 //Reportes
 

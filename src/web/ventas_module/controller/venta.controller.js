@@ -94,7 +94,7 @@ const {
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
     deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
-    deleteNotification, notificationUnsubscribe, CREATETABLE
+    deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1039,7 +1039,7 @@ const descripcionArticuloController = async (req, res) => {
         return res.json({ ItemName: response[0].ItemName })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+        return res.status(500).json({ mensaje: `${error.message ||'Error en descripcionArticuloController'}` })
     }
 }
 
@@ -1112,11 +1112,11 @@ const unidadMedidaController = async (req, res) => {
         const itemCode = req.query.itemCode
         const response = await unidadMedida(itemCode)
         console.log({ response })
-        if (response.length == 0) return res.status(404).json({ mensaje: 'La unidad de medida no fue encontrado' })
+        if (response.length == 0) return res.status(404).json({ mensaje: 'La unidad de medida no fue encontrada' })
         return res.json({ SalUnitMsr: response[0].SalUnitMsr })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en descripcionArticuloController' })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en unidadMedidaController'}` })
     }
 }
 
@@ -2014,11 +2014,143 @@ const facturasMoraByClientController = async (req, res) => {
     }
 }
 
-const clientesMoraController = async (req, res) => {
-    try {
-        const { listSucCode, slpCode } = req.body
-        let listResult = []
-        for (const sucCode of listSucCode) {
+    const clientesMoraController = async (req, res) => {
+        try {
+            const { listSucCode, slpCode } = req.body
+            let listResult = []
+            for (const sucCode of listSucCode) {
+                const response = await clientesConMora(sucCode, slpCode)
+                const cardMap = new Map();
+                response.map((item) => {
+                    if (item.CardCode && item.CardCode !== '') {
+                        const {
+                            LicTradNum,
+                            Comments,
+                            JrnlMemo,
+                            DocTotal,
+                            DocEntry,
+                            DocNum,
+                            U_RAZSOC,
+                            NumAtCard,
+                            FiscalDate,
+                            U_B_cuf,
+                            U_B_path,
+                            ...restData
+                        } = item
+
+                        const {
+                            PymntGroup,
+                            CardCode,
+                            CardName,
+                            GroupName,
+                            SucName,
+                            AreaName,
+                            ZoneName,
+                            SlpNameCli,
+                            CardFName,
+                            DaysDue
+                        } = restData
+
+                        if (cardMap.has(CardCode)) {
+                            const existing = cardMap.get(CardCode);
+                            if (DaysDue > existing.DaysDue) {
+                                cardMap.set(CardCode, {
+                                    PymntGroup,
+                                    CardCode,
+                                    CardName,
+                                    GroupName,
+                                    SucName,
+                                    AreaName,
+                                    ZoneName,
+                                    SlpNameCli,
+                                    CardFName,
+                                    DaysDue,
+                                    Facturas: []
+                                });
+                            }
+                        } else {
+                            cardMap.set(CardCode, {
+                                PymntGroup,
+                                CardCode,
+                                CardName,
+                                GroupName,
+                                SucName,
+                                AreaName,
+                                ZoneName,
+                                SlpNameCli,
+                                CardFName,
+                                DaysDue,
+                                Facturas: []
+                            });
+                        }
+                    }
+                })
+
+                const listCardCode = Array.from(cardMap.values())
+
+                listCardCode.map((itemData) => {
+
+                    const listDataFacturas = response
+                        .filter(item => item.CardCode === itemData.CardCode)
+                        .map(item => {
+                            const {
+                                LicTradNum,
+                                Comments,
+                                JrnlMemo,
+                                DocTotal,
+                                DocEntry,
+                                DocNum,
+                                U_RAZSOC,
+                                NumAtCard,
+                                FiscalDate,
+                                U_B_cuf,
+                                U_B_path,
+                                DaysDue,
+                            } = item;
+
+                            return {
+                                LicTradNum,
+                                Comments,
+                                JrnlMemo,
+                                DocTotal,
+                                DocEntry,
+                                DocNum,
+                                U_RAZSOC,
+                                NumAtCard,
+                                FiscalDate,
+                                U_B_cuf,
+                                DaysDue,
+                                U_B_path,
+                            }
+                        })
+
+                    itemData.Facturas = listDataFacturas
+                })
+                listResult = [...listResult,...listCardCode]
+            }
+
+            return res.json(listResult)
+        } catch (error) {
+            console.log({ error })
+            return res.status(500).json({ mensaje: `Error en facturasMoraByClientController: ${error.message}` })
+        }
+    }
+
+    const vendedorPorSucCodeController = async (req, res) => {
+        try {
+            const { sucCode } = req.query
+            const response = await vendedorPorSucCode(sucCode)
+            const data = response.filter((vendedor) => vendedor.SlpCode !== -1)
+            return res.json(data)
+        } catch (error) {
+            console.log({ error })
+            return res.status(500).json({ mensaje: `Error en vendedorPorSucCodeController: ${error.message}` })
+        }
+    }
+
+    const excelClientesMoraController = async (req, res) => {
+        try {
+            const { sucCode, slpCode } = req.query
             const response = await clientesConMora(sucCode, slpCode)
             const cardMap = new Map();
             response.map((item) => {
@@ -2107,7 +2239,7 @@ const clientesMoraController = async (req, res) => {
                             U_B_path,
                             DaysDue,
                         } = item;
-
+                        // const dataFormated = FiscalDate.split
                         return {
                             LicTradNum,
                             Comments,
@@ -2117,7 +2249,7 @@ const clientesMoraController = async (req, res) => {
                             DocNum,
                             U_RAZSOC,
                             NumAtCard,
-                            FiscalDate,
+                            FiscalDate: `${FiscalDate.split(' ')[0] || ''}`,
                             U_B_cuf,
                             DaysDue,
                             U_B_path,
@@ -2126,203 +2258,71 @@ const clientesMoraController = async (req, res) => {
 
                 itemData.Facturas = listDataFacturas
             })
-            listResult = [...listResult,...listCardCode]
-        }
 
-        return res.json(listResult)
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: `Error en facturasMoraByClientController: ${error.message}` })
-    }
-}
+            // return res.json(listCardCode)
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Clientes y Facturas');
 
-const vendedorPorSucCodeController = async (req, res) => {
-    try {
-        const { sucCode } = req.query
-        const response = await vendedorPorSucCode(sucCode)
-        const data = response.filter((vendedor) => vendedor.SlpCode !== -1)
-        return res.json(data)
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: `Error en vendedorPorSucCodeController: ${error.message}` })
-    }
-}
+            worksheet.columns = [
+                { header: 'Codigo', key: 'CardCode', width: 15 },
+                { header: 'Nombre', key: 'CardName', width: 30 },
+                { header: 'Zona', key: 'ZoneName', width: 20 },
+                { header: 'Factura Nro', key: 'DocNum', width: 15 },
+                { header: 'Monto Total', key: 'DocTotal', width: 15 },
+                { header: 'Fecha Fiscal', key: 'FiscalDate', width: 20 },
+                { header: 'CUF', key: 'U_B_cuf', width: 60 },
+            ];
 
-const excelClientesMoraController = async (req, res) => {
-    try {
-        const { sucCode, slpCode } = req.query
-        const response = await clientesConMora(sucCode, slpCode)
-        const cardMap = new Map();
-        response.map((item) => {
-            if (item.CardCode && item.CardCode !== '') {
-                const {
-                    LicTradNum,
-                    Comments,
-                    JrnlMemo,
-                    DocTotal,
-                    DocEntry,
-                    DocNum,
-                    U_RAZSOC,
-                    NumAtCard,
-                    FiscalDate,
-                    U_B_cuf,
-                    U_B_path,
-                    ...restData
-                } = item
+            for (const cliente of listCardCode) {
+                const clienteRow = worksheet.addRow({
+                    CardCode: cliente.CardCode,
+                    CardName: cliente.CardName,
+                    ZoneName: cliente.ZoneName,
+                });
 
-                const {
-                    PymntGroup,
-                    CardCode,
-                    CardName,
-                    GroupName,
-                    SucName,
-                    AreaName,
-                    ZoneName,
-                    SlpNameCli,
-                    CardFName,
-                    DaysDue
-                } = restData
+                clienteRow.font = { bold: true };
+                clienteRow.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFD9E1F2' },
+                };
 
-                if (cardMap.has(CardCode)) {
-                    const existing = cardMap.get(CardCode);
-                    if (DaysDue > existing.DaysDue) {
-                        cardMap.set(CardCode, {
-                            PymntGroup,
-                            CardCode,
-                            CardName,
-                            GroupName,
-                            SucName,
-                            AreaName,
-                            ZoneName,
-                            SlpNameCli,
-                            CardFName,
-                            DaysDue,
-                            Facturas: []
-                        });
-                    }
-                } else {
-                    cardMap.set(CardCode, {
-                        PymntGroup,
-                        CardCode,
-                        CardName,
-                        GroupName,
-                        SucName,
-                        AreaName,
-                        ZoneName,
-                        SlpNameCli,
-                        CardFName,
-                        DaysDue,
-                        Facturas: []
+                for (const factura of cliente.Facturas) {
+                    worksheet.addRow({
+                        CardCode: '',
+                        CardName: '',
+                        ZoneName: '',
+                        DocNum: factura.DocNum,
+                        DocTotal: +factura.DocTotal,
+                        FiscalDate: factura.FiscalDate,
+                        U_B_cuf: factura.U_B_cuf,
                     });
                 }
-            }
-        })
 
-        const listCardCode = Array.from(cardMap.values())
-
-        listCardCode.map((itemData) => {
-
-            const listDataFacturas = response
-                .filter(item => item.CardCode === itemData.CardCode)
-                .map(item => {
-                    const {
-                        LicTradNum,
-                        Comments,
-                        JrnlMemo,
-                        DocTotal,
-                        DocEntry,
-                        DocNum,
-                        U_RAZSOC,
-                        NumAtCard,
-                        FiscalDate,
-                        U_B_cuf,
-                        U_B_path,
-                        DaysDue,
-                    } = item;
-                    // const dataFormated = FiscalDate.split
-                    return {
-                        LicTradNum,
-                        Comments,
-                        JrnlMemo,
-                        DocTotal,
-                        DocEntry,
-                        DocNum,
-                        U_RAZSOC,
-                        NumAtCard,
-                        FiscalDate: `${FiscalDate.split(' ')[0] || ''}`,
-                        U_B_cuf,
-                        DaysDue,
-                        U_B_path,
-                    }
-                })
-
-            itemData.Facturas = listDataFacturas
-        })
-
-        // return res.json(listCardCode)
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Clientes y Facturas');
-
-        worksheet.columns = [
-            { header: 'Codigo', key: 'CardCode', width: 15 },
-            { header: 'Nombre', key: 'CardName', width: 30 },
-            { header: 'Zona', key: 'ZoneName', width: 20 },
-            { header: 'Factura Nro', key: 'DocNum', width: 15 },
-            { header: 'Monto Total', key: 'DocTotal', width: 15 },
-            { header: 'Fecha Fiscal', key: 'FiscalDate', width: 20 },
-            { header: 'CUF', key: 'U_B_cuf', width: 60 },
-        ];
-
-        for (const cliente of listCardCode) {
-            const clienteRow = worksheet.addRow({
-                CardCode: cliente.CardCode,
-                CardName: cliente.CardName,
-                ZoneName: cliente.ZoneName,
-            });
-
-            clienteRow.font = { bold: true };
-            clienteRow.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFD9E1F2' },
-            };
-
-            for (const factura of cliente.Facturas) {
-                worksheet.addRow({
-                    CardCode: '',
-                    CardName: '',
-                    ZoneName: '',
-                    DocNum: factura.DocNum,
-                    DocTotal: +factura.DocTotal,
-                    FiscalDate: factura.FiscalDate,
-                    U_B_cuf: factura.U_B_cuf,
-                });
+                worksheet.addRow({});
             }
 
-            worksheet.addRow({});
-        }
+            const filePath = path.join(__dirname, './excel/Clientes_Facturas.xlsx');
+            await workbook.xlsx.writeFile(filePath);
 
-        const filePath = path.join(__dirname, './excel/Clientes_Facturas.xlsx');
-        await workbook.xlsx.writeFile(filePath);
-
-        res.download(filePath, 'Clientes_Facturas.xlsx', (err) => {
-            if (err) {
-                console.error('Error al enviar el archivo:', err);
-                return res.status(500).json({ mensaje: 'Error al enviar el archivo.' });
-            }
-
-            fs.unlink(filePath, (unlinkErr) => {
-                if (unlinkErr) {
-                    console.error('Error al eliminar el archivo:', unlinkErr);
+            res.download(filePath, 'Clientes_Facturas.xlsx', (err) => {
+                if (err) {
+                    console.error('Error al enviar el archivo:', err);
+                    return res.status(500).json({ mensaje: 'Error al enviar el archivo.' });
                 }
-            });
-        });
 
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: `Error en excelClientesMoraController: ${error.message}` })
+                fs.unlink(filePath, (unlinkErr) => {
+                    if (unlinkErr) {
+                        console.error('Error al eliminar el archivo:', unlinkErr);
+                    }
+                });
+            });
+
+        } catch (error) {
+            console.log({ error })
+            return res.status(500).json({ mensaje: `Error en excelClientesMoraController: ${error.message}` })
+        }
     }
-}
 
 const reporteUbicacionClienteController = async (req, res) => {
     try {
@@ -2439,8 +2439,8 @@ const getVendedoresSolicitudDescByStatusController = async (req, res) => {
 
 const getSolicitudesDescuentoByStatusController = async (req, res) => {
     try {
-        const {status, slpCode, createdAt} = req.body
-        const response =  await getSolicitudesDescuentoByStatus(status, slpCode, createdAt)
+        const {status, slpCode} = req.body
+        const response =  await getSolicitudesDescuentoByStatus(status, slpCode)
         return res.json(
             response
         )
@@ -2533,7 +2533,7 @@ const sendNotificationController = async (req, res) => {
         const rows =  await getSubscriptions()
         console.log({rows})
 
-        const responseInsert = await insertNotification(title , body, vendedor, usuario)
+        const responseInsert = await insertNotification(title , body, vendedor, dato.created_at, usuario)
         console.log({responseInsert})
         //{ status: 200,
         //  result: [ { V_ID_NOTIFICACION: 4 } ]
@@ -2724,6 +2724,32 @@ const getSolicitudesDescuentoByVendedorController = async (req, res) => {
     }
 }
 
+const getVendedoresSolicitudDescuentoController = async (req, res) => {
+    try {
+        const response =  await getVendedoresSolicitudDescuento()
+        console.log(response)
+        return res.json(response);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getVendedoresSolicitudDescuentoController'}`})
+    }
+}
+
+const getVendedorByCodeController = async (req, res) => {
+    try {
+        const {id} = req.query
+        const response =  await getVendedorByCode(id)
+        console.log(response)
+        if(response.length==0)
+            return res.status(400).json({mensaje: `No existe vendedor con ese codigo`})
+        return res.json(response[0]);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getVendedorByCodeController'}`})
+    }
+}
+
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2810,5 +2836,6 @@ module.exports = {
     getClientNameController, notificationSubscriptionController, sendNotificationController,
     getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
     ventasPresupuestoSubLinea,
-    ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController
+    ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController, 
+    getVendedoresSolicitudDescuentoController, getVendedorByCodeController
 };

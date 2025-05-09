@@ -16,7 +16,8 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getClienteById,
     getComprobantesBajasByUser,
     getClientes,
-    getEstadoCuentaCliente
+    getEstadoCuentaCliente,
+    auditoriaSaldoDeudor
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -2160,7 +2161,22 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
       const mensaje = error.message || 'Error en el controlador getEstadoCuentaClientePDFController';
       return res.status(500).json({ mensaje });
     }
-};
+}
+
+const auditoriaSaldoDeudorController = async (req, res) => {
+    try {
+        const date = req.query.date
+        const cardCode = req.query.cardCode
+        const response = await auditoriaSaldoDeudor(cardCode,date)
+        return res.status(200).json(response)
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en auditoriaSaldoDeudorController',
+            error
+        })
+    }
+}
   
 module.exports = {
     cobranzaGeneralController,
@@ -2220,4 +2236,5 @@ module.exports = {
     getClientesController,
     getEstadoCuentaClienteController,
     getEstadoCuentaClientePDFController,
+    auditoriaSaldoDeudorController,
 }

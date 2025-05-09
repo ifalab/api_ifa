@@ -259,66 +259,117 @@ const createAsientoContableController = async (req, res) => {
             }
             console.log('sin rendicion')
             console.log({ ...data })
-
+            return res.json(data)
         } else {
-            let firstAccount = {
-                AccountCode: `${cuenta}`,
-                ShortName: `${codEmp}`,
-                Credit: 0,
-                Debit: monto,
-                CreditSys: 0,
-                DebitSys: parseFloat(newValue.toFixed(2)),
-                ContraAccount: `${banckAccount}`,
-                LineMemo: `${glosa}`,
-                Reference1: `${reference}`,
-                Reference2: ''
-            }
-
-            if (voucher || voucher == '') {
-                firstAccount.AdditionalReference = voucher
-            }
-
+            //?
             let JournalEntryLines = []
-            JournalEntryLines.push(firstAccount)
+            // let firstAccount = {
+            //     AccountCode: `${cuenta}`,
+            //     ShortName: `${codEmp}`,
+            //     Credit: 0,
+            //     Debit: monto,
+            //     CreditSys: 0,
+            //     DebitSys: parseFloat(newValue.toFixed(2)),
+            //     ContraAccount: `${banckAccount}`,
+            //     LineMemo: `${glosa}`,
+            //     Reference1: `${reference}`,
+            //     Reference2: ''
+            // }
 
+            // if (voucher || voucher == '') {
+            //     firstAccount.AdditionalReference = voucher
+            // }            
+            // JournalEntryLines.push(firstAccount)
+            //! correccion---- 
             rendiciones.map((item) => {
                 const newValueRend = +item.Amount / usd
-                let contraAccount = {
-                    AccountCode: `${banckAccount}`,
-                    ShortName: `${banckAccount}`,
-                    Credit: +item.Amount,
-                    Debit: 0,
-                    CreditSys: parseFloat(newValueRend.toFixed(2)),
-                    DebitSys: 0,
-                    ContraAccount: '',
-                    LineMemo: glosa,
-                    // Reference1: `${cheque}`,
+                let firstAccount = {
+                    AccountCode: `${cuenta}`,
+                    ShortName: `${codEmp}`,
+                    Credit: 0,
+                    Debit: +item.Amount,
+                    CreditSys: 0,
+                    DebitSys: parseFloat(newValueRend.toFixed(2)),
+                    ContraAccount: `${banckAccount}`,
+                    LineMemo: `${glosa}`,
                     Reference1: `${reference}`,
-                    Reference2: `${item.RendicionTransId}`,
-                }
-                if (voucher || voucher == '') {
-                    contraAccount.AdditionalReference = voucher
+                    Reference2: `${item.RendicionTransId}`
                 }
 
-                if (cheque || cheque == '') {
+                if (voucher || voucher !== '') {
+                    firstAccount.AdditionalReference = voucher
+                }else{
+                    if (cheque || cheque !== '') {
+                        firstAccount.AdditionalReference = cheque
+                    }
+                }
+                JournalEntryLines.push(firstAccount)
+            })
+            //! correccion----end
+            //? antes
+
+            // rendiciones.map((item) => {
+            //     const newValueRend = +item.Amount / usd
+            //     let contraAccount = {
+            //         AccountCode: `${banckAccount}`,
+            //         ShortName: `${banckAccount}`,
+            //         Credit: +item.Amount,
+            //         Debit: 0,
+            //         CreditSys: parseFloat(newValueRend.toFixed(2)),
+            //         DebitSys: 0,
+            //         ContraAccount: '',
+            //         LineMemo: glosa,
+            //         // Reference1: `${cheque}`,
+            //         Reference1: `${reference}`,
+            //         Reference2: `${item.RendicionTransId}`,
+            //     }
+            //     if (voucher || voucher == '') {
+            //         contraAccount.AdditionalReference = voucher
+            //     }
+
+            //     if (cheque || cheque == '') {
+            //         contraAccount.AdditionalReference = cheque
+            //     }
+            //     JournalEntryLines.push(contraAccount)
+            // })
+
+            //! correccion----
+            let contraAccount = {
+                AccountCode: `${banckAccount}`,
+                ShortName: `${banckAccount}`,
+                Credit: +monto,
+                Debit: 0,
+                CreditSys: parseFloat(newValue.toFixed(2)),
+                DebitSys: 0,
+                ContraAccount: `${cuenta}`,
+                LineMemo: glosa,
+                // Reference1: `${cheque}`,
+                Reference1: `${reference}`,
+                Reference2: ``,
+            }
+
+            if (voucher || voucher !== '') {
+                contraAccount.AdditionalReference = voucher
+            }else{
+                if (cheque || cheque !== '') {
                     contraAccount.AdditionalReference = cheque
                 }
+            }
 
-
-                JournalEntryLines.push(contraAccount)
-
-                data = {
-                    U_UserCode: idSap,
-                    ReferenceDate: date,
-                    Memo: glosa,
-                    Indicator: indicador,
-                    Reference: reference,
-                    Reference3: cheque,
-                    JournalEntryLines
-                }
-
-            })
             
+            JournalEntryLines.push(contraAccount)
+            //! correccion----end
+
+            data = {
+                U_UserCode: idSap,
+                ReferenceDate: date,
+                Memo: glosa,
+                Indicator: indicador,
+                Reference: reference,
+                Reference3: cheque,
+                JournalEntryLines
+            }
+
             console.log('con rendicion')
             // data = { ...data, rendiciones }
             console.log({ ...data })
@@ -718,7 +769,7 @@ const getSublineasCC = async (req, res) => {
 
 const getJournalPreliminarCC = async (req, res) => {
     try {
-        const {id} = req.query;
+        const { id } = req.query;
         const data = await asientosPreliminaresCC(id);
         console.log(data);
         return res.json(data)
@@ -791,23 +842,23 @@ const actualizarEstadoCCController = async (req, res) => {
     try {
         const { id } = req.params;
         const { estado } = req.body;
-    
+
         console.log(id);
         console.log(estado);
         // Validación simple
         if (!['nc', 'c', 'm'].includes(estado)) {
-        return res.status(400).json({ message: 'Estado inválido' });
+            return res.status(400).json({ message: 'Estado inválido' });
         }
 
         if (!id || isNaN(id)) {
             return res.status(400).json({ message: 'ID inválido o no numérico' });
-        }      
-    
+        }
+
         // Lógica para actualizar en la BD
         await sapService.actualizarAsientoCC({
             estado
         }, id.toString())
-    
+
         res.json({ message: 'Estado actualizado correctamente' });
     } catch (error) {
         console.log({ error })
@@ -817,7 +868,7 @@ const actualizarEstadoCCController = async (req, res) => {
         }
         return res.status(500).json({ mensaje: `error en el controlador [actualizarEstadoCCController], ${mensaje}` })
     }
-    
+
 };
 
 module.exports = {
