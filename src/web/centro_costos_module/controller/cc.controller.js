@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -273,10 +273,18 @@ const getLibroMayor = async (req, res) => {
 const excelLibroMayor = async (req, res) => {
     try {
       const data = req.body;
+
+      const fechaActual = new Date();
+      const date = new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }).format(fechaActual);
   
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Libro Mayor');
-  
+
       // Definir columnas
       worksheet.columns = [
         { header: 'Fecha', key: 'RefDate', width: 15 },
@@ -293,7 +301,43 @@ const excelLibroMayor = async (req, res) => {
         { header: 'Débito', key: 'Debit', width: 15 },
         { header: 'Crédito', key: 'Credit', width: 15 },
       ];
-  
+
+      // Insertar filas antes del encabezado
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);  
+      // Agregar contenido a las filas de cabecera
+      worksheet.getCell('A1').value = `Libro Mayor de la cuenta ${data[0].Account} | ${data[0].AcctName}`;
+      worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;  
+      // Fusionar celdas para que el texto se centre sobre varias columnas (A a M en este caso)
+      worksheet.mergeCells('A1:M1');
+      worksheet.mergeCells('A2:M2');  
+      // Estilizar cabecera
+      ['A1', 'A2'].forEach(cellAddress => {
+        const cell = worksheet.getCell(cellAddress);
+        cell.font = { bold: true, size: 14 };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        if(cellAddress === 'A1') {
+            const cell = worksheet.getCell(cellAddress); 
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };  
+        }else{
+            const cell = worksheet.getCell(cellAddress); 
+            cell.border = {
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };  
+        }
+      });
       data.forEach(row => {
         const newRow = worksheet.addRow({
             RefDate: new Date(row.RefDate),
@@ -314,16 +358,22 @@ const excelLibroMayor = async (req, res) => {
           // Si deseas asegurar formato con 2 decimales para Débito y Crédito:
           newRow.getCell('Debit').numFmt = '"Bs"#,##0.00';
           newRow.getCell('Credit').numFmt = '"Bs"#,##0.00';
+          newRow.eachCell(cell => {
+            cell.border = {
+                left: {style: 'thin'},
+                right: {style: 'thin'},
+            }
+          })
       });
   
       // Estilizar encabezado
-      worksheet.getRow(1).eachCell(cell => {
+      worksheet.getRow(4).eachCell(cell => {
         cell.font = { bold: true };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFCCE5FF' },
+          fgColor: { argb: 'FFFFFF' },
         };
         cell.border = {
           top: { style: 'thin' },
@@ -332,6 +382,14 @@ const excelLibroMayor = async (req, res) => {
           right: { style: 'thin' },
         };
       });
+
+      worksheet.lastRow.eachCell(cell => {
+        cell.border = {
+            bottom: {style: 'thin'},
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        }
+      })
   
       // Crear el archivo Excel en memoria
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -371,6 +429,18 @@ const cargarPlantillaDimensiones = async (req, res) => {
     }
 } 
 
+const recuperarPlantillaDimensiones = async (req, res) => {
+    try {
+        const {id} = req.query;
+        console.log(id);
+        const result = await getPlantillas(id);
+
+        return res.status(200).json(result)
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: `Error obtiendo la plantilla para este asiento. ${error}` });
+    }
+}
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -379,5 +449,6 @@ module.exports = {
     getLibroMayor,
     excelLibroMayor,
     docFuentes,
-    cargarPlantillaDimensiones
+    cargarPlantillaDimensiones,
+    recuperarPlantillaDimensiones
 }
