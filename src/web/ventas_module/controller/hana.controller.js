@@ -1806,7 +1806,7 @@ const ventasPorZonasVendedor2 = async (username) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DEV".LAPP_VEN_VENTAS_ZONA2('${username}');`;
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA2('${username}');`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en ventas por zona: ', err.message);
@@ -1827,6 +1827,19 @@ const getUbicacionClientesByVendedor = async (codVendedor) => {
     }
 }
 
+const getAllVendedores = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores 
+        where "Rol" <> 'Despachador' and "SlpCode" in (SELECT ID_VENDEDOR_SAP FROM LAB_IFA_LAPP.LAPP_USUARIO)`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getAllVendedores: ', err.message);
+        throw new Error(`Error en getAllVendedores: ${err.message}`);
+    }
+}
 
 module.exports = {
     ventaPorSucursal,
@@ -1926,5 +1939,5 @@ module.exports = {
     getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
-    ventasPorZonasVendedor2, getUbicacionClientesByVendedor
+    ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getAllVendedores
 }

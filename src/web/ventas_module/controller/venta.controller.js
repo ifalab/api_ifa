@@ -95,7 +95,8 @@ const {
     deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode, 
-    getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor
+    getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
+    getAllVendedores
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2774,13 +2775,14 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
         const {usercode} = req.query;
         const response =  await ventasPorZonasVendedor2(usercode)
         console.log(response)
-        // return res.json(response);
+
         let LineItemCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
         let totalCumByLineItem = {};
         let grandTotalQuota = 0;
         let grandTotalSales = 0;
+        let grandTotalCump = 0;
         
         const results = []
         response.forEach((r, index) => {
@@ -2829,12 +2831,14 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
             }
             grandTotalQuota += +r.Quota;
             grandTotalSales += +r.Sales;
+            grandTotalCump += +r.cumplimiento;
         });
         
-        response.push({
-            LineItemCode: 'TOTAL',
+        results.push({
+            ZoneName: 'TOTAL',
             Quota: grandTotalQuota,
             Sales: grandTotalSales,
+            cumplimiento: grandTotalCump,
             hide: false
         });        
         
@@ -2855,6 +2859,17 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
     } catch (error){
         console.error({error})
         return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getUbicacionClientesByVendedorController'}`})
+    }
+}
+
+const getAllVendedoresController = async (req, res) => {
+    try {
+        const response =  await getAllVendedores()
+        console.log(response)
+        return res.json(response);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getAllVendedoresController'}`})
     }
 }
 
@@ -2946,5 +2961,5 @@ module.exports = {
     ventasPresupuestoSubLinea,
     ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController, 
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
-    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController
+    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getAllVendedoresController
 };
