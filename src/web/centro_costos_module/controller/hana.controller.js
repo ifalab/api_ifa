@@ -111,9 +111,26 @@ const getDocFuentes = async(id) => {
         throw new Error('error en getNombreUsuario')
     }
 }
+
+const getPlantillas = async(id) => {
+    try {
+         if (!connection) {
+            await connectHANA();
+        }
+        console.log('getPlantillas EXECUTE')
+        const query = `	SELECT * FROM LAB_IFA_COM.IFA_CC_JOURNAL_COST_CENTER_DETAILS WHERE "TransId" = ${id}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getPlantillas, ${error}`)
+    }
+}
 module.exports = {
   ObtenerLibroMayor,
   cuentasCC,
   getNombreUsuario,
-  getDocFuentes
+  getDocFuentes,
+  getPlantillas
 }
