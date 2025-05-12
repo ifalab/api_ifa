@@ -88,7 +88,8 @@ const {
     notificationSubscriptionController, notificationUnsubscribeController,
     sendNotificationController, getSolicitudesDescuentoByVendedorController, getNotificationController, 
     deleteNotificationController, getVendedoresSolicitudDescuentoController, getVendedorByCodeController,
-    getDescuentosDelVendedorParaPedidoController, ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController
+    getDescuentosDelVendedorParaPedidoController, ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController,
+    getAllVendedoresController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -200,5 +201,6 @@ router.get('/presupuesto/anterior/sublinea', [validarToken, validarCampos], vent
 
 router.get('/ventas-zona2', [validarToken, validarCampos], ventasPorZonasVendedor2Controller)
 router.get('/ubicacion-clientes-vendedor', [validarToken, validarCampos], getUbicacionClientesByVendedorController)
+router.get('/get-vendedores', [validarToken, validarCampos], getAllVendedoresController)
 
 module.exports = router
