@@ -96,7 +96,7 @@ const {
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode, 
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
-    getAllVendedores
+    getAllVendedores, ventasPorZonasVendedorMesAnt2
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -946,23 +946,23 @@ const marcarAsistenciaController = async (req, res) => {
 const getAsistenciasVendedorController = async (req, res) => {
     try {
         const id_vendedor_sap = req.query.id
-        const usuario = req.usuarioAutorizado
+        // const usuario = req.usuarioAutorizado
         const asistencias = await getAsistenciasVendedor(id_vendedor_sap)
         console.log(asistencias.response)
         if (asistencias.response.lang) {
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", `${asistencias.response.value || 'Error en getAsistenciasVendedor'}`, asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
+            // grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", `${asistencias.response.value || 'Error en getAsistenciasVendedor'}`, asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
             return res.status(400).json({ mensaje: asistencias.response.value })
         }
         // console.log(asistencias.query)
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", "Datos obtenidos con exito", asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
+        // grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", "Datos obtenidos con exito", asistencias.query, "venta/asistencias-vendedor", process.env.PRD)
 
         return res.json({ asistencias: asistencias.response })
     } catch (error) {
         console.log({ error })
-        const usuario = req.usuarioAutorizado
+        // const usuario = req.usuarioAutorizado
         let mensaje = error.message || 'error en el controlador:getAsistenciasVendedorController'
-        const query = error.query || "No disponible"
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", mensaje, query, "venta/asistencias-vendedor", process.env.PRD)
+        // const query = error.query || "No disponible"
+        // grabarLog(usuario.USERCODE, usuario.USERNAME, "Venta get asistencias vendedor", mensaje, query, "venta/asistencias-vendedor", process.env.PRD)
         return res.status(500).json({ mensaje })
     }
 }
@@ -2351,6 +2351,7 @@ const reporteUbicacionClienteController = async (req, res) => {
 }
 
 const agregarSolicitudDeDescuentoController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {solicitudes, p_SlpCode, p_SlpName, p_CreatedBy} = req.body
         let responses = []
@@ -2371,11 +2372,16 @@ const agregarSolicitudDeDescuentoController = async (req, res) => {
             console.log({ response })
             responses.push({response})
         }
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Solicitar Descuento", `Exito al solicitar un descuento`, 'ifa_crm_solicitar_descuento', 
+            "venta/solicitar-descuento", process.env.PRD)
+
         return res.json({
             responses
         })
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Solicitar Descuento", `${error.message || 'Error en agregarSolicitudDeDescuentoController'}`, 'ifa_crm_solicitar_descuento', 
+            "venta/solicitar-descuento", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en agregarSolicitudDeDescuentoController: ${error.message}` })
     }
 }
@@ -2396,19 +2402,25 @@ const getClientNameController = async (req, res) => {
 }
 
 const actualizarStatusSolicitudDescuentoController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode} = req.body
         const response =  await actualizarStatusSolicitudDescuento(id??-1, status, p_CreatedBy, p_SlpCode??-1, p_ClientCode, p_ItemCode)
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `Exito al actualizar el status de la solicitud de descuento`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO', 
+            "venta/cambiar-status-solicitud-des", process.env.PRD)
         return res.json(
             response
         )
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `${error.message || 'Error en actualizarStatusSolicitudDescuentoController'}`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO', 
+            "venta/cambiar-status-solicitud-des", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en actualizarStatusSolicitudDescuentoController: ${error.message}` })
     }
 }
 
 const actualizarVariosStatusSolicitudDescuentoController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {ids, status, p_CreatedBy} = req.body
         const responses = []
@@ -2416,11 +2428,15 @@ const actualizarVariosStatusSolicitudDescuentoController = async (req, res) => {
             const response =  await actualizarStatusSolicitudDescuento(id??-1, status, p_CreatedBy, -1, '', '')
             responses.push(response)
         }
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `Exito al actualizar el status de la solicitud de descuento`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO', 
+            "venta/cambiar-status-solicitudes-des", process.env.PRD)
         return res.json(
             responses
         )
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `${error.message || 'Error en actualizarStatusSolicitudDescuentoController'}`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO', 
+            "venta/cambiar-status-solicitudes-des", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en actualizarStatusSolicitudDescuentoController: ${error.message}` })
     }
 }
@@ -2453,18 +2469,24 @@ const getSolicitudesDescuentoByStatusController = async (req, res) => {
 }
 
 const actualizarSolicitudDescuentoController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct } = req.body
         const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
         console.log({response})
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuento", `Exito al editar la solicitud de descuento`, 'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO', 
+            "venta/actualizar-solicitud-desc", process.env.PRD)
         return res.json( response )
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuento", `${error.message || 'Error en actualizarSolicitudDescuentoController'}`, 
+            'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO', "venta/actualizar-solicitud-desc", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en actualizarSolicitudDescuentoController: ${error.message}` })
     }
 }
 
 const actualizarSolicitudesDescuentoController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }    
     try {
         const {solicitudes} = req.body
         const responses = []
@@ -2474,14 +2496,18 @@ const actualizarSolicitudesDescuentoController = async (req, res) => {
             console.log({response})
             responses.push(response)
         }
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuentos", `Exito al editar las solicitudes de descuento`, 'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO', 
+            "venta/actualizar-solicitudes-desc", process.env.PRD)
         return res.json( responses )
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuentoa", `${error.message || 'Error en actualizarSolicitudesDescuentoController'}`, 
+            'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO', "venta/actualizar-solicitudes-desc", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en actualizarSolicitudesDescuentoController: ${error.message}` })
     }
 }
 
-const deleteSolicitudDescuentoController = async (req, res) => {
+const deleteSolicitudDescuentoController = async (req, res) => {  
     try {
         const {id} = req.query
         const response =  await deleteSolicitudDescuento(id)
@@ -2494,6 +2520,7 @@ const deleteSolicitudDescuentoController = async (req, res) => {
 }
 
 const notificationSubscriptionController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }  
     try {
         const subscription = JSON.stringify(req.body);
         const response =  await notificationSubscription(subscription)
@@ -2501,6 +2528,8 @@ const notificationSubscriptionController = async (req, res) => {
         return res.json( response )
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Subscripcion Notificacion", `${error.message || 'Error en notificationSubscriptionController'}`, 'PUSH_SUBSCRIPTIONS', 
+            "venta/notification-subscribe", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en notificationSubscriptionController: ${error.message}` })
     }
 }
@@ -2523,6 +2552,7 @@ webpush.setVapidDetails(
     process.env.VAPID_KEY_PRIVATE
 );
 const sendNotificationController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }  
     try {
         const { title , body, vendedor, excludeEndpoint, usuario} = req.body
         console.log({excludeEndpoint})
@@ -2535,7 +2565,6 @@ const sendNotificationController = async (req, res) => {
         const rows =  await getSubscriptions()
         console.log({rows})
 
-        // return  res.send(rows);
         const responseInsert = await insertNotification(title , body, vendedor, dato.created_at, usuario)
         console.log({responseInsert})
         //{ status: 200,
@@ -2553,10 +2582,13 @@ const sendNotificationController = async (req, res) => {
             console.log('Excluded', sub.endpoint);
           }
         });
-      
+        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `Exito al enviar la notificacion`, 'INSERTAR_NOTIFICACION', 
+            "venta/send-notification", process.env.PRD)
         return  res.send(dato);
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `${error.message || 'Error en sendNotificationController'}`, 'INSERTAR_NOTIFICACION', 
+            "venta/send-notification", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en sendNotificationController: ${error.message}` })
     }
 }
@@ -2772,17 +2804,23 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
 
 const ventasPorZonasVendedor2Controller = async (req, res) => {
     try {
-        const {usercode} = req.query;
-        const response =  await ventasPorZonasVendedor2(usercode)
+        const {usercode, isAnt} = req.body;
+        let response
+        if(isAnt==true){
+            console.log('isAnt')
+            response = await ventasPorZonasVendedorMesAnt2(usercode)
+        }else{
+            response =  await ventasPorZonasVendedor2(usercode)
+        }
         console.log(response)
 
         let LineItemCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
         let totalCumByLineItem = {};
-        let grandTotalQuota = 0;
-        let grandTotalSales = 0;
-        let grandTotalCump = 0;
+        // let grandTotalQuota = 0;
+        // let grandTotalSales = 0;
+        // let grandTotalCump = 0;
         
         const results = []
         response.forEach((r, index) => {
@@ -2829,20 +2867,11 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
                 res1.hide =false
                 results.push(res1)
             }
-            grandTotalQuota += +r.Quota;
-            grandTotalSales += +r.Sales;
-            grandTotalCump += +r.cumplimiento;
-        });
+            // grandTotalQuota += +r.Quota;
+            // grandTotalSales += +r.Sales;
+            // grandTotalCump += +r.cumplimiento;
+        }); 
         
-        results.push({
-            ZoneName: 'TOTAL',
-            Quota: grandTotalQuota,
-            Sales: grandTotalSales,
-            cumplimiento: grandTotalCump,
-            hide: false
-        });        
-        
-        // return res.json({response, results});
         return res.json(results);
     } catch (error){
         console.error({error})
