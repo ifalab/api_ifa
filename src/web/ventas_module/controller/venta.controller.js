@@ -2775,13 +2775,14 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
         const {usercode} = req.query;
         const response =  await ventasPorZonasVendedor2(usercode)
         console.log(response)
-        // return res.json(response);
+
         let LineItemCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
         let totalCumByLineItem = {};
         let grandTotalQuota = 0;
         let grandTotalSales = 0;
+        let grandTotalCump = 0;
         
         const results = []
         response.forEach((r, index) => {
@@ -2830,12 +2831,14 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
             }
             grandTotalQuota += +r.Quota;
             grandTotalSales += +r.Sales;
+            grandTotalCump += +r.cumplimiento;
         });
         
-        response.push({
-            LineItemCode: 'TOTAL',
+        results.push({
+            ZoneName: 'TOTAL',
             Quota: grandTotalQuota,
             Sales: grandTotalSales,
+            cumplimiento: grandTotalCump,
             hide: false
         });        
         

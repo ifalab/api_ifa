@@ -1806,7 +1806,7 @@ const ventasPorZonasVendedor2 = async (username) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DEV".LAPP_VEN_VENTAS_ZONA2('${username}');`;
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA2('${username}');`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en ventas por zona: ', err.message);
