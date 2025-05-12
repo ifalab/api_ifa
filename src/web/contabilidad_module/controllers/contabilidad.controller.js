@@ -259,7 +259,7 @@ const createAsientoContableController = async (req, res) => {
             }
             console.log('sin rendicion')
             console.log({ ...data })
-            return res.json(data)
+            
         } else {
             //?
             let JournalEntryLines = []
@@ -383,6 +383,8 @@ const createAsientoContableController = async (req, res) => {
         if (response.value) {
             return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. Sap Error: ${response.value || 'No definido'}` })
         }
+        console.log('respuesta: ')
+        console.log({response})
         return res.json({ mensaje: 'Apertura de Caja creado con exito' })
 
     } catch (error) {
@@ -439,6 +441,7 @@ const cerrarCajaChicaController = async (req, res) => {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ id, glosa })
         const data = await dataCierreCaja(id)
+        console.log({data})
         if (data.length !== 2) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error en traer los datos necesarios para el cierre de caja`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
             return res.status(400).json({ mensaje: 'Hubo un problemas en traer los datos necesarios para el cierre de caja', data })
