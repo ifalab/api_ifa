@@ -95,7 +95,7 @@ const {
     deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode, 
-    getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2
+    getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2846,6 +2846,18 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
     }
 }
 
+const getUbicacionClientesByVendedorController = async (req, res) => {
+    try {
+        const {id} = req.query;
+        const response =  await getUbicacionClientesByVendedor(id)
+        console.log(response)
+        return res.json(response);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getUbicacionClientesByVendedorController'}`})
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -2934,5 +2946,5 @@ module.exports = {
     ventasPresupuestoSubLinea,
     ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController, 
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
-    ventasPorZonasVendedor2Controller
+    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController
 };

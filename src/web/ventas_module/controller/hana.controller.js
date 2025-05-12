@@ -1814,6 +1814,20 @@ const ventasPorZonasVendedor2 = async (username) => {
     }
 }
 
+const getUbicacionClientesByVendedor = async (codVendedor) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ubicacion_clientes_by_vendedor(${codVendedor})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getUbicacionClientesByVendedor: ', err.message);
+        throw new Error(`Error en getUbicacionClientesByVendedor: ${err.message}`);
+    }
+}
+
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1912,5 +1926,5 @@ module.exports = {
     getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
-    ventasPorZonasVendedor2
+    ventasPorZonasVendedor2, getUbicacionClientesByVendedor
 }
