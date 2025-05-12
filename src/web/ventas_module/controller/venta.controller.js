@@ -2757,6 +2757,7 @@ const getVendedorByCodeController = async (req, res) => {
 
 const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
     try {
+        ////
         const {cliente, vendedor} = req.body;
         const fecha = new Date()
         const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
@@ -2773,43 +2774,62 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
         const {usercode} = req.query;
         const response =  await ventasPorZonasVendedor2(usercode)
         console.log(response)
+        // return res.json(response);
         let LineItemCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
+        let totalCumByLineItem = {};
         let grandTotalQuota = 0;
         let grandTotalSales = 0;
         
+        const results = []
         response.forEach((r, index) => {
             if(r.LineItemCode == LineItemCode){
-                r.hide = true;
+                const res1 = r
+                res1.cumplimiento = +r.cumplimiento
+                res1.hide =true
+                results.push(res1)
+
                 totalQuotaByLineItem[r.LineItemCode] += +r.Quota;
                 totalSalesByLineItem[r.LineItemCode] += +r.Sales;
+                totalCumByLineItem[r.LineItemCode] += +r.cumplimiento;
+                
                 if(response.length-1 ==index){
-                    r.totalQuotaLineItem = +totalQuotaByLineItem[r.LineItemCode];
-                    r.totalSalesLineItem = +totalSalesByLineItem[r.LineItemCode];
-                    r.isSubtotal = true;
+                  const res = {
+                    LineItemCode: `Total ${r.LineItemCode}`,
+                    Quota: +totalQuotaByLineItem[r.LineItemCode],
+                    Sales: +totalSalesByLineItem[r.LineItemCode],
+                    cumplimiento: +totalCumByLineItem[r.LineItemCode],
+                    isSubtotal : true, 
+                    hide: false
+                  }
+                    results.push(res)
                 }
             }else{
-                r.hide = false;
                 LineItemCode = r.LineItemCode;
                 totalQuotaByLineItem[r.LineItemCode] = +r.Quota;
                 totalSalesByLineItem[r.LineItemCode] = +r.Sales;
+                totalCumByLineItem[r.LineItemCode] = +r.cumplimiento;
+
                 if(index>0){
-                    response[index-1].totalQuotaLineItem = +totalQuotaByLineItem[response[index-1].LineItemCode];
-                    response[index-1].totalSalesLineItem = +totalSalesByLineItem[response[index-1].LineItemCode];
-                    response[index-1].isSubtotal = true;
+                  const res = {
+                    LineItemCode: `Total ${response[index-1].LineItemCode}`,
+                    Quota: +totalQuotaByLineItem[response[index-1].LineItemCode],
+                    Sales: +totalSalesByLineItem[response[index-1].LineItemCode],
+                    cumplimiento: +totalCumByLineItem[response[index-1].LineItemCode],
+                    isSubtotal : true, 
+                    hide: false
+                  }
+                  results.push(res)
                 }
+                const res1 = r
+                res1.cumplimiento = +r.cumplimiento
+                res1.hide =false
+                results.push(res1)
             }
             grandTotalQuota += +r.Quota;
             grandTotalSales += +r.Sales;
         });
-
-        // response.forEach((r) => {
-        //     if(!r.hide) {
-        //         r.totalQuotaLineItem = +totalQuotaByLineItem[r.LineItemCode];
-        //         r.totalSalesLineItem = +totalSalesByLineItem[r.LineItemCode];
-        //     }
-        // });
         
         response.push({
             LineItemCode: 'TOTAL',
@@ -2818,7 +2838,8 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
             hide: false
         });        
         
-        return res.json(response);
+        // return res.json({response, results});
+        return res.json(results);
     } catch (error){
         console.error({error})
         return res.status(500).json({mensaje: `${error.message || 'Error en el controlador ventasPorZonasVendedor2Controller'}`})

@@ -188,7 +188,7 @@ router.post('/cambiar-status-solicitudes-desc', [validarToken, validarCampos], a
 router.post('/actualizar-solicitudes-desc', [validarToken, validarCampos], actualizarSolicitudesDescuentoController)
 router.get('/delete-solicitud-desc', [validarToken, validarCampos], deleteSolicitudDescuentoController)
 router.get('/solicitudes-desc-vendedor', [validarToken, validarCampos], getSolicitudesDescuentoByVendedorController)
-router.post('/descuento-vendedor-pedido', [validarToken, validarCampos], getDescuentosDelVendedorParaPedidoController)
+router.post('/descuento-vendedor-pedido', [validarToken, validarCampos], getDescuentosDelVendedorParaPedidoController)//
 
 router.post('/notification-subscribe', [validarToken, validarCampos], notificationSubscriptionController)
 router.post('/notification-unsubscribe', [validarToken, validarCampos], notificationUnsubscribeController)
