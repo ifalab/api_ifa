@@ -94,7 +94,8 @@ const {
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
     deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
-    deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode
+    deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode, 
+    getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2491,11 +2492,6 @@ const deleteSolicitudDescuentoController = async (req, res) => {
     }
 }
 
-webpush.setVapidDetails(
-    'mailto:melifisher1234@gmail.com',
-    process.env.VAPID_KEY_PUBLIC,
-    process.env.VAPID_KEY_PRIVATE
-);
 const notificationSubscriptionController = async (req, res) => {
     try {
         const subscription = JSON.stringify(req.body);
@@ -2520,6 +2516,11 @@ const notificationUnsubscribeController = async (req, res) => {
     }
 }
 
+webpush.setVapidDetails(
+    'mailto:',
+    process.env.VAPID_KEY_PUBLIC,
+    process.env.VAPID_KEY_PRIVATE
+);
 const sendNotificationController = async (req, res) => {
     try {
         const { title , body, vendedor, excludeEndpoint, usuario} = req.body
@@ -2533,6 +2534,7 @@ const sendNotificationController = async (req, res) => {
         const rows =  await getSubscriptions()
         console.log({rows})
 
+        // return  res.send(rows);
         const responseInsert = await insertNotification(title , body, vendedor, dato.created_at, usuario)
         console.log({responseInsert})
         //{ status: 200,
@@ -2543,8 +2545,12 @@ const sendNotificationController = async (req, res) => {
 
         rows.forEach(row => {
           const sub = JSON.parse(row.Subscription);
-          if(sub.endpoint !== excludeEndpoint)
+          if(sub.endpoint !== excludeEndpoint){
+            console.log(`Enviando`, sub.endpoint)
             webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
+          }else{
+            console.log('Excluded', sub.endpoint);
+          }
         });
       
         return  res.send(dato);
@@ -2749,6 +2755,108 @@ const getVendedorByCodeController = async (req, res) => {
     }
 }
 
+const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
+    try {
+        ////
+        const {cliente, vendedor} = req.body;
+        const fecha = new Date()
+        const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
+        console.log(response)
+        return res.json(response);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getDescuentosDelVendedorParaPedidoController'}`})
+    }
+}
+
+const ventasPorZonasVendedor2Controller = async (req, res) => {
+    try {
+        const {usercode} = req.query;
+        const response =  await ventasPorZonasVendedor2(usercode)
+        console.log(response)
+        // return res.json(response);
+        let LineItemCode = ''
+        let totalQuotaByLineItem = {};
+        let totalSalesByLineItem = {};
+        let totalCumByLineItem = {};
+        let grandTotalQuota = 0;
+        let grandTotalSales = 0;
+        
+        const results = []
+        response.forEach((r, index) => {
+            if(r.LineItemCode == LineItemCode){
+                const res1 = r
+                res1.cumplimiento = +r.cumplimiento
+                res1.hide =true
+                results.push(res1)
+
+                totalQuotaByLineItem[r.LineItemCode] += +r.Quota;
+                totalSalesByLineItem[r.LineItemCode] += +r.Sales;
+                totalCumByLineItem[r.LineItemCode] += +r.cumplimiento;
+                
+                if(response.length-1 ==index){
+                  const res = {
+                    LineItemCode: `Total ${r.LineItemCode}`,
+                    Quota: +totalQuotaByLineItem[r.LineItemCode],
+                    Sales: +totalSalesByLineItem[r.LineItemCode],
+                    cumplimiento: +totalCumByLineItem[r.LineItemCode],
+                    isSubtotal : true, 
+                    hide: false
+                  }
+                    results.push(res)
+                }
+            }else{
+                LineItemCode = r.LineItemCode;
+                totalQuotaByLineItem[r.LineItemCode] = +r.Quota;
+                totalSalesByLineItem[r.LineItemCode] = +r.Sales;
+                totalCumByLineItem[r.LineItemCode] = +r.cumplimiento;
+
+                if(index>0){
+                  const res = {
+                    LineItemCode: `Total ${response[index-1].LineItemCode}`,
+                    Quota: +totalQuotaByLineItem[response[index-1].LineItemCode],
+                    Sales: +totalSalesByLineItem[response[index-1].LineItemCode],
+                    cumplimiento: +totalCumByLineItem[response[index-1].LineItemCode],
+                    isSubtotal : true, 
+                    hide: false
+                  }
+                  results.push(res)
+                }
+                const res1 = r
+                res1.cumplimiento = +r.cumplimiento
+                res1.hide =false
+                results.push(res1)
+            }
+            grandTotalQuota += +r.Quota;
+            grandTotalSales += +r.Sales;
+        });
+        
+        response.push({
+            LineItemCode: 'TOTAL',
+            Quota: grandTotalQuota,
+            Sales: grandTotalSales,
+            hide: false
+        });        
+        
+        // return res.json({response, results});
+        return res.json(results);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador ventasPorZonasVendedor2Controller'}`})
+    }
+}
+
+const getUbicacionClientesByVendedorController = async (req, res) => {
+    try {
+        const {id} = req.query;
+        const response =  await getUbicacionClientesByVendedor(id)
+        console.log(response)
+        return res.json(response);
+    } catch (error){
+        console.error({error})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getUbicacionClientesByVendedorController'}`})
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -2837,5 +2945,6 @@ module.exports = {
     getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
     ventasPresupuestoSubLinea,
     ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController, 
-    getVendedoresSolicitudDescuentoController, getVendedorByCodeController
+    getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
+    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController
 };

@@ -1288,18 +1288,19 @@ const cancelToProsinController = async (req, res) => {
 
 const pedidosFacturadosController = async (req, res) => {
     try {
-        const { SucCodes } = req.body
+        let { SucCodes, fecha } = req.body
         if (SucCodes.length == 0) return res.status(400).json({ mensaje: 'el SucCodes es obligatorio y debe tener un item o mas' })
         let facturados = []
+        if(!fecha)fecha=''
         console.log({ SucCodes })
         for (const ItemCode of SucCodes) {
-            const facturas = await pedidosFacturados(ItemCode)
+            const facturas = await pedidosFacturados(ItemCode, fecha)
             facturados = facturados.concat(facturas)
         }
         return res.json({ facturados })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador' })
+        return res.status(500).json({ mensaje: `error en el controlador pedidosFacturadosController: ${error.message}` })
     }
 }
 

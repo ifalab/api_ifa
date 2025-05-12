@@ -87,7 +87,8 @@ const {
     getClientNameController,
     notificationSubscriptionController, notificationUnsubscribeController,
     sendNotificationController, getSolicitudesDescuentoByVendedorController, getNotificationController, 
-    deleteNotificationController, getVendedoresSolicitudDescuentoController, getVendedorByCodeController
+    deleteNotificationController, getVendedoresSolicitudDescuentoController, getVendedorByCodeController,
+    getDescuentosDelVendedorParaPedidoController, ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -187,6 +188,8 @@ router.post('/cambiar-status-solicitudes-desc', [validarToken, validarCampos], a
 router.post('/actualizar-solicitudes-desc', [validarToken, validarCampos], actualizarSolicitudesDescuentoController)
 router.get('/delete-solicitud-desc', [validarToken, validarCampos], deleteSolicitudDescuentoController)
 router.get('/solicitudes-desc-vendedor', [validarToken, validarCampos], getSolicitudesDescuentoByVendedorController)
+router.post('/descuento-vendedor-pedido', [validarToken, validarCampos], getDescuentosDelVendedorParaPedidoController)//
+
 router.post('/notification-subscribe', [validarToken, validarCampos], notificationSubscriptionController)
 router.post('/notification-unsubscribe', [validarToken, validarCampos], notificationUnsubscribeController)
 router.post('/send-notification', [validarToken, validarCampos], sendNotificationController)
@@ -194,5 +197,8 @@ router.post('/get-notifications', [validarToken, validarCampos], getNotification
 router.post('/delete-notification', [validarToken, validarCampos], deleteNotificationController)
 router.get('/presupuesto/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLinea)
 router.get('/presupuesto/anterior/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLineaAnterior)
+
+router.get('/ventas-zona2', [validarToken, validarCampos], ventasPorZonasVendedor2Controller)
+router.get('/ubicacion-clientes-vendedor', [validarToken, validarCampos], getUbicacionClientesByVendedorController)
 
 module.exports = router
