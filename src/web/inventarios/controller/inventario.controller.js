@@ -18,10 +18,12 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     articuloDiccionario,
     relacionArticulo,
     articulos,
-    saveDiccionario, 
+    saveDiccionario,
     tipoSolicitud,
     costoComercialByItemCode,
-    tipoCliente} = require("./hana.controller")
+    tipoCliente,
+    solicitudesPendiente,
+    detalleSolicitudPendiente } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -4509,8 +4511,33 @@ const saveArticuloDiccionario = async (req, res) => {
 
 const solicitudTrasladoController = async (req, res) => {
     try {
-        const { U_UserCode, Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines } = req.body
-        const sapResponse = await postInventoryTransferRequests({ U_UserCode, Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines })
+
+        const {
+            U_UserCode,
+            Reference1,
+            Reference2,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            ToWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            StockTransferLines
+        } = req.body
+
+        const sapResponse = await postInventoryTransferRequests({
+            U_UserCode,
+            Reference1,
+            Reference2,
+            Comments,
+            JournalMemo,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            FromWarehouse,
+            ToWarehouse,
+            StockTransferLines
+        })
+
         const { status, errorMessage } = sapResponse
         if (status && status == 400) {
             const { value } = errorMessage
@@ -4545,12 +4572,12 @@ const costoComercialItemcodeController = async (req, res) => {
     try {
         const itemCode = req.query.itemCode
         const response = await costoComercialByItemCode(itemCode)
-        if(response.length == 0){
+        if (response.length == 0) {
             return res.status(400).json({ mensaje: `Error no se encontro el costo comercial del item  : ${itemCode}` })
         }
         const costoComercial = Number(response[0].U_COSTO_COML)
-        console.log({costoComercial,itemCode})
-        return res.json({costoComercial})
+        console.log({ costoComercial, itemCode })
+        return res.json({ costoComercial })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en tipoSolicitudController : ${error.message || 'No definido'}` })
@@ -4676,7 +4703,7 @@ const devoluccionInstitucionesController = async (req, res) => {
 
         console.log({ idEntrega })
 
-        
+
         let numRet = 0
         let newDocumentLinesReturn = []
         for (const devolucion of Devoluciones) {
@@ -4760,6 +4787,36 @@ const devoluccionInstitucionesController = async (req, res) => {
     }
 }
 
+const solicitudesTrasladoController = async (req, res) => {
+    try {
+        const { listSucCode } = req.body
+        let listSolicitudes = []
+        if (listSucCode.length == 0) {
+            return res.status(400).json({ mensaje: `Usted No tiene Sucursales asignadas` })
+        }
+        for (const sucCode of listSucCode) {
+            const response = await solicitudesPendiente(sucCode)
+            listSolicitudes = [...listSolicitudes, ...response]
+        }
+        return res.json(listSolicitudes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en solicitudesTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const detalleSolicitudTrasladoController = async (req, res) => {
+    try {
+        const docEntry = req.query.docEntry
+        const response = await detalleSolicitudPendiente(docEntry)
+        console.log({response,docEntry})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en solicitudesTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -4808,5 +4865,8 @@ module.exports = {
     costoComercialItemcodeController,
     tipoSolicitudController,
     tipoClientesController,
-    devoluccionInstitucionesController
+    devoluccionInstitucionesController,
+    solicitudesTrasladoController,
+    detalleSolicitudTrasladoController,
+
 }

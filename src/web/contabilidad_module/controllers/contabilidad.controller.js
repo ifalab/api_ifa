@@ -465,7 +465,8 @@ const cerrarCajaChicaController = async (req, res) => {
                 ContraAccount: `${dataAccount.AsociateCardCode}`,
                 LineMemo: `${glosa}`,
                 Reference1: ``,
-                Reference2: ''
+                Reference2: '',
+                Reference3: `${nroDeposito}`,
             }
             JournalEntryLines.push(account)
         }
