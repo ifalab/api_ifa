@@ -655,6 +655,40 @@ const tipoCliente = async() =>{
     }
 }
 
+const solicitudesPendiente = async(sucCode) =>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_solicitud_pendientes_por_sucursal(${sucCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en solicitudesPendiente:', error.message);
+        throw { 
+            message: `Error al procesar solicitudesPendiente: ${error.message || ''}` 
+        }
+    }
+}
+
+const detalleSolicitudPendiente = async(docEntry) =>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_solicitud_detalle_por_id_para_traslado(${docEntry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en detalleSolicitudPendiente:', error.message);
+        throw { 
+            message: `Error al procesar detalleSolicitudPendiente: ${error.message || ''}` 
+        }
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -692,4 +726,6 @@ module.exports = {
     tipoSolicitud,
     costoComercialByItemCode,
     tipoCliente,
+    solicitudesPendiente,
+    detalleSolicitudPendiente,
 }

@@ -395,13 +395,12 @@ const postInventoryTransferRequests = async (data) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        // data.Series = process.env.SAP_INVENTORY_TRANSFER_REQUESTS
-        // console.log(JSON.stringify(data, null, 2))
+        
         const response = await axios.post(url, { ...data }, {
             httpsAgent: agent,
             headers: headers
         });
-        console.log({ postInventoryTransferRequests: response })
+        // console.log({ postInventoryTransferRequests: response })
 
         // Retorna la respuesta en caso de éxito
         const status = response.status
