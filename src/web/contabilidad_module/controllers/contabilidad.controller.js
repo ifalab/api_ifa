@@ -233,7 +233,6 @@ const createAsientoContableController = async (req, res) => {
                 DebitSys: 0,
                 ContraAccount: '',
                 LineMemo: glosa,
-                // Reference1: `${cheque}`,
                 Reference1: ``,
                 Reference2: '',
             }
@@ -263,24 +262,6 @@ const createAsientoContableController = async (req, res) => {
         } else {
             //?
             let JournalEntryLines = []
-            // let firstAccount = {
-            //     AccountCode: `${cuenta}`,
-            //     ShortName: `${codEmp}`,
-            //     Credit: 0,
-            //     Debit: monto,
-            //     CreditSys: 0,
-            //     DebitSys: parseFloat(newValue.toFixed(2)),
-            //     ContraAccount: `${banckAccount}`,
-            //     LineMemo: `${glosa}`,
-            //     Reference1: `${reference}`,
-            //     Reference2: ''
-            // }
-
-            // if (voucher || voucher == '') {
-            //     firstAccount.AdditionalReference = voucher
-            // }            
-            // JournalEntryLines.push(firstAccount)
-            //! correccion---- 
             rendiciones.map((item) => {
                 const newValueRend = +item.Amount / usd
                 let firstAccount = {
@@ -305,35 +286,7 @@ const createAsientoContableController = async (req, res) => {
                 }
                 JournalEntryLines.push(firstAccount)
             })
-            //! correccion----end
-            //? antes
 
-            // rendiciones.map((item) => {
-            //     const newValueRend = +item.Amount / usd
-            //     let contraAccount = {
-            //         AccountCode: `${banckAccount}`,
-            //         ShortName: `${banckAccount}`,
-            //         Credit: +item.Amount,
-            //         Debit: 0,
-            //         CreditSys: parseFloat(newValueRend.toFixed(2)),
-            //         DebitSys: 0,
-            //         ContraAccount: '',
-            //         LineMemo: glosa,
-            //         // Reference1: `${cheque}`,
-            //         Reference1: `${reference}`,
-            //         Reference2: `${item.RendicionTransId}`,
-            //     }
-            //     if (voucher || voucher == '') {
-            //         contraAccount.AdditionalReference = voucher
-            //     }
-
-            //     if (cheque || cheque == '') {
-            //         contraAccount.AdditionalReference = cheque
-            //     }
-            //     JournalEntryLines.push(contraAccount)
-            // })
-
-            //! correccion----
             let contraAccount = {
                 AccountCode: `${banckAccount}`,
                 ShortName: `${banckAccount}`,
@@ -343,7 +296,6 @@ const createAsientoContableController = async (req, res) => {
                 DebitSys: 0,
                 ContraAccount: ``,
                 LineMemo: glosa,
-                // Reference1: `${cheque}`,
                 Reference1: `${reference}`,
                 Reference2: ``,
             }
@@ -356,10 +308,19 @@ const createAsientoContableController = async (req, res) => {
                 }
             }
 
-
             JournalEntryLines.push(contraAccount)
-            //! correccion----end
 
+            const sumaDebitsSys = JournalEntryLines.reduce((sum, line) => sum + line.DebitSys, 0);
+            const sumaCreditsSys = JournalEntryLines.reduce((sum, line) => sum + line.CreditSys, 0);
+            const diferenciaSys = parseFloat((sumaDebitsSys - sumaCreditsSys).toFixed(2));
+            if (Math.abs(diferenciaSys) > 0) {
+                let ultimaLinea = JournalEntryLines[JournalEntryLines.length - 1];
+                if (diferenciaSys > 0) {
+                    ultimaLinea.CreditSys += diferenciaSys;
+                } else {
+                    ultimaLinea.DebitSys += Math.abs(diferenciaSys);
+                }
+            }
             data = {
                 U_UserCode: idSap,
                 ReferenceDate: date,
@@ -371,12 +332,9 @@ const createAsientoContableController = async (req, res) => {
             }
 
             console.log('con rendicion')
-            // data = { ...data, rendiciones }
             console.log({ ...data })
 
         }
-
-        // return res.json({ data, rendiciones })
         const response = await asientoContable({
             ...data
         })
