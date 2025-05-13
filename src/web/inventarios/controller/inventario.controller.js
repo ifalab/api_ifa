@@ -2592,7 +2592,6 @@ const devolucionPorValoradoController = async (req, res) => {
     let allResponseReconciliacion = []
     let facturasCompletadas = []
     let allBodies = {}
-    const startTime = Date.now();
     try {
         const { facturas, id_sap, AlmacenIngreso, AlmacenSalida, CardCode } = req.body
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -4569,6 +4568,191 @@ const tipoClientesController = async (req, res) => {
 }
 
 
+const devoluccionInstitucionesController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    let idEntrega
+    try {
+        const { Entregas, Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
+
+        const idEntregaBody = req.body.idEntrega
+        console.log({ Entregas, Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap })
+
+        let bodyReturn
+        let responceReturn
+        let responseEntrega
+        let bodyEntrega
+        if (!idEntregaBody) { //Si no hay id de entrega, entonces se crea una nueva entrega
+            let numEnt = 0
+            let newDocumentLinesEntrega = []
+            for(const entrega of Entregas){
+                const { ItemCode, Cantidad, Precio, UnidadMedida, Total } = entrega
+                console.log({ ItemCode, Cantidad, Precio, UnidadMedida })
+
+                let batchNumbersEntrega = []
+                const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
+                console.log({ batch: batchData })
+                if (batchData.message) {
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-mal-estado", process.env.PRD)
+                    return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, idEntrega })
+                }
+                if (batchData.length > 0) {
+                    let new_quantity = 0
+                    batchData.map((item) => {
+                        new_quantity += Number(item.Quantity).toFixed(6)
+                    })
+                    //console.log({ batchData })
+                    batchNumbersEntrega = batchData.map(batch => ({
+                        BaseLineNumber: numEnt,
+                        BatchNumber: batch.BatchNum,
+                        Quantity: Number(batch.Quantity).toFixed(6),
+                        ItemCode: batch.ItemCode
+                    }))
+                } else {
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-mal-estado", process.env.PRD)
+                    return res.status(400).json({
+                        mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
+                        idEntrega
+                    })
+                }
+
+                const newLineEntrega = {
+                    ItemCode,
+                    WarehouseCode: AlmacenSalida,
+                    Quantity: Cantidad,
+                    LineNum: numEnt,
+                    TaxCode: "IVA_GND",
+                    AccountCode: "6210103",
+                    GrossTotal: Total,
+                    GrossPrice: Precio,
+                    BatchNumbers: batchNumbersEntrega
+                };
+                console.log({ newLineEntrega })
+                newDocumentLinesEntrega.push(newLineEntrega)
+            }
+
+            bodyEntrega = {
+                Series: 353, ///
+                CardCode: CardCode,
+                U_UserCode: id_sap,
+                JournalMemo: Comentario,
+                Comments: Comentario,
+                DocumentLines: newDocumentLinesEntrega,
+            }
+            console.log(JSON.stringify({ bodyEntrega }, null, 2))
+            responseEntrega = await postEntrega(bodyEntrega)
+
+            if (responseEntrega.lang) {
+                const outputDir = path.join(__dirname, 'outputs');
+                if (!fs.existsSync(outputDir)) {
+                    fs.mkdirSync(outputDir);
+                }
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+                const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
+                fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
+                console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
+                return res.status(400).json({
+                    mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
+                    idEntrega,
+                    bodyReturn,
+                    responseEntrega,
+                    bodyEntrega
+                })
+            }
+
+            idEntrega = responseEntrega.deliveryN44umber
+
+        } else {//Existe id de entrega
+            idEntrega = idEntregaBody
+        }
+
+        console.log({ idEntrega })
+
+        
+        let numRet = 0
+        let newDocumentLinesReturn = []
+        for (const devolucion of Devoluciones) {
+            const { ItemCode, Lote, Cantidad, Precio, UnidadMedida, Total } = devolucion
+            console.log({ ItemCode, Lote, Cantidad, Precio, UnidadMedida })
+            let batchNumbers = []
+            const cantidadBatch = Cantidad * UnidadMedida
+            batchNumbers.push({
+                BaseLineNumber: numRet,
+                BatchNumber: Lote,
+                Quantity: cantidadBatch,
+                ItemCode: ItemCode
+            })
+
+            const newLineReturn = {
+                // BaseEntry: 0,
+                // BaseType: 15,
+                // BaseLine: numRet,
+                ItemCode,
+                WarehouseCode: AlmacenIngreso,
+                Quantity: Cantidad,
+                LineNum: numRet,
+                TaxCode: "IVA_GND",
+                AccountCode: "6210103",
+                GrossTotal: Total,
+                GrossPrice: Precio,
+                BatchNumbers: batchNumbers
+            };
+            console.log('------newLineReturn-----')
+            console.log({ newLineReturn })
+
+            newDocumentLinesReturn.push(newLineReturn)
+
+            numRet += 1
+        }
+
+        // newDocumentLinesReturn.map((item) => {
+        //     item.BaseEntry = idEntrega
+        // })
+
+        bodyReturn = {
+            Series: 352,
+            CardCode: CardCode,
+            U_UserCode: id_sap,
+            JournalMemo: Comentario,
+            Comments: Comentario,
+            DocumentLines: newDocumentLinesReturn,
+        }
+        console.log(JSON.stringify({ bodyReturn }, null, 2))
+        responceReturn = await postReturn(bodyReturn)
+        console.log({ responceReturn })
+
+        if (responceReturn.status > 300) {
+            console.log({ errorMessage: responceReturn.errorMessage })
+            let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
+            if (typeof mensaje != 'string' && mensaje.value)
+                mensaje = mensaje.value
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-mal-estado", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn, idEntrega, bodyEntrega })
+        }
+
+        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Exito en el cambio por Mal Estado/Vencimiento`, ``, "inventario/dev-mal-estado", process.env.PRD)
+
+        return res.json({
+            idEntrega,
+            idReturn: responceReturn.orderNumber,
+            bodyEntrega,
+            bodyReturn,
+            responseEntrega,
+            responceReturn,
+        })
+    } catch (error) {
+        console.log({ error })
+        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Error en el devolucionMalEstadoController: ${error.message || ''}`, `catch del controller devolucionMalEstadoController`, "inventario/dev-mal-estado", process.env.PRD)
+        return res.status(500).json({
+            mensaje: `Error en en controlador devoluccionInstitucionesController: ${error.message}`,
+            idEntrega
+        })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -4617,4 +4801,5 @@ module.exports = {
     costoComercialItemcodeController,
     tipoSolicitudController,
     tipoClientesController,
+    devoluccionInstitucionesController
 }
