@@ -1841,17 +1841,22 @@ const getUbicacionClientesByVendedor = async (codVendedor) => {
     }
 }
 
-const getAllVendedores = async () => {
+const getVendedoresVentas = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores 
-        where "Rol" <> 'Despachador' and "SlpCode" in (SELECT ID_VENDEDOR_SAP FROM LAB_IFA_LAPP.LAPP_USUARIO)`;
+        const query = `select * 
+            from ${process.env.PRD}.ifa_dm_vendedores 
+            where "SlpName" in
+            (	select "SalesPerson" "SlpName"
+                from 
+                "LAB_IFA_DATA"."VEN_VENTAS_RESUMEN_BY_DIM"
+            )`;
         return await executeQuery(query);
     } catch (err) {
-        console.error('Error en getAllVendedores: ', err.message);
-        throw new Error(`Error en getAllVendedores: ${err.message}`);
+        console.error('Error en getVendedoresVentas: ', err.message);
+        throw new Error(`Error en getVendedoresVentas: ${err.message}`);
     }
 }
 
@@ -1953,6 +1958,6 @@ module.exports = {
     getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
-    ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getAllVendedores,
+    ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVendedoresVentas,
     ventasPorZonasVendedorMesAnt2
 }

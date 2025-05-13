@@ -68,7 +68,7 @@ const cobranzasPorZonasController = async (req = request, res = response) => {
     } catch (err) {
         console.log('error en ventasInstitucionesController')
         console.log({ err })
-        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en cobranzasPorZonasController'}` })
     }
 }
 
@@ -1494,7 +1494,7 @@ const cobranzaPorSucursalesYTiposController = async (req, res) => {
             for (const tipo of tipos) {
                 console.log({sucCode, tipo})
                 const cobranza = await cobranzaPorSucursalYTipo(sucCode, tipo)
-                // console.log({ cobranza })
+                console.log({ cobranza })
                 if (cobranza.status == 400) {
                     return res.status(400).json(`${cobranza.message || 'Error en cobranzaPorSucursalYTipo'}`)
                 }
@@ -1513,7 +1513,7 @@ const cobranzaPorSucursalesYTiposController = async (req, res) => {
             }
             listResponse.push(porTipo)
         }
-        console.log({ listResponse })
+        console.log(JSON.stringify(listResponse))
         return res.json({ listResponse, totalCobranza })
     } catch (error) {
         console.log({ error })
@@ -1825,11 +1825,14 @@ const darVariasDeBajaController = async (req, res) => {
 }
 
 const comprobanteContableController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const { id } = req.query
         const baja = await getBaja(id)
         console.log({ baja })
         if (baja.length == 0) {
+            grabarLog(user.USERCODE, user.USERNAME, `Cobranza Baja Comprobante`, `No se encontro una baja con DocEntry: ${id}`,
+                `ifa_lapp_cob_bajas_por_id`, `cobranza/comprobante-contable`, process.env.PRD)
             return res.status(400).json({ mensaje: `No se encontro una baja con DocEntry: ${id}` })
         }
         const { TransId } = baja[0]
@@ -1838,13 +1841,16 @@ const comprobanteContableController = async (req, res) => {
         const layout = await getLayoutComprobanteContable(TransId)
         // return res.json({layout})
         if (layout.length == 0) {
+            grabarLog(user.USERCODE, user.USERNAME, `Cobranza Baja Comprobante`, 
+                `No se encontro datos para TransId: ${TransId}, DocEntry: ${id} en el procedure ACB_INV_LayOutCoomprobanteContablePR`,
+                `ACB_INV_LayOutCoomprobanteContablePR`, `cobranza/comprobante-contable`, process.env.PRD)
             return res.status(400).json({ mensaje: `No se encontro datos para TransId: ${TransId}, DocEntry: ${id} en el procedure ACB_INV_LayOutCoomprobanteContablePR` })
         }
 
         let cabecera = []
         let detalle = []
         let sumDebit = 0; let sumSYSDeb = 0; let sumCredit = 0; let sumSYSCred = 0
-        // console.log(layout);
+
         layout.forEach((line) => {
             const { TransId,
                 RefDate,
@@ -1943,11 +1949,15 @@ const comprobanteContableController = async (req, res) => {
             'Content-Length': pdfBuffer.length
         });
 
-        return res.end(pdfBuffer);
+        grabarLog(user.USERCODE, user.USERNAME, `Cobranza Baja Comprobante`, `Exito en crear el comprobante contable`,
+            ``, `cobranza/comprobante-contable`, process.env.PRD)
 
+        return res.end(pdfBuffer);
     } catch (error) {
         console.log({ error })
         const mensaje = `${error.message || 'Error en el controlador comprobanteContableController'}`
+        grabarLog(user.USERCODE, user.USERNAME, `Cobranza Baja Comprobante`, `${mensaje || 'Error en comprobanteContableController'}`,
+            `catch del controlador comprobanteContableController`, `cobranza/comprobante-contable`, process.env.PRD)
         return res.status(500).json({
             mensaje
         })

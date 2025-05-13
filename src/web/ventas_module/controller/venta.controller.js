@@ -96,7 +96,7 @@ const {
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode, 
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
-    getAllVendedores, ventasPorZonasVendedorMesAnt2
+    getVendedoresVentas, ventasPorZonasVendedorMesAnt2
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2778,7 +2778,6 @@ const getVendedorByCodeController = async (req, res) => {
     try {
         const {id} = req.query
         const response =  await getVendedorByCode(id)
-        console.log(response)
         if(response.length==0)
             return res.status(400).json({mensaje: `No existe vendedor con ese codigo`})
         return res.json(response[0]);
@@ -2817,10 +2816,9 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
         let LineItemCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
-        let totalCumByLineItem = {};
         // let grandTotalQuota = 0;
         // let grandTotalSales = 0;
-        // let grandTotalCump = 0;
+        console.log('length', response.length)
         
         const results = []
         response.forEach((r, index) => {
@@ -2832,31 +2830,29 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
 
                 totalQuotaByLineItem[r.LineItemCode] += +r.Quota;
                 totalSalesByLineItem[r.LineItemCode] += +r.Sales;
-                totalCumByLineItem[r.LineItemCode] += +r.cumplimiento;
-                
-                if(response.length-1 ==index){
+                console.log('index', index)
+                if((response.length-1) ==index){
                   const res = {
                     LineItemCode: `Total ${r.LineItemCode}`,
                     Quota: +totalQuotaByLineItem[r.LineItemCode],
                     Sales: +totalSalesByLineItem[r.LineItemCode],
-                    cumplimiento: +totalCumByLineItem[r.LineItemCode],
+                    cumplimiento: (+totalSalesByLineItem[r.LineItemCode]/+totalQuotaByLineItem[r.LineItemCode])*100,
                     isSubtotal : true, 
                     hide: false
                   }
-                    results.push(res)
+                  results.push(res)
                 }
             }else{
                 LineItemCode = r.LineItemCode;
                 totalQuotaByLineItem[r.LineItemCode] = +r.Quota;
                 totalSalesByLineItem[r.LineItemCode] = +r.Sales;
-                totalCumByLineItem[r.LineItemCode] = +r.cumplimiento;
 
                 if(index>0){
                   const res = {
                     LineItemCode: `Total ${response[index-1].LineItemCode}`,
                     Quota: +totalQuotaByLineItem[response[index-1].LineItemCode],
                     Sales: +totalSalesByLineItem[response[index-1].LineItemCode],
-                    cumplimiento: +totalCumByLineItem[response[index-1].LineItemCode],
+                    cumplimiento: (+totalSalesByLineItem[response[index-1].LineItemCode]/+totalQuotaByLineItem[response[index-1].LineItemCode])*100,
                     isSubtotal : true, 
                     hide: false
                   }
@@ -2866,12 +2862,24 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
                 res1.cumplimiento = +r.cumplimiento
                 res1.hide =false
                 results.push(res1)
+
+                console.log('index', index)
+                if((response.length-1) ==index){
+                  const res = {
+                    LineItemCode: `Total ${r.LineItemCode}`,
+                    Quota: +totalQuotaByLineItem[r.LineItemCode],
+                    Sales: +totalSalesByLineItem[r.LineItemCode],
+                    cumplimiento: (+totalSalesByLineItem[r.LineItemCode]/+totalQuotaByLineItem[r.LineItemCode])*100,
+                    isSubtotal : true, 
+                    hide: false
+                  }
+                  results.push(res)
+                }
             }
             // grandTotalQuota += +r.Quota;
             // grandTotalSales += +r.Sales;
-            // grandTotalCump += +r.cumplimiento;
         }); 
-        
+        console.log({results})
         return res.json(results);
     } catch (error){
         console.error({error})
@@ -2891,14 +2899,14 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
     }
 }
 
-const getAllVendedoresController = async (req, res) => {
+const getVendedoresVentasController = async (req, res) => {
     try {
-        const response =  await getAllVendedores()
+        const response =  await getVendedoresVentas()
         console.log(response)
         return res.json(response);
     } catch (error){
         console.error({error})
-        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getAllVendedoresController'}`})
+        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getVendedoresVentasController'}`})
     }
 }
 
@@ -2990,5 +2998,5 @@ module.exports = {
     ventasPresupuestoSubLinea,
     ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController, 
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
-    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getAllVendedoresController
+    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVendedoresVentasController
 };
