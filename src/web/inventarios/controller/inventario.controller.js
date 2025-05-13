@@ -4585,14 +4585,15 @@ const devoluccionInstitucionesController = async (req, res) => {
             let numEnt = 0
             let newDocumentLinesEntrega = []
             for(const entrega of Entregas){
-                const { ItemCode, Cantidad, Precio, UnidadMedida, Total } = entrega
-                console.log({ ItemCode, Cantidad, Precio, UnidadMedida })
+                const { ItemCode, Cantidad, Precio, Total } = entrega
+                console.log({ ItemCode, Cantidad, Precio, })
 
                 let batchNumbersEntrega = []
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
                 console.log({ batch: batchData })
                 if (batchData.message) {
-                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-mal-estado", process.env.PRD)
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, 
+                        'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-instituciones", process.env.PRD)
                     return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, idEntrega })
                 }
                 if (batchData.length > 0) {
@@ -4608,7 +4609,9 @@ const devoluccionInstitucionesController = async (req, res) => {
                         ItemCode: batch.ItemCode
                     }))
                 } else {
-                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-mal-estado", process.env.PRD)
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", 
+                        `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO', 
+                        "inventario/dev-instituciones", process.env.PRD)
                     return res.status(400).json({
                         mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
                         idEntrega
@@ -4653,7 +4656,9 @@ const devoluccionInstitucionesController = async (req, res) => {
                 fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
                 console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
                 endTime = Date.now();
-                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, "inventario/dev-mal-estado", process.env.PRD)
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+                    `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, 
+                    "inventario/dev-instituciones", process.env.PRD)
                 return res.status(400).json({
                     mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
                     idEntrega,
@@ -4729,11 +4734,13 @@ const devoluccionInstitucionesController = async (req, res) => {
             let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
             if (typeof mensaje != 'string' && mensaje.value)
                 mensaje = mensaje.value
-            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-mal-estado", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+                `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-instituciones", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn, idEntrega, bodyEntrega })
         }
 
-        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Exito en el cambio por Mal Estado/Vencimiento`, ``, "inventario/dev-mal-estado", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+            `Exito en el cambio por Valorado para instituciones`, ``, "inventario/dev-instituciones", process.env.PRD)
 
         return res.json({
             idEntrega,
@@ -4745,7 +4752,7 @@ const devoluccionInstitucionesController = async (req, res) => {
         })
     } catch (error) {
         console.log({ error })
-        // grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Error en el devolucionMalEstadoController: ${error.message || ''}`, `catch del controller devolucionMalEstadoController`, "inventario/dev-mal-estado", process.env.PRD)
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Error en el devoluccionInstitucionesController: ${error.message || ''}`, `catch del controller devoluccionInstitucionesController`, "inventario/dev-instituciones", process.env.PRD)
         return res.status(500).json({
             mensaje: `Error en en controlador devoluccionInstitucionesController: ${error.message}`,
             idEntrega
