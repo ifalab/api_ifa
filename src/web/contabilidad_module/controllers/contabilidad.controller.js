@@ -233,7 +233,6 @@ const createAsientoContableController = async (req, res) => {
                 DebitSys: 0,
                 ContraAccount: '',
                 LineMemo: glosa,
-                // Reference1: `${cheque}`,
                 Reference1: ``,
                 Reference2: '',
             }
@@ -259,28 +258,10 @@ const createAsientoContableController = async (req, res) => {
             }
             console.log('sin rendicion')
             console.log({ ...data })
-            return res.json(data)
+
         } else {
             //?
             let JournalEntryLines = []
-            // let firstAccount = {
-            //     AccountCode: `${cuenta}`,
-            //     ShortName: `${codEmp}`,
-            //     Credit: 0,
-            //     Debit: monto,
-            //     CreditSys: 0,
-            //     DebitSys: parseFloat(newValue.toFixed(2)),
-            //     ContraAccount: `${banckAccount}`,
-            //     LineMemo: `${glosa}`,
-            //     Reference1: `${reference}`,
-            //     Reference2: ''
-            // }
-
-            // if (voucher || voucher == '') {
-            //     firstAccount.AdditionalReference = voucher
-            // }            
-            // JournalEntryLines.push(firstAccount)
-            //! correccion---- 
             rendiciones.map((item) => {
                 const newValueRend = +item.Amount / usd
                 let firstAccount = {
@@ -298,42 +279,14 @@ const createAsientoContableController = async (req, res) => {
 
                 if (voucher || voucher !== '') {
                     firstAccount.AdditionalReference = voucher
-                }else{
+                } else {
                     if (cheque || cheque !== '') {
                         firstAccount.AdditionalReference = cheque
                     }
                 }
                 JournalEntryLines.push(firstAccount)
             })
-            //! correccion----end
-            //? antes
 
-            // rendiciones.map((item) => {
-            //     const newValueRend = +item.Amount / usd
-            //     let contraAccount = {
-            //         AccountCode: `${banckAccount}`,
-            //         ShortName: `${banckAccount}`,
-            //         Credit: +item.Amount,
-            //         Debit: 0,
-            //         CreditSys: parseFloat(newValueRend.toFixed(2)),
-            //         DebitSys: 0,
-            //         ContraAccount: '',
-            //         LineMemo: glosa,
-            //         // Reference1: `${cheque}`,
-            //         Reference1: `${reference}`,
-            //         Reference2: `${item.RendicionTransId}`,
-            //     }
-            //     if (voucher || voucher == '') {
-            //         contraAccount.AdditionalReference = voucher
-            //     }
-
-            //     if (cheque || cheque == '') {
-            //         contraAccount.AdditionalReference = cheque
-            //     }
-            //     JournalEntryLines.push(contraAccount)
-            // })
-
-            //! correccion----
             let contraAccount = {
                 AccountCode: `${banckAccount}`,
                 ShortName: `${banckAccount}`,
@@ -343,23 +296,31 @@ const createAsientoContableController = async (req, res) => {
                 DebitSys: 0,
                 ContraAccount: ``,
                 LineMemo: glosa,
-                // Reference1: `${cheque}`,
                 Reference1: `${reference}`,
                 Reference2: ``,
             }
 
             if (voucher || voucher !== '') {
                 contraAccount.AdditionalReference = voucher
-            }else{
+            } else {
                 if (cheque || cheque !== '') {
                     contraAccount.AdditionalReference = cheque
                 }
             }
 
-            
             JournalEntryLines.push(contraAccount)
-            //! correccion----end
 
+            const sumaDebitsSys = JournalEntryLines.reduce((sum, line) => sum + line.DebitSys, 0);
+            const sumaCreditsSys = JournalEntryLines.reduce((sum, line) => sum + line.CreditSys, 0);
+            const diferenciaSys = parseFloat((sumaDebitsSys - sumaCreditsSys).toFixed(2));
+            if (Math.abs(diferenciaSys) > 0) {
+                let ultimaLinea = JournalEntryLines[JournalEntryLines.length - 1];
+                if (diferenciaSys > 0) {
+                    ultimaLinea.CreditSys += diferenciaSys;
+                } else {
+                    ultimaLinea.DebitSys += Math.abs(diferenciaSys);
+                }
+            }
             data = {
                 U_UserCode: idSap,
                 ReferenceDate: date,
@@ -371,18 +332,17 @@ const createAsientoContableController = async (req, res) => {
             }
 
             console.log('con rendicion')
-            // data = { ...data, rendiciones }
             console.log({ ...data })
 
         }
-
-        // return res.json({ data, rendiciones })
         const response = await asientoContable({
             ...data
         })
         if (response.value) {
-            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. Sap Error: ${response.value || 'No definido'}` })
+            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. Sap Error: ${response.value || 'No definido'}`, data })
         }
+        console.log('respuesta: ')
+        console.log({ response })
         return res.json({ mensaje: 'Apertura de Caja creado con exito' })
 
     } catch (error) {
@@ -435,22 +395,23 @@ const findAllAccountController = async (req, res) => {
 
 const cerrarCajaChicaController = async (req, res) => {
     try {
-        const { id, glosa } = req.body
+        const { id, glosa, montoBank, dataBankAccount } = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ id, glosa })
         const data = await dataCierreCaja(id)
+        const dataRendiciones = await rendicionesPorCaja(+id)
+        console.log({ data })
         if (data.length !== 2) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error en traer los datos necesarios para el cierre de caja`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
             return res.status(400).json({ mensaje: 'Hubo un problemas en traer los datos necesarios para el cierre de caja', data })
         }
         const dataAccount = data[0]
-        const dataBankAccount = data[1]
         const tipoCambio = await tipoDeCambio()
         const usdRate = tipoCambio[0]
         const usd = +usdRate.Rate
-        const montoBank = Number(dataBankAccount.Debit)
-        const montoAccount = Number(dataAccount.Credit)
-        if (montoBank == 0 || montoAccount == 0) {
+        const montoAccount = Number(dataAccount.FondoFijo)
+        let JournalEntryLines = []
+        if (montoAccount == 0) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Error: El montoBank no puede ser cero: ${montoBank || 'no definido'} o el montoAccount no puede ser cero: ${montoAccount || 'no definido'}`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
             return res.status(400).json({ mensaje: 'El Monto de las cuentas no puede ser cero', data })
         }
@@ -460,32 +421,69 @@ const cerrarCajaChicaController = async (req, res) => {
         }
         const newMontoBank = +montoBank / usd
         const newMontoAccount = +montoAccount / usd
-        let account = {
-            AccountCode: `${dataBankAccount.Account}`,
-            ShortName: `${dataBankAccount.ShortName}`,
-            Credit: 0,
-            Debit: parseFloat(montoBank.toFixed(2)),
-            CreditSys: 0,
-            DebitSys: parseFloat(newMontoBank.toFixed(2)),
-            ContraAccount: `${dataBankAccount.ContraAct}`,
-            LineMemo: `${glosa}`,
-            Reference1: ``,
-            Reference2: ''
+
+        if (dataRendiciones.length > 0) {
+            dataRendiciones.map((item) => {
+                console.log({ item })
+                const monto = +item.Amount
+                const newMontoRendcion = +item.Amount / usd
+                console.log({ newMontoRendcion })
+                let accountPaid = {
+                    AccountCode: `2110401`,
+                    ShortName: `${dataAccount.AsociateCardCode}`,
+                    Credit: 0,
+                    Debit: parseFloat(monto.toFixed(2)),
+                    CreditSys: 0,
+                    DebitSys: parseFloat(newMontoRendcion.toFixed(2)),
+                    ContraAccount: `${dataAccount.AsociateCardCode}`,
+                    LineMemo: `${glosa}`,
+                    Reference1: ``,
+                    Reference2: ''
+                }
+
+                JournalEntryLines.push(accountPaid)
+            })
         }
+
+        if (montoBank > 0) {
+            // if (parseFloat(montoAccount.toFixed(2)) !== parseFloat(montoBank.toFixed(2))) {
+            //     grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `El monto de la Cuenta (${parseFloat(montoAccount.toFixed(2))}) no puede ser diferente que el Monto del Banco (${parseFloat(montoBank.toFixed(2))})`, ``, "contabilidad/cierre-caja-chica", process.env.PRD)
+            //     return res.status(400).json({
+            //         mensaje: `El monto de la Cuenta (${parseFloat(montoAccount.toFixed(2))}) no puede ser diferente que el Monto del Banco (${parseFloat(montoBank.toFixed(2))})`,
+            //         montoBanco: parseFloat(montoBank.toFixed(2)),
+            //         montoCuenta: parseFloat(montoAccount.toFixed(2))
+            //     })
+            // }
+
+            let account = {
+                AccountCode: `${dataBankAccount}`,
+                ShortName: `${dataBankAccount}`,
+                Credit: 0,
+                Debit: parseFloat(montoBank.toFixed(2)),
+                CreditSys: 0,
+                DebitSys: parseFloat(newMontoBank.toFixed(2)),
+                ContraAccount: `${dataAccount.AsociateCardCode}`,
+                LineMemo: `${glosa}`,
+                Reference1: ``,
+                Reference2: ''
+            }
+            JournalEntryLines.push(account)
+        }
+
         let contraAccount = {
-            AccountCode: `${dataAccount.Account}`,
-            ShortName: `${dataAccount.ShortName}`,
+            AccountCode: `${dataAccount.AcctCode}`,
+            ShortName: `${dataAccount.AsociateCardCode}`,
             Credit: parseFloat(montoAccount.toFixed(2)),
             Debit: 0,
             CreditSys: parseFloat(newMontoAccount.toFixed(2)),
             DebitSys: 0,
-            ContraAccount: `${dataAccount.ContraAct}`,
+            ContraAccount: ``,
             LineMemo: `${glosa}`,
             Reference1: ``,
             Reference2: '',
         }
-        let JournalEntryLines = []
-        JournalEntryLines.push(account)
+
+
         JournalEntryLines.push(contraAccount)
         const postJournalEntry = {
             ReferenceDate: '',
@@ -494,6 +492,29 @@ const cerrarCajaChicaController = async (req, res) => {
             Reference: `${id}`,
             JournalEntryLines
         }
+        const totalDebe = JournalEntryLines.reduce((acc, item) => {
+            const debe = Number(item.Debit)
+            return acc + debe
+        }, 0)
+
+        const totalHaber = JournalEntryLines.reduce((acc, item) => {
+            const haber = Number(item.Credit)
+            return acc + haber
+        }, 0)
+        if (totalDebe !== totalHaber) {
+            const diferencia = totalHaber - totalDebe
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `El Total Debe (${totalDebe}) no puede ser diferente que al total haber (${totalHaber}), hay una diferencia de ${diferencia}`, ``, "contabilidad/cierre-caja-chica", process.env.PRD)
+            return res.status(400).json({
+                mensaje: `El Total Debe (${totalDebe}) no puede ser diferente que al total haber (${totalHaber}), hay una diferencia de ${diferencia}`,
+                postJournalEntry,
+                dataAccount,
+                dataBankAccount,
+                dataRendiciones,
+                totalDebe,
+                totalHaber,
+            })
+        }
+        // return res.json({ postJournalEntry, dataAccount, dataBankAccount, dataRendiciones, totalDebe, totalHaber })
 
         const response = await asientoContable({
             ...postJournalEntry
@@ -567,6 +588,7 @@ const createAsientoContableCCController = async (req, res) => {
             Reference1,
             Reference2,
             Reference3,
+            Indicator,
             TransType,
             details
         } = req.body
@@ -618,6 +640,7 @@ const createAsientoContableCCController = async (req, res) => {
             referencia3: Reference3,
             transType: Number(TransType),
             fechaDueDate: formattedDueDate,
+            indicator: Indicator,
             userSign: Number(user.ID),
             details
         })

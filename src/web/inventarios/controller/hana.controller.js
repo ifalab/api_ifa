@@ -331,7 +331,7 @@ const getAllAlmacenes = async () => {
             await connectHANA();
         }
         const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -340,7 +340,7 @@ const getAllAlmacenes = async () => {
     }
 }
 
-const searchArticulos= async (itemName) => {
+const searchArticulos = async (itemName) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -353,8 +353,8 @@ const searchArticulos= async (itemName) => {
         return result
     } catch (error) {
         console.error('Error en searchArticulos:', error.message);
-        throw { 
-            message: `Error al procesar searchArticulos: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar searchArticulos: ${error.message || ''}`
         }
     }
 }
@@ -365,7 +365,7 @@ const stockDisponiblePorSucursal = async (sucursal) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.ifa_lapp_inv_stock_disponible_sucursal(${sucursal})`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -382,7 +382,7 @@ const clientesBySucCode = async () => {
         const query = `SELECT 
         *
         FROM ${process.env.PRD}.IFA_DM_CLIENTES `
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -398,7 +398,7 @@ const getClienteByCardCode = async (cardCode) => {
         const query = `SELECT 
         *
         FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -461,7 +461,7 @@ const getAlmacenesSucursal = async () => {
             await connectHANA();
         }
         const query = `select "WhsCode", "WhsName", "SucCode" from ${process.env.PRD}.IFA_DM_ALMACENES`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -473,7 +473,7 @@ const getAlmacenesSucursal = async () => {
 const getStockdeItemAlmacen = async (itemCode, whsCode) => {
     try {
         if (!connection) {
-            await connectHANA();    
+            await connectHANA();
         }
         const query = `select * from ${process.env.PRD}.IFA_INV_INVENTARIO_STOCK where "ItemCode" = '${itemCode}' and "WhsCode"='${whsCode}'`;
         console.log({ query })
@@ -485,7 +485,7 @@ const getStockdeItemAlmacen = async (itemCode, whsCode) => {
     }
 }
 
-const getLineaArticulo= async (itemCode) => {
+const getLineaArticulo = async (itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -496,8 +496,8 @@ const getLineaArticulo= async (itemCode) => {
         return result
     } catch (error) {
         console.error('Error en getLineaArticulo:', error.message);
-        throw { 
-            message: `Error al procesar getLineaArticulo: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar getLineaArticulo: ${error.message || ''}`
         }
     }
 }
@@ -529,7 +529,7 @@ const getLineaArticulo= async (itemCode) => {
 //     }
 // }
 
-const articuloDiccionario= async () => {
+const articuloDiccionario = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -540,13 +540,13 @@ const articuloDiccionario= async () => {
         return result
     } catch (error) {
         console.error('Error en articuloDiccionario:', error.message);
-        throw { 
-            message: `Error al procesar articuloDiccionario: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar articuloDiccionario: ${error.message || ''}`
         }
     }
 }
 
-const relacionArticulo = async(itemCode) =>{
+const relacionArticulo = async (itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -557,13 +557,13 @@ const relacionArticulo = async(itemCode) =>{
         return result
     } catch (error) {
         console.error('Error en relacionArticulo:', error.message);
-        throw { 
-            message: `Error al procesar relacionArticulo: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar relacionArticulo: ${error.message || ''}`
         }
     }
 }
 
-const articulos = async() =>{
+const articulos = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -574,36 +574,87 @@ const articulos = async() =>{
         return result
     } catch (error) {
         console.error('Error en articulos:', error.message);
-        throw { 
-            message: `Error al procesar articulos: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar articulos: ${error.message || ''}`
         }
     }
 }
 
 const saveDiccionario = async (relaciones) => {
     try {
-      if (!connection) {
-        await connectHANA();
-      }
-  
-      for (const relacion of relaciones) {
-        const query = `
+        if (!connection) {
+            await connectHANA();
+        }
+
+        for (const relacion of relaciones) {
+            const query = `
           CALL "LAB_IFA_LAPP"."LAPP_SAVE_DICCIONARIO"('${relacion.desdeCode}', '${relacion.haciaCode}')
         `;
-        console.log(`Ejecutando: ${query}`);
-        await executeQuery(query);
-      }
-  
-      return { mensaje: `${relaciones.length} relaciones guardadas correctamente.` };
-  
+            console.log(`Ejecutando: ${query}`);
+            await executeQuery(query);
+        }
+
+        return { mensaje: `${relaciones.length} relaciones guardadas correctamente.` };
+
     } catch (error) {
-      console.error('Error en saveDiccionario:', error.message);
-      throw {
-        message: `Error al procesar el diccionario: ${error.message || ''}`
-      };
+        console.error('Error en saveDiccionario:', error.message);
+        throw {
+            message: `Error al procesar el diccionario: ${error.message || ''}`
+        };
     }
-  };
-  
+}
+
+const tipoSolicitud = async() =>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "FldValue", "Descr" from ${process.env.PRD}.ufd1 where "TableID" = 'OWTR' and "FieldID" = 115`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en tipoSolicitud:', error.message);
+        throw { 
+            message: `Error al procesar tipoSolicitud: ${error.message || ''}` 
+        }
+    }
+}
+
+const costoComercialByItemCode = async(itemCode) =>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "U_COSTO_COML" from ${process.env.PRD}.oitm where "ItemCode" = '${itemCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en costoComercialByItemCode:', error.message);
+        throw { 
+            message: `Error al procesar costoComercialByItemCode: ${error.message || ''}` 
+        }
+    }
+}
+
+const tipoCliente = async() =>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "GroupCode","GroupName" from ${process.env.PRD}.ifa_dm_tipos`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en tipoCliente:', error.message);
+        throw { 
+            message: `Error al procesar tipoCliente: ${error.message || ''}` 
+        }
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -637,5 +688,8 @@ module.exports = {
     relacionArticulo,
     articuloDiccionario,
     articulos,
-    saveDiccionario
+    saveDiccionario,
+    tipoSolicitud,
+    costoComercialByItemCode,
+    tipoCliente,
 }
