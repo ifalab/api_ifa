@@ -1,6 +1,7 @@
 const { 
     getLotes, cambiarEstadoLote, searchLotes,
 } = require("./hana.controller")
+const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const getLotesController = async (req, res) => {
     try {
@@ -74,12 +75,18 @@ const searchLotesController = async (req, res) => {
 }
 
 const cambiarEstadoLoteController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const { lote, estado, usuario, comentario } = req.body
         let response = await cambiarEstadoLote(lote, estado, usuario, comentario)
+        grabarLog(user.USERCODE, user.USERNAME, 'Produccion Cambiar Estado Lote', `Exito al cambiar de estado el lote`, 
+            `IFA_INV_ARTICULO_CAMBIAR_ESTADO_LOTE`, 'produccion/cambiar-estado-lote', process.env.PRD
+        )
         return res.json(response)
     } catch (error) {
         console.log({ error })
+         grabarLog(user.USERCODE, user.USERNAME, 'Produccion Cambiar Estado Lote', `${error.message || 'Error en el controlador cambiarEstadoLoteController'}`, 
+            `IFA_INV_ARTICULO_CAMBIAR_ESTADO_LOTE`, 'produccion/cambiar-estado-lote', process.env.PRD)
         return res.status(500).json({ mensaje: `Error en el controlador cambiarEstadoLoteController: ${error.message}` })
     }
 }

@@ -245,23 +245,15 @@ const sugeridosXClienteController = async (req, res, next) => {
 
         const sugeridos = await pedidoSugeridoXCliente(cardCode)
         // console.log({ sugeridos })
-        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({ user })
-        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", `${sugeridos.query || ''}`, "pedido/sugerido-cliente", process.env.PRD)
-
         return res.json({ sugeridos: sugeridos.sugeridos })
     } catch (error) {
         console.log({ error })
 
-        const query = error.query || 'No disponible'
-        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
         let mensaje = 'Error en el controlador: sugeridosXClienteController'
         if (error.message) {
             mensaje = error.message
         }
-        // Registrar el error en los logs
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedidos sugeridos", mensaje, query, "pedido/sugerido-cliente", process.env.PRD)
 
         return res.status(500).json({ mensaje })
     }

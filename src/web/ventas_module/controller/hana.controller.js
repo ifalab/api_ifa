@@ -1801,18 +1801,32 @@ const getDescuentosDeVendedoresParaPedido = async (cliente, vendedor,fecha) => {
     }
 }
 
-const ventasPorZonasVendedor2 = async (username) => {
+const ventasPorZonasVendedor2 = async (userCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA2('${username}');`;
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA2('${userCode}');`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en ventas por zona: ', err.message);
         throw new Error(`Error al procesar la solicitud ventasPorZonasVendedor2: ${err.message}`);
     }
 }
+
+const ventasPorZonasVendedorMesAnt2 = async (userCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA_ANT2(${userCode});`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en ventas por zona: ', err.message);
+        throw new Error(`Error al procesar la solicitud ventasPorZonasVendedorMesAnt2: ${err.message}`);
+    }
+}
+
 
 const getUbicacionClientesByVendedor = async (codVendedor) => {
     try {
@@ -1939,5 +1953,6 @@ module.exports = {
     getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
-    ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getAllVendedores
+    ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getAllVendedores,
+    ventasPorZonasVendedorMesAnt2
 }
