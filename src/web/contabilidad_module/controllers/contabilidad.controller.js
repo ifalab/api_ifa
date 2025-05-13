@@ -314,12 +314,12 @@ const createAsientoContableController = async (req, res) => {
             const sumaCreditsSys = JournalEntryLines.reduce((sum, line) => sum + line.CreditSys, 0);
             const diferenciaSys = parseFloat((sumaDebitsSys - sumaCreditsSys).toFixed(2));
             if (Math.abs(diferenciaSys) > 0) {
-                let ultimaLinea = JournalEntryLines[JournalEntryLines.length - 1];
-                if (diferenciaSys > 0) {
-                    ultimaLinea.CreditSys += diferenciaSys;
-                } else {
-                    ultimaLinea.DebitSys += Math.abs(diferenciaSys);
-                }
+                let ultimaLinea = JournalEntryLines[JournalEntryLines.length - 2];
+                // if (diferenciaSys > 0) {
+                // ultimaLinea.CreditSys += diferenciaSys;
+                // } else {
+                ultimaLinea.DebitSys += Math.abs(diferenciaSys);
+                // }
             }
             data = {
                 U_UserCode: idSap,
@@ -395,7 +395,7 @@ const findAllAccountController = async (req, res) => {
 
 const cerrarCajaChicaController = async (req, res) => {
     try {
-        const { id, glosa, montoBank, dataBankAccount } = req.body
+        const { id, glosa, montoBank, dataBankAccount,nroDeposito } = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ id, glosa })
         const data = await dataCierreCaja(id)
@@ -490,6 +490,7 @@ const cerrarCajaChicaController = async (req, res) => {
             Memo: glosa,
             Indicator: '11',
             Reference: `${id}`,
+            Reference3: `${nroDeposito}`,
             JournalEntryLines
         }
         const totalDebe = JournalEntryLines.reduce((acc, item) => {
@@ -515,7 +516,8 @@ const cerrarCajaChicaController = async (req, res) => {
             })
         }
         // return res.json({ postJournalEntry, dataAccount, dataBankAccount, dataRendiciones, totalDebe, totalHaber })
-
+        console.log('data asiento cierre:')
+        console.log({postJournalEntry})
         const response = await asientoContable({
             ...postJournalEntry
         })
