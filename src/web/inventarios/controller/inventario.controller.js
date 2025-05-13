@@ -18,7 +18,10 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     articuloDiccionario,
     relacionArticulo,
     articulos,
-    saveDiccionario } = require("./hana.controller")
+    saveDiccionario, 
+    tipoSolicitud,
+    costoComercialByItemCode,
+    tipoCliente} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -3226,8 +3229,8 @@ const imprimibleDevolucionController = async (req, res) => {
         console.log({ layout })
 
         if (layout.length == 0) {
-            grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion", 
-                `Error de SAP, no hay devolucion con el id: ${id}`, 'IFA_LAPP_VEN_DEVOLUCION_LAYOUT', 
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion",
+                `Error de SAP, no hay devolucion con el id: ${id}`, 'IFA_LAPP_VEN_DEVOLUCION_LAYOUT',
                 "inventario/imprimible-devolucion", process.env.PRD)
             return res.status(400).json({ mensaje: `Error de SAP, no hay devolucion con el id: ${id}` });
         }
@@ -3327,17 +3330,17 @@ const imprimibleDevolucionController = async (req, res) => {
             'Content-Length': pdfBuffer.length
         });
 
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion", 
-            `Exito en el imprimible Devolucion`, 'IFA_LAPP_VEN_DEVOLUCION_LAYOUT', 
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion",
+            `Exito en el imprimible Devolucion`, 'IFA_LAPP_VEN_DEVOLUCION_LAYOUT',
             "inventario/imprimible-devolucion", process.env.PRD)
 
         return res.end(pdfBuffer);
     } catch (error) {
         console.log({ error })
-        const user = req.usuarioAutorizado|| { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
 
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion", 
-            `${error.message || 'Error en el controlador imprimibleDevolucionController'}`, 'catch del controlador', 
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Devolucion",
+            `${error.message || 'Error en el controlador imprimibleDevolucionController'}`, 'catch del controlador',
             "inventario/imprimible-devolucion", process.env.PRD)
         return res.status(500).json({ mensaje: `error en el controlador imprimibleDevolucionController. ${error.message || ''}` })
     }
@@ -3347,14 +3350,14 @@ const imprimibleSalidaController = async (req, res) => {
     try {
         const { id } = req.body
 
-        const user = req.usuarioAutorizado|| { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const response = await notaEntrega(id)
         const layout = response.result
         console.log({ layout })
         // return res.json({layout})
         if (layout.length == 0) {
-            grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida", 
-                `Error de SAP, no hay entrega con el id: ${id}`, 'IFA_LAPP_VEN_ENTREGA_LAYOUT', 
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida",
+                `Error de SAP, no hay entrega con el id: ${id}`, 'IFA_LAPP_VEN_ENTREGA_LAYOUT',
                 "inventario/imprimible-salida", process.env.PRD);
             return res.status(400).json({ mensaje: `Error de SAP, no hay entrega con el id: ${id}` });
         }
@@ -3456,15 +3459,15 @@ const imprimibleSalidaController = async (req, res) => {
             'Content-Length': pdfBuffer.length
         });
 
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida", 
-            `Exito en el imprimible salida`, 'IFA_LAPP_VEN_ENTREGA_LAYOUT', 
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida",
+            `Exito en el imprimible salida`, 'IFA_LAPP_VEN_ENTREGA_LAYOUT',
             "inventario/imprimible-salida", process.env.PRD);
         return res.end(pdfBuffer);
     } catch (error) {
         console.log({ error })
-        const user = req.usuarioAutorizado|| { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida", 
-            `${error.message || 'Error en el controller imprimibleSalidaController'}`, 'catch del controller', 
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida",
+            `${error.message || 'Error en el controller imprimibleSalidaController'}`, 'catch del controller',
             "inventario/imprimible-salida", process.env.PRD);
 
         return res.status(500).json({ mensaje: `error en el controlador imprimibleSalidaController. ${error.message || ''}` })
@@ -4507,8 +4510,8 @@ const saveArticuloDiccionario = async (req, res) => {
 
 const solicitudTrasladoController = async (req, res) => {
     try {
-        const { U_UserCode,Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines } = req.body
-        const sapResponse = await postInventoryTransferRequests({U_UserCode, Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines })
+        const { U_UserCode, Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines } = req.body
+        const sapResponse = await postInventoryTransferRequests({ U_UserCode, Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines })
         const { status, errorMessage } = sapResponse
         if (status && status == 400) {
             const { value } = errorMessage
@@ -4518,7 +4521,7 @@ const solicitudTrasladoController = async (req, res) => {
             } else {
                 mensaje += value || 'No definido';
             }
-            
+
             return res.status(400).json({ mensaje })
         }
         return res.json({ sapResponse })
@@ -4527,6 +4530,44 @@ const solicitudTrasladoController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en saveArticuloDiccionario : ${error.message || 'No definido'}` })
     }
 }
+
+const tipoSolicitudController = async (req, res) => {
+    try {
+
+        const response = await tipoSolicitud()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en tipoSolicitudController : ${error.message || 'No definido'}` })
+    }
+}
+
+const costoComercialItemcodeController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const response = await costoComercialByItemCode(itemCode)
+        if(response.length == 0){
+            return res.status(400).json({ mensaje: `Error no se encontro el costo comercial del item  : ${itemCode}` })
+        }
+        const costoComercial = Number(response[0].U_COSTO_COML)
+        console.log({costoComercial,itemCode})
+        return res.json({costoComercial})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en tipoSolicitudController : ${error.message || 'No definido'}` })
+    }
+}
+
+const tipoClientesController = async (req, res) => {
+    try {
+        const response = await tipoCliente()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en tipoClientesController : ${error.message || 'No definido'}` })
+    }
+}
+
 
 module.exports = {
     clientePorDimensionUnoController,
@@ -4573,4 +4614,7 @@ module.exports = {
     articulosController,
     saveArticuloDiccionario,
     solicitudTrasladoController,
+    costoComercialItemcodeController,
+    tipoSolicitudController,
+    tipoClientesController,
 }

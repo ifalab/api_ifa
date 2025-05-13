@@ -221,10 +221,15 @@ const cambiarEstadoVisitasController = async (req, res) => {
         const {id_detalle, id_plan, cliente, fechaIni, fechaFin, status, usuario} = req.body
         let response = await cambiarEstadoVisitas(id_detalle??-1, id_plan??-1,
             cliente??'', fechaIni??'', fechaFin??'', status, usuario )
-
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Aprobacion", 'Exito al cambiar estado de la visita', 
+            `IFA_CRM_CHANGE_STATUS_VISITAS`, "planificacion/estado-visita", process.env.PRD)
+        
         return res.json({response})
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Aprobacion", `${error.message || 'Error en el controlador cambiarEstadoVisitasController'}`, 
+            `IFA_CRM_CHANGE_STATUS_VISITAS`, "planificacion/estado-visita", process.env.PRD)
+        
         return res.status(500).json({ 
             mensaje: `Error en el controlador cambiarEstadoVisitasController: ${error.message}` 
         })
@@ -232,13 +237,20 @@ const cambiarEstadoVisitasController = async (req, res) => {
 }
 
 const eliminarDetalleVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {id } = req.query
         let response = await eliminarDetalleVisita(id)
 
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Eliminar Visita", 'Exito al eliminar la visita', 
+            `delete from ifa_crm_visit_plan_detail "PlanDetailID"=${id}`, "planificacion/eliminar-visita", process.env.PRD)
+        
         return res.json({response})
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Eliminar Visita", `${error.message || 'Error en el controlador eliminarDetalleVisitaController'}`, 
+            `delete from ifa_crm_visit_plan_detail "PlanDetailID"=${id}`, "planificacion/eliminar-visita", process.env.PRD)
+        
         return res.status(500).json({ 
             mensaje: `Error en el controlador eliminarDetalleVisitaController: ${error.message}` 
         })
@@ -267,6 +279,7 @@ const getVisitasParaHoyController = async (req, res) => {
 }
 
 const marcarVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {SlpCode, SlpName, ClientCode, ClientName, IdPlan, IdPlanDetail, VisitDate,
             VisitStatus, Comments, Longitude, Latitude, ReasonNotVisit, usuario} = req.body
@@ -284,9 +297,16 @@ const marcarVisitaController = async (req, res) => {
         if(response.length > 0){
             response = response[0]
         }
+
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Marcar Visita", `Exito al marcar la visita`, 
+            `IFA_CRM_AGREGAR_VISIT_HEADER`, "planificacion/marcar-visita", process.env.PRD)
+        
         return res.json(response)
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Marcar Visita", `${error.message || 'Error en el controlador marcarVisitaController'}`, 
+            `IFA_CRM_AGREGAR_VISIT_HEADER`, "planificacion/marcar-visita", process.env.PRD)
+        
         return res.status(500).json({
             mensaje: `Error en el controlador marcarVisitaController: ${error.message}`
         })
@@ -355,6 +375,7 @@ const aniadirDetalleVisitaController = async (req, res) => {
 }
 
 const actualizarVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {VisitID, comentario} = req.body
         let response = await actualizarVisita(VisitID, comentario)
@@ -362,9 +383,16 @@ const actualizarVisitaController = async (req, res) => {
         if(response.length > 0){
             response = response[0]
         }
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Editar Visita", `Exito al actualizar comentario visita`, 
+            `UPDATE IFA_CRM_VISIT_HEADER`, "planificacion/actualizar-visita-creada", process.env.PRD)
+        
         return res.json(response)
     } catch (error) {
         console.log({ error })
+        
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Editar Visita", `${error.message || 'Error en el controlador actualizarVisitaController'}`, 
+            `UPDATE IFA_CRM_VISIT_HEADER`, "planificacion/actualizar-visita-creada", process.env.PRD)
+        
         return res.status(500).json({
             mensaje: `Error en el controlador actualizarVisitaController: ${error.message}`
         })
