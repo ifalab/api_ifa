@@ -567,6 +567,7 @@ const createAsientoContableCCController = async (req, res) => {
             Reference1,
             Reference2,
             Reference3,
+            Indicator,
             TransType,
             details
         } = req.body
@@ -618,6 +619,7 @@ const createAsientoContableCCController = async (req, res) => {
             referencia3: Reference3,
             transType: Number(TransType),
             fechaDueDate: formattedDueDate,
+            indicator: Indicator,
             userSign: Number(user.ID),
             details
         })
