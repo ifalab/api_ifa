@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -266,7 +266,7 @@ const getLibroMayor = async (req, res) => {
         return res.status(200).json(data);
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en getLibroMayor' })
+        return res.status(500).json({ mensaje: `error en getLibroMayor ${error}` })
     }
 }
 
@@ -399,7 +399,7 @@ const excelLibroMayor = async (req, res) => {
       res.end();
     } catch (error) {
       console.error({ error });
-      return res.status(500).json({ mensaje: 'Error generando el Excel del libro mayor' });
+      return res.status(500).json({ mensaje: `Error generando el Excel del libro mayor ${error}` });
     }
 };
 
@@ -409,7 +409,21 @@ const docFuentes = async (req, res) => {
         return res.status(200).json(data);
     } catch (error) {
         console.error({ error });
-        return res.status(500).json({ mensaje: 'Error obtiendo los documentos fuentes.' });
+        return res.status(500).json({ mensaje: `Error obtiendo los documentos fuentes. ${error}` });
+    }
+}
+
+const saveDocFuentes = async (req, res) => {
+    try {
+        const user = req.usuarioAutorizado
+        const idSap = user.ID || 0
+
+        const {codigo, descripcion, etiqueta} = req.body;
+        const data = await postDocFuente(codigo, descripcion, idSap,etiqueta);
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: `Error obtiendo los documentos fuentes. ${error}` });
     }
 }
 
@@ -425,7 +439,7 @@ const cargarPlantillaDimensiones = async (req, res) => {
         return res.status(200).json(response)
     } catch (error) {
         console.error({ error });
-        return res.status(500).json({ mensaje: 'Error obtiendo la plantilla para estas dimensiones.' });
+        return res.status(500).json({ mensaje: `Error obtiendo la plantilla para estas dimensiones.${error}` });
     }
 } 
 
@@ -441,6 +455,17 @@ const recuperarPlantillaDimensiones = async (req, res) => {
         return res.status(500).json({ mensaje: `Error obtiendo la plantilla para este asiento. ${error}` });
     }
 }
+
+const clasificacionGastos = async(req, res) => {
+    try {
+        const result = await getClasificacionGastos();
+
+        return res.status(200).json(result)
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: `Error obtiendo la clasificacion de gastos. ${error}` });
+    }
+}
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -450,5 +475,7 @@ module.exports = {
     excelLibroMayor,
     docFuentes,
     cargarPlantillaDimensiones,
-    recuperarPlantillaDimensiones
+    recuperarPlantillaDimensiones,
+    clasificacionGastos,
+    saveDocFuentes
 }

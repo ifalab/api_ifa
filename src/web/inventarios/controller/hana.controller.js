@@ -442,7 +442,9 @@ const findCliente = async (buscar, sucCode) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'`;
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes 
+        where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'
+        limit 50`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
