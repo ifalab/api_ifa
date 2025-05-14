@@ -134,6 +134,47 @@ const getCicloVendedor = async (idVendedor, mes, año) => {
         }
     }
 }
+const getPlanVendedor = async (idVendedor, mes, año) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+                select 
+                a."PlanID", a."Title",
+                b."PlanDetailID",
+                b."ClientCode",
+                b."ClientName",
+                b."PlanVisitDate",
+                b."PlanVisitTimeFrom",
+                b."PlanVisitTimeTo",
+                b."Comments",
+                b."CreatedBy",b."CreateDate", b."CreateTime",
+                b."STATUS",
+                (
+                    case when c."PLANDETAILID" is null 
+                        then false 
+                        else true 
+                    end
+                ) as "VISITADO"
+                from ${process.env.PRD}.IFA_CRM_VISIT_PLAN_HEADER a
+                join ${process.env.PRD}.ifa_crm_visit_plan_detail b on b."PlanID" = a."PlanID"
+                left join (
+                    select "PLANDETAILID" from ${process.env.PRD}.IFA_CRM_VISIT_HEADER
+                ) c on c."PLANDETAILID" = b."PlanDetailID"
+                where a."SlpCode"=${idVendedor}
+                and EXTRACT(MONTH FROM a."ValidFrom") =${mes}
+  	            AND EXTRACT(YEAR FROM a."ValidFrom") =${año}
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getPlanVendedor: ${error.message || ''}`
+        }
+    }
+}
 
 const getDetalleCicloVendedor = async (planId) => {
     try {
@@ -493,11 +534,29 @@ const getUltimaVisita= async (idVendedor) => {
     }
 }
 
+const parapruebas = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            delete from ${process.env.PRD}.ifa_crm_visit_plan_header where "PlanID"=${id}
+        `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en parapruebas: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita,
     getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode, actualizarVisita,
-    getUltimaVisita
+    getUltimaVisita, parapruebas, getPlanVendedor
 }

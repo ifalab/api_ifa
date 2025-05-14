@@ -3,7 +3,7 @@ const {
     getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita, getDetalleVisitasCreadas,
-    getCabeceraVisitaCreada, getClienteByCode, actualizarVisita, getUltimaVisita
+    getCabeceraVisitaCreada, getClienteByCode, actualizarVisita, getUltimaVisita, parapruebas, getPlanVendedor
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
@@ -60,6 +60,29 @@ const getClienteByCodeController = async (req, res) => {
     }
 }
 
+const getPlanVendedorController = async (req, res) => {
+    try {
+        const { idVendedor, mes, año } = req.body
+        let response = await getPlanVendedor(idVendedor, mes, año)
+        let cabecera= null
+        let detalle = []
+        response.forEach( (res)=>{
+            let {PlanID, Title,PlanVisitDate, PlanVisitTimeFrom, PlanVisitTimeTo, ...rest} = res
+            if(!cabecera){
+                cabecera= {PlanID, Title}
+            }
+            const PlanVisitDateNew = new Date(PlanVisitDate)
+            PlanVisitTimeFrom = String(PlanVisitTimeFrom).length<4? `0${PlanVisitTimeFrom}`:PlanVisitTimeFrom
+            PlanVisitTimeTo = String(PlanVisitTimeTo).length<4? `0${PlanVisitTimeTo}`:PlanVisitTimeTo
+            detalle.push({PlanVisitDateNew, PlanVisitDate, PlanVisitTimeFrom,PlanVisitTimeTo, ...rest})
+        })
+        return res.json({cabecera, detalle})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getPlanVendedorController: ${error.message}` })
+    }
+}
+
 const getCicloVendedorController = async (req, res) => {
     try {
         const { idVendedor, mes, año } = req.body
@@ -90,7 +113,7 @@ const getDetalleCicloVendedorController = async (req, res) => {
     }
 }
 
-const insertarVisitaController = async (req, res) => {
+const insertarPlanController = async (req, res) => {
     try {
         const { descripcion, cod_vendedor, nom_vendedor, usuario, fechaIni, fechaFin, details } = req.body
         let allResponses = []
@@ -98,18 +121,18 @@ const insertarVisitaController = async (req, res) => {
         console.log({ responseCabecera })
         allResponses.push(responseCabecera)
         // return res.json({responseCabecera})
-        const cabecera_id = responseCabecera.id
+        const cabecera_id = responseCabecera[0].PlanId
         for(const detail of details){
             const { cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, comentario } = detail
             let responseDetalle = await insertarDetalleVisita(cabecera_id, cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario)
-            console.log({ responseDetalle })
-            allResponses.push(responseDetalle)  
+            console.log({ responseDetalle }) 
+            allResponses.push(responseDetalle) 
         }
         
-        return res.json({allResponses})
+        return res.json({allResponses, cabecera_id})
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador insertarVisitaController: ${error.message}` })
+        return res.status(500).json({ mensaje: `Error en el controlador insertarPlanController: ${error.message}` })
     }
 }
 
@@ -420,10 +443,10 @@ const getUltimaVisitaController = async (req, res) => {
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
-    insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
+    insertarPlanController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
     actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController,
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController, getClienteByCodeController,
-    actualizarVisitaController, getUltimaVisitaController
+    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController
 }
