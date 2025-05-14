@@ -561,7 +561,7 @@ const facturacionController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `error no hay datos en CORREO. codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
             }
-            
+
             dataToProsin.usuario = user.USERNAME || 'No definido'
             const responseProsin = await facturacionProsin(dataToProsin, user)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
@@ -905,7 +905,21 @@ const noteEntregaController = async (req, res) => {
         await page.setContent(htmlContent, { waitUntil: 'load' });
         const pdfBuffer = await page.pdf({
             format: 'A4',
-            printBackground: true
+            printBackground: true,
+            displayHeaderFooter: true,
+            margin: { bottom: '50px', top: '10px' },
+            // headerTemplate:`
+            //     <div style="padding:1 0;">
+
+            //     </div>`,
+            footerTemplate: `
+                <div style="width: 100%; margin-left: 60px; margin-right: 20px; font-size: 10px; color: #555;">
+                    <div style="display: flex;align-items: center;">
+                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: black;">
+                            <p>Estimado Clientes: Firma en conformidad al recibir el pedido. En provincia, reclamos dentro de las 24 horas. </p>
+                        </div>
+                    </div>
+                </div>`,
         });
 
         await browser.close();
@@ -1291,7 +1305,7 @@ const pedidosFacturadosController = async (req, res) => {
         let { SucCodes, fecha } = req.body
         if (SucCodes.length == 0) return res.status(400).json({ mensaje: 'el SucCodes es obligatorio y debe tener un item o mas' })
         let facturados = []
-        if(!fecha)fecha=''
+        if (!fecha) fecha = ''
         console.log({ SucCodes })
         for (const ItemCode of SucCodes) {
             const facturas = await pedidosFacturados(ItemCode, fecha)
