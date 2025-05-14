@@ -112,6 +112,22 @@ const getDocFuentes = async(id) => {
     }
 }
 
+const postDocFuente = async(codigo, descripcion, id, etiqueta) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('postDocFuente EXECUTE')
+        const query = `CALL "LAB_IFA_COM"."IFA_CC_INSERT_DOCUMENTO_FUENTE"('${codigo}', '${descripcion}', ${id}, '${etiqueta}') `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en postDocFuente, ${error}`)
+    }
+}
+
 const getPlantillas = async(id) => {
     try {
          if (!connection) {
@@ -127,10 +143,27 @@ const getPlantillas = async(id) => {
         throw new Error(`Error en getPlantillas, ${error}`)
     }
 }
+
+const getClasificacionGastos = async() => {
+    try {
+         if (!connection) {
+            await connectHANA();
+        }
+        console.log('getClasificacionGastos EXECUTE')
+        const query = `select * from lab_ifa_lapp.clasificacion_gastos`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getClasificacionGastos, ${error}`)
+    }
+}
 module.exports = {
   ObtenerLibroMayor,
   cuentasCC,
   getNombreUsuario,
   getDocFuentes,
-  getPlantillas
+  getPlantillas,
+  getClasificacionGastos,
+  postDocFuente
 }
