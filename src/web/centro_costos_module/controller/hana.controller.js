@@ -1,169 +1,107 @@
-const hana = require('@sap/hana-client');
-
-// Configura la conexión a la base de datos HANA
-const connOptions = {
-    serverNode: `${process.env.HANASERVER}:${process.env.HANAPORT}`,
-    uid: process.env.HANAUSER,
-    pwd: process.env.HANAPASS
-};
-
-// Variable para almacenar la conexión a la base de datos
-let connection = null;
-
-// Función para conectar a la base de datos HANA
-const connectHANA = () => {
-    return new Promise((resolve, reject) => {
-        connection = hana.createConnection();
-        connection.connect(connOptions, (err) => {
-            if (err) {
-                console.error('Error de conexión a HANA:', err.message);
-                reject(err);
-            } else {
-                console.log('Conectado a la base de datos HANA');
-                resolve(connection);
-            }
-        });
-    });
-};
-
-
-const executeQuery = async (query) => {
-    return new Promise((resolve, reject) => {
-        console.log(query)
-        connection.exec(query, (err, result) => {
-            if (err) {
-                console.log('error en la consulta:', err.message)
-                reject(new Error('error en la consulta'))
-            } else {
-                console.log('Datos obtenidos con exito');
-                resolve(result);
-                // console.log({result})
-            }
-        })
-    })
-}
-
+const { executeQueryWithConnection } = require('../../utils/hana-util-connection');
 
 const ObtenerLibroMayor = async (cuenta) => {
     try {
-        if (!connection) {
-            await connectHANA();
-        }
         const number_cuenta = Number(cuenta);
         if (!number_cuenta || isNaN(number_cuenta)) {
           throw new Error(`Cuenta inválida: ${cuenta}`);
-      }
-
-        console.log('ObtenerLibroMayor EXECUTE')
-        const query = `CALL LAB_IFA_COM.FIN_OBTENER_MAYOR_POR_CUENTA(${number_cuenta})`
-        const result = await executeQuery(query)
-        return result
-    } catch (error) {
-        console.log({ error })
-        throw new Error('error en ObtenerLibroMayor')
-    }
-}
-
-const cuentasCC = async() => {
-    try {
-        if (!connection) {
-            await connectHANA();
         }
-        console.log('cuentasCC EXECUTE')
-        const query = `SELECT "AcctCode", "AcctName" FROM LAB_IFA_COM.ACCOUNT WHERE "Postable" = 'Y'`
-        console.log({ query })
-        const result = await executeQuery(query)
-        return result
-    } catch (error) {
-        console.log({ error })
-        throw new Error('error en cuentasCC')
-    }
-}
 
-const getNombreUsuario = async(id) => {
-    try {
-        if (!connection) {
-            await connectHANA();
-        }
-        console.log('getNombreUsuario EXECUTE')
-        const query = `SELECT id, username FROM lab_ifa_lapp.lapp_usuario WHERE id = ${id}`
-        console.log({ query })
-        const result = await executeQuery(query)
-        return result
+        console.log('ObtenerLibroMayor EXECUTE');
+        const query = `CALL LAB_IFA_COM.FIN_OBTENER_MAYOR_POR_CUENTA(${number_cuenta})`;
+        const result = await executeQueryWithConnection(query);
+        return result;
     } catch (error) {
-        console.log({ error })
-        throw new Error('error en getNombreUsuario')
+        console.log({ error });
+        throw new Error(`error en ObtenerLibroMayor, ${error}`);
     }
-}
+};
 
-const getDocFuentes = async(id) => {
+const cuentasCC = async () => {
     try {
-        if (!connection) {
-            await connectHANA();
-        }
-        console.log('getNombreUsuario EXECUTE')
-        const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_DOCUMENTOS_FUENTES`
-        console.log({ query })
-        const result = await executeQuery(query)
-        return result
+        console.log('cuentasCC EXECUTE');
+        const query = `SELECT "AcctCode", "AcctName" FROM LAB_IFA_COM.ACCOUNT WHERE "Postable" = 'Y'`;
+        const result = await executeQueryWithConnection(query);
+        return result;
     } catch (error) {
-        console.log({ error })
-        throw new Error('error en getNombreUsuario')
+        console.log({ error });
+        throw new Error(`error en cuentasCC', ${error}`);
     }
-}
+};
 
-const postDocFuente = async(codigo, descripcion, id, etiqueta) => {
+const getNombreUsuario = async (id) => {
     try {
-        if (!connection) {
-            await connectHANA();
-        }
-        console.log('postDocFuente EXECUTE')
-        const query = `CALL "LAB_IFA_COM"."IFA_CC_INSERT_DOCUMENTO_FUENTE"('${codigo}', '${descripcion}', ${id}, '${etiqueta}') `
-        console.log({ query })
-        const result = await executeQuery(query)
-        return result
+        console.log('getNombreUsuario EXECUTE');
+        const query = `SELECT id, username FROM lab_ifa_lapp.lapp_usuario WHERE id = ${id}`;
+        const result = await executeQueryWithConnection(query);
+        return result;
     } catch (error) {
-        console.log({ error })
-        throw new Error(`error en postDocFuente, ${error}`)
+        console.log({ error });
+        throw new Error(`error en getNombreUsuario, ${error}`);
     }
-}
+};
 
-const getPlantillas = async(id) => {
+const getDocFuentes = async () => {
     try {
-         if (!connection) {
-            await connectHANA();
-        }
-        console.log('getPlantillas EXECUTE')
-        const query = `	SELECT * FROM LAB_IFA_COM.IFA_CC_JOURNAL_COST_CENTER_DETAILS WHERE "TransId" = ${id}`
-        console.log({ query })
-        const result = await executeQuery(query)
-        return result
+        console.log('getDocFuentes EXECUTE');
+        const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_DOCUMENTOS_FUENTES`;
+        const result = await executeQueryWithConnection(query);
+        return result;
     } catch (error) {
-        console.log({ error })
-        throw new Error(`Error en getPlantillas, ${error}`)
+        console.log({ error });
+        throw new Error(`error en getDocFuentes, ${error}`);
     }
-}
+};
 
-const getClasificacionGastos = async() => {
+const postDocFuente = async (codigo, descripcion, id, etiqueta) => {
     try {
-         if (!connection) {
-            await connectHANA();
-        }
-        console.log('getClasificacionGastos EXECUTE')
-        const query = `select * from lab_ifa_lapp.clasificacion_gastos`
-        const result = await executeQuery(query)
-        return result
+        console.log('postDocFuente EXECUTE');
+        const query = `CALL "LAB_IFA_COM"."IFA_CC_INSERT_DOCUMENTO_FUENTE"('${codigo}', '${descripcion}', ${id}, '${etiqueta}')`;
+        const result = await executeQueryWithConnection(query);
+        return result;
     } catch (error) {
-        console.log({ error })
-        throw new Error(`Error en getClasificacionGastos, ${error}`)
+        console.log({ error });
+        throw new Error(`error en postDocFuente, ${error}`);
     }
-}
+};
+
+const getPlantillas = async (id) => {
+    try {
+        console.log('getPlantillas EXECUTE');
+        const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_JOURNAL_COST_CENTER_DETAILS WHERE "TransId" = ${id}`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw new Error(`Error en getPlantillas, ${error}`);
+    }
+};
+
+const getClasificacionGastos = async () => {
+    try {
+        console.log('getClasificacionGastos EXECUTE');
+        const query = `SELECT * FROM lab_ifa_lapp.clasificacion_gastos`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw new Error(`Error en getClasificacionGastos, ${error}`);
+    }
+};
+
+const asientosContablesCCById = async (id) => {
+  console.log('asientosContablesCC EXECUTE');
+  const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_JOURNAL WHERE "TransId" = ${id}`;
+  return await executeQueryWithConnection(query);
+};
+
 module.exports = {
-  ObtenerLibroMayor,
-  cuentasCC,
-  getNombreUsuario,
-  getDocFuentes,
-  getPlantillas,
-  getClasificacionGastos,
-  postDocFuente
-}
+    ObtenerLibroMayor,
+    cuentasCC,
+    getNombreUsuario,
+    getDocFuentes,
+    getPlantillas,
+    getClasificacionGastos,
+    postDocFuente,
+    asientosContablesCCById
+};

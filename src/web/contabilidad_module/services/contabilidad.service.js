@@ -60,8 +60,9 @@ const sapService = {
           const response = await httpClient.post('/contabilidad/centro-costo/asiento', body);
           console.log(response);
           return {
-              statusCode: response.status,
-              data: response.data,
+              statusCode: response.data.status,
+              message: response.data.message,
+              id: response.data.id,
           };
       } catch (error) {
           
