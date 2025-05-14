@@ -231,7 +231,8 @@ const cobranzaPorZona = async (username) => {
         const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA"(${username})`
         return await executeQuery(query)
     } catch (error) {
-        console
+        console.error(error)
+        throw new Error(`Error en cobranzaPorZona: ${error.message}`);
     }
 }
 

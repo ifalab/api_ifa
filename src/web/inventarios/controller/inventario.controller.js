@@ -18,10 +18,12 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     articuloDiccionario,
     relacionArticulo,
     articulos,
-    saveDiccionario, 
+    saveDiccionario,
     tipoSolicitud,
     costoComercialByItemCode,
-    tipoCliente} = require("./hana.controller")
+    tipoCliente,
+    solicitudesPendiente,
+    detalleSolicitudPendiente } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -2592,7 +2594,6 @@ const devolucionPorValoradoController = async (req, res) => {
     let allResponseReconciliacion = []
     let facturasCompletadas = []
     let allBodies = {}
-    const startTime = Date.now();
     try {
         const { facturas, id_sap, AlmacenIngreso, AlmacenSalida, CardCode } = req.body
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -4510,8 +4511,33 @@ const saveArticuloDiccionario = async (req, res) => {
 
 const solicitudTrasladoController = async (req, res) => {
     try {
-        const { U_UserCode, Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines } = req.body
-        const sapResponse = await postInventoryTransferRequests({ U_UserCode, Reference1, Reference2, Comments, JournalMemo, FromWarehouse, ToWarehouse, StockTransferLines })
+
+        const {
+            U_UserCode,
+            Reference1,
+            Reference2,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            ToWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            StockTransferLines
+        } = req.body
+
+        const sapResponse = await postInventoryTransferRequests({
+            U_UserCode,
+            Reference1,
+            Reference2,
+            Comments,
+            JournalMemo,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            FromWarehouse,
+            ToWarehouse,
+            StockTransferLines
+        })
+
         const { status, errorMessage } = sapResponse
         if (status && status == 400) {
             const { value } = errorMessage
@@ -4546,12 +4572,12 @@ const costoComercialItemcodeController = async (req, res) => {
     try {
         const itemCode = req.query.itemCode
         const response = await costoComercialByItemCode(itemCode)
-        if(response.length == 0){
+        if (response.length == 0) {
             return res.status(400).json({ mensaje: `Error no se encontro el costo comercial del item  : ${itemCode}` })
         }
         const costoComercial = Number(response[0].U_COSTO_COML)
-        console.log({costoComercial,itemCode})
-        return res.json({costoComercial})
+        console.log({ costoComercial, itemCode })
+        return res.json({ costoComercial })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en tipoSolicitudController : ${error.message || 'No definido'}` })
@@ -4568,6 +4594,228 @@ const tipoClientesController = async (req, res) => {
     }
 }
 
+
+const devoluccionInstitucionesController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    let idEntrega
+    try {
+        const { Entregas, Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
+
+        const idEntregaBody = req.body.idEntrega
+        console.log({ Entregas, Devoluciones, AlmacenIngreso, AlmacenSalida, CardCode, id_sap })
+
+        let bodyReturn
+        let responceReturn
+        let responseEntrega
+        let bodyEntrega
+        if (!idEntregaBody) { //Si no hay id de entrega, entonces se crea una nueva entrega
+            let numEnt = 0
+            let newDocumentLinesEntrega = []
+            for(const entrega of Entregas){
+                const { ItemCode, Cantidad, Precio, Total } = entrega
+                console.log({ ItemCode, Cantidad, Precio, })
+
+                let batchNumbersEntrega = []
+                const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
+                console.log({ batch: batchData })
+                if (batchData.message) {
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, 
+                        'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-instituciones", process.env.PRD)
+                    return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, idEntrega })
+                }
+                if (batchData.length > 0) {
+                    let new_quantity = 0
+                    batchData.map((item) => {
+                        new_quantity += Number(item.Quantity).toFixed(6)
+                    })
+                    //console.log({ batchData })
+                    batchNumbersEntrega = batchData.map(batch => ({
+                        BaseLineNumber: numEnt,
+                        BatchNumber: batch.BatchNum,
+                        Quantity: Number(batch.Quantity).toFixed(6),
+                        ItemCode: batch.ItemCode
+                    }))
+                } else {
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", 
+                        `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO', 
+                        "inventario/dev-instituciones", process.env.PRD)
+                    return res.status(400).json({
+                        mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
+                        idEntrega
+                    })
+                }
+
+                const newLineEntrega = {
+                    ItemCode,
+                    WarehouseCode: AlmacenSalida,
+                    Quantity: Cantidad,
+                    LineNum: numEnt,
+                    TaxCode: "IVA_GND",
+                    AccountCode: "6210103",
+                    GrossTotal: Total,
+                    GrossPrice: Precio,
+                    BatchNumbers: batchNumbersEntrega
+                };
+                console.log({ newLineEntrega })
+                newDocumentLinesEntrega.push(newLineEntrega)
+            }
+
+            bodyEntrega = {
+                Series: 353, ///
+                CardCode: CardCode,
+                U_UserCode: id_sap,
+                JournalMemo: Comentario,
+                Comments: Comentario,
+                DocumentLines: newDocumentLinesEntrega,
+            }
+            console.log(JSON.stringify({ bodyEntrega }, null, 2))
+            responseEntrega = await postEntrega(bodyEntrega)
+
+            if (responseEntrega.lang) {
+                const outputDir = path.join(__dirname, 'outputs');
+                if (!fs.existsSync(outputDir)) {
+                    fs.mkdirSync(outputDir);
+                }
+                const now = new Date();
+                const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+                const fileNameJson = path.join(outputDir, `finalDataEntrega_${timestamp}.json`);
+                fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
+                console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+                    `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, 
+                    "inventario/dev-instituciones", process.env.PRD)
+                return res.status(400).json({
+                    mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
+                    idEntrega,
+                    bodyReturn,
+                    responseEntrega,
+                    bodyEntrega
+                })
+            }
+
+            idEntrega = responseEntrega.deliveryN44umber
+
+        } else {//Existe id de entrega
+            idEntrega = idEntregaBody
+        }
+
+        console.log({ idEntrega })
+
+
+        let numRet = 0
+        let newDocumentLinesReturn = []
+        for (const devolucion of Devoluciones) {
+            const { ItemCode, Lote, Cantidad, Precio, UnidadMedida, Total } = devolucion
+            console.log({ ItemCode, Lote, Cantidad, Precio, UnidadMedida })
+            let batchNumbers = []
+            const cantidadBatch = Cantidad * UnidadMedida
+            batchNumbers.push({
+                BaseLineNumber: numRet,
+                BatchNumber: Lote,
+                Quantity: cantidadBatch,
+                ItemCode: ItemCode
+            })
+
+            const newLineReturn = {
+                // BaseEntry: 0,
+                // BaseType: 15,
+                // BaseLine: numRet,
+                ItemCode,
+                WarehouseCode: AlmacenIngreso,
+                Quantity: Cantidad,
+                LineNum: numRet,
+                TaxCode: "IVA_GND",
+                AccountCode: "6210103",
+                GrossTotal: Total,
+                GrossPrice: Precio,
+                BatchNumbers: batchNumbers
+            };
+            console.log('------newLineReturn-----')
+            console.log({ newLineReturn })
+
+            newDocumentLinesReturn.push(newLineReturn)
+
+            numRet += 1
+        }
+
+        // newDocumentLinesReturn.map((item) => {
+        //     item.BaseEntry = idEntrega
+        // })
+
+        bodyReturn = {
+            Series: 352,
+            CardCode: CardCode,
+            U_UserCode: id_sap,
+            JournalMemo: Comentario,
+            Comments: Comentario,
+            DocumentLines: newDocumentLinesReturn,
+        }
+        console.log(JSON.stringify({ bodyReturn }, null, 2))
+        responceReturn = await postReturn(bodyReturn)
+        console.log({ responceReturn })
+
+        if (responceReturn.status > 300) {
+            console.log({ errorMessage: responceReturn.errorMessage })
+            let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
+            if (typeof mensaje != 'string' && mensaje.value)
+                mensaje = mensaje.value
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+                `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-instituciones", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn, idEntrega, bodyEntrega })
+        }
+
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+            `Exito en el cambio por Valorado para instituciones`, ``, "inventario/dev-instituciones", process.env.PRD)
+
+        return res.json({
+            idEntrega,
+            idReturn: responceReturn.orderNumber,
+            bodyEntrega,
+            bodyReturn,
+            responseEntrega,
+            responceReturn,
+        })
+    } catch (error) {
+        console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", `Error en el devoluccionInstitucionesController: ${error.message || ''}`, `catch del controller devoluccionInstitucionesController`, "inventario/dev-instituciones", process.env.PRD)
+        return res.status(500).json({
+            mensaje: `Error en en controlador devoluccionInstitucionesController: ${error.message}`,
+            idEntrega
+        })
+    }
+}
+
+const solicitudesTrasladoController = async (req, res) => {
+    try {
+        const { listSucCode } = req.body
+        let listSolicitudes = []
+        if (listSucCode.length == 0) {
+            return res.status(400).json({ mensaje: `Usted No tiene Sucursales asignadas` })
+        }
+        for (const sucCode of listSucCode) {
+            const response = await solicitudesPendiente(sucCode)
+            listSolicitudes = [...listSolicitudes, ...response]
+        }
+        return res.json(listSolicitudes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en solicitudesTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const detalleSolicitudTrasladoController = async (req, res) => {
+    try {
+        const docEntry = req.query.docEntry
+        const response = await detalleSolicitudPendiente(docEntry)
+        console.log({response,docEntry})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en solicitudesTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
 
 module.exports = {
     clientePorDimensionUnoController,
@@ -4617,4 +4865,8 @@ module.exports = {
     costoComercialItemcodeController,
     tipoSolicitudController,
     tipoClientesController,
+    devoluccionInstitucionesController,
+    solicitudesTrasladoController,
+    detalleSolicitudTrasladoController,
+
 }
