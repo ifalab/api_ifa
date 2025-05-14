@@ -1053,8 +1053,8 @@ PRINT\r\n
         }
 
         fs.writeFileSync(filePath, cpclContent);
-
-        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        const safeFileName = encodeURIComponent(fileName);
+        res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}"`);
         const ress = res.sendFile(filePath)
         res.on('finish', () => {
             if (fs.existsSync(filePath)) {

@@ -359,6 +359,23 @@ const searchArticulos = async (itemName) => {
     }
 }
 
+const searchClientes = async (itemName) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where (upper("CardName") LIKE '%${itemName}%' or upper("CardCode") LIKE '%${itemName}%') limit 50`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en searchClientes:', error.message);
+        throw {
+            message: `Error al procesar searchClientes: ${error.message || ''}`
+        }
+    }
+}
+
 const stockDisponiblePorSucursal = async (sucursal) => {
     try {
         if (!connection) {
@@ -691,6 +708,23 @@ const detalleSolicitudPendiente = async(docEntry) =>{
     }
 }
 
+const reporteDevolucionValorados = async() =>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dev_valorados`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en reporteDevolucionValorados:', error.message);
+        throw { 
+            message: `Error al procesar reporteDevolucionValorados: ${error.message || ''}` 
+        }
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -730,4 +764,6 @@ module.exports = {
     tipoCliente,
     solicitudesPendiente,
     detalleSolicitudPendiente,
+    reporteDevolucionValorados,
+    searchClientes,
 }

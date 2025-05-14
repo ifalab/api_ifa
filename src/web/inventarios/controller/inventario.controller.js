@@ -23,7 +23,9 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     costoComercialByItemCode,
     tipoCliente,
     solicitudesPendiente,
-    detalleSolicitudPendiente } = require("./hana.controller")
+    detalleSolicitudPendiente, 
+    reporteDevolucionValorados,
+    searchClientes} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -4817,6 +4819,29 @@ const detalleSolicitudTrasladoController = async (req, res) => {
     }
 }
 
+const reporteDevolucionValoradosController = async (req, res) => {
+    try {
+        const response = await reporteDevolucionValorados()
+        console.log({response})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en reporteDevolucionValoradosController  : ${error.message || 'No definido'}` })
+    }
+}
+
+const searchClienteController = async (req, res) => {
+    try {
+        const { cadena } = req.body
+        const cadenS = cadena.toUpperCase()
+        const response = await searchClientes(cadenS)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador searchClienteController: ${error.message}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -4867,6 +4892,8 @@ module.exports = {
     tipoClientesController,
     devoluccionInstitucionesController,
     solicitudesTrasladoController,
+    reporteDevolucionValoradosController ,
     detalleSolicitudTrasladoController,
+    searchClienteController,
 
 }
