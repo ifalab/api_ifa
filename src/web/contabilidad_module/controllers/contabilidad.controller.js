@@ -647,8 +647,9 @@ const createAsientoContableCCController = async (req, res) => {
             userSign: Number(user.ID),
             details
         })
-        const { data } = comResponse
-        return res.json(data)
+        const { message, statusCode, id } = comResponse
+        console.log(message, statusCode, id);
+        return res.json({message, statusCode, id})
     } catch (error) {
         console.log({ error })
         let mensaje = ''
@@ -745,7 +746,7 @@ const getSucursalesCC = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getSucursalesCC], ${mensaje}` })
     }
 }
 
@@ -759,7 +760,7 @@ const getTipoClienteCC = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getTipoClienteCC], ${error}` })
     }
 }
 
@@ -773,7 +774,7 @@ const getLineasCC = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getLineasCC], ${error}` })
     }
 }
 
@@ -787,7 +788,7 @@ const getSublineasCC = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getSublineasCC], ${error}` })
     }
 }
 
@@ -858,7 +859,7 @@ const getSociosNegocio = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getJournalPreliminarCCIds], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getSociosNegocio], ${error}` })
     }
 }
 

@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -466,6 +466,69 @@ const clasificacionGastos = async(req, res) => {
         return res.status(500).json({ mensaje: `Error obtiendo la clasificacion de gastos. ${error}` });
     }
 }
+
+const getAsientoContableCCById = async (req, res) => {
+    try {
+        const {id} = req.query;
+        const data = await asientosContablesCCById(id);
+
+        const groupedData = data.reduce((acc, current) => {
+            const lineData = {
+                Line_ID: current.Line_ID,
+                Account: current.Account,
+                ContraAct: current.ContraAct,
+                Debit: current.Debit,
+                Credit: current.Credit,
+                LineMemo: current.LineMemo,
+                ShortName: current.ShortName,
+                U_IdComlConcept: current.U_IdComlConcept,
+                AcctName: current.AcctName,
+                CardName: current.CardName,
+                Ref1Detail: current.Ref1Detail,
+                Ref2Detail: current.Ref2Detail,
+                Ref3Deatil: current.Ref3Deatil,
+                U_Clasif_Gastos: current.U_Clasif_Gastos,
+                Area: current.Area,
+                Tipo_Cliente: current.Tipo_Cliente,
+                Linea: current.Linea,
+                Especialidad: current.Especialidad,
+                Clasificacion_Gastos: current.Clasificacion_Gastos,
+                Conceptos_Comerciales: current.Conceptos_Comerciales,
+                Cuenta_Contable: current.Cuenta_Contable
+            };
+
+            if (acc[current.TransId]) {
+                acc[current.TransId].lines.push(lineData);
+            } else {
+                acc[current.TransId] = {
+                    TransId: current.TransId,
+                    TransType: current.TransType,
+                    RefDate: current.RefDate,
+                    Memo: current.Memo,
+                    Ref1: current.Ref1,
+                    Ref2: current.Ref2,
+                    Ref3: current.Ref3,
+                    Number: current.Number,
+                    Indicator: current.Indicator,
+                    UserSign: current.UserSign,
+                    lines: [lineData]
+                };
+            }
+            return acc;
+        }, {});
+
+        const formattedData = Object.values(groupedData)[0];
+
+        return res.json(formattedData);
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getAsientoContableCCById], ${error}` })
+    }
+}
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -477,5 +540,6 @@ module.exports = {
     cargarPlantillaDimensiones,
     recuperarPlantillaDimensiones,
     clasificacionGastos,
-    saveDocFuentes
+    saveDocFuentes,
+    getAsientoContableCCById
 }

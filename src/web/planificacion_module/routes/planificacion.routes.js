@@ -4,12 +4,12 @@ const { validarCampos } = require('../../../middleware/validar_campos.middleware
 const {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
-    insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
+    insertarPlanController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
     actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController,
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController, 
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController,
-    getClienteByCodeController, actualizarVisitaController, getUltimaVisitaController
+    getClienteByCodeController, actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -20,8 +20,9 @@ router.get('/cliente', [validarToken, validarCampos], getClienteByCodeController
 
 //Planificacion
 router.post('/ciclo-vendedor', [validarToken, validarCampos], getCicloVendedorController)
+router.post('/get-plan-vendedor', [validarToken, validarCampos], getPlanVendedorController)
 router.get('/detalle-ciclo-vendedor', [validarToken, validarCampos], getDetalleCicloVendedorController)
-router.post('/insertar-visita', [validarToken, validarCampos], insertarVisitaController)
+router.post('/insertar-plan', [validarToken, validarCampos], insertarPlanController)
 router.post('/detalle-visita', [validarToken, validarCampos], insertarDetalleVisitaController)
 
 router.post('/detalle-fechas-visita', [validarToken, validarCampos], insertarDetallesFechasVisitaController)

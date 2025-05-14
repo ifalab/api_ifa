@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes } = require('../controller/cc.controller')
+const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById } = require('../controller/cc.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -19,5 +19,6 @@ router.post('/plantilla-dimensiones', [validarToken, validarCampos], cargarPlant
 router.get('/plantilla-dimensiones', [validarToken, validarCampos], recuperarPlantillaDimensiones);
 router.get('/clasificacion-gastos', [validarToken, validarCampos],clasificacionGastos)
 router.post('/documentos-fuentes', [validarToken, validarCampos], saveDocFuentes)
+router.get('/as-by-id', [validarToken, validarCampos], getAsientoContableCCById)
 
 module.exports = router
