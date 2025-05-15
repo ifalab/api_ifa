@@ -34,7 +34,9 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     solicitudesTrasladoController,
     detalleSolicitudTrasladoController,
     reporteDevolucionValoradosController,
-    searchClienteController
+    searchClienteController,
+    reporteDevolucionCambiosController,
+    reporteDevolucionRefacturacionController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -98,6 +100,8 @@ router.post('/solicitudes-traslado', [validarToken, validarCampos], solicitudesT
 router.get('/detalle-solicitud-traslado', [validarToken, validarCampos], detalleSolicitudTrasladoController)
 //!------------------------ reporte devoluciones
 router.get('/reporte-devolucion-valorados', [validarToken, validarCampos], reporteDevolucionValoradosController)
+router.get('/reporte-devolucion-cambios', [validarToken, validarCampos], reporteDevolucionCambiosController)
+router.get('/reporte-devolucion-refacturacion', [validarToken, validarCampos], reporteDevolucionRefacturacionController)
 router.post('/search-clientes', [validarToken, validarCampos],searchClienteController)
 
 module.exports = router

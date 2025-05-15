@@ -25,7 +25,9 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     solicitudesPendiente,
     detalleSolicitudPendiente, 
     reporteDevolucionValorados,
-    searchClientes} = require("./hana.controller")
+    searchClientes,
+    reporteDevolucionCambios,
+    reporteDevolucionRefacturacion} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -4515,28 +4517,30 @@ const solicitudTrasladoController = async (req, res) => {
     try {
 
         const {
-            U_UserCode,
-            Reference1,
-            Reference2,
             Comments,
             JournalMemo,
             FromWarehouse,
-            ToWarehouse,
             U_TIPO_TRASLADO,
             U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            DueDate,
+            U_FECHA_FACT,
+            U_Autorizacion,
             StockTransferLines
         } = req.body
 
         const sapResponse = await postInventoryTransferRequests({
-            U_UserCode,
-            Reference1,
-            Reference2,
             Comments,
             JournalMemo,
+            FromWarehouse,
             U_TIPO_TRASLADO,
             U_GroupCode,
-            FromWarehouse,
             ToWarehouse,
+            U_UserCode,
+            DueDate,
+            U_FECHA_FACT,
+            U_Autorizacion,
             StockTransferLines
         })
 
@@ -4842,6 +4846,28 @@ const searchClienteController = async (req, res) => {
     }
 }
 
+const reporteDevolucionCambiosController = async (req, res) => {
+    try {
+        const response = await reporteDevolucionCambios()
+        console.log({response})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en reporteDevolucionCambiosController  : ${error.message || 'No definido'}` })
+    }
+}
+
+const reporteDevolucionRefacturacionController = async (req, res) => {
+    try {
+        const response = await reporteDevolucionRefacturacion()
+        console.log({response})
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en reporteDevolucionRefacturacionController  : ${error.message || 'No definido'}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -4895,5 +4921,7 @@ module.exports = {
     reporteDevolucionValoradosController ,
     detalleSolicitudTrasladoController,
     searchClienteController,
+    reporteDevolucionCambiosController,
+    reporteDevolucionRefacturacionController,
 
 }
