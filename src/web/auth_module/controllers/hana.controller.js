@@ -138,7 +138,7 @@ const findUserByUsercode = async (usercode) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en login user V2')
+        throw new Error(`Error en login user V2: ${error.message}`)
     }
 }
 

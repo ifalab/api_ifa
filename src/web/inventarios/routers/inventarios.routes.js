@@ -17,10 +17,11 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     devolucionPorValoradoController,
     detalleFacturasController,
     stockDisponibleIfaController,
-    imprimibleDevolucionController,
+    imprimibleDevolucionController, imprimibleSalidaController,
     devolucionPorValoradoDifArticulosController,
-    imprimibleSalidaController, findClienteController, getAlmacenesSucursalController,
-    getStockdeItemAlmacenController, getStockVariosItemsAlmacenController,
+    findClienteController, findClienteInstitucionesController,
+    getAlmacenesSucursalController, getStockdeItemAlmacenController, 
+    getStockVariosItemsAlmacenController,
     facturacionCambioValoradoController, entregaCambioValoradoController,
     detalleFacturasGenesisController, getLineaArticuloController,
     relacionArticuloController,
@@ -76,6 +77,7 @@ router.post('/imprimible-devolucion', [validarToken, validarCampos], imprimibleD
 router.post('/dev-valorado-dif-art', [validarToken, validarCampos], devolucionPorValoradoDifArticulosController)
 router.post('/imprimible-salida', [validarToken, validarCampos], imprimibleSalidaController)
 router.post('/buscar-cliente', [validarToken, validarCampos], findClienteController)
+router.post('/buscar-cliente-institucion', [validarToken, validarCampos], findClienteInstitucionesController)
 router.post('/dev-instituciones', [validarToken, validarCampos], devoluccionInstitucionesController)
 
 router.post('/almacenes-sucursal', [validarToken, validarCampos], getAlmacenesSucursalController)

@@ -14,7 +14,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     stockDisponiblePorSucursal,
     clientesBySucCode, getClienteByCardCode,
     devolucionLayout, getDeudaDelCliente,
-    findCliente, getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo,
+    findCliente, findClienteInstituciones,
+    getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo,
     articuloDiccionario,
     relacionArticulo,
     articulos,
@@ -4330,6 +4331,20 @@ const findClienteController = async (req, res) => {
     }
 }
 
+const findClienteInstitucionesController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({ body })
+        const buscar = body.buscar.toUpperCase()
+        console.log({ buscar })
+        const response = await findClienteInstituciones(buscar)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador findClienteInstitucionesController: ${error.message || ''}` })
+    }
+}
+
 const getAlmacenesSucursalController = async (req, res) => {
     try {
         const { listSucCode } = req.body
@@ -4877,7 +4892,7 @@ module.exports = {
     imprimibleDevolucionController,
     devolucionPorValoradoDifArticulosController,
     imprimibleSalidaController,
-    findClienteController,
+    findClienteController, findClienteInstitucionesController,
     getAlmacenesSucursalController,
     getStockdeItemAlmacenController, getStockVariosItemsAlmacenController,
     facturacionCambioValoradoController, entregaCambioValoradoController,
