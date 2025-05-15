@@ -39,8 +39,10 @@ const authLoginPost = async (req, res) => {
 }
 
 const authLoginV2 = async (req, res) => {
+    let userCode
     try {
         const { usercode, password } = req.body
+        userCode= usercode;
         const response = await findUserByUsercode(usercode)
         // return res.json({ response })
         console.log({ response })
@@ -71,6 +73,7 @@ const authLoginV2 = async (req, res) => {
         return res.json({ user, rol, dimensionUno, dimensionDos, dimensionTres, dimensionSublinea, token })
     } catch (error) {
         console.log({ error })
+        grabarLog(userCode, '', 'Login', `${error.message}`, 'LAPP_USER_BY_USERCODE', 'auth/login-v2', process.env.PRD)
     }
 }
 
