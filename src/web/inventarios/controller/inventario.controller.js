@@ -4679,6 +4679,7 @@ const devoluccionInstitucionesController = async (req, res) => {
                 };
                 console.log({ newLineEntrega })
                 newDocumentLinesEntrega.push(newLineEntrega)
+                numEnt++;
             }
 
             bodyEntrega = {
