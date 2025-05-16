@@ -751,7 +751,7 @@ const reporteDevolucionCambios = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
+        const query = `select * from ${process.env.PRD}.ifa_dev_cambios`;//_detalle
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -776,6 +776,23 @@ const reporteDevolucionRefacturacion = async () => {
         console.error('Error en reporteDevolucionRefacturacion:', error.message);
         throw {
             message: `Error al procesar reporteDevolucionRefacturacion: ${error.message || ''}`
+        }
+    }
+}
+
+const getEntregas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_ven_entregas limit 20`;//_detalle
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getEntregas:', error.message);
+        throw {
+            message: `Error al procesar getEntregas: ${error.message || ''}`
         }
     }
 }
@@ -822,5 +839,5 @@ module.exports = {
     reporteDevolucionValorados,
     searchClientes,
     reporteDevolucionCambios,
-    reporteDevolucionRefacturacion,
+    reporteDevolucionRefacturacion, getEntregas
 }
