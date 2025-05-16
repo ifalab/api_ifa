@@ -24,11 +24,11 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     costoComercialByItemCode,
     tipoCliente,
     solicitudesPendiente,
-    detalleSolicitudPendiente, 
+    detalleSolicitudPendiente,
     reporteDevolucionValorados,
     searchClientes,
     reporteDevolucionCambios,
-    reporteDevolucionRefacturacion} = require("./hana.controller")
+    reporteDevolucionRefacturacion } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -4539,11 +4539,31 @@ const solicitudTrasladoController = async (req, res) => {
             U_GroupCode,
             ToWarehouse,
             U_UserCode,
+            SalesPersonCode,
             DueDate,
+            CardName,
+            CardCode,
             U_FECHA_FACT,
             U_Autorizacion,
             StockTransferLines
         } = req.body
+
+        console.log({
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            CardName,
+            CardCode,
+            SalesPersonCode,
+            U_UserCode,
+            DueDate,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        })
 
         const sapResponse = await postInventoryTransferRequests({
             Comments,
@@ -4552,6 +4572,9 @@ const solicitudTrasladoController = async (req, res) => {
             U_TIPO_TRASLADO,
             U_GroupCode,
             ToWarehouse,
+            // SalesPersonCode,
+            CardName,
+            CardCode,
             U_UserCode,
             DueDate,
             U_FECHA_FACT,
@@ -4559,6 +4582,8 @@ const solicitudTrasladoController = async (req, res) => {
             StockTransferLines
         })
 
+
+        console.log(JSON.stringify({ sapResponse }, null, 2))
         const { status, errorMessage } = sapResponse
         if (status && status == 400) {
             const { value } = errorMessage
@@ -4632,7 +4657,7 @@ const devoluccionInstitucionesController = async (req, res) => {
         if (!idEntregaBody) { //Si no hay id de entrega, entonces se crea una nueva entrega
             let numEnt = 0
             let newDocumentLinesEntrega = []
-            for(const entrega of Entregas){
+            for (const entrega of Entregas) {
                 const { ItemCode, Cantidad, Precio, Total } = entrega
                 console.log({ ItemCode, Cantidad, Precio, })
 
@@ -4640,7 +4665,7 @@ const devoluccionInstitucionesController = async (req, res) => {
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
                 console.log({ batch: batchData })
                 if (batchData.message) {
-                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, 
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`,
                         'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-instituciones", process.env.PRD)
                     return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, idEntrega })
                 }
@@ -4657,8 +4682,8 @@ const devoluccionInstitucionesController = async (req, res) => {
                         ItemCode: batch.ItemCode
                     }))
                 } else {
-                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", 
-                        `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO', 
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones",
+                        `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO',
                         "inventario/dev-instituciones", process.env.PRD)
                     return res.status(400).json({
                         mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
@@ -4704,8 +4729,8 @@ const devoluccionInstitucionesController = async (req, res) => {
                 fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
                 console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
                 endTime = Date.now();
-                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
-                    `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, 
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones",
+                    `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``,
                     "inventario/dev-instituciones", process.env.PRD)
                 return res.status(400).json({
                     mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
@@ -4782,12 +4807,12 @@ const devoluccionInstitucionesController = async (req, res) => {
             let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
             if (typeof mensaje != 'string' && mensaje.value)
                 mensaje = mensaje.value
-            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones",
                 `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-instituciones", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn, idEntrega, bodyEntrega })
         }
 
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones",
             `Exito en el cambio por Valorado para instituciones`, ``, "inventario/dev-instituciones", process.env.PRD)
 
         return res.json({
@@ -4830,8 +4855,12 @@ const detalleSolicitudTrasladoController = async (req, res) => {
     try {
         const docEntry = req.query.docEntry
         const response = await detalleSolicitudPendiente(docEntry)
-        console.log({response,docEntry})
-        return res.json(response)
+        let dataResponse = response.map((item) => ({
+            ...item,
+            subTotal:Number(item.U_COSTO_COM) * Number(item.Quantity)
+        }))
+        console.log({ dataResponse, docEntry })
+        return res.json(dataResponse)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en solicitudesTrasladoController : ${error.message || 'No definido'}` })
@@ -4841,7 +4870,7 @@ const detalleSolicitudTrasladoController = async (req, res) => {
 const reporteDevolucionValoradosController = async (req, res) => {
     try {
         const response = await reporteDevolucionValorados()
-        console.log({response})
+        console.log({ response })
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -4864,7 +4893,7 @@ const searchClienteController = async (req, res) => {
 const reporteDevolucionCambiosController = async (req, res) => {
     try {
         const response = await reporteDevolucionCambios()
-        console.log({response})
+        console.log({ response })
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -4875,7 +4904,7 @@ const reporteDevolucionCambiosController = async (req, res) => {
 const reporteDevolucionRefacturacionController = async (req, res) => {
     try {
         const response = await reporteDevolucionRefacturacion()
-        console.log({response})
+        console.log({ response })
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -4933,7 +4962,7 @@ module.exports = {
     tipoClientesController,
     devoluccionInstitucionesController,
     solicitudesTrasladoController,
-    reporteDevolucionValoradosController ,
+    reporteDevolucionValoradosController,
     detalleSolicitudTrasladoController,
     searchClienteController,
     reporteDevolucionCambiosController,

@@ -404,9 +404,12 @@ const postInventoryTransferRequests = async (data) => {
 
         // Retorna la respuesta en caso de éxito
         const status = response.status
+        const locationHeader = response.headers.location;
+        const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        const idTransfer = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
         const statusText = response.statusText
         const dataResponse = response.data
-        return { status, statusText, dataResponse };
+        return { status, statusText, dataResponse,idTransfer};
     } catch (error) {
         // Centraliza el manejo de errores
         console.log({ errorInventoryTransferRequests: error })
