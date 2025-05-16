@@ -105,7 +105,7 @@ router.get('/reporte-devolucion-cambios', [validarToken, validarCampos], reporte
 router.get('/reporte-devolucion-refacturacion', [validarToken, validarCampos], reporteDevolucionRefacturacionController)
 router.post('/search-clientes', [validarToken, validarCampos],searchClienteController)
 
-router.post('/cancelar-devolucion', [validarToken, validarCampos], cancelarDevolucionController)
-router.post('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
+router.get('/cancelar-devolucion', [validarToken, validarCampos], cancelarDevolucionController)
+router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
 
 module.exports = router
