@@ -30,7 +30,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     reporteDevolucionCambios,
     reporteDevolucionRefacturacion} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
-    getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
+    getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega } = require("../../facturacion_module/controller/hana.controller")
@@ -3490,7 +3490,6 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
     let devolucionFinished = false
     let entregaFinished = false
     let allBodies = {}
-    const startTime = Date.now();
     try {
         const { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
             // AlmacenSalida, nuevosArticulos 
@@ -4884,6 +4883,43 @@ const reporteDevolucionRefacturacionController = async (req, res) => {
     }
 }
 
+//TO-DO
+const cancelarDevolucionController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const {idDev, idCN} = req.query
+        const responseDev = await cancelReturn(idDev)
+        
+        const responseCN = await cancelCreditNotes(idCN)
+        
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
+        //     `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`,`/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        return res.json({responseDev, responseCN})
+    } catch (error) {
+        console.log({ error })
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+        //     `${error.message || 'Error en cancelarDevolucionController'}`, `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        return res.status(500).json({ mensaje: error.message || 'Error en cancelarDevolucionController'})
+    }
+}
+
+const cancelarEntregaController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const {id} = req.query
+        const response = await cancelEntrega(id)
+        
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
+        //     `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD )
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
+        //     `${error.message || 'Error en cancelarEntregaController'}`, `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD )
+        return res.status(500).json({ mensaje: error.message || 'Error en cancelarEntregaController'})
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -4939,5 +4975,5 @@ module.exports = {
     searchClienteController,
     reporteDevolucionCambiosController,
     reporteDevolucionRefacturacionController,
-
+    cancelarDevolucionController, cancelarEntregaController
 }

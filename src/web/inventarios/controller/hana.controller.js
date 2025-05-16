@@ -751,7 +751,7 @@ const reporteDevolucionCambios = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
+        const query = `select * from ${process.env.PRD}.ifa_dev_cambios`;//_detalle
         console.log({ query })
         const result = await executeQuery(query)
         return result
