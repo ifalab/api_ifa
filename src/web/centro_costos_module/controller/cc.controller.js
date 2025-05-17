@@ -443,6 +443,22 @@ const cargarPlantillaDimensiones = async (req, res) => {
     }
 } 
 
+const cargarPlantillaMasivaDimensiones = async (req, res) => {
+  try {
+    const user = req.usuarioAutorizado;
+    const userId = Number(user.ID);
+    const data = req.body.body;
+    console.log(data);
+    const result = await sapService.crearPlantillaMasiva(data, userId);
+
+    return res.status(200).json(result);
+    // return res.status(200).json(data);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({ mensaje: `Error obteniendo la plantilla masiva para estas dimensiones. ${error}` });
+  }
+};
+
 const recuperarPlantillaDimensiones = async (req, res) => {
     try {
         const {id} = req.query;
@@ -541,5 +557,6 @@ module.exports = {
     recuperarPlantillaDimensiones,
     clasificacionGastos,
     saveDocFuentes,
-    getAsientoContableCCById
+    getAsientoContableCCById,
+    cargarPlantillaMasivaDimensiones
 }

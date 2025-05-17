@@ -57,7 +57,11 @@ const sapService = {
     async createAsientoCC(body) {
       try {
           console.log({body})
-          const response = await httpClient.post('/contabilidad/centro-costo/asiento', body);
+          const response = await httpClient.post('/contabilidad/centro-costo/asiento', body, {
+            headers: {
+                'x-custom-lang': 'es',  // o el idioma que quieras enviar
+            },
+          });
           console.log(response);
           return {
               statusCode: response.data.status,
