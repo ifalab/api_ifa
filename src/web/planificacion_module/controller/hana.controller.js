@@ -47,8 +47,11 @@ const vendedoresPorSucCode = async (sucCode) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_vendedores 
-        where "SucCode" = ${sucCode} and "Active"='Y'`
+        const query = `
+        select a.*, c.ID_ROL from ${process.env.PRD}.ifa_dm_vendedores a
+        join LAB_IFA_LAPP.LAPP_USUARIO b on b."ID_VENDEDOR_SAP" = a."SlpCode"
+        join LAB_IFA_LAPP.LAPP_USUARIO_ROL c on c.ID_USUARIO = b.ID
+        where a."SucCode" = ${sucCode} and a."Active"='Y' and c.ID_ROL='12'`//12= Vendedor_Zona
         console.log({ query })
         const result = await executeQuery(query)
         return result

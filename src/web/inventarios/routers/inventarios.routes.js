@@ -17,10 +17,11 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     devolucionPorValoradoController,
     detalleFacturasController,
     stockDisponibleIfaController,
-    imprimibleDevolucionController,
+    imprimibleDevolucionController, imprimibleSalidaController,
     devolucionPorValoradoDifArticulosController,
-    imprimibleSalidaController, findClienteController, getAlmacenesSucursalController,
-    getStockdeItemAlmacenController, getStockVariosItemsAlmacenController,
+    findClienteController, findClienteInstitucionesController,
+    getAlmacenesSucursalController, getStockdeItemAlmacenController, 
+    getStockVariosItemsAlmacenController,
     facturacionCambioValoradoController, entregaCambioValoradoController,
     detalleFacturasGenesisController, getLineaArticuloController,
     relacionArticuloController,
@@ -32,7 +33,10 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     costoComercialItemcodeController,
     tipoClientesController,
     solicitudesTrasladoController,
-    detalleSolicitudTrasladoController
+    detalleSolicitudTrasladoController,
+    reporteDevolucionValoradosController,
+    searchClienteController, reporteDevolucionCambiosController, reporteDevolucionRefacturacionController,
+    cancelarDevolucionController, cancelarEntregaController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -74,6 +78,7 @@ router.post('/imprimible-devolucion', [validarToken, validarCampos], imprimibleD
 router.post('/dev-valorado-dif-art', [validarToken, validarCampos], devolucionPorValoradoDifArticulosController)
 router.post('/imprimible-salida', [validarToken, validarCampos], imprimibleSalidaController)
 router.post('/buscar-cliente', [validarToken, validarCampos], findClienteController)
+router.post('/buscar-cliente-institucion', [validarToken, validarCampos], findClienteInstitucionesController)
 router.post('/dev-instituciones', [validarToken, validarCampos], devoluccionInstitucionesController)
 
 router.post('/almacenes-sucursal', [validarToken, validarCampos], getAlmacenesSucursalController)
@@ -95,5 +100,12 @@ router.get('/costo-comercial-itemcode', [validarToken, validarCampos], costoCome
 router.post('/solicitudes-traslado', [validarToken, validarCampos], solicitudesTrasladoController)
 router.get('/detalle-solicitud-traslado', [validarToken, validarCampos], detalleSolicitudTrasladoController)
 //!------------------------ reporte devoluciones
+router.get('/reporte-devolucion-valorados', [validarToken, validarCampos], reporteDevolucionValoradosController)
+router.get('/reporte-devolucion-cambios', [validarToken, validarCampos], reporteDevolucionCambiosController)
+router.get('/reporte-devolucion-refacturacion', [validarToken, validarCampos], reporteDevolucionRefacturacionController)
+router.post('/search-clientes', [validarToken, validarCampos],searchClienteController)
+
+router.get('/cancelar-devolucion', [validarToken, validarCampos], cancelarDevolucionController)
+router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
 
 module.exports = router

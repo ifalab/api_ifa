@@ -14,7 +14,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     stockDisponiblePorSucursal,
     clientesBySucCode, getClienteByCardCode,
     devolucionLayout, getDeudaDelCliente,
-    findCliente, getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo,
+    findCliente, findClienteInstituciones,
+    getAlmacenesSucursal, getStockdeItemAlmacen, getLineaArticulo,
     articuloDiccionario,
     relacionArticulo,
     articulos,
@@ -23,9 +24,13 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     costoComercialByItemCode,
     tipoCliente,
     solicitudesPendiente,
-    detalleSolicitudPendiente } = require("./hana.controller")
+    detalleSolicitudPendiente,
+    reporteDevolucionValorados,
+    searchClientes,
+    reporteDevolucionCambios, reporteDevolucionRefacturacion,
+    getEntregas } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
-    getCreditNote, getCreditNotes, postReconciliacion } = require("./sld.controller")
+    getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega } = require("../../facturacion_module/controller/hana.controller")
@@ -3485,7 +3490,6 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
     let devolucionFinished = false
     let entregaFinished = false
     let allBodies = {}
-    const startTime = Date.now();
     try {
         const { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
             // AlmacenSalida, nuevosArticulos 
@@ -4328,6 +4332,20 @@ const findClienteController = async (req, res) => {
     }
 }
 
+const findClienteInstitucionesController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({ body })
+        const buscar = body.buscar.toUpperCase()
+        console.log({ buscar })
+        const response = await findClienteInstituciones(buscar)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador findClienteInstitucionesController: ${error.message || ''}` })
+    }
+}
+
 const getAlmacenesSucursalController = async (req, res) => {
     try {
         const { listSucCode } = req.body
@@ -4513,31 +4531,58 @@ const solicitudTrasladoController = async (req, res) => {
     try {
 
         const {
-            U_UserCode,
-            Reference1,
-            Reference2,
             Comments,
             JournalMemo,
             FromWarehouse,
-            ToWarehouse,
             U_TIPO_TRASLADO,
             U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            SalesPersonCode,
+            DueDate,
+            CardName,
+            CardCode,
+            U_FECHA_FACT,
+            U_Autorizacion,
             StockTransferLines
         } = req.body
 
-        const sapResponse = await postInventoryTransferRequests({
-            U_UserCode,
-            Reference1,
-            Reference2,
+        console.log({
             Comments,
             JournalMemo,
+            FromWarehouse,
             U_TIPO_TRASLADO,
             U_GroupCode,
-            FromWarehouse,
             ToWarehouse,
+            CardName,
+            CardCode,
+            SalesPersonCode,
+            U_UserCode,
+            DueDate,
+            U_FECHA_FACT,
+            U_Autorizacion,
             StockTransferLines
         })
 
+        const sapResponse = await postInventoryTransferRequests({
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            // SalesPersonCode,
+            CardName,
+            CardCode,
+            U_UserCode,
+            DueDate,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        })
+
+
+        console.log(JSON.stringify({ sapResponse }, null, 2))
         const { status, errorMessage } = sapResponse
         if (status && status == 400) {
             const { value } = errorMessage
@@ -4611,7 +4656,7 @@ const devoluccionInstitucionesController = async (req, res) => {
         if (!idEntregaBody) { //Si no hay id de entrega, entonces se crea una nueva entrega
             let numEnt = 0
             let newDocumentLinesEntrega = []
-            for(const entrega of Entregas){
+            for (const entrega of Entregas) {
                 const { ItemCode, Cantidad, Precio, Total } = entrega
                 console.log({ ItemCode, Cantidad, Precio, })
 
@@ -4619,7 +4664,7 @@ const devoluccionInstitucionesController = async (req, res) => {
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenSalida, Cantidad);
                 console.log({ batch: batchData })
                 if (batchData.message) {
-                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, 
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`,
                         'IFA_VM_SELECTION_BATCH_FEFO', "inventario/dev-instituciones", process.env.PRD)
                     return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, idEntrega })
                 }
@@ -4636,8 +4681,8 @@ const devoluccionInstitucionesController = async (req, res) => {
                         ItemCode: batch.ItemCode
                     }))
                 } else {
-                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones", 
-                        `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO', 
+                    grabarLog(user.USERCODE, user.USERNAME, "Devolucion Instituciones",
+                        `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`, 'IFA_VM_SELECTION_BATCH_FEFO',
                         "inventario/dev-instituciones", process.env.PRD)
                     return res.status(400).json({
                         mensaje: `No hay lotes para el item: ${ItemCode}, almacen: ${AlmacenSalida}, cantidad: ${Cantidad}`,
@@ -4658,6 +4703,7 @@ const devoluccionInstitucionesController = async (req, res) => {
                 };
                 console.log({ newLineEntrega })
                 newDocumentLinesEntrega.push(newLineEntrega)
+                numEnt++;
             }
 
             bodyEntrega = {
@@ -4683,8 +4729,8 @@ const devoluccionInstitucionesController = async (req, res) => {
                 fs.writeFileSync(fileNameJson, JSON.stringify(bodyEntrega, null, 2), 'utf8');
                 console.log(`Objeto finalDataEntrega guardado en ${fileNameJson}`);
                 endTime = Date.now();
-                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
-                    `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``, 
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones",
+                    `Error interno en la entrega de sap en postEntrega: ${responseEntrega.value || ''}`, ``,
                     "inventario/dev-instituciones", process.env.PRD)
                 return res.status(400).json({
                     mensaje: `Error interno en la entrega de sap. ${responseEntrega.value || ''}`,
@@ -4761,12 +4807,12 @@ const devoluccionInstitucionesController = async (req, res) => {
             let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
             if (typeof mensaje != 'string' && mensaje.value)
                 mensaje = mensaje.value
-            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+            grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones",
                 `Error en postReturn: ${mensaje}`, `postReturn()`, "inventario/dev-instituciones", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en postReturn: ${mensaje}`, bodyReturn, idEntrega, bodyEntrega })
         }
 
-        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones", 
+        grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Instituciones",
             `Exito en el cambio por Valorado para instituciones`, ``, "inventario/dev-instituciones", process.env.PRD)
 
         return res.json({
@@ -4809,11 +4855,110 @@ const detalleSolicitudTrasladoController = async (req, res) => {
     try {
         const docEntry = req.query.docEntry
         const response = await detalleSolicitudPendiente(docEntry)
-        console.log({response,docEntry})
-        return res.json(response)
+        let dataResponse = response.map((item) => ({
+            ...item,
+            subTotal:Number(item.U_COSTO_COM) * Number(item.Quantity)
+        }))
+        console.log({ dataResponse, docEntry })
+        return res.json(dataResponse)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en solicitudesTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const reporteDevolucionValoradosController = async (req, res) => {
+    try {
+        const response = await reporteDevolucionValorados()
+        console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en reporteDevolucionValoradosController  : ${error.message || 'No definido'}` })
+    }
+}
+
+const searchClienteController = async (req, res) => {
+    try {
+        const { cadena } = req.body
+        const cadenS = cadena.toUpperCase()
+        const response = await searchClientes(cadenS)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador searchClienteController: ${error.message}` })
+    }
+}
+
+const reporteDevolucionCambiosController = async (req, res) => {
+    try {
+        const response = await reporteDevolucionCambios()
+        console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en reporteDevolucionCambiosController  : ${error.message || 'No definido'}` })
+    }
+}
+
+const reporteDevolucionRefacturacionController = async (req, res) => {
+    try {
+        const response = await reporteDevolucionRefacturacion()
+        console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en reporteDevolucionRefacturacionController  : ${error.message || 'No definido'}` })
+    }
+}
+
+//TO-DO
+const cancelarDevolucionController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const {idDev, idCN} = req.query
+        const responseDev = await cancelReturn(idDev)
+        if(responseDev.status==400){
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+        //     `${responseDev.errorMessage || 'Error en cancelReturn'}`, `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        
+            return res.status(400).json({mensaje:`${responseDev.errorMessage}`})
+        }
+
+        let responseCN
+        if(idCN!=0){
+            responseCN = await cancelCreditNotes(idCN)
+            console.log({responseCN});
+            if(responseCN.status==400){
+                return res.status(400).json({mensaje:`${responseCN.errorMessage}`})
+            }
+        }
+
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
+        //     `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`,`/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        return res.json({responseDev, responseCN})
+    } catch (error) {
+        console.log({ error })
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+        //     `${error.message || 'Error en cancelarDevolucionController'}`, `catch de cancelarDevolucionController`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        return res.status(500).json({ mensaje: error.message || 'Error en cancelarDevolucionController'})
+    }
+}
+
+const cancelarEntregaController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const {id} = req.query
+        const response = await getEntregas()//cancelEntrega(id)
+        
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
+        //     `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD )
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
+        //     `${error.message || 'Error en cancelarEntregaController'}`, `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD )
+        return res.status(500).json({ mensaje: error.message || 'Error en cancelarEntregaController'})
     }
 }
 
@@ -4852,7 +4997,7 @@ module.exports = {
     imprimibleDevolucionController,
     devolucionPorValoradoDifArticulosController,
     imprimibleSalidaController,
-    findClienteController,
+    findClienteController, findClienteInstitucionesController,
     getAlmacenesSucursalController,
     getStockdeItemAlmacenController, getStockVariosItemsAlmacenController,
     facturacionCambioValoradoController, entregaCambioValoradoController,
@@ -4867,6 +5012,10 @@ module.exports = {
     tipoClientesController,
     devoluccionInstitucionesController,
     solicitudesTrasladoController,
+    reporteDevolucionValoradosController,
     detalleSolicitudTrasladoController,
-
+    searchClienteController,
+    reporteDevolucionCambiosController,
+    reporteDevolucionRefacturacionController,
+    cancelarDevolucionController, cancelarEntregaController
 }

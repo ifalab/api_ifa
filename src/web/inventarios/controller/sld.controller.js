@@ -380,6 +380,97 @@ const postReconciliacion = async (data) => {
   }
 };
 
+const cancelReturn = async (id) => {
+  try {
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+    console.log({ currentSession })
+
+    const url = `https://srvhana:50000/b1s/v1/Returns(${id})/Cancel`;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' 
+    };
+
+    data.Series = process.env.SAP_SERIES_RETURN
+    const response = await axios.post(url, { ...data }, {
+      httpsAgent: agent,
+      headers: headers
+    });
+
+    console.log({ responseReturns: response })
+   
+    return { response };
+  } catch (error) {
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Cancel';
+    console.error('Error en la solicitud Cancel Returns:', errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
+  }
+};
+
+const cancelEntrega = async (id) => {
+  try {
+    const currentSession = await validateSession();
+    const sessionSldId = currentSession.SessionId;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content'
+    };
+    const url = `https://172.16.11.25:50000/b1s/v1/DeliveryNotes(${id})/Cancel`;
+    responseJson.Series = process.env.SAP_SERIES_DELIVERY_NOTES
+    const sapResponse = await axios.post(url, responseJson, {
+        httpsAgent: agent,
+        headers: headers,
+        timeout: REQUEST_TIMEOUT
+    });
+
+    return {
+      sapResponse
+    }
+  } catch (error) {
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Cancel';
+    console.error('Error en la solicitud Cancel para Entrega:', error.response?.data || error.message);
+    return { status: 400, errorMessage }
+  }
+};
+
+const cancelCreditNotes = async (id) => {
+  try {
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+    console.log({ currentSession })
+
+    const url = `https://srvhana:50000/b1s/v1/CreditNotes(${id})/Cancel`;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' 
+    };
+
+    data.Series = process.env.SAP_SERIES_RETURN
+    const response = await axios.post(url, { ...data }, {
+      httpsAgent: agent,
+      headers: headers
+    });
+
+    console.log({ responseCreditNotes: response })
+   
+    return { response };
+  } catch (error) {
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido';
+    console.error('Error en la solicitud Cancel CreditNotes:', errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
+  }
+};
+
 module.exports = {
   postSalidaHabilitacion,
   postEntradaHabilitacion,
@@ -388,5 +479,6 @@ module.exports = {
   patchReturn,
   getCreditNote,
   getCreditNotes,
-  postReconciliacion
+  postReconciliacion,
+  cancelReturn, cancelEntrega, cancelCreditNotes
 };
