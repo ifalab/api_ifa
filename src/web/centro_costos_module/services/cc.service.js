@@ -29,7 +29,7 @@ const sapService = {
     },
     async crearPlantilla(body, userSign) {
         try {
-            const { account, lineid, dimensiones, fechaContabilizacion, transId, debe } = body.body;
+            const { account, lineid, dimensiones, fechaContabilizacion, transId, debe, SourceID } = body.body;
 
             // Log de control opcional
             console.log({ account, lineid, dimensiones,fechaContabilizacion });
@@ -41,7 +41,8 @@ const sapService = {
                 transId: +transId,
                 debe: +debe,
                 fechaContabilizacion: fechaContabilizacion,
-                dimensiones
+                dimensiones,
+                SourceID
             });
 
             return {
@@ -59,6 +60,33 @@ const sapService = {
             throw {
                 statusCode: 500,
                 message: error.message || 'Error desconocido en la solicitud POST',
+            };
+        }
+    },
+
+    async crearPlantillaMasiva(body, userSign) {
+        try {
+            // Aquí envías el body completo a tu endpoint masivo de Nest
+            const response = await httpClient.post(`/centro-costo/plantilla/masiva`, {
+                ...body,
+                userSign
+            });
+
+            return {
+            statusCode: response.status,
+            data: response.data,
+            };
+        } catch (error) {
+            if (error.response) {
+            throw {
+                statusCode: error.response.status,
+                message: error.response.data || 'Error en la solicitud POST',
+            };
+            }
+
+            throw {
+            statusCode: 500,
+            message: error.message || 'Error desconocido en la solicitud POST',
             };
         }
     },

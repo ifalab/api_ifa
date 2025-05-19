@@ -651,7 +651,8 @@ const createAsientoContableCCController = async (req, res) => {
         console.log(message, statusCode, id);
         return res.json({message, statusCode, id})
     } catch (error) {
-        console.log({ error })
+        console.log(JSON.stringify(error.message, null, 2));
+
         let mensaje = ''
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
