@@ -916,7 +916,7 @@ const noteEntregaController = async (req, res) => {
                 <div style="width: 100%; margin-left: 60px; margin-right: 20px; font-size: 10px; color: #555;">
                     <div style="display: flex;align-items: center;">
                         <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: black;">
-                            <p>Estimado Clientes: Firma en conformidad al recibir el pedido. En provincia, reclamos dentro de las 24 horas. </p>
+                            <p>"Estimado Cliente: Firma en conformidad al recibir el pedido. En provincia, reclamos dentro de las 24 horas."</p>
                         </div>
                     </div>
                 </div>`,
