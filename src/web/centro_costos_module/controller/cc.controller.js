@@ -439,7 +439,7 @@ const cargarPlantillaDimensiones = async (req, res) => {
         return res.status(200).json(response)
     } catch (error) {
         console.error({ error });
-        return res.status(500).json({ mensaje: `Error obtiendo la plantilla para estas dimensiones.${error}` });
+        return res.status(500).json({ mensaje: `Error obtiendo la plantilla para estas dimensiones.${error.message.message}` });
     }
 } 
 
