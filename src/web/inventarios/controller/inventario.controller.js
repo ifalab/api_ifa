@@ -40,7 +40,7 @@ const path = require('path');
 const fs = require('fs');
 const { facturacionProsin } = require("../../facturacion_module/service/apiFacturacionProsin")
 const { getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("./sql_genesis.controller");
-const { postInventoryTransferRequests } = require("../../service/sapService");
+const { postInventoryTransferRequests, patchInventoryTransferRequests } = require("../../service/sapService");
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -4857,7 +4857,8 @@ const detalleSolicitudTrasladoController = async (req, res) => {
         const response = await detalleSolicitudPendiente(docEntry)
         let dataResponse = response.map((item) => ({
             ...item,
-            subTotal:Number(item.U_COSTO_COM) * Number(item.Quantity)
+            QuantityMod: +item.Quantity||0,
+            subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity)
         }))
         console.log({ dataResponse, docEntry })
         return res.json(dataResponse)
@@ -4916,41 +4917,41 @@ const reporteDevolucionRefacturacionController = async (req, res) => {
 const cancelarDevolucionController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {idDev, idCN} = req.query
+        const { idDev, idCN } = req.query
         const responseDev = await cancelReturn(idDev)
-        if(responseDev.status==400){
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-        //     `${responseDev.errorMessage || 'Error en cancelReturn'}`, `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-        
-            return res.status(400).json({mensaje:`${responseDev.errorMessage}`})
+        if (responseDev.status == 400) {
+            // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+            //     `${responseDev.errorMessage || 'Error en cancelReturn'}`, `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+
+            return res.status(400).json({ mensaje: `${responseDev.errorMessage}` })
         }
 
         let responseCN
-        if(idCN!=0){
+        if (idCN != 0) {
             responseCN = await cancelCreditNotes(idCN)
-            console.log({responseCN});
-            if(responseCN.status==400){
-                return res.status(400).json({mensaje:`${responseCN.errorMessage}`})
+            console.log({ responseCN });
+            if (responseCN.status == 400) {
+                return res.status(400).json({ mensaje: `${responseCN.errorMessage}` })
             }
         }
 
         // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
         //     `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`,`/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-        return res.json({responseDev, responseCN})
+        return res.json({ responseDev, responseCN })
     } catch (error) {
         console.log({ error })
         // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
         //     `${error.message || 'Error en cancelarDevolucionController'}`, `catch de cancelarDevolucionController`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-        return res.status(500).json({ mensaje: error.message || 'Error en cancelarDevolucionController'})
+        return res.status(500).json({ mensaje: error.message || 'Error en cancelarDevolucionController' })
     }
 }
 
 const cancelarEntregaController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {id} = req.query
+        const { id } = req.query
         const response = await getEntregas()//cancelEntrega(id)
-        
+
         // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
         //     `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD )
         return res.json(response)
@@ -4958,7 +4959,26 @@ const cancelarEntregaController = async (req, res) => {
         console.log({ error })
         // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
         //     `${error.message || 'Error en cancelarEntregaController'}`, `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD )
-        return res.status(500).json({ mensaje: error.message || 'Error en cancelarEntregaController'})
+        return res.status(500).json({ mensaje: error.message || 'Error en cancelarEntregaController' })
+    }
+}
+
+const actualizarTrasladoController = async (req, res) => {
+    try {
+        const body = req.body
+        const { DocEntry, ...restData } = body
+        if (!DocEntry) {
+            return res.status(400).json({ mensaje: 'Debe existir un Doc Entry en la peticion' })
+        }
+        const response = await patchInventoryTransferRequests(DocEntry, restData)
+        if (response.status == 400) {
+            const mensaje = response.errorMessage.value
+            return res.status(400).json({ mensaje: `Error del SAP. ${mensaje}` })
+        }
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en solicitudesTrasladoController : ${error.message || 'No definido'}` })
     }
 }
 
@@ -5017,5 +5037,6 @@ module.exports = {
     searchClienteController,
     reporteDevolucionCambiosController,
     reporteDevolucionRefacturacionController,
-    cancelarDevolucionController, cancelarEntregaController
+    cancelarDevolucionController, cancelarEntregaController,
+    actualizarTrasladoController,
 }

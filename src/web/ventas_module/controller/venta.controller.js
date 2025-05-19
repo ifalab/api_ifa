@@ -89,12 +89,12 @@ const {
     searchVendedorByIDSAP,
     getVentasPrespuestosSubLinea,
     getVentasPrespuestosSubLineaAnterior,
-    agregarSolicitudDeDescuento, 
+    agregarSolicitudDeDescuento,
     actualizarStatusSolicitudDescuento, getVendedoresSolicitudDescByStatus,
     getSolicitudesDescuentoByStatus, actualizarSolicitudDescuento,
     deleteSolicitudDescuento, notificationSubscription, getSubscriptions,
-    getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
-    deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode, 
+    getClientName, getSolicitudesDescuentoByVendedor, getNotifications, insertNotification,
+    deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode,
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
     getVendedoresVentas, ventasPorZonasVendedorMesAnt2
 } = require("./hana.controller")
@@ -1041,7 +1041,7 @@ const descripcionArticuloController = async (req, res) => {
         return res.json({ ItemName: response[0].ItemName })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `${error.message ||'Error en descripcionArticuloController'}` })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en descripcionArticuloController'}` })
     }
 }
 
@@ -2016,144 +2016,14 @@ const facturasMoraByClientController = async (req, res) => {
     }
 }
 
-    const clientesMoraController = async (req, res) => {
-        try {
-            const { listSucCode, slpCode } = req.body
-            let listResult = []
-            for (const sucCode of listSucCode) {
-                const response = await clientesConMora(sucCode, slpCode)
-                const cardMap = new Map();
-                response.map((item) => {
-                    if (item.CardCode && item.CardCode !== '') {
-                        const {
-                            LicTradNum,
-                            Comments,
-                            JrnlMemo,
-                            DocTotal,
-                            DocEntry,
-                            DocNum,
-                            U_RAZSOC,
-                            NumAtCard,
-                            FiscalDate,
-                            U_B_cuf,
-                            U_B_path,
-                            ...restData
-                        } = item
-
-                        const {
-                            PymntGroup,
-                            CardCode,
-                            CardName,
-                            GroupName,
-                            SucName,
-                            AreaName,
-                            ZoneName,
-                            SlpNameCli,
-                            CardFName,
-                            DaysDue
-                        } = restData
-
-                        if (cardMap.has(CardCode)) {
-                            const existing = cardMap.get(CardCode);
-                            if (DaysDue > existing.DaysDue) {
-                                cardMap.set(CardCode, {
-                                    PymntGroup,
-                                    CardCode,
-                                    CardName,
-                                    GroupName,
-                                    SucName,
-                                    AreaName,
-                                    ZoneName,
-                                    SlpNameCli,
-                                    CardFName,
-                                    DaysDue,
-                                    Facturas: []
-                                });
-                            }
-                        } else {
-                            cardMap.set(CardCode, {
-                                PymntGroup,
-                                CardCode,
-                                CardName,
-                                GroupName,
-                                SucName,
-                                AreaName,
-                                ZoneName,
-                                SlpNameCli,
-                                CardFName,
-                                DaysDue,
-                                Facturas: []
-                            });
-                        }
-                    }
-                })
-
-                const listCardCode = Array.from(cardMap.values())
-
-                listCardCode.map((itemData) => {
-
-                    const listDataFacturas = response
-                        .filter(item => item.CardCode === itemData.CardCode)
-                        .map(item => {
-                            const {
-                                LicTradNum,
-                                Comments,
-                                JrnlMemo,
-                                DocTotal,
-                                DocEntry,
-                                DocNum,
-                                U_RAZSOC,
-                                NumAtCard,
-                                FiscalDate,
-                                U_B_cuf,
-                                U_B_path,
-                                DaysDue,
-                            } = item;
-
-                            return {
-                                LicTradNum,
-                                Comments,
-                                JrnlMemo,
-                                DocTotal,
-                                DocEntry,
-                                DocNum,
-                                U_RAZSOC,
-                                NumAtCard,
-                                FiscalDate,
-                                U_B_cuf,
-                                DaysDue,
-                                U_B_path,
-                            }
-                        })
-
-                    itemData.Facturas = listDataFacturas
-                })
-                listResult = [...listResult,...listCardCode]
-            }
-
-            return res.json(listResult)
-        } catch (error) {
-            console.log({ error })
-            return res.status(500).json({ mensaje: `Error en facturasMoraByClientController: ${error.message}` })
-        }
-    }
-
-    const vendedorPorSucCodeController = async (req, res) => {
-        try {
-            const { sucCode } = req.query
-            const response = await vendedorPorSucCode(sucCode)
-            const data = response.filter((vendedor) => vendedor.SlpCode !== -1)
-            return res.json(data)
-        } catch (error) {
-            console.log({ error })
-            return res.status(500).json({ mensaje: `Error en vendedorPorSucCodeController: ${error.message}` })
-        }
-    }
-
-    const excelClientesMoraController = async (req, res) => {
-        try {
-            const { sucCode, slpCode } = req.query
+const clientesMoraController = async (req, res) => {
+    try {
+        const { listSucCode, slpCode } = req.body
+        console.log({ listSucCode, slpCode })
+        let listResult = []
+        for (const sucCode of listSucCode) {
             const response = await clientesConMora(sucCode, slpCode)
+            // console.log({response})
             const cardMap = new Map();
             response.map((item) => {
                 if (item.CardCode && item.CardCode !== '') {
@@ -2241,7 +2111,7 @@ const facturasMoraByClientController = async (req, res) => {
                             U_B_path,
                             DaysDue,
                         } = item;
-                        // const dataFormated = FiscalDate.split
+
                         return {
                             LicTradNum,
                             Comments,
@@ -2251,7 +2121,7 @@ const facturasMoraByClientController = async (req, res) => {
                             DocNum,
                             U_RAZSOC,
                             NumAtCard,
-                            FiscalDate: `${FiscalDate.split(' ')[0] || ''}`,
+                            FiscalDate,
                             U_B_cuf,
                             DaysDue,
                             U_B_path,
@@ -2260,71 +2130,222 @@ const facturasMoraByClientController = async (req, res) => {
 
                 itemData.Facturas = listDataFacturas
             })
+            listResult = [...listResult, ...listCardCode]
+        }
 
-            // return res.json(listCardCode)
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Clientes y Facturas');
+        return res.json(listResult)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en facturasMoraByClientController: ${error.message}` })
+    }
+}
 
-            worksheet.columns = [
-                { header: 'Codigo', key: 'CardCode', width: 15 },
-                { header: 'Nombre', key: 'CardName', width: 30 },
-                { header: 'Zona', key: 'ZoneName', width: 20 },
-                { header: 'Factura Nro', key: 'DocNum', width: 15 },
-                { header: 'Monto Total', key: 'DocTotal', width: 15 },
-                { header: 'Fecha Fiscal', key: 'FiscalDate', width: 20 },
-                { header: 'CUF', key: 'U_B_cuf', width: 60 },
-            ];
+const vendedorPorSucCodeController = async (req, res) => {
+    try {
+        const { sucCode } = req.query
+        const response = await vendedorPorSucCode(sucCode)
+        const data = response.filter((vendedor) => vendedor.SlpCode !== -1)
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en vendedorPorSucCodeController: ${error.message}` })
+    }
+}
 
-            for (const cliente of listCardCode) {
-                const clienteRow = worksheet.addRow({
-                    CardCode: cliente.CardCode,
-                    CardName: cliente.CardName,
-                    ZoneName: cliente.ZoneName,
-                });
+const vendedorPorListSucCodeController = async (req, res) => {
+    try {
+        const { listSuc } = req.body
+        console.log({listSuc})
+        let responseData = []
 
-                clienteRow.font = { bold: true };
-                clienteRow.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFD9E1F2' },
-                };
+        for (const element of listSuc) {
+            const response = await vendedorPorSucCode(element)
+            const data = response.filter((vendedor) => vendedor.SlpCode !== -1)
+            responseData = [...responseData, ...data]
+        }
 
-                for (const factura of cliente.Facturas) {
-                    worksheet.addRow({
-                        CardCode: '',
-                        CardName: '',
-                        ZoneName: '',
-                        DocNum: factura.DocNum,
-                        DocTotal: +factura.DocTotal,
-                        FiscalDate: factura.FiscalDate,
-                        U_B_cuf: factura.U_B_cuf,
+        return res.json(responseData)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en vendedorPorSucCodeController: ${error.message}` })
+    }
+}
+
+const excelClientesMoraController = async (req, res) => {
+    try {
+        const { sucCode, slpCode } = req.query
+        const response = await clientesConMora(sucCode, slpCode)
+        const cardMap = new Map();
+        response.map((item) => {
+            if (item.CardCode && item.CardCode !== '') {
+                const {
+                    LicTradNum,
+                    Comments,
+                    JrnlMemo,
+                    DocTotal,
+                    DocEntry,
+                    DocNum,
+                    U_RAZSOC,
+                    NumAtCard,
+                    FiscalDate,
+                    U_B_cuf,
+                    U_B_path,
+                    ...restData
+                } = item
+
+                const {
+                    PymntGroup,
+                    CardCode,
+                    CardName,
+                    GroupName,
+                    SucName,
+                    AreaName,
+                    ZoneName,
+                    SlpNameCli,
+                    CardFName,
+                    DaysDue
+                } = restData
+
+                if (cardMap.has(CardCode)) {
+                    const existing = cardMap.get(CardCode);
+                    if (DaysDue > existing.DaysDue) {
+                        cardMap.set(CardCode, {
+                            PymntGroup,
+                            CardCode,
+                            CardName,
+                            GroupName,
+                            SucName,
+                            AreaName,
+                            ZoneName,
+                            SlpNameCli,
+                            CardFName,
+                            DaysDue,
+                            Facturas: []
+                        });
+                    }
+                } else {
+                    cardMap.set(CardCode, {
+                        PymntGroup,
+                        CardCode,
+                        CardName,
+                        GroupName,
+                        SucName,
+                        AreaName,
+                        ZoneName,
+                        SlpNameCli,
+                        CardFName,
+                        DaysDue,
+                        Facturas: []
                     });
                 }
-
-                worksheet.addRow({});
             }
+        })
 
-            const filePath = path.join(__dirname, './excel/Clientes_Facturas.xlsx');
-            await workbook.xlsx.writeFile(filePath);
+        const listCardCode = Array.from(cardMap.values())
 
-            res.download(filePath, 'Clientes_Facturas.xlsx', (err) => {
-                if (err) {
-                    console.error('Error al enviar el archivo:', err);
-                    return res.status(500).json({ mensaje: 'Error al enviar el archivo.' });
-                }
+        listCardCode.map((itemData) => {
 
-                fs.unlink(filePath, (unlinkErr) => {
-                    if (unlinkErr) {
-                        console.error('Error al eliminar el archivo:', unlinkErr);
+            const listDataFacturas = response
+                .filter(item => item.CardCode === itemData.CardCode)
+                .map(item => {
+                    const {
+                        LicTradNum,
+                        Comments,
+                        JrnlMemo,
+                        DocTotal,
+                        DocEntry,
+                        DocNum,
+                        U_RAZSOC,
+                        NumAtCard,
+                        FiscalDate,
+                        U_B_cuf,
+                        U_B_path,
+                        DaysDue,
+                    } = item;
+                    // const dataFormated = FiscalDate.split
+                    return {
+                        LicTradNum,
+                        Comments,
+                        JrnlMemo,
+                        DocTotal,
+                        DocEntry,
+                        DocNum,
+                        U_RAZSOC,
+                        NumAtCard,
+                        FiscalDate: `${FiscalDate.split(' ')[0] || ''}`,
+                        U_B_cuf,
+                        DaysDue,
+                        U_B_path,
                     }
-                });
+                })
+
+            itemData.Facturas = listDataFacturas
+        })
+
+        // return res.json(listCardCode)
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Clientes y Facturas');
+
+        worksheet.columns = [
+            { header: 'Codigo', key: 'CardCode', width: 15 },
+            { header: 'Nombre', key: 'CardName', width: 30 },
+            { header: 'Zona', key: 'ZoneName', width: 20 },
+            { header: 'Factura Nro', key: 'DocNum', width: 15 },
+            { header: 'Monto Total', key: 'DocTotal', width: 15 },
+            { header: 'Fecha Fiscal', key: 'FiscalDate', width: 20 },
+            { header: 'CUF', key: 'U_B_cuf', width: 60 },
+        ];
+
+        for (const cliente of listCardCode) {
+            const clienteRow = worksheet.addRow({
+                CardCode: cliente.CardCode,
+                CardName: cliente.CardName,
+                ZoneName: cliente.ZoneName,
             });
 
-        } catch (error) {
-            console.log({ error })
-            return res.status(500).json({ mensaje: `Error en excelClientesMoraController: ${error.message}` })
+            clienteRow.font = { bold: true };
+            clienteRow.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD9E1F2' },
+            };
+
+            for (const factura of cliente.Facturas) {
+                worksheet.addRow({
+                    CardCode: '',
+                    CardName: '',
+                    ZoneName: '',
+                    DocNum: factura.DocNum,
+                    DocTotal: +factura.DocTotal,
+                    FiscalDate: factura.FiscalDate,
+                    U_B_cuf: factura.U_B_cuf,
+                });
+            }
+
+            worksheet.addRow({});
         }
+
+        const filePath = path.join(__dirname, './excel/Clientes_Facturas.xlsx');
+        await workbook.xlsx.writeFile(filePath);
+
+        res.download(filePath, 'Clientes_Facturas.xlsx', (err) => {
+            if (err) {
+                console.error('Error al enviar el archivo:', err);
+                return res.status(500).json({ mensaje: 'Error al enviar el archivo.' });
+            }
+
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error('Error al eliminar el archivo:', unlinkErr);
+                }
+            });
+        });
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en excelClientesMoraController: ${error.message}` })
     }
+}
 
 const reporteUbicacionClienteController = async (req, res) => {
     try {
@@ -2353,15 +2374,15 @@ const reporteUbicacionClienteController = async (req, res) => {
 const agregarSolicitudDeDescuentoController = async (req, res) => {
     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {solicitudes, p_SlpCode, p_SlpName, p_CreatedBy} = req.body
+        const { solicitudes, p_SlpCode, p_SlpName, p_CreatedBy } = req.body
         let responses = []
-        for(const solicitud of solicitudes) {
-            let { p_ClientCode, p_ClientName, p_ItemCode, p_ItemName, p_CantMin, p_DescPrct,  p_FechaIni, p_FechaFin } = solicitud
-            if(!p_FechaIni || p_FechaIni === '') {
+        for (const solicitud of solicitudes) {
+            let { p_ClientCode, p_ClientName, p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin } = solicitud
+            if (!p_FechaIni || p_FechaIni === '') {
                 const fecha = new Date()
                 p_FechaIni = fecha.toISOString().split('T')[0]
             }
-            if(!p_FechaFin || p_FechaFin === '') {
+            if (!p_FechaFin || p_FechaFin === '') {
                 const fechaIni = new Date(p_FechaIni)
                 fechaIni.setDate(fechaIni.getDate() + 3)
                 p_FechaFin = fechaIni.toISOString().split('T')[0]
@@ -2370,9 +2391,9 @@ const agregarSolicitudDeDescuentoController = async (req, res) => {
                 p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin, p_CreatedBy)
 
             console.log({ response })
-            responses.push({response})
+            responses.push({ response })
         }
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Solicitar Descuento", `Exito al solicitar un descuento`, 'ifa_crm_solicitar_descuento', 
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Solicitar Descuento", `Exito al solicitar un descuento`, 'ifa_crm_solicitar_descuento',
             "venta/solicitar-descuento", process.env.PRD)
 
         return res.json({
@@ -2380,7 +2401,7 @@ const agregarSolicitudDeDescuentoController = async (req, res) => {
         })
     } catch (error) {
         console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Solicitar Descuento", `${error.message || 'Error en agregarSolicitudDeDescuentoController'}`, 'ifa_crm_solicitar_descuento', 
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Solicitar Descuento", `${error.message || 'Error en agregarSolicitudDeDescuentoController'}`, 'ifa_crm_solicitar_descuento',
             "venta/solicitar-descuento", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en agregarSolicitudDeDescuentoController: ${error.message}` })
     }
@@ -2388,12 +2409,12 @@ const agregarSolicitudDeDescuentoController = async (req, res) => {
 
 const getClientNameController = async (req, res) => {
     try {
-        const {cardCode} = req.body
+        const { cardCode } = req.body
         let response = await getClientName(cardCode)
-        if(response.length > 0) {
+        if (response.length > 0) {
             return res.json(response[0].CardName)
-        }else{
-            return res.status(400).json({mensaje: 'No se encontró el cliente'})
+        } else {
+            return res.status(400).json({ mensaje: 'No se encontró el cliente' })
         }
     } catch (error) {
         console.log({ error })
@@ -2404,16 +2425,16 @@ const getClientNameController = async (req, res) => {
 const actualizarStatusSolicitudDescuentoController = async (req, res) => {
     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode} = req.body
-        const response =  await actualizarStatusSolicitudDescuento(id??-1, status, p_CreatedBy, p_SlpCode??-1, p_ClientCode, p_ItemCode)
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `Exito al actualizar el status de la solicitud de descuento`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO', 
+        const { id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode } = req.body
+        const response = await actualizarStatusSolicitudDescuento(id ?? -1, status, p_CreatedBy, p_SlpCode ?? -1, p_ClientCode, p_ItemCode)
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `Exito al actualizar el status de la solicitud de descuento`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO',
             "venta/cambiar-status-solicitud-des", process.env.PRD)
         return res.json(
             response
         )
     } catch (error) {
         console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `${error.message || 'Error en actualizarStatusSolicitudDescuentoController'}`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO', 
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `${error.message || 'Error en actualizarStatusSolicitudDescuentoController'}`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO',
             "venta/cambiar-status-solicitud-des", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en actualizarStatusSolicitudDescuentoController: ${error.message}` })
     }
@@ -2422,20 +2443,20 @@ const actualizarStatusSolicitudDescuentoController = async (req, res) => {
 const actualizarVariosStatusSolicitudDescuentoController = async (req, res) => {
     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {ids, status, p_CreatedBy} = req.body
+        const { ids, status, p_CreatedBy } = req.body
         const responses = []
-        for(const id of ids) {
-            const response =  await actualizarStatusSolicitudDescuento(id??-1, status, p_CreatedBy, -1, '', '')
+        for (const id of ids) {
+            const response = await actualizarStatusSolicitudDescuento(id ?? -1, status, p_CreatedBy, -1, '', '')
             responses.push(response)
         }
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `Exito al actualizar el status de la solicitud de descuento`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO', 
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `Exito al actualizar el status de la solicitud de descuento`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO',
             "venta/cambiar-status-solicitudes-des", process.env.PRD)
         return res.json(
             responses
         )
     } catch (error) {
         console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `${error.message || 'Error en actualizarStatusSolicitudDescuentoController'}`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO', 
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Actualizar Status Descuento", `${error.message || 'Error en actualizarStatusSolicitudDescuentoController'}`, 'IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO',
             "venta/cambiar-status-solicitudes-des", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en actualizarStatusSolicitudDescuentoController: ${error.message}` })
     }
@@ -2443,9 +2464,9 @@ const actualizarVariosStatusSolicitudDescuentoController = async (req, res) => {
 
 const getVendedoresSolicitudDescByStatusController = async (req, res) => {
     try {
-        const {status} = req.query
-        const response =  await getVendedoresSolicitudDescByStatus(status)
-        console.log({response})
+        const { status } = req.query
+        const response = await getVendedoresSolicitudDescByStatus(status)
+        console.log({ response })
         return res.json(
             response
         )
@@ -2457,8 +2478,8 @@ const getVendedoresSolicitudDescByStatusController = async (req, res) => {
 
 const getSolicitudesDescuentoByStatusController = async (req, res) => {
     try {
-        const {status, slpCode} = req.body
-        const response =  await getSolicitudesDescuentoByStatus(status, slpCode)
+        const { status, slpCode } = req.body
+        const response = await getSolicitudesDescuentoByStatus(status, slpCode)
         return res.json(
             response
         )
@@ -2472,47 +2493,47 @@ const actualizarSolicitudDescuentoController = async (req, res) => {
     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct } = req.body
-        const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
-        console.log({response})
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuento", `Exito al editar la solicitud de descuento`, 'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO', 
+        const response = await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
+        console.log({ response })
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuento", `Exito al editar la solicitud de descuento`, 'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO',
             "venta/actualizar-solicitud-desc", process.env.PRD)
-        return res.json( response )
+        return res.json(response)
     } catch (error) {
         console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuento", `${error.message || 'Error en actualizarSolicitudDescuentoController'}`, 
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuento", `${error.message || 'Error en actualizarSolicitudDescuentoController'}`,
             'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO', "venta/actualizar-solicitud-desc", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en actualizarSolicitudDescuentoController: ${error.message}` })
     }
 }
 
 const actualizarSolicitudesDescuentoController = async (req, res) => {
-    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }    
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {solicitudes} = req.body
+        const { solicitudes } = req.body
         const responses = []
-        for(const solicitud of solicitudes) {
+        for (const solicitud of solicitudes) {
             const { id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct } = solicitud
-            const response =  await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
-            console.log({response})
+            const response = await actualizarSolicitudDescuento(id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct)
+            console.log({ response })
             responses.push(response)
         }
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuentos", `Exito al editar las solicitudes de descuento`, 'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO', 
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuentos", `Exito al editar las solicitudes de descuento`, 'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO',
             "venta/actualizar-solicitudes-desc", process.env.PRD)
-        return res.json( responses )
+        return res.json(responses)
     } catch (error) {
         console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuentoa", `${error.message || 'Error en actualizarSolicitudesDescuentoController'}`, 
+        grabarLog(user.USERCODE, user.USERNAME, "Venta Editar Descuentoa", `${error.message || 'Error en actualizarSolicitudesDescuentoController'}`,
             'IFA_CRM_EDITAR_SOLICITUD_DESCUENTO', "venta/actualizar-solicitudes-desc", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en actualizarSolicitudesDescuentoController: ${error.message}` })
     }
 }
 
-const deleteSolicitudDescuentoController = async (req, res) => {  
+const deleteSolicitudDescuentoController = async (req, res) => {
     try {
-        const {id} = req.query
-        const response =  await deleteSolicitudDescuento(id)
-        console.log({response})
-        return res.json( response )
+        const { id } = req.query
+        const response = await deleteSolicitudDescuento(id)
+        console.log({ response })
+        return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en deleteSolicitudDescuentoController: ${error.message}` })
@@ -2520,15 +2541,15 @@ const deleteSolicitudDescuentoController = async (req, res) => {
 }
 
 const notificationSubscriptionController = async (req, res) => {
-    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }  
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const subscription = JSON.stringify(req.body);
-        const response =  await notificationSubscription(subscription)
-        console.log({response})
-        return res.json( response )
+        const response = await notificationSubscription(subscription)
+        console.log({ response })
+        return res.json(response)
     } catch (error) {
         console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Subscripcion Notificacion", `${error.message || 'Error en notificationSubscriptionController'}`, 'PUSH_SUBSCRIPTIONS', 
+        grabarLog(user.USERCODE, user.USERNAME, "Subscripcion Notificacion", `${error.message || 'Error en notificationSubscriptionController'}`, 'PUSH_SUBSCRIPTIONS',
             "venta/notification-subscribe", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en notificationSubscriptionController: ${error.message}` })
     }
@@ -2537,9 +2558,9 @@ const notificationSubscriptionController = async (req, res) => {
 const notificationUnsubscribeController = async (req, res) => {
     try {
         const subscription = JSON.stringify(req.body);
-        const response =  await notificationUnsubscribe(subscription)
-        console.log({response})
-        return res.json( response )
+        const response = await notificationUnsubscribe(subscription)
+        console.log({ response })
+        return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en notificationUnsubscribeController: ${error.message}` })
@@ -2552,42 +2573,42 @@ webpush.setVapidDetails(
     process.env.VAPID_KEY_PRIVATE
 );
 const sendNotificationController = async (req, res) => {
-    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }  
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const { title , body, vendedor, excludeEndpoint, usuario} = req.body
-        console.log({excludeEndpoint})
+        const { title, body, vendedor, excludeEndpoint, usuario } = req.body
+        console.log({ excludeEndpoint })
         let dato = {
             title: `${title}`,
             body: `${body}`,
-            created_at: new Date(), 
+            created_at: new Date(),
             vendedor: vendedor,
         }
-        const rows =  await getSubscriptions()
-        console.log({rows})
+        const rows = await getSubscriptions()
+        console.log({ rows })
 
-        const responseInsert = await insertNotification(title , body, vendedor, dato.created_at, usuario)
-        console.log({responseInsert})
+        const responseInsert = await insertNotification(title, body, vendedor, dato.created_at, usuario)
+        console.log({ responseInsert })
         //{ status: 200,
         //  result: [ { V_ID_NOTIFICACION: 4 } ]
         //}
-        if(responseInsert.status==200)
+        if (responseInsert.status == 200)
             dato.id = responseInsert.result[0].V_ID_NOTIFICACION
 
         rows.forEach(row => {
-          const sub = JSON.parse(row.Subscription);
-          if(sub.endpoint !== excludeEndpoint){
-            console.log(`Enviando`, sub.endpoint)
-            webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
-          }else{
-            console.log('Excluded', sub.endpoint);
-          }
+            const sub = JSON.parse(row.Subscription);
+            if (sub.endpoint !== excludeEndpoint) {
+                console.log(`Enviando`, sub.endpoint)
+                webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
+            } else {
+                console.log('Excluded', sub.endpoint);
+            }
         });
-        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `Exito al enviar la notificacion`, 'INSERTAR_NOTIFICACION', 
+        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `Exito al enviar la notificacion`, 'INSERTAR_NOTIFICACION',
             "venta/send-notification", process.env.PRD)
-        return  res.send(dato);
+        return res.send(dato);
     } catch (error) {
         console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `${error.message || 'Error en sendNotificationController'}`, 'INSERTAR_NOTIFICACION', 
+        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `${error.message || 'Error en sendNotificationController'}`, 'INSERTAR_NOTIFICACION',
             "venta/send-notification", process.env.PRD)
         return res.status(500).json({ mensaje: `Error en sendNotificationController: ${error.message}` })
     }
@@ -2595,87 +2616,87 @@ const sendNotificationController = async (req, res) => {
 
 const getNotificationController = async (req, res) => {
     try {
-        const {vendedor, usuario, subscription} = req.body
-        
-        const response =  await getNotifications(vendedor, usuario, JSON.stringify(subscription))
+        const { vendedor, usuario, subscription } = req.body
+
+        const response = await getNotifications(vendedor, usuario, JSON.stringify(subscription))
         return res.json(response);
-    } catch (error){
-        console.error({error})
-        return res.status(500).json({mensaje: `Error en el controlador getNotificationController: ${error.message || ''}`})
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getNotificationController: ${error.message || ''}` })
     }
 }
 
 const deleteNotificationController = async (req, res) => {
     try {
-        const {id_notification, subscription} = req.body
-        const response =  await deleteNotification(id_notification, JSON.stringify(subscription))
+        const { id_notification, subscription } = req.body
+        const response = await deleteNotification(id_notification, JSON.stringify(subscription))
         console.log(response)
         return res.json(response);
-    } catch (error){
-        console.error({error})
-        return res.status(500).json({mensaje: `Error en el controlador deleteNotificationController: ${error.message || ''}`})
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador deleteNotificationController: ${error.message || ''}` })
     }
 }
 
-const ventasPresupuestoSubLinea = async(req, res) => {
+const ventasPresupuestoSubLinea = async (req, res) => {
     try {
         let response = await getVentasPrespuestosSubLinea();
         const resultado = [];
         console.log(response);
 
         for (const item of response) {
-          const {
-            DimensionACode,
-            DimensionA,
-            DimensionBCode,
-            DimensionB,
-            DimensionC,
-            DimensionCCode,
-            DimensionC1Code,
-            DimensionC1,
-            Sales,
-            Quota
-          } = item;
-    
-          // Nivel A
-          let grupoA = resultado.find(a => a.DimensionACode === DimensionACode);
-          if (!grupoA) {
-            grupoA = {
-              DimensionACode,
-              DimensionA,
-              data: []
-            };
-            resultado.push(grupoA);
-          }
-    
-          // Nivel B dentro de A
-          let grupoB = grupoA.data.find(b => b.DimensionBCode === DimensionBCode);
-          if (!grupoB) {
-            grupoB = {
-              DimensionBCode,
-              DimensionB,
-              data: []
-            };
-            grupoA.data.push(grupoB);
-          }
-    
-          // Nivel C1 dentro de B
-          let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
-          if (!grupoC) {
-            grupoC = {
-              DimensionC,
-              DimensionCCode,
-              DimensionC1Code,
-              DimensionC1,
-              Sales: 0,
-              Quota: 0
-            };
-            grupoB.data.push(grupoC);
-          }
-    
-          // Sumar valores
-          grupoC.Sales += parseFloat(Sales);
-          grupoC.Quota += parseFloat(Quota);
+            const {
+                DimensionACode,
+                DimensionA,
+                DimensionBCode,
+                DimensionB,
+                DimensionC,
+                DimensionCCode,
+                DimensionC1Code,
+                DimensionC1,
+                Sales,
+                Quota
+            } = item;
+
+            // Nivel A
+            let grupoA = resultado.find(a => a.DimensionACode === DimensionACode);
+            if (!grupoA) {
+                grupoA = {
+                    DimensionACode,
+                    DimensionA,
+                    data: []
+                };
+                resultado.push(grupoA);
+            }
+
+            // Nivel B dentro de A
+            let grupoB = grupoA.data.find(b => b.DimensionBCode === DimensionBCode);
+            if (!grupoB) {
+                grupoB = {
+                    DimensionBCode,
+                    DimensionB,
+                    data: []
+                };
+                grupoA.data.push(grupoB);
+            }
+
+            // Nivel C1 dentro de B
+            let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
+            if (!grupoC) {
+                grupoC = {
+                    DimensionC,
+                    DimensionCCode,
+                    DimensionC1Code,
+                    DimensionC1,
+                    Sales: 0,
+                    Quota: 0
+                };
+                grupoB.data.push(grupoC);
+            }
+
+            // Sumar valores
+            grupoC.Sales += parseFloat(Sales);
+            grupoC.Quota += parseFloat(Quota);
         }
         return res.status(200).json(resultado);
     } catch (error) {
@@ -2684,65 +2705,65 @@ const ventasPresupuestoSubLinea = async(req, res) => {
     }
 }
 
-const ventasPresupuestoSubLineaAnterior = async(req, res) => {
+const ventasPresupuestoSubLineaAnterior = async (req, res) => {
     try {
         let response = await getVentasPrespuestosSubLineaAnterior();
         const resultado = [];
         console.log(response);
 
         for (const item of response) {
-          const {
-            DimensionACode,
-            DimensionA,
-            DimensionBCode,
-            DimensionB,
-            DimensionC,
-            DimensionCCode,
-            DimensionC1Code,
-            DimensionC1,
-            Sales,
-            Quota
-          } = item;
-    
-          // Nivel A
-          let grupoA = resultado.find(a => a.DimensionACode === DimensionACode);
-          if (!grupoA) {
-            grupoA = {
-              DimensionACode,
-              DimensionA,
-              data: []
-            };
-            resultado.push(grupoA);
-          }
-    
-          // Nivel B dentro de A
-          let grupoB = grupoA.data.find(b => b.DimensionBCode === DimensionBCode);
-          if (!grupoB) {
-            grupoB = {
-              DimensionBCode,
-              DimensionB,
-              data: []
-            };
-            grupoA.data.push(grupoB);
-          }
-    
-          // Nivel C1 dentro de B
-          let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
-          if (!grupoC) {
-            grupoC = {
-              DimensionC,
-              DimensionCCode,
-              DimensionC1Code,
-              DimensionC1,
-              Sales: 0,
-              Quota: 0
-            };
-            grupoB.data.push(grupoC);
-          }
-    
-          // Sumar valores
-          grupoC.Sales += parseFloat(Sales);
-          grupoC.Quota += parseFloat(Quota);
+            const {
+                DimensionACode,
+                DimensionA,
+                DimensionBCode,
+                DimensionB,
+                DimensionC,
+                DimensionCCode,
+                DimensionC1Code,
+                DimensionC1,
+                Sales,
+                Quota
+            } = item;
+
+            // Nivel A
+            let grupoA = resultado.find(a => a.DimensionACode === DimensionACode);
+            if (!grupoA) {
+                grupoA = {
+                    DimensionACode,
+                    DimensionA,
+                    data: []
+                };
+                resultado.push(grupoA);
+            }
+
+            // Nivel B dentro de A
+            let grupoB = grupoA.data.find(b => b.DimensionBCode === DimensionBCode);
+            if (!grupoB) {
+                grupoB = {
+                    DimensionBCode,
+                    DimensionB,
+                    data: []
+                };
+                grupoA.data.push(grupoB);
+            }
+
+            // Nivel C1 dentro de B
+            let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
+            if (!grupoC) {
+                grupoC = {
+                    DimensionC,
+                    DimensionCCode,
+                    DimensionC1Code,
+                    DimensionC1,
+                    Sales: 0,
+                    Quota: 0
+                };
+                grupoB.data.push(grupoC);
+            }
+
+            // Sumar valores
+            grupoC.Sales += parseFloat(Sales);
+            grupoC.Quota += parseFloat(Quota);
         }
         return res.status(200).json(resultado);
     } catch (error) {
@@ -2753,10 +2774,10 @@ const ventasPresupuestoSubLineaAnterior = async(req, res) => {
 
 const getSolicitudesDescuentoByVendedorController = async (req, res) => {
     try {
-        const {id} = req.query
-        const response =  await getSolicitudesDescuentoByVendedor(id)
-        console.log({response})
-        return res.json( response )
+        const { id } = req.query
+        const response = await getSolicitudesDescuentoByVendedor(id)
+        console.log({ response })
+        return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en getSolicitudesDescuentoByVendedorController: ${error.message}` })
@@ -2765,51 +2786,51 @@ const getSolicitudesDescuentoByVendedorController = async (req, res) => {
 
 const getVendedoresSolicitudDescuentoController = async (req, res) => {
     try {
-        const response =  await getVendedoresSolicitudDescuento()
+        const response = await getVendedoresSolicitudDescuento()
         console.log(response)
         return res.json(response);
-    } catch (error){
-        console.error({error})
-        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getVendedoresSolicitudDescuentoController'}`})
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getVendedoresSolicitudDescuentoController'}` })
     }
 }
 
 const getVendedorByCodeController = async (req, res) => {
     try {
-        const {id} = req.query
-        const response =  await getVendedorByCode(id)
-        if(response.length==0)
-            return res.status(400).json({mensaje: `No existe vendedor con ese codigo`})
+        const { id } = req.query
+        const response = await getVendedorByCode(id)
+        if (response.length == 0)
+            return res.status(400).json({ mensaje: `No existe vendedor con ese codigo` })
         return res.json(response[0]);
-    } catch (error){
-        console.error({error})
-        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getVendedorByCodeController'}`})
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getVendedorByCodeController'}` })
     }
 }
 
 const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
     try {
         ////
-        const {cliente, vendedor} = req.body;
+        const { cliente, vendedor } = req.body;
         const fecha = new Date()
-        const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
+        const response = await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
         console.log(response)
         return res.json(response);
-    } catch (error){
-        console.error({error})
-        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getDescuentosDelVendedorParaPedidoController'}`})
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getDescuentosDelVendedorParaPedidoController'}` })
     }
 }
 
 const ventasPorZonasVendedor2Controller = async (req, res) => {
     try {
-        const {usercode, isAnt} = req.body;
+        const { usercode, isAnt } = req.body;
         let response
-        if(isAnt==true){
+        if (isAnt == true) {
             console.log('isAnt')
             response = await ventasPorZonasVendedorMesAnt2(usercode)
-        }else{
-            response =  await ventasPorZonasVendedor2(usercode)
+        } else {
+            response = await ventasPorZonasVendedor2(usercode)
         }
         console.log(response)
 
@@ -2819,94 +2840,94 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
         // let grandTotalQuota = 0;
         // let grandTotalSales = 0;
         console.log('length', response.length)
-        
+
         const results = []
         response.forEach((r, index) => {
-            if(r.LineItemCode == LineItemCode){
+            if (r.LineItemCode == LineItemCode) {
                 const res1 = r
                 res1.cumplimiento = +r.cumplimiento
-                res1.hide =true
+                res1.hide = true
                 results.push(res1)
 
                 totalQuotaByLineItem[r.LineItemCode] += +r.Quota;
                 totalSalesByLineItem[r.LineItemCode] += +r.Sales;
                 console.log('index', index)
-                if((response.length-1) ==index){
-                  const res = {
-                    LineItemCode: `Total ${r.LineItemCode}`,
-                    Quota: +totalQuotaByLineItem[r.LineItemCode],
-                    Sales: +totalSalesByLineItem[r.LineItemCode],
-                    cumplimiento: (+totalSalesByLineItem[r.LineItemCode]/+totalQuotaByLineItem[r.LineItemCode])*100,
-                    isSubtotal : true, 
-                    hide: false
-                  }
-                  results.push(res)
+                if ((response.length - 1) == index) {
+                    const res = {
+                        LineItemCode: `Total ${r.LineItemCode}`,
+                        Quota: +totalQuotaByLineItem[r.LineItemCode],
+                        Sales: +totalSalesByLineItem[r.LineItemCode],
+                        cumplimiento: (+totalSalesByLineItem[r.LineItemCode] / +totalQuotaByLineItem[r.LineItemCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
                 }
-            }else{
+            } else {
                 LineItemCode = r.LineItemCode;
                 totalQuotaByLineItem[r.LineItemCode] = +r.Quota;
                 totalSalesByLineItem[r.LineItemCode] = +r.Sales;
 
-                if(index>0){
-                  const res = {
-                    LineItemCode: `Total ${response[index-1].LineItemCode}`,
-                    Quota: +totalQuotaByLineItem[response[index-1].LineItemCode],
-                    Sales: +totalSalesByLineItem[response[index-1].LineItemCode],
-                    cumplimiento: (+totalSalesByLineItem[response[index-1].LineItemCode]/+totalQuotaByLineItem[response[index-1].LineItemCode])*100,
-                    isSubtotal : true, 
-                    hide: false
-                  }
-                  results.push(res)
+                if (index > 0) {
+                    const res = {
+                        LineItemCode: `Total ${response[index - 1].LineItemCode}`,
+                        Quota: +totalQuotaByLineItem[response[index - 1].LineItemCode],
+                        Sales: +totalSalesByLineItem[response[index - 1].LineItemCode],
+                        cumplimiento: (+totalSalesByLineItem[response[index - 1].LineItemCode] / +totalQuotaByLineItem[response[index - 1].LineItemCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
                 }
                 const res1 = r
                 res1.cumplimiento = +r.cumplimiento
-                res1.hide =false
+                res1.hide = false
                 results.push(res1)
 
                 console.log('index', index)
-                if((response.length-1) ==index){
-                  const res = {
-                    LineItemCode: `Total ${r.LineItemCode}`,
-                    Quota: +totalQuotaByLineItem[r.LineItemCode],
-                    Sales: +totalSalesByLineItem[r.LineItemCode],
-                    cumplimiento: (+totalSalesByLineItem[r.LineItemCode]/+totalQuotaByLineItem[r.LineItemCode])*100,
-                    isSubtotal : true, 
-                    hide: false
-                  }
-                  results.push(res)
+                if ((response.length - 1) == index) {
+                    const res = {
+                        LineItemCode: `Total ${r.LineItemCode}`,
+                        Quota: +totalQuotaByLineItem[r.LineItemCode],
+                        Sales: +totalSalesByLineItem[r.LineItemCode],
+                        cumplimiento: (+totalSalesByLineItem[r.LineItemCode] / +totalQuotaByLineItem[r.LineItemCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
                 }
             }
             // grandTotalQuota += +r.Quota;
             // grandTotalSales += +r.Sales;
-        }); 
-        console.log({results})
+        });
+        console.log({ results })
         return res.json(results);
-    } catch (error){
-        console.error({error})
-        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador ventasPorZonasVendedor2Controller'}`})
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador ventasPorZonasVendedor2Controller'}` })
     }
 }
 
 const getUbicacionClientesByVendedorController = async (req, res) => {
     try {
-        const {id} = req.query;
-        const response =  await getUbicacionClientesByVendedor(id)
+        const { id } = req.query;
+        const response = await getUbicacionClientesByVendedor(id)
         console.log(response)
         return res.json(response);
-    } catch (error){
-        console.error({error})
-        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getUbicacionClientesByVendedorController'}`})
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getUbicacionClientesByVendedorController'}` })
     }
 }
 
 const getVendedoresVentasController = async (req, res) => {
     try {
-        const response =  await getVendedoresVentas()
+        const response = await getVendedoresVentas()
         console.log(response)
         return res.json(response);
-    } catch (error){
-        console.error({error})
-        return res.status(500).json({mensaje: `${error.message || 'Error en el controlador getVendedoresVentasController'}`})
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getVendedoresVentasController'}` })
     }
 }
 
@@ -2996,7 +3017,8 @@ module.exports = {
     getClientNameController, notificationSubscriptionController, sendNotificationController,
     getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
     ventasPresupuestoSubLinea,
-    ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController, 
+    ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController,
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
-    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVendedoresVentasController
+    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVendedoresVentasController,
+    vendedorPorListSucCodeController,
 };
