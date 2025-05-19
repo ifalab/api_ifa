@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -545,6 +545,17 @@ const getAsientoContableCCById = async (req, res) => {
         return res.status(500).json({ mensaje: `error en el controlador [getAsientoContableCCById], ${error}` })
     }
 }
+
+const reservarAsientoId = async (req, res) => {
+    try {
+        const result = await getIdReserva();
+
+        return res.status(200).json(result[0])
+    } catch (error) {
+         console.error({ error });
+        return res.status(500).json({ mensaje: `[reservarAsientoId] Error reservando id para el asiento. ${error}` });
+    }
+}
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -558,5 +569,6 @@ module.exports = {
     clasificacionGastos,
     saveDocFuentes,
     getAsientoContableCCById,
-    cargarPlantillaMasivaDimensiones
+    cargarPlantillaMasivaDimensiones,
+    reservarAsientoId
 }

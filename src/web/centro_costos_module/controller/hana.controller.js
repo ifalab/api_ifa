@@ -95,6 +95,17 @@ const asientosContablesCCById = async (id) => {
   return await executeQueryWithConnection(query);
 };
 
+const getIdReserva = async () => {
+    try {
+        console.log('getIdReserva EXECUTE');
+        const query = `CALL LAB_IFA_COM.IFA_CC_RESERVAR_ASIENTO()`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw new Error(`Error en getIdReserva, ${error}`);
+    }
+}
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -103,5 +114,6 @@ module.exports = {
     getPlantillas,
     getClasificacionGastos,
     postDocFuente,
-    asientosContablesCCById
+    asientosContablesCCById,
+    getIdReserva
 };
