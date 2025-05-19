@@ -96,7 +96,7 @@ const {
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications,insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode, 
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
-    getVendedoresVentas, ventasPorZonasVendedorMesAnt2
+    getVendedoresVentas, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2455,6 +2455,24 @@ const getVendedoresSolicitudDescByStatusController = async (req, res) => {
     }
 }
 
+const getVendedoresSolicitudDescByStatusSucursalController = async (req, res) => {
+    try {
+        const {status, sucursal} = req.query
+        let response
+        if(sucursal==0)
+            response =  await getVendedoresSolicitudDescByStatus(status)
+        else
+            response = await getVendedoresSolicitudDescByStatusSucursal(status, sucursal)
+        console.log({response})
+        return res.json(
+            response
+        )
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getVendedoresSolicitudDescByStatusSucursalController: ${error.message}` })
+    }
+}
+
 const getSolicitudesDescuentoByStatusController = async (req, res) => {
     try {
         const {status, slpCode} = req.body
@@ -2595,9 +2613,13 @@ const sendNotificationController = async (req, res) => {
 
 const getNotificationController = async (req, res) => {
     try {
-        const {vendedor, usuario, subscription} = req.body
-        
-        const response =  await getNotifications(vendedor, usuario, JSON.stringify(subscription))
+        const {vendedor, usuario, subscription, sucursal} = req.body
+        let response
+        if(sucursal){
+            response =  await getNotificationsPorSucursal(usuario, JSON.stringify(subscription), sucursal)
+        }else{
+            response =  await getNotifications(vendedor, usuario, JSON.stringify(subscription))
+        }
         return res.json(response);
     } catch (error){
         console.error({error})
@@ -2792,7 +2814,7 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
         ////
         const {cliente, vendedor} = req.body;
         const fecha = new Date()
-        const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
+        const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString().split('T')[0])
         console.log(response)
         return res.json(response);
     } catch (error){
@@ -2995,8 +3017,9 @@ module.exports = {
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
     getClientNameController, notificationSubscriptionController, sendNotificationController,
     getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
-    ventasPresupuestoSubLinea,
-    ventasPresupuestoSubLineaAnterior, notificationUnsubscribeController, 
+    ventasPresupuestoSubLinea, ventasPresupuestoSubLineaAnterior, 
+    notificationUnsubscribeController, 
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
-    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVendedoresVentasController
+    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVendedoresVentasController,
+    getVendedoresSolicitudDescByStatusSucursalController
 };

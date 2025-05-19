@@ -27,10 +27,11 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     detalleSolicitudPendiente,
     reporteDevolucionValorados,
     searchClientes,
-    reporteDevolucionCambios, reporteDevolucionRefacturacion,
-    getEntregas } = require("./hana.controller")
+    reporteDevolucionCambios, reporteDevolucionRefacturacion, getDevolucionesParaCancelar,
+    getEntregasParaCancelar } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
-    getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes } = require("./sld.controller")
+    getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
+    cancelReconciliacion, cancelInvoice } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega } = require("../../facturacion_module/controller/hana.controller")
@@ -4912,31 +4913,142 @@ const reporteDevolucionRefacturacionController = async (req, res) => {
     }
 }
 
-//TO-DO
+const getDevolucionesParaCancelarController = async (req, res) => {
+    try {
+        const {id_user} = req.query
+        const response = await getDevolucionesParaCancelar(id_user)
+        // console.log({ response })
+        let cabecera = []
+        for(const line of response){
+            let {U_UserCode, DocEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TrgetEntry, ...rest} = line
+            if(cabecera.length ==0){
+                DocTime = String(DocTime)
+                if(DocTime.length==4){
+                    DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
+                }else{
+                    DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                }
+                cabecera=[{U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, 
+                    detalle: [{...rest}]
+                }]
+            }else{
+                if(cabecera[cabecera.length-1].DocEntry==DocEntry){
+                    cabecera[cabecera.length-1].detalle.push({...rest});
+                }else{
+                    DocTime = String(DocTime)
+                    if(DocTime.length==4){
+                        DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
+                    }else{
+                        DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                    }
+                    cabecera.push({U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, 
+                        detalle: [{...rest}]
+                    })
+                }
+            }
+        }
+        return res.json(cabecera)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getDevolucionesParaCancelarController  : ${error.message || 'No definido'}` })
+    }
+}
+
+const getEntregasParaCancelarController = async (req, res) => {
+    try {
+        const {id_user} = req.query
+        const response = await getEntregasParaCancelar(id_user)
+        // console.log({ response })
+        let cabecera = []
+        for(const line of response){
+            let {U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, ...rest} = line
+            if(cabecera.length ==0){
+                DocTime = String(DocTime)
+                if(DocTime.length==4){
+                    DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
+                }else{
+                    DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                }
+                cabecera=[{U_UserCode, DocEntry, DocNum, TrgetEntry,CardCode, CardName, Comments,DocDate, DocTime, DocTotal, 
+                    detalle: [{...rest}]
+                }]
+            }else{
+                if(cabecera[cabecera.length-1].DocEntry==DocEntry){
+                    cabecera[cabecera.length-1].detalle.push({...rest});
+                }else{
+                    DocTime = String(DocTime)
+                    if(DocTime.length==4){
+                        DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
+                    }else{
+                        DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                    }
+                    cabecera.push({U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, 
+                        detalle: [{...rest}]
+                    })
+                }
+            }
+        }
+        return res.json(cabecera)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getEntregasParaCancelarController  : ${error.message || 'No definido'}` })
+    }
+}
+
 const cancelarDevolucionController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {idDev, idCN} = req.query
-        const responseDev = await cancelReturn(idDev)
-        if(responseDev.status==400){
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-        //     `${responseDev.errorMessage || 'Error en cancelReturn'}`, `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-        
-            return res.status(400).json({mensaje:`${responseDev.errorMessage}`})
-        }
+        const {idDev, idCN, idRC} = req.query
 
+        let responseRC
+        if(idRC && idRC!=0){
+            responseRC = await cancelReconciliacion(idRC);
+            console.log({responseRC});
+            if(responseRC.status==400){
+                let mensaje
+                if(typeof responseRC.errorMessage === 'string'){
+                    mensaje =`${responseRC.errorMessage}`
+                }else{
+                    mensaje = `${responseRC.errorMessage.value}`
+                }
+                return res.status(400).json({mensaje})
+            }
+        }
+        
         let responseCN
         if(idCN!=0){
             responseCN = await cancelCreditNotes(idCN)
             console.log({responseCN});
             if(responseCN.status==400){
-                return res.status(400).json({mensaje:`${responseCN.errorMessage}`})
+                let mensaje
+                if(typeof responseCN.errorMessage === 'string'){
+                    mensaje =`${responseCN.errorMessage}`
+                }else{
+                    mensaje = `${responseCN.errorMessage.value}`
+                }
+                return res.status(400).json({mensaje, responseRC})
             }
         }
+        //cancel reconciliations 444974
+        const responseDev = await cancelReturn(idDev)
+        if(responseDev.status==400){
+            let mensaje
+            if(typeof responseDev.errorMessage === 'string'){
+                mensaje =`${responseDev.errorMessage}`
+            }else{
+                mensaje = `${responseDev.errorMessage.value || 'Error en cancelReturn'}`
+            }
+                // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+        //     `${mensaje}`, `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+            return res.status(400).json({mensaje, responseCN, responseRC})
+        }
+
+        
 
         // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
         //     `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`,`/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-        return res.json({responseDev, responseCN})
+        
+        return res.json({responseDev, responseCN, responseRC})
     } catch (error) {
         console.log({ error })
         // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
@@ -4948,12 +5060,29 @@ const cancelarDevolucionController = async (req, res) => {
 const cancelarEntregaController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {id} = req.query
-        const response = await getEntregas()//cancelEntrega(id)
+        const {idEnt, idInv} = req.query
+        let responseInv
+        if(idInv && idInv!=0){
+            responseInv = await cancelInvoice(idInv)
+            if(responseInv.status==400){
+                if(typeof responseInv.errorMessage === 'string')
+                    return res.status(400).json({mensaje: `Error en el cancel invoice: `+responseInv.errorMessage})
+                else
+                    return res.status(400).json({mensaje: `Error en el cancel invoice: `+responseInv.errorMessage.value })
+            }
+        }
+
+        const responseEnt = await cancelEntrega(idEnt)
+        if(responseEnt.status==400){
+            if(typeof responseEnt.errorMessage === 'string')
+                return res.status(400).json({mensaje: `Error en el cancel entrega: ` + responseEnt.errorMessage})
+            else
+                return res.status(400).json({mensaje: `Error en el cancel entrega: ` + responseEnt.errorMessage.value })
+        }
         
         // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
         //     `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD )
-        return res.json(response)
+        return res.json({responseEnt, responseInv})
     } catch (error) {
         console.log({ error })
         // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
@@ -5017,5 +5146,6 @@ module.exports = {
     searchClienteController,
     reporteDevolucionCambiosController,
     reporteDevolucionRefacturacionController,
-    cancelarDevolucionController, cancelarEntregaController
+    cancelarDevolucionController, cancelarEntregaController, getDevolucionesParaCancelarController,
+    getEntregasParaCancelarController
 }

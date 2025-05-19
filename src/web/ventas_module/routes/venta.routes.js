@@ -89,7 +89,7 @@ const {
     sendNotificationController, getSolicitudesDescuentoByVendedorController, getNotificationController, 
     deleteNotificationController, getVendedoresSolicitudDescuentoController, getVendedorByCodeController,
     getDescuentosDelVendedorParaPedidoController, ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController,
-    getVendedoresVentasController
+    getVendedoresVentasController, getVendedoresSolicitudDescByStatusSucursalController, 
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -181,6 +181,7 @@ router.get('/client-name', [validarToken, validarCampos], getClientNameControlle
 router.get('/vendedor-by-id', [validarToken, validarCampos], getVendedorByCodeController)
 router.post('/solicitar-descuento', [validarToken, validarCampos], agregarSolicitudDeDescuentoController)
 router.get('/vendedores-solicitud-status', [validarToken, validarCampos], getVendedoresSolicitudDescByStatusController)
+router.get('/vendedores-solicitud-status-suc', [validarToken, validarCampos], getVendedoresSolicitudDescByStatusSucursalController)
 router.get('/vendedores-solicitud-desc', [validarToken, validarCampos], getVendedoresSolicitudDescuentoController)
 router.post('/solicitudes-desc-status', [validarToken, validarCampos], getSolicitudesDescuentoByStatusController)
 router.post('/actualizar-solicitud-desc', [validarToken, validarCampos], actualizarSolicitudDescuentoController)
