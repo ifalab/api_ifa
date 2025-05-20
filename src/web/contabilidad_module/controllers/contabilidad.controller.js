@@ -593,6 +593,7 @@ const createAsientoContableCCController = async (req, res) => {
             Reference3,
             Indicator,
             TransType,
+            TransId,
             details
         } = req.body
         let totalDebe = 0;
@@ -636,6 +637,7 @@ const createAsientoContableCCController = async (req, res) => {
         console.log(user);
         console.log(details);
         const comResponse = await sapService.createAsientoCC({
+            TransId: TransId,
             fechaContabilizacion: formattedDate,
             glosa: Memo,
             referencia1: Reference1,
