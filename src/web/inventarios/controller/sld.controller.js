@@ -380,6 +380,39 @@ const postReconciliacion = async (data) => {
   }
 };
 
+const getReturns = async () => {
+  try {
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+    console.log({ currentSession })
+
+    const url = `https://srvhana:50000/b1s/v1/Returns?$orderby=DocDate desc&$top=20`;
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' 
+    };
+
+    const response = await axios.get(url, {
+      httpsAgent: agent,
+      headers: headers
+    });
+
+    console.log({ responseReturns: response })
+   
+    return {
+      status: 200,
+      data: response.data.value
+    };
+  } catch (error) {
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Get';
+    console.error('Error en la solicitud Get Returns:', errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
+  }
+};
+
 const cancelReturn = async (id) => {
   try {
     const currentSession = await connectSLD();
@@ -393,15 +426,14 @@ const cancelReturn = async (id) => {
       Prefer: 'return-no-content' 
     };
 
-    data.Series = process.env.SAP_SERIES_RETURN
-    const response = await axios.post(url, { ...data }, {
+    const response = await axios.post(url, { }, {
       httpsAgent: agent,
       headers: headers
     });
 
     console.log({ responseReturns: response })
    
-    return { response };
+    return { status: response.status };
   } catch (error) {
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Cancel';
     console.error('Error en la solicitud Cancel Returns:', errorMessage);
@@ -412,30 +444,35 @@ const cancelReturn = async (id) => {
   }
 };
 
+
 const cancelEntrega = async (id) => {
   try {
-    const currentSession = await validateSession();
+    const currentSession = await connectSLD();
     const sessionSldId = currentSession.SessionId;
+    console.log({ currentSession })
+
+    const url = `https://srvhana:50000/b1s/v1/DeliveryNotes(${id})/Cancel`;
 
     const headers = {
       Cookie: `B1SESSION=${sessionSldId}`,
-      Prefer: 'return-no-content'
+      Prefer: 'return-no-content' 
     };
-    const url = `https://172.16.11.25:50000/b1s/v1/DeliveryNotes(${id})/Cancel`;
-    responseJson.Series = process.env.SAP_SERIES_DELIVERY_NOTES
-    const sapResponse = await axios.post(url, responseJson, {
-        httpsAgent: agent,
-        headers: headers,
-        timeout: REQUEST_TIMEOUT
+
+    const response = await axios.post(url, { }, {
+      httpsAgent: agent,
+      headers: headers
     });
 
-    return {
-      sapResponse
-    }
+    console.log({ responseReturns: response })
+   
+    return { status: response.status };
   } catch (error) {
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Cancel';
-    console.error('Error en la solicitud Cancel para Entrega:', error.response?.data || error.message);
-    return { status: 400, errorMessage }
+    console.error('Error en la solicitud Cancel Entrega:', errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
   }
 };
 
@@ -452,18 +489,76 @@ const cancelCreditNotes = async (id) => {
       Prefer: 'return-no-content' 
     };
 
-    data.Series = process.env.SAP_SERIES_RETURN
-    const response = await axios.post(url, { ...data }, {
+    const response = await axios.post(url, { }, {
       httpsAgent: agent,
       headers: headers
     });
 
     console.log({ responseCreditNotes: response })
    
-    return { response };
+    return { status: response.status };
   } catch (error) {
     const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido';
     console.error('Error en la solicitud Cancel CreditNotes:', errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
+  }
+};
+
+
+const cancelReconciliacion = async (id) => {
+  try {
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+
+    const url = `https://srvhana:50000/b1s/v1/InternalReconciliations(${id})/Cancel`;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content'
+    };
+    const response = await axios.post(url, { }, {
+      httpsAgent: agent,
+      headers: headers
+    });
+    console.log({ responseReconciliacion: response })
+
+    return { status: response.status , data: response.data };
+  } catch (error) {
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido';
+    console.error('Error en la solicitud POST Reconciliacion:', errorMessage);
+    return {
+      status: 400,
+      errorMessage
+    }
+  }
+};
+const cancelInvoice = async (id) => {
+  try {
+    const currentSession = await connectSLD();
+    const sessionSldId = currentSession.SessionId;
+    console.log({ currentSession })
+
+    const url = `https://srvhana:50000/b1s/v1/Invoices(${id})/Cancel`;
+
+    const headers = {
+      Cookie: `B1SESSION=${sessionSldId}`,
+      Prefer: 'return-no-content' 
+    };
+
+    const response = await axios.post(url, { }, {
+      httpsAgent: agent,
+      headers: headers
+    });
+
+    console.log({ responseReturns: response })
+   
+    return { status: response.status };
+  } catch (error) {
+    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud Cancel';
+    console.error('Error en la solicitud Cancel Invoice:', errorMessage);
     return {
       status: 400,
       errorMessage
@@ -480,5 +575,7 @@ module.exports = {
   getCreditNote,
   getCreditNotes,
   postReconciliacion,
-  cancelReturn, cancelEntrega, cancelCreditNotes
+  cancelReturn, cancelEntrega, cancelCreditNotes,
+  getReturns,
+  cancelReconciliacion, cancelInvoice
 };

@@ -36,7 +36,7 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     detalleSolicitudTrasladoController,
     reporteDevolucionValoradosController,
     searchClienteController, reporteDevolucionCambiosController, reporteDevolucionRefacturacionController,
-    cancelarDevolucionController, cancelarEntregaController,
+    cancelarDevolucionController, cancelarEntregaController, getDevolucionesParaCancelarController, getEntregasParaCancelarController,
     generarTrasladoController,
     actualizarTrasladoController,
     crearTrasladoController,
@@ -111,6 +111,8 @@ router.get('/reporte-devolucion-refacturacion', [validarToken, validarCampos], r
 router.post('/search-clientes', [validarToken, validarCampos],searchClienteController)
 
 router.get('/cancelar-devolucion', [validarToken, validarCampos], cancelarDevolucionController)
+router.get('/get-devoluciones', [validarToken, validarCampos], getDevolucionesParaCancelarController)
+router.get('/get-entregas', [validarToken, validarCampos], getEntregasParaCancelarController)
 router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
 router.post('/crear-traslado', [validarToken, validarCampos], crearTrasladoController)
 router.get('/detalle-traslado', [validarToken, validarCampos], detalleTrasladoController)

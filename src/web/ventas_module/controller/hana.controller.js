@@ -1527,6 +1527,27 @@ const getVendedoresSolicitudDescByStatus = async (status) => {
     }
 }
 
+const getVendedoresSolicitudDescByStatusSucursal = async (status, sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select t0."SlpCode", t0."SlpName", t0."Status", t1."SucCode"
+        from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO t0
+        join ${process.env.PRD}.ifa_dm_vendedores t1 on t1."SlpCode" = t0."SlpCode"
+        where t0."Status" = ${status} and t0."Deleted"=0 and t1."SucCode"=${sucursal}
+        group by t0."SlpCode", t0."SlpName", t0."Status", t1."SucCode"`
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedoresSolicitudDescByStatusSucursal: ${error.message || ''}`
+        }
+    }
+}
+
 const getSolicitudesDescuentoByStatus = async (status, slpCode) => {
     try {
         if (!connection) {
@@ -1740,6 +1761,35 @@ const getNotifications = async (vendedor=-1, usuario, subscription) => {
     }
 }
 
+const getNotificationsPorSucursal = async (usuario, subscription, sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `
+            SELECT n.* FROM ${process.env.PRD}.NOTIFICACION_SOLICITUD_DESCUENTO n
+            INNER JOIN ${process.env.PRD}.NOTIFICACION_SOLICITUD_DESCUENTO_SUBSCRIPTOR s 
+            ON n."id" = s."id_notificacion"
+            join ${process.env.PRD}.ifa_dm_vendedores t on t."SlpCode"= n."vendedor"
+            where n."created_by" != ${usuario}
+            and s."delete" = 0
+            and s."id_subscriptor" IN (
+                SELECT "Id"
+                FROM "PUSH_SUBSCRIPTIONS"
+                WHERE TO_VARCHAR("Subscription") = TO_VARCHAR(${subscription})
+            )
+            and t."SucCode"=${sucursal}
+            order by "created_at" desc
+            limit 10;`     
+
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en getNotificationsPorSucursal: ${error.message || ''}`
+        }
+    }
+}
+
 const deleteNotification = async (id_notification, subscription) => {
     try {
         if (!connection) {
@@ -1777,15 +1827,6 @@ const getDescuentosDeVendedoresParaPedido = async (cliente, vendedor,fecha) => {
         if (!connection) {
             await connectHANA()
         }
-        /*
-        ClientCode
-        ItemCode
-        CantMin
-        DescPrct
-        FechaIni
-        FechaFin
-        Status
-        Deleted*/
         let query = `select "ClientCode", "ItemCode", "CantMin", "DescPrct" 
         from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
         where '${fecha}' between "FechaIni" and "FechaFin" 
@@ -1959,5 +2000,5 @@ module.exports = {
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVendedoresVentas,
-    ventasPorZonasVendedorMesAnt2
+    ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal
 }

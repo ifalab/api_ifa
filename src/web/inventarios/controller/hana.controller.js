@@ -751,7 +751,7 @@ const reporteDevolucionCambios = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dev_cambios`;//_detalle
+        const query = `select * from ${process.env.PRD}.ifa_dev_cambios_detalle`;//
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -780,19 +780,55 @@ const reporteDevolucionRefacturacion = async () => {
     }
 }
 
-const getEntregas = async () => {
+const getEntregasParaCancelar = async (id_user) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_ven_entregas limit 20`;//_detalle
+        // const query = ` select * from ${process.env.PRD}.ODLN where "DocEntry" in (72669, 72667)`
+        const query = `
+        select 
+            t0."U_UserCode", t0."DocEntry", t0."DocNum", t1."TrgetEntry", t0."DocStatus", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
+            t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
+        from ${process.env.PRD}.ODLN t0
+        join ${process.env.PRD}.dln1 t1 on t1."DocEntry"= t0."DocEntry"
+        where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
+        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -5) AND CURRENT_DATE
+        order by t0."DocDate" desc, t0."DocTime" desc`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
-        console.error('Error en getEntregas:', error.message);
+        console.error('Error en getEntregasParaCancelar:', error.message);
         throw {
-            message: `Error al procesar getEntregas: ${error.message || ''}`
+            message: `Error al procesar getEntregasParaCancelar: ${error.message || ''}`
+        }
+    }
+}
+
+//TODO: obtain the reconciliation id
+const getDevolucionesParaCancelar = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select 
+            t0."U_UserCode", t0."DocEntry", ndc."DocEntry" "TrgetEntry", t0."DocNum", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
+            t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
+        from ${process.env.PRD}.ORDN t0
+        join ${process.env.PRD}.rdn1 t1 on t1."DocEntry"= t0."DocEntry"
+        left join ${process.env.PRD}.orin ndc on (ndc."DocEntry" = t1."TrgetEntry" 
+	        and t1."TargetType" = 14) 
+        where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
+        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -5) AND CURRENT_DATE
+        order by t0."DocDate" desc, t0."DocTime" desc`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDevolucionesParaCancelar:', error.message);
+        throw {
+            message: `Error al procesar getDevolucionesParaCancelar: ${error.message || ''}`
         }
     }
 }
@@ -813,6 +849,8 @@ const detalleTraslado = async (docEntry) => {
         }
     }
 }
+
+
 
 module.exports = {
     clientesPorDimensionUno,
@@ -856,6 +894,6 @@ module.exports = {
     reporteDevolucionValorados,
     searchClientes,
     reporteDevolucionCambios,
-    reporteDevolucionRefacturacion, getEntregas,
+    reporteDevolucionRefacturacion, getEntregasParaCancelar, getDevolucionesParaCancelar,
     detalleTraslado,
 }
