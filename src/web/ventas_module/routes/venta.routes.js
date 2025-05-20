@@ -89,7 +89,8 @@ const {
     sendNotificationController, getSolicitudesDescuentoByVendedorController, getNotificationController, 
     deleteNotificationController, getVendedoresSolicitudDescuentoController, getVendedorByCodeController,
     getDescuentosDelVendedorParaPedidoController, ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController,
-    getVendedoresVentasController
+    getVendedoresVentasController,
+    vendedorPorListSucCodeController, getVendedoresSolicitudDescByStatusSucursalController, 
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -174,6 +175,7 @@ router.get('/vendedores-clientes', [validarToken, validarCampos], getVendedoresT
 router.get('/facturas-mora-by-clientes', [validarToken, validarCampos], facturasMoraByClientController)
 router.post('/clientes-mora-by-sucode-slpcode', [validarToken, validarCampos], clientesMoraController)
 router.get('/vendedores-by-sucode', [validarToken, validarCampos], vendedorPorSucCodeController)
+router.post('/vendedores-by-list-sucode', [validarToken, validarCampos], vendedorPorListSucCodeController)
 router.get('/excel-clientes-mora', [validarToken, validarCampos], excelClientesMoraController)
 router.get('/reporte-ubicacion-cliente', [validarToken, validarCampos], reporteUbicacionClienteController)
 router.get('/client-name', [validarToken, validarCampos], getClientNameController)
@@ -181,6 +183,7 @@ router.get('/client-name', [validarToken, validarCampos], getClientNameControlle
 router.get('/vendedor-by-id', [validarToken, validarCampos], getVendedorByCodeController)
 router.post('/solicitar-descuento', [validarToken, validarCampos], agregarSolicitudDeDescuentoController)
 router.get('/vendedores-solicitud-status', [validarToken, validarCampos], getVendedoresSolicitudDescByStatusController)
+router.get('/vendedores-solicitud-status-suc', [validarToken, validarCampos], getVendedoresSolicitudDescByStatusSucursalController)
 router.get('/vendedores-solicitud-desc', [validarToken, validarCampos], getVendedoresSolicitudDescuentoController)
 router.post('/solicitudes-desc-status', [validarToken, validarCampos], getSolicitudesDescuentoByStatusController)
 router.post('/actualizar-solicitud-desc', [validarToken, validarCampos], actualizarSolicitudDescuentoController)

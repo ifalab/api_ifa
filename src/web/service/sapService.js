@@ -395,27 +395,52 @@ const postInventoryTransferRequests = async (data) => {
             Cookie: `B1SESSION=${sessionSldId}`,
             Prefer: 'return-no-content'
         };
-        
+
         const response = await axios.post(url, { ...data }, {
             httpsAgent: agent,
             headers: headers
-        });
-        // console.log({ postInventoryTransferRequests: response })
+        })
 
-        // Retorna la respuesta en caso de éxito
         const status = response.status
         const locationHeader = response.headers.location;
         const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
         const idTransfer = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
         const statusText = response.statusText
         const dataResponse = response.data
-        return { status, statusText, dataResponse,idTransfer};
+        return { status, statusText, dataResponse, idTransfer };
     } catch (error) {
         // Centraliza el manejo de errores
         console.log({ errorInventoryTransferRequests: error })
         const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido';
         console.error('Error en la solicitud postInventoryTransferRequests:', errorMessage);
         // throw new Error(errorMessage);
+        return {
+            status: 400,
+            errorMessage
+        }
+    }
+};
+
+const patchInventoryTransferRequests = async (id, data) => {
+    try {
+        const currentSession = await connectSLD();
+        const sessionSldId = currentSession.SessionId;
+        const url = `https://srvhana:50000/b1s/v1/InventoryTransferRequests(${id})`;
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const response = await axios.patch(url, { ...data }, {
+            httpsAgent: agent,
+            headers: headers
+        })
+        const status = response.status
+        const dataResponse = response.data
+        return { status, dataResponse, idTransfer: id };
+    } catch (error) {
+        console.log({ patchInventoryTransferRequests: error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido';
+        console.error('Error en la solicitud patchInventoryTransferRequests:', errorMessage);
         return {
             status: 400,
             errorMessage
@@ -432,5 +457,6 @@ module.exports = {
     getCreditNote,
     getCreditNotes,
     postReconciliacion,
-    postInventoryTransferRequests
+    postInventoryTransferRequests,
+    patchInventoryTransferRequests,
 };
