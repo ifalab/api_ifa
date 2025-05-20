@@ -858,6 +858,25 @@ const getDevolucionesParaCancelar = async (id_user) => {
     }
 }
 
+const detalleTraslado = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_detalle_por_id(${docEntry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en detalleTraslado:', error.message);
+        throw {
+            message: `Error al procesar detalleTraslado: ${error.message || ''}`
+        }
+    }
+}
+
+
+
 const getReconciliationIdByCN = async (id_CN) => {
     try {
         if (!connection) {
@@ -917,5 +936,6 @@ module.exports = {
     reporteDevolucionValorados,
     searchClientes,
     reporteDevolucionCambios,
-    reporteDevolucionRefacturacion, getEntregasParaCancelar, getDevolucionesParaCancelar, getInvoice, getReconciliationIdByCN
+    reporteDevolucionRefacturacion, getEntregasParaCancelar, getDevolucionesParaCancelar, getInvoice, getReconciliationIdByCN,
+    detalleTraslado,
 }
