@@ -1153,7 +1153,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
         }
         let { estado } = estadoFacturaResponse[0]
-
+        console.log({estado})
         if (estado) {
             responseProsin = await anulacionFacturacion({
                 sucursal,
@@ -1165,7 +1165,7 @@ const cancelToProsinController = async (req, res) => {
                 usuario,
                 mediaPagina,
             }, user)
-            console.log(responseProsin);
+            console.log({responseProsin});
 
             if (responseProsin.data.mensaje) {
                 const mess = responseProsin.data.mensaje.split('§')
