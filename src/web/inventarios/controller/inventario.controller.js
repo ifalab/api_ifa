@@ -28,7 +28,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     reporteDevolucionValorados,
     searchClientes,
     reporteDevolucionCambios, reporteDevolucionRefacturacion,
-    getEntregas } = require("./hana.controller")
+    getEntregas,
+    detalleTraslado } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
@@ -40,7 +41,7 @@ const path = require('path');
 const fs = require('fs');
 const { facturacionProsin } = require("../../facturacion_module/service/apiFacturacionProsin")
 const { getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("./sql_genesis.controller");
-const { postInventoryTransferRequests, patchInventoryTransferRequests } = require("../../service/sapService");
+const { postInventoryTransferRequests, patchInventoryTransferRequests, postStockTransfer } = require("../../service/sapService");
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -4547,7 +4548,23 @@ const solicitudTrasladoController = async (req, res) => {
             StockTransferLines
         } = req.body
 
-        console.log({
+        // console.log({
+        //     Comments,
+        //     JournalMemo,
+        //     FromWarehouse,
+        //     U_TIPO_TRASLADO,
+        //     U_GroupCode,
+        //     ToWarehouse,
+        //     U_UserCode,
+        //     SalesPersonCode,
+        //     DueDate,
+        //     CardName,
+        //     CardCode,
+        //     U_FECHA_FACT,
+        //     U_Autorizacion,
+        //     StockTransferLines
+        // })
+        console.log(JSON.stringify({
             Comments,
             JournalMemo,
             FromWarehouse,
@@ -4556,14 +4573,12 @@ const solicitudTrasladoController = async (req, res) => {
             ToWarehouse,
             CardName,
             CardCode,
-            SalesPersonCode,
             U_UserCode,
             DueDate,
             U_FECHA_FACT,
             U_Autorizacion,
             StockTransferLines
-        })
-
+        }, null, 2))
         const sapResponse = await postInventoryTransferRequests({
             Comments,
             JournalMemo,
@@ -4571,7 +4586,6 @@ const solicitudTrasladoController = async (req, res) => {
             U_TIPO_TRASLADO,
             U_GroupCode,
             ToWarehouse,
-            // SalesPersonCode,
             CardName,
             CardCode,
             U_UserCode,
@@ -4582,7 +4596,7 @@ const solicitudTrasladoController = async (req, res) => {
         })
 
 
-        console.log(JSON.stringify({ sapResponse }, null, 2))
+        // console.log(JSON.stringify({ sapResponse }, null, 2))
         const { status, errorMessage } = sapResponse
         if (status && status == 400) {
             const { value } = errorMessage
@@ -4598,7 +4612,7 @@ const solicitudTrasladoController = async (req, res) => {
         return res.json({ sapResponse })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en saveArticuloDiccionario : ${error.message || 'No definido'}` })
+        return res.status(500).json({ mensaje: `Error en solicitudTrasladoController : ${error.message || 'No definido'}` })
     }
 }
 
@@ -4857,10 +4871,10 @@ const detalleSolicitudTrasladoController = async (req, res) => {
         const response = await detalleSolicitudPendiente(docEntry)
         let dataResponse = response.map((item) => ({
             ...item,
-            QuantityMod: +item.Quantity||0,
+            QuantityMod: +item.Quantity || 0,
             subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity)
         }))
-        console.log({ dataResponse, docEntry })
+        // console.log({ dataResponse, docEntry })
         return res.json(dataResponse)
     } catch (error) {
         console.log({ error })
@@ -4982,6 +4996,142 @@ const actualizarTrasladoController = async (req, res) => {
     }
 }
 
+const crearTrasladoController = async (req, res) => {
+    try {
+
+        let {
+            DocEntry,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            SalesPersonCode,
+            DueDate,
+            CardName,
+            CardCode,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        } = req.body
+
+        // lotes si el U_BatchNum es vacio, hacer fefo
+        // referenciar a la solicitud con el BaseType = #, BaseLine = linenum,BaseEntry = #, armar siempre el json batchnum
+        console.log({
+
+        })
+
+        for (let data of StockTransferLines) {
+            const { U_BatchNum, LineNum, Quantity, ItemCode, FromWarehouseCode, NumPerMsr, ...rest } = data
+            data.BaseType = 1250000001
+            data.BaseLine = LineNum
+            data.BaseEntry = DocEntry
+            if (U_BatchNum == '') {
+                const batchData = await lotesArticuloAlmacenCantidad(ItemCode, FromWarehouseCode, Quantity)
+                if (batchData.message) {
+                    return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
+                }
+                console.log({ batchData })
+                if (batchData.length == 0) {
+                    return res.status(400).json({ mensaje: `No hay stock en el almacen: ${FromWarehouseCode} , para el articulo : ${ItemCode} y la cantidad : ${Quantity}` })
+                } else {
+                    batchNumbers = batchData.map(batch => ({
+                        BaseLineNumber: LineNum,
+                        BatchNumber: batch.BatchNum,
+                        Quantity: Number(batch.Quantity),
+                        ItemCode: batch.ItemCode
+                    }))
+
+                    data.BatchNumbers = batchNumbers
+                }
+
+            } else {
+                data.BatchNumbers = [
+                    {
+                        BaseLineNumber: LineNum,
+                        BatchNumber: U_BatchNum,
+                        Quantity: Number(Quantity) * Number(NumPerMsr),
+                        ItemCode: ItemCode
+                    }
+                ]
+            }
+        }
+
+        StockTransferLines = StockTransferLines.map((item) => {
+            const { NumPerMsr, ...rest } = item
+            return {
+                ...rest
+            }
+        })
+        console.log(JSON.stringify({
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            SalesPersonCode,
+            DueDate,
+            CardName,
+            CardCode,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        }, null, 2))
+
+        const sapResponse = await postStockTransfer({
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            SalesPersonCode,
+            DueDate,
+            CardName,
+            CardCode,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        })
+
+        const { status } = sapResponse
+
+        if (status == 400) {
+            const { errorMessage } = sapResponse
+            return res.status(400).json({ mensaje: `Error del SAP en Stock Transfer. ${errorMessage.value || 'No definido'}` })
+        }
+
+        return res.json({
+            sapResponse
+        })
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en crearTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const detalleTrasladoController = async (req, res) => {
+    try {
+        const docEntry = req.query.docEntry
+        const response = await detalleTraslado(docEntry)
+        let dataResponse = response.map((item) => ({
+            ...item,
+            subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity)
+        }))
+        // console.log({ dataResponse, docEntry })
+        return res.json(dataResponse)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en detalleTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -5039,4 +5189,6 @@ module.exports = {
     reporteDevolucionRefacturacionController,
     cancelarDevolucionController, cancelarEntregaController,
     actualizarTrasladoController,
+    crearTrasladoController,
+    detalleTrasladoController,
 }

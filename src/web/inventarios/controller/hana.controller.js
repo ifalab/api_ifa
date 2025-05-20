@@ -797,6 +797,23 @@ const getEntregas = async () => {
     }
 }
 
+const detalleTraslado = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_detalle_por_id(${docEntry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en detalleTraslado:', error.message);
+        throw {
+            message: `Error al procesar detalleTraslado: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -839,5 +856,6 @@ module.exports = {
     reporteDevolucionValorados,
     searchClientes,
     reporteDevolucionCambios,
-    reporteDevolucionRefacturacion, getEntregas
+    reporteDevolucionRefacturacion, getEntregas,
+    detalleTraslado,
 }

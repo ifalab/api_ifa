@@ -222,7 +222,7 @@ const facturacionController = async (req, res) => {
                     batchData.map((item) => {
                         new_quantity += Number(item.Quantity).toFixed(6)
                     })
-                    //console.log({ batchData })
+                   
                     batchNumbers = batchData.map(batch => ({
                         BaseLineNumber: LineNum,
                         BatchNumber: batch.BatchNum,
