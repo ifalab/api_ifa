@@ -40,7 +40,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     generarTrasladoController,
     actualizarTrasladoController,
     crearTrasladoController,
-    detalleTrasladoController
+    detalleTrasladoController,
+    selectionBatchPlazoController
  } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -116,4 +117,5 @@ router.get('/get-entregas', [validarToken, validarCampos], getEntregasParaCancel
 router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
 router.post('/crear-traslado', [validarToken, validarCampos], crearTrasladoController)
 router.get('/detalle-traslado', [validarToken, validarCampos], detalleTrasladoController)
+router.get('/selection-batch-plazo', [validarToken, validarCampos], selectionBatchPlazoController)
 module.exports = router

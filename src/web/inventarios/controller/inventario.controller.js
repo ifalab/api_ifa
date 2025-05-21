@@ -29,7 +29,9 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     searchClientes,
     reporteDevolucionCambios, reporteDevolucionRefacturacion, getDevolucionesParaCancelar, getInvoice,
     getEntregasParaCancelar,
-    detalleTraslado, getReconciliationIdByCN } = require("./hana.controller")
+    detalleTraslado,
+    insertWorkFlowWithCheck,
+    selectionBatchPlazo, getReconciliationIdByCN } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice } = require("./sld.controller")
@@ -4543,7 +4545,7 @@ const solicitudTrasladoController = async (req, res) => {
             U_Autorizacion,
             StockTransferLines
         } = req.body
-
+        const user = req.usuarioAutorizado
         // console.log({
         //     Comments,
         //     JournalMemo,
@@ -4605,6 +4607,8 @@ const solicitudTrasladoController = async (req, res) => {
 
             return res.status(400).json({ mensaje })
         }
+        const { idTransfer } = sapResponse
+        await insertWorkFlowWithCheck(idTransfer, user.USERNAME || 'No definido', user.ID_SAP || 0, '')
         return res.json({ sapResponse })
     } catch (error) {
         console.log({ error })
@@ -4925,34 +4929,36 @@ const reporteDevolucionRefacturacionController = async (req, res) => {
 
 const getDevolucionesParaCancelarController = async (req, res) => {
     try {
-        const {id_user} = req.query
+        const { id_user } = req.query
         const response = await getDevolucionesParaCancelar(id_user)
         // console.log({ response })
         let cabecera = []
-        for(const line of response){
-            let {U_UserCode, DocEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TrgetEntry, ReconNum, ...rest} = line
-            if(cabecera.length ==0){
+        for (const line of response) {
+            let { U_UserCode, DocEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TrgetEntry, ...rest } = line
+            if (cabecera.length == 0) {
                 DocTime = String(DocTime)
-                if(DocTime.length==4){
-                    DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
-                }else{
-                    DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                if (DocTime.length == 4) {
+                    DocTime = `${DocTime.slice(0, 2)}:${DocTime.slice(2, 4)}`
+                } else {
+                    DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                 }
-                cabecera=[{U_UserCode, DocEntry, TrgetEntry, ReconNum,  DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
-                    detalle: [{...rest}]
+                cabecera = [{
+                    U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                    detalle: [{ ...rest }]
                 }]
-            }else{
-                if(cabecera[cabecera.length-1].DocEntry==DocEntry){
-                    cabecera[cabecera.length-1].detalle.push({...rest});
-                }else{
+            } else {
+                if (cabecera[cabecera.length - 1].DocEntry == DocEntry) {
+                    cabecera[cabecera.length - 1].detalle.push({ ...rest });
+                } else {
                     DocTime = String(DocTime)
-                    if(DocTime.length==4){
-                        DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
-                    }else{
-                        DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                    if (DocTime.length == 4) {
+                        DocTime = `${DocTime.slice(0, 2)}:${DocTime.slice(2, 4)}`
+                    } else {
+                        DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                     }
-                    cabecera.push({U_UserCode, DocEntry, TrgetEntry, ReconNum,  DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
-                        detalle: [{...rest}]
+                    cabecera.push({
+                        U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                        detalle: [{ ...rest }]
                     })
                 }
             }
@@ -4966,34 +4972,36 @@ const getDevolucionesParaCancelarController = async (req, res) => {
 //inv 487939
 const getEntregasParaCancelarController = async (req, res) => {
     try {
-        const {id_user} = req.query
+        const { id_user } = req.query
         const response = await getEntregasParaCancelar(id_user)
         // console.log({ response })
         let cabecera = []
-        for(const line of response){
-            let {U_UserCode, DocEntry, DocNum, TrgetEntry, TargetType, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, ...rest} = line
-            if(cabecera.length ==0){
+        for (const line of response) {
+            let { U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, ...rest } = line
+            if (cabecera.length == 0) {
                 DocTime = String(DocTime)
-                if(DocTime.length==4){
-                    DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
-                }else{
-                    DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                if (DocTime.length == 4) {
+                    DocTime = `${DocTime.slice(0, 2)}:${DocTime.slice(2, 4)}`
+                } else {
+                    DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                 }
-                cabecera=[{U_UserCode, DocEntry, DocNum, TrgetEntry, TargetType, CardCode, CardName, Comments,DocDate, DocTime, DocTotal, 
-                    detalle: [{...rest}]
+                cabecera = [{
+                    U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                    detalle: [{ ...rest }]
                 }]
-            }else{
-                if(cabecera[cabecera.length-1].DocEntry==DocEntry){
-                    cabecera[cabecera.length-1].detalle.push({...rest});
-                }else{
+            } else {
+                if (cabecera[cabecera.length - 1].DocEntry == DocEntry) {
+                    cabecera[cabecera.length - 1].detalle.push({ ...rest });
+                } else {
                     DocTime = String(DocTime)
-                    if(DocTime.length==4){
-                        DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
-                    }else{
-                        DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                    if (DocTime.length == 4) {
+                        DocTime = `${DocTime.slice(0, 2)}:${DocTime.slice(2, 4)}`
+                    } else {
+                        DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                     }
-                    cabecera.push({U_UserCode, DocEntry, DocNum, TrgetEntry, TargetType, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, 
-                        detalle: [{...rest}]
+                    cabecera.push({
+                        U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                        detalle: [{ ...rest }]
                     })
                 }
             }
@@ -5008,7 +5016,7 @@ const getEntregasParaCancelarController = async (req, res) => {
 const cancelarDevolucionController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {idDev, idCN, idRC} = req.query
+        const { idDev, idCN, idRC } = req.query
 
         let responseCN
         let responseRC
@@ -5050,9 +5058,9 @@ const cancelarDevolucionController = async (req, res) => {
         console.log({responseDev})
         if(responseDev.status==400){
             let mensaje
-            if(typeof responseDev.errorMessage === 'string'){
-                mensaje =`${responseDev.errorMessage}`
-            }else{
+            if (typeof responseDev.errorMessage === 'string') {
+                mensaje = `${responseDev.errorMessage}`
+            } else {
                 mensaje = `${responseDev.errorMessage.value || 'Error en cancelReturn'}`
             }
             grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
@@ -5272,6 +5280,24 @@ const detalleTrasladoController = async (req, res) => {
     }
 }
 
+const selectionBatchPlazoController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const whsCodeFrom = req.query.whsCodeFrom
+        const plazo = req.query.plazo
+        let response = await selectionBatchPlazo(itemCode, whsCodeFrom, plazo)
+        response = response.map((item)=>{
+            return  {
+                ...item,
+                Quantity:+item.Quantity
+            }
+        })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchPlazoController : ${error.message || 'No definido'}` })
+    }
+}
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -5327,9 +5353,12 @@ module.exports = {
     searchClienteController,
     reporteDevolucionCambiosController,
     reporteDevolucionRefacturacionController,
-    cancelarDevolucionController, cancelarEntregaController, getDevolucionesParaCancelarController,
+    cancelarDevolucionController, 
+    cancelarEntregaController, 
+    getDevolucionesParaCancelarController,
     getEntregasParaCancelarController,
     actualizarTrasladoController,
     crearTrasladoController,
     detalleTrasladoController,
+    selectionBatchPlazoController,
 }
