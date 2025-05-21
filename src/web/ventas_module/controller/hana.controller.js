@@ -1882,22 +1882,16 @@ const getUbicacionClientesByVendedor = async (codVendedor) => {
     }
 }
 
-const getVendedoresVentas = async () => {
+const getVentasZonaSupervisor = async (sucursal=0) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * 
-            from ${process.env.PRD}.ifa_dm_vendedores 
-            where "SlpName" in
-            (	select "SalesPerson" "SlpName"
-                from 
-                "LAB_IFA_DATA"."VEN_VENTAS_RESUMEN_BY_DIM"
-            )`;
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA_SUPERVISOR(${sucursal})`;
         return await executeQuery(query);
     } catch (err) {
-        console.error('Error en getVendedoresVentas: ', err.message);
-        throw new Error(`Error en getVendedoresVentas: ${err.message}`);
+        console.error('Error en getVentasZonaSupervisor: ', err.message);
+        throw new Error(`Error en getVentasZonaSupervisor: ${err.message}`);
     }
 }
 
@@ -1999,6 +1993,6 @@ module.exports = {
     getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
-    ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVendedoresVentas,
+    ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
     ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal
 }

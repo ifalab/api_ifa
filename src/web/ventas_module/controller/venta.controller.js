@@ -96,7 +96,7 @@ const {
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications, insertNotification,
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode,
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
-    getVendedoresVentas, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal
+    getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2938,14 +2938,81 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
     }
 }
 
-const getVendedoresVentasController = async (req, res) => {
+const getVentasZonaSupervisorController = async (req, res) => {
     try {
-        const response = await getVendedoresVentas()
+        const {sucursal} = req.query
+        const response = await getVentasZonaSupervisor(sucursal??0)
+        let SucCode = ''
+        let totalQuotaByLineItem = {};
+        let totalSalesByLineItem = {};
+        // let grandTotalQuota = 0;
+        // let grandTotalSales = 0;
+        console.log('length', response.length)
+
+        const results = []
+        response.forEach((r, index) => {
+            if (r.SucCode == SucCode) {
+                const res1 = r
+                res1.cumplimiento = +r.cumplimiento
+                res1.hide = true
+                results.push(res1)
+
+                totalQuotaByLineItem[r.SucCode] += +r.Quota;
+                totalSalesByLineItem[r.SucCode] += +r.Sales;
+                console.log('index', index)
+                if ((response.length - 1) == index) {
+                    const res = {
+                        SucCode: `Total ${r.SucCode}`,
+                        Quota: +totalQuotaByLineItem[r.SucCode],
+                        Sales: +totalSalesByLineItem[r.SucCode],
+                        cumplimiento: (+totalSalesByLineItem[r.SucCode] / +totalQuotaByLineItem[r.SucCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
+                }
+            } else {
+                SucCode = r.SucCode;
+                totalQuotaByLineItem[r.SucCode] = +r.Quota;
+                totalSalesByLineItem[r.SucCode] = +r.Sales;
+
+                if (index > 0) {
+                    const res = {
+                        SucName: `Total ${response[index - 1].SucName}`,
+                        Quota: +totalQuotaByLineItem[response[index - 1].SucCode],
+                        Sales: +totalSalesByLineItem[response[index - 1].SucCode],
+                        cumplimiento: (+totalSalesByLineItem[response[index - 1].SucCode] / +totalQuotaByLineItem[response[index - 1].SucCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
+                }
+                const res1 = r
+                res1.cumplimiento = +r.cumplimiento
+                res1.hide = false
+                results.push(res1)
+
+                console.log('index', index)
+                if ((response.length - 1) == index) {
+                    const res = {
+                        SucName: `Total ${r.SucName}`,
+                        Quota: +totalQuotaByLineItem[r.SucCode],
+                        Sales: +totalSalesByLineItem[r.SucCode],
+                        cumplimiento: (+totalSalesByLineItem[r.SucCode] / +totalQuotaByLineItem[r.SucCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
+                }
+            }
+            // grandTotalQuota += +r.Quota;
+            // grandTotalSales += +r.Sales;
+        });
         console.log(response)
-        return res.json(response);
+        return res.json(results);
     } catch (error) {
         console.error({ error })
-        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getVendedoresVentasController'}` })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getVentasZonaSupervisorController'}` })
     }
 }
 
@@ -3037,7 +3104,7 @@ module.exports = {
     ventasPresupuestoSubLinea, ventasPresupuestoSubLineaAnterior, 
     notificationUnsubscribeController, 
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
-    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVendedoresVentasController,
+    ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVentasZonaSupervisorController,
     getVendedoresSolicitudDescByStatusSucursalController,
     vendedorPorListSucCodeController,
 };

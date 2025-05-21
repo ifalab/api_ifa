@@ -961,14 +961,15 @@ const obtenerBajasFacturas = async (fechaIni, fechaFin, cardCode, factura='') =>
     try {
         if (!connection) {
             await connectHANA();
-        }//${process.env.PRD}
-        const query = `call LAB_IFA_PRD.IFA_LAPP_COB_OBTENER_BAJAS_COBRANZAS_FACTURAS_POR_CLIENTE_Y_FECHAS('${fechaIni}','${fechaFin}','${cardCode}','${factura}')`
+        }
+        //${process.env.PRD}
+        const query = `call ${process.env.PRD}.IFA_LAPP_COB_OBTENER_BAJAS_COBRANZAS_FACTURAS_POR_CLIENTE_Y_FECHAS('${fechaIni}','${fechaFin}','${cardCode}','${factura}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error(`error en obtenerBajasFacturas: ${error.message || ''}`)
+        throw new Error(`Error en obtenerBajasFacturas: ${error.message || ''}`)
     }
 }
 
