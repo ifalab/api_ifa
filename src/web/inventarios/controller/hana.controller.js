@@ -850,6 +850,40 @@ const detalleTraslado = async (docEntry) => {
     }
 }
 
+const selectionBatchPlazo = async (itemCode, whsCodeFrom, plazo) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_selection_batch_plazo('${itemCode}','${whsCodeFrom}',${plazo})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en selection_batch_plazo:', error.message);
+        throw {
+            message: `Error al procesar selection_batch_plazo: ${error.message || ''}`
+        }
+    }
+}
+
+const insertWorkFlowWithCheck = async (docEntry, username, idSap, ip) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.LAPP}.INSERT_WORKFLOW_WITHCHECK('${docEntry}','1250000001','Proceso de Abastecimiento Normal','${username}',${idSap},'${ip}','WEB','O','Solicitud','${docEntry}','1250000001')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en insertWorkFlowWithCheck:', error.message);
+        throw {
+            message: `Error al procesar insertWorkFlowWithCheck: ${error.message || ''}`
+        }
+    }
+}
+
 
 
 module.exports = {
@@ -894,6 +928,10 @@ module.exports = {
     reporteDevolucionValorados,
     searchClientes,
     reporteDevolucionCambios,
-    reporteDevolucionRefacturacion, getEntregasParaCancelar, getDevolucionesParaCancelar,
+    reporteDevolucionRefacturacion,
+    getEntregasParaCancelar,
+    getDevolucionesParaCancelar,
     detalleTraslado,
+    insertWorkFlowWithCheck,
+    selectionBatchPlazo,
 }
