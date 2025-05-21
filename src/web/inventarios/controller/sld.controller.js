@@ -349,8 +349,7 @@ const postReconciliacion = async (data) => {
       Cookie: `B1SESSION=${sessionSldId}`,
       Prefer: 'return-no-content'
     };
-    // Realiza la solicitud POST
-    // data.Series = process.env.
+    
     const response = await axios.post(url, { ...data }, {
       httpsAgent: agent,
       headers: headers

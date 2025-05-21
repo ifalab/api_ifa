@@ -27,11 +27,11 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     detalleSolicitudPendiente,
     reporteDevolucionValorados,
     searchClientes,
-    reporteDevolucionCambios, reporteDevolucionRefacturacion, getDevolucionesParaCancelar,
+    reporteDevolucionCambios, reporteDevolucionRefacturacion, getDevolucionesParaCancelar, getInvoice,
     getEntregasParaCancelar,
     detalleTraslado,
     insertWorkFlowWithCheck,
-    selectionBatchPlazo } = require("./hana.controller")
+    selectionBatchPlazo, getReconciliationIdByCN } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice } = require("./sld.controller")
@@ -3477,7 +3477,7 @@ const imprimibleSalidaController = async (req, res) => {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida",
-            `${error.message || 'Error en el controller imprimibleSalidaController'}`, 'catch del controller',
+            `${error.message || 'Error en el controller imprimibleSalidaController'}`, 'catch del imprimibleSalidaController',
             "inventario/imprimible-salida", process.env.PRD);
 
         return res.status(500).json({ mensaje: `error en el controlador imprimibleSalidaController. ${error.message || ''}` })
@@ -4974,7 +4974,7 @@ const getDevolucionesParaCancelarController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en getDevolucionesParaCancelarController  : ${error.message || 'No definido'}` })
     }
 }
-
+//inv 487939
 const getEntregasParaCancelarController = async (req, res) => {
     try {
         const { id_user } = req.query
@@ -5023,59 +5023,66 @@ const cancelarDevolucionController = async (req, res) => {
     try {
         const { idDev, idCN, idRC } = req.query
 
+        let responseCN
         let responseRC
-        if (idRC && idRC != 0) {
-            responseRC = await cancelReconciliacion(idRC);
-            console.log({ responseRC });
-            if (responseRC.status == 400) {
-                let mensaje
-                if (typeof responseRC.errorMessage === 'string') {
-                    mensaje = `${responseRC.errorMessage}`
-                } else {
-                    mensaje = `${responseRC.errorMessage.value}`
+        if (idCN != 0) {
+            if(idRC && idRC!=0){
+                responseRC = await cancelReconciliacion(idRC);
+                console.log({responseRC});
+                if(responseRC.status==400){
+                    let mensaje = `Error en cancelReconciliacion: `
+                    if(typeof responseRC.errorMessage === 'string'){
+                        mensaje =`${responseRC.errorMessage}`
+                    }else{
+                        mensaje = `${responseRC.errorMessage.value}`
+                    }
+                    if(!mensaje.includes('Document is already closed')){
+                        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+                        `${mensaje}`, `https://srvhana:50000/b1s/v1/InternalReconciliations(${idRC})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+                        
+                        return res.status(400).json({mensaje})
+                    }
                 }
-                return res.status(400).json({ mensaje })
+            }
+            responseCN = await cancelCreditNotes(idCN)
+            console.log({responseCN});
+            if(responseCN.status==400){
+                let mensaje = `Error en cancelCreditNotes: `
+                if(typeof responseCN.errorMessage === 'string'){
+                    mensaje +=`${responseCN.errorMessage}`
+                }else{
+                    mensaje += `${responseCN.errorMessage.value}`
+                }
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+                    `${mensaje}`, `https://srvhana:50000/b1s/v1/CreditNotes(${idCN})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+                return res.status(400).json({mensaje, responseRC})
             }
         }
 
-        let responseCN
-        if (idCN != 0) {
-            responseCN = await cancelCreditNotes(idCN)
-            console.log({ responseCN });
-            if (responseCN.status == 400) {
-                let mensaje
-                if (typeof responseCN.errorMessage === 'string') {
-                    mensaje = `${responseCN.errorMessage}`
-                } else {
-                    mensaje = `${responseCN.errorMessage.value}`
-                }
-                return res.status(400).json({ mensaje, responseRC })
-            }
-        }
-        //cancel reconciliations 444974
         const responseDev = await cancelReturn(idDev)
-        if (responseDev.status == 400) {
+        console.log({responseDev})
+        if(responseDev.status==400){
             let mensaje
             if (typeof responseDev.errorMessage === 'string') {
                 mensaje = `${responseDev.errorMessage}`
             } else {
                 mensaje = `${responseDev.errorMessage.value || 'Error en cancelReturn'}`
             }
-            // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-            //     `${mensaje}`, `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-            return res.status(400).json({ mensaje, responseCN, responseRC })
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+            `${mensaje}`, `https://srvhana:50000/b1s/v1/Returns(${idDev})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+            return res.status(400).json({mensaje, responseCN, responseRC})
         }
 
-
-
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
-        //     `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`,`/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-
-        return res.json({ responseDev, responseCN, responseRC })
+        
+//devolucion nro: 1308 y entrega nro: 72683
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
+            `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`,`/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        
+        return res.json({responseDev, responseCN, responseRC})
     } catch (error) {
         console.log({ error })
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-        //     `${error.message || 'Error en cancelarDevolucionController'}`, `catch de cancelarDevolucionController`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
+            `${error.message || 'Error en cancelarDevolucionController'}`, `catch de cancelarDevolucionController`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
         return res.status(500).json({ mensaje: error.message || 'Error en cancelarDevolucionController' })
     }
 }
@@ -5083,33 +5090,42 @@ const cancelarDevolucionController = async (req, res) => {
 const cancelarEntregaController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const { idEnt, idInv } = req.query
-        let responseInv
-        if (idInv && idInv != 0) {
-            responseInv = await cancelInvoice(idInv)
-            if (responseInv.status == 400) {
-                if (typeof responseInv.errorMessage === 'string')
-                    return res.status(400).json({ mensaje: `Error en el cancel invoice: ` + responseInv.errorMessage })
-                else
-                    return res.status(400).json({ mensaje: `Error en el cancel invoice: ` + responseInv.errorMessage.value })
-            }
-        }
-
+        const {idEnt, TargetType} = req.query
+        
         const responseEnt = await cancelEntrega(idEnt)
-        if (responseEnt.status == 400) {
-            if (typeof responseEnt.errorMessage === 'string')
-                return res.status(400).json({ mensaje: `Error en el cancel entrega: ` + responseEnt.errorMessage })
-            else
-                return res.status(400).json({ mensaje: `Error en el cancel entrega: ` + responseEnt.errorMessage.value })
-        }
+        if(responseEnt.status==400){
+            let mensaje = `Error en el cancel entrega: `
+            let errorMessage = responseEnt.errorMessage
+            if(typeof errorMessage !== 'string')
+                errorMessage = responseEnt.errorMessage.value
+            console.log({mensaje})
+            if(errorMessage.includes('cancel target documents first')){
+                console.log('includes')
+                if(TargetType==13){
+                    mensaje += 'Cancele la FACTURA primero!'
+                }else if(TargetType==16){
+                    mensaje += 'Cancele la DEVOLUCION primero!'
+                }else{
+                    mensaje += errorMessage
+                }
+            }else{
+                mensaje += errorMessage
+            }
 
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
-        //     `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD )
-        return res.json({ responseEnt, responseInv })
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, mensaje,
+                `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD )
+            
+            return res.status(400).json({mensaje})
+        }
+        
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
+            `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD );
+
+        return res.json({responseEnt})
     } catch (error) {
         console.log({ error })
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
-        //     `${error.message || 'Error en cancelarEntregaController'}`, `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD )
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
+            `${error.message || 'Error en cancelarEntregaController'}`, `catch del cancelarEntregaController`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD )
         return res.status(500).json({ mensaje: error.message || 'Error en cancelarEntregaController' })
     }
 }

@@ -17,7 +17,7 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getComprobantesBajasByUser,
     getClientes,
     getEstadoCuentaCliente,
-    auditoriaSaldoDeudor
+    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -2187,7 +2187,51 @@ const auditoriaSaldoDeudorController = async (req, res) => {
         })
     }
 }
-  
+
+const getBajasFacturasController = async (req, res) => {
+    try {
+        const { fechaIni, fechaFin, cardCode, factura } = req.body
+        
+        const response = await obtenerBajasFacturas(fechaIni, fechaFin, cardCode, factura??'')
+        const cabecera = []
+
+        for(const linea of response){
+            let {DocDateInv, DocNumInv, NumAtCard, DocTotalInv, SucName, Type, PymntGroup, DocNumCob, ...rest} = linea
+            if(cabecera.length==0 || cabecera[cabecera.length-1].DocNumInv!=DocNumInv){
+                cabecera.push({DocDateInv, DocNumInv, NumAtCard, DocTotalInv, SucName, Type, PymntGroup, 
+                    detalle: DocNumCob==null?[]:[{DocNumCob,...rest}]
+                })
+            }else{
+                cabecera[cabecera.length-1].detalle.push(DocNumCob==null?[]:[{DocNumCob,...rest}])
+            }
+        }
+
+        console.log({ response })
+        // console.log({cabecera})
+        return res.json(cabecera)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `${error.message || 'Error en el controlador getBajasFacturasController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const findClienteController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({ body })
+        const buscar = body.buscar.toUpperCase()
+        console.log({ buscar })
+        const response = await findCliente(buscar)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador findClienteController: ${error.message || ''}` })
+    }
+} 
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -2247,4 +2291,5 @@ module.exports = {
     getEstadoCuentaClienteController,
     getEstadoCuentaClientePDFController,
     auditoriaSaldoDeudorController,
+    getBajasFacturasController, findClienteController
 }
