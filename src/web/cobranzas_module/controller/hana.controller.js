@@ -957,6 +957,42 @@ const auditoriaSaldoDeudor = async (cardCode, date) => {
     }
 }
 
+const obtenerBajasFacturas = async (fechaIni, fechaFin, cardCode='', factura='') => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        //${process.env.PRD}
+        const query = `call ${process.env.PRD}.IFA_LAPP_COB_OBTENER_BAJAS_COBRANZAS_FACTURAS_POR_CLIENTE_Y_FECHAS('${fechaIni}','${fechaFin}','${cardCode}','${factura}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en obtenerBajasFacturas: ${error.message || ''}`)
+    }
+}
+
+const findCliente = async (buscar) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT "CardCode", "CardName", "SucName" FROM ${process.env.PRD}.ifa_dm_clientes 
+        where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'
+        limit 50`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en findCliente:', error);
+        throw {
+            status: 400,
+            message: `Error en findCliente: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -1013,5 +1049,6 @@ module.exports = {
     getClientes,
     getEstadoCuentaCliente,
     getComprobantesBajasByUser,
-    auditoriaSaldoDeudor
+    auditoriaSaldoDeudor,
+    obtenerBajasFacturas, findCliente
 }

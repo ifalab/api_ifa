@@ -20,7 +20,7 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     imprimibleDevolucionController, imprimibleSalidaController,
     devolucionPorValoradoDifArticulosController,
     findClienteController, findClienteInstitucionesController,
-    getAlmacenesSucursalController, getStockdeItemAlmacenController, 
+    getAlmacenesSucursalController, getStockdeItemAlmacenController,
     getStockVariosItemsAlmacenController,
     facturacionCambioValoradoController, entregaCambioValoradoController,
     detalleFacturasGenesisController, getLineaArticuloController,
@@ -38,8 +38,12 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     searchClienteController, reporteDevolucionCambiosController, reporteDevolucionRefacturacionController,
     cancelarDevolucionController, cancelarEntregaController, getDevolucionesParaCancelarController, getEntregasParaCancelarController,
     generarTrasladoController,
-    actualizarTrasladoController
- } = require('../controller/inventario.controller')
+    actualizarTrasladoController,
+    crearTrasladoController,
+    detalleTrasladoController,
+    selectionBatchPlazoController,
+    procesoAbastecimientoController
+} = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const { grabarLog } = require('../../shared/controller/hana.controller');
@@ -63,8 +67,8 @@ router.post('/devolucion-completa', [validarToken, validarCampos], devolucionCom
 router.post('/devolucion-excepcional', [validarToken, validarCampos], devolucionExcepcionalController)
 router.post('/devolucion-ndc', [validarToken, validarCampos], devolucionNotaDebitoCreditoController)
 router.post('/prueba', [validarToken, validarCampos], pruebaController)
-router.get('/all-almacenes', [validarToken, validarCampos],getAllAlmacenesController)
-router.post('/search-articulos', [validarToken, validarCampos],searchArticulosController)
+router.get('/all-almacenes', [validarToken, validarCampos], getAllAlmacenesController)
+router.post('/search-articulos', [validarToken, validarCampos], searchArticulosController)
 router.post('/devolucion-ndc-completa', [validarToken, validarCampos], devolucionDebitoCreditoCompletaController)
 router.post('/devolucion-ndc-genesis', [validarToken, validarCampos], devolucionNDCGenesisController)
 router.get('/facturas-cliente-lote-itemcode-genesis', [validarToken, validarCampos], facturasClienteLoteItemCodeGenesisController)
@@ -106,11 +110,14 @@ router.patch('/actualizar-traslado', [validarToken, validarCampos], actualizarTr
 router.get('/reporte-devolucion-valorados', [validarToken, validarCampos], reporteDevolucionValoradosController)
 router.get('/reporte-devolucion-cambios', [validarToken, validarCampos], reporteDevolucionCambiosController)
 router.get('/reporte-devolucion-refacturacion', [validarToken, validarCampos], reporteDevolucionRefacturacionController)
-router.post('/search-clientes', [validarToken, validarCampos],searchClienteController)
+router.post('/search-clientes', [validarToken, validarCampos], searchClienteController)
 
 router.get('/cancelar-devolucion', [validarToken, validarCampos], cancelarDevolucionController)
 router.get('/get-devoluciones', [validarToken, validarCampos], getDevolucionesParaCancelarController)
 router.get('/get-entregas', [validarToken, validarCampos], getEntregasParaCancelarController)
 router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
-
+router.post('/crear-traslado', [validarToken, validarCampos], crearTrasladoController)
+router.get('/detalle-traslado', [validarToken, validarCampos], detalleTrasladoController)
+router.get('/selection-batch-plazo', [validarToken, validarCampos], selectionBatchPlazoController)
+router.get('/proceso-abastecimiento', [validarToken, validarCampos], procesoAbastecimientoController)
 module.exports = router

@@ -788,12 +788,12 @@ const getEntregasParaCancelar = async (id_user) => {
         // const query = ` select * from ${process.env.PRD}.ODLN where "DocEntry" in (72669, 72667)`
         const query = `
         select 
-            t0."U_UserCode", t0."DocEntry", t0."DocNum", t1."TrgetEntry", t0."DocStatus", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
+            t0."U_UserCode", t0."DocEntry", t0."DocNum", t1."TrgetEntry", t1."TargetType", t0."DocStatus", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
             t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
         from ${process.env.PRD}.ODLN t0
         join ${process.env.PRD}.dln1 t1 on t1."DocEntry"= t0."DocEntry"
         where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
-        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -5) AND CURRENT_DATE
+        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -3) AND CURRENT_DATE
         order by t0."DocDate" desc, t0."DocTime" desc`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -806,21 +806,46 @@ const getEntregasParaCancelar = async (id_user) => {
     }
 }
 
-//TODO: obtain the reconciliation id
+const getInvoice = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.oinv where "DocEntry"=487939`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getEntregasParaCancelar:', error.message);
+        throw {
+            message: `Error al procesar getEntregasParaCancelar: ${error.message || ''}`
+        }
+    }
+}
+
+
+/*
+TargetType
+14: CN
+13: Invoice
+16: Return
+*/
 const getDevolucionesParaCancelar = async (id_user) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         const query = `select 
-            t0."U_UserCode", t0."DocEntry", ndc."DocEntry" "TrgetEntry", t0."DocNum", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
+            t0."U_UserCode", t0."DocEntry", ndc."DocEntry" "TrgetEntry", rec."ReconNum", t0."DocNum", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
             t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
         from ${process.env.PRD}.ORDN t0
         join ${process.env.PRD}.rdn1 t1 on t1."DocEntry"= t0."DocEntry"
         left join ${process.env.PRD}.orin ndc on (ndc."DocEntry" = t1."TrgetEntry" 
-	        and t1."TargetType" = 14) 
+	        and t1."TargetType" = 14)
+        left join ${process.env.PRD}.ojdt trans on (trans."TransType" = 14 and trans."BaseRef" = ndc."DocNum")
+        left join ${process.env.PRD}.itr1 rec on rec."TransId"=trans."TransId"
         where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
-        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -5) AND CURRENT_DATE
+        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -3) AND CURRENT_DATE
         order by t0."DocDate" desc, t0."DocTime" desc`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -829,6 +854,91 @@ const getDevolucionesParaCancelar = async (id_user) => {
         console.error('Error en getDevolucionesParaCancelar:', error.message);
         throw {
             message: `Error al procesar getDevolucionesParaCancelar: ${error.message || ''}`
+        }
+    }
+}
+
+const detalleTraslado = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_detalle_por_id(${docEntry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en detalleTraslado:', error.message);
+        throw {
+            message: `Error al procesar detalleTraslado: ${error.message || ''}`
+        }
+    }
+}
+
+const selectionBatchPlazo = async (itemCode, whsCodeFrom, plazo) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_selection_batch_plazo('${itemCode}','${whsCodeFrom}',${plazo})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en selection_batch_plazo:', error.message);
+        throw {
+            message: `Error al procesar selection_batch_plazo: ${error.message || ''}`
+        }
+    }
+}
+
+const insertWorkFlowWithCheck = async (idSolicitud, tipoSolicitud, nombreProceso, username, idSap, ip, tipo, idTransito, tipoTransito) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.LAPP}.INSERT_WORKFLOW_WITHCHECK('${idSolicitud}','${tipoSolicitud}','${nombreProceso}','${username}',${idSap},'${ip}','WEB','O','${tipo}','${idTransito}','${tipoTransito}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en insertWorkFlowWithCheck:', error.message);
+        throw {
+            message: `Error al procesar insertWorkFlowWithCheck: ${error.message || ''}`
+        }
+    }
+}
+
+const getReconciliationIdByCN = async (id_CN) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }//${process.env.PRD}
+        const query = `call LAB_IFA_PRD.ifa_lapp_obtener_id_reconciliacion_por_id_ndc(${id_CN})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getReconciliationIdByCN:', error.message);
+        throw {
+            message: `Error al procesar getReconciliationIdByCN: ${error.message || ''}`
+        }
+    }
+}
+
+const procesoAbastecimiento = async (id_CN) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.LAPP}.PROCESO_ABASTECIMIENTO_STATUS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en procesoAbastecimiento:', error.message);
+        throw {
+            message: `Error al procesar procesoAbastecimiento: ${error.message || ''}`
         }
     }
 }
@@ -875,5 +985,11 @@ module.exports = {
     reporteDevolucionValorados,
     searchClientes,
     reporteDevolucionCambios,
-    reporteDevolucionRefacturacion, getEntregasParaCancelar, getDevolucionesParaCancelar
+    reporteDevolucionRefacturacion,
+    getEntregasParaCancelar,
+    getDevolucionesParaCancelar, getInvoice, getReconciliationIdByCN,
+    detalleTraslado,
+    insertWorkFlowWithCheck,
+    selectionBatchPlazo,
+    procesoAbastecimiento,
 }

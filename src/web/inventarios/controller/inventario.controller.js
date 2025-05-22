@@ -27,8 +27,12 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     detalleSolicitudPendiente,
     reporteDevolucionValorados,
     searchClientes,
-    reporteDevolucionCambios, reporteDevolucionRefacturacion, getDevolucionesParaCancelar,
-    getEntregasParaCancelar } = require("./hana.controller")
+    reporteDevolucionCambios, reporteDevolucionRefacturacion, getDevolucionesParaCancelar, getInvoice,
+    getEntregasParaCancelar,
+    detalleTraslado,
+    insertWorkFlowWithCheck,
+    selectionBatchPlazo, getReconciliationIdByCN, 
+    procesoAbastecimiento} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice } = require("./sld.controller")
@@ -41,7 +45,7 @@ const path = require('path');
 const fs = require('fs');
 const { facturacionProsin } = require("../../facturacion_module/service/apiFacturacionProsin")
 const { getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("./sql_genesis.controller");
-const { postInventoryTransferRequests, patchInventoryTransferRequests } = require("../../service/sapService");
+const { postInventoryTransferRequests, patchInventoryTransferRequests, postStockTransfer } = require("../../service/sapService");
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -3455,11 +3459,6 @@ const imprimibleSalidaController = async (req, res) => {
         //! Definir nombre del archivo
         const fileName = `salida_${data.DocNum}_${new Date()}.pdf`;
 
-        //! Registrar en el log
-        // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
-        //     "Nota Creada con éxito", layout.query || '', "facturacion/nota-entrega", process.env.PRD);
-
-        //! Enviar el PDF como respuesta
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,
@@ -3474,7 +3473,7 @@ const imprimibleSalidaController = async (req, res) => {
         console.log({ error })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Imprimible Salida",
-            `${error.message || 'Error en el controller imprimibleSalidaController'}`, 'catch del controller',
+            `${error.message || 'Error en el controller imprimibleSalidaController'}`, 'catch del imprimibleSalidaController',
             "inventario/imprimible-salida", process.env.PRD);
 
         return res.status(500).json({ mensaje: `error en el controlador imprimibleSalidaController. ${error.message || ''}` })
@@ -4547,32 +4546,31 @@ const solicitudTrasladoController = async (req, res) => {
             U_Autorizacion,
             StockTransferLines
         } = req.body
-
-        console.log({
+        const user = req.usuarioAutorizado
+        console.log(JSON.stringify({
             Comments,
             JournalMemo,
             FromWarehouse,
             U_TIPO_TRASLADO,
             U_GroupCode,
             ToWarehouse,
+            SalesPersonCode,
             CardName,
             CardCode,
-            SalesPersonCode,
             U_UserCode,
             DueDate,
             U_FECHA_FACT,
             U_Autorizacion,
             StockTransferLines
-        })
-
+        }, null, 2))
         const sapResponse = await postInventoryTransferRequests({
             Comments,
             JournalMemo,
             FromWarehouse,
             U_TIPO_TRASLADO,
+            SalesPersonCode,
             U_GroupCode,
             ToWarehouse,
-            // SalesPersonCode,
             CardName,
             CardCode,
             U_UserCode,
@@ -4583,7 +4581,7 @@ const solicitudTrasladoController = async (req, res) => {
         })
 
 
-        console.log(JSON.stringify({ sapResponse }, null, 2))
+        // console.log(JSON.stringify({ sapResponse }, null, 2))
         const { status, errorMessage } = sapResponse
         if (status && status == 400) {
             const { value } = errorMessage
@@ -4596,10 +4594,12 @@ const solicitudTrasladoController = async (req, res) => {
 
             return res.status(400).json({ mensaje })
         }
+        const { idTransfer } = sapResponse
+        await insertWorkFlowWithCheck(idTransfer, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Solicitud', idTransfer, '1250000001')
         return res.json({ sapResponse })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en saveArticuloDiccionario : ${error.message || 'No definido'}` })
+        return res.status(500).json({ mensaje: `Error en solicitudTrasladoController : ${error.message || 'No definido'}` })
     }
 }
 
@@ -4858,10 +4858,10 @@ const detalleSolicitudTrasladoController = async (req, res) => {
         const response = await detalleSolicitudPendiente(docEntry)
         let dataResponse = response.map((item) => ({
             ...item,
-            QuantityMod: +item.Quantity||0,
+            QuantityMod: +item.Quantity || 0,
             subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity)
         }))
-        console.log({ dataResponse, docEntry })
+        // console.log({ dataResponse, docEntry })
         return res.json(dataResponse)
     } catch (error) {
         console.log({ error })
@@ -4916,34 +4916,36 @@ const reporteDevolucionRefacturacionController = async (req, res) => {
 
 const getDevolucionesParaCancelarController = async (req, res) => {
     try {
-        const {id_user} = req.query
+        const { id_user } = req.query
         const response = await getDevolucionesParaCancelar(id_user)
         // console.log({ response })
         let cabecera = []
-        for(const line of response){
-            let {U_UserCode, DocEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TrgetEntry, ...rest} = line
-            if(cabecera.length ==0){
+        for (const line of response) {
+            let { U_UserCode, DocEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TrgetEntry, ...rest } = line
+            if (cabecera.length == 0) {
                 DocTime = String(DocTime)
-                if(DocTime.length==4){
-                    DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
-                }else{
-                    DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                if (DocTime.length == 4) {
+                    DocTime = `${DocTime.slice(0, 2)}:${DocTime.slice(2, 4)}`
+                } else {
+                    DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                 }
-                cabecera=[{U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, 
-                    detalle: [{...rest}]
+                cabecera = [{
+                    U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                    detalle: [{ ...rest }]
                 }]
-            }else{
-                if(cabecera[cabecera.length-1].DocEntry==DocEntry){
-                    cabecera[cabecera.length-1].detalle.push({...rest});
-                }else{
+            } else {
+                if (cabecera[cabecera.length - 1].DocEntry == DocEntry) {
+                    cabecera[cabecera.length - 1].detalle.push({ ...rest });
+                } else {
                     DocTime = String(DocTime)
-                    if(DocTime.length==4){
-                        DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
-                    }else{
-                        DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                    if (DocTime.length == 4) {
+                        DocTime = `${DocTime.slice(0, 2)}:${DocTime.slice(2, 4)}`
+                    } else {
+                        DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                     }
-                    cabecera.push({U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, 
-                        detalle: [{...rest}]
+                    cabecera.push({
+                        U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                        detalle: [{ ...rest }]
                     })
                 }
             }
@@ -4954,37 +4956,39 @@ const getDevolucionesParaCancelarController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en getDevolucionesParaCancelarController  : ${error.message || 'No definido'}` })
     }
 }
-
+//inv 487939
 const getEntregasParaCancelarController = async (req, res) => {
     try {
-        const {id_user} = req.query
+        const { id_user } = req.query
         const response = await getEntregasParaCancelar(id_user)
         // console.log({ response })
         let cabecera = []
-        for(const line of response){
-            let {U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, ...rest} = line
-            if(cabecera.length ==0){
+        for (const line of response) {
+            let { U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, ...rest } = line
+            if (cabecera.length == 0) {
                 DocTime = String(DocTime)
-                if(DocTime.length==4){
-                    DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
-                }else{
-                    DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                if (DocTime.length == 4) {
+                    DocTime = `${DocTime.slice(0, 2)}:${DocTime.slice(2, 4)}`
+                } else {
+                    DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                 }
-                cabecera=[{U_UserCode, DocEntry, DocNum, TrgetEntry,CardCode, CardName, Comments,DocDate, DocTime, DocTotal, 
-                    detalle: [{...rest}]
+                cabecera = [{
+                    U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                    detalle: [{ ...rest }]
                 }]
-            }else{
-                if(cabecera[cabecera.length-1].DocEntry==DocEntry){
-                    cabecera[cabecera.length-1].detalle.push({...rest});
-                }else{
+            } else {
+                if (cabecera[cabecera.length - 1].DocEntry == DocEntry) {
+                    cabecera[cabecera.length - 1].detalle.push({ ...rest });
+                } else {
                     DocTime = String(DocTime)
-                    if(DocTime.length==4){
-                        DocTime = `${DocTime.slice(0,2)}:${DocTime.slice(2,4)}`
-                    }else{
-                        DocTime = `${DocTime.slice(0,1)}:${DocTime.slice(1,3)}`
+                    if (DocTime.length == 4) {
+                        DocTime = `${DocTime.slice(0, 2)}:${DocTime.slice(2, 4)}`
+                    } else {
+                        DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                     }
-                    cabecera.push({U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, 
-                        detalle: [{...rest}]
+                    cabecera.push({
+                        U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                        detalle: [{ ...rest }]
                     })
                 }
             }
@@ -4999,61 +5003,68 @@ const getEntregasParaCancelarController = async (req, res) => {
 const cancelarDevolucionController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {idDev, idCN, idRC} = req.query
+        const { idDev, idCN, idRC } = req.query
 
-        let responseRC
-        if(idRC && idRC!=0){
-            responseRC = await cancelReconciliacion(idRC);
-            console.log({responseRC});
-            if(responseRC.status==400){
-                let mensaje
-                if(typeof responseRC.errorMessage === 'string'){
-                    mensaje =`${responseRC.errorMessage}`
-                }else{
-                    mensaje = `${responseRC.errorMessage.value}`
-                }
-                return res.status(400).json({mensaje})
-            }
-        }
-        
         let responseCN
+        let responseRC
         if (idCN != 0) {
-            responseCN = await cancelCreditNotes(idCN)
-            console.log({responseCN});
-            if(responseCN.status==400){
-                let mensaje
-                if(typeof responseCN.errorMessage === 'string'){
-                    mensaje =`${responseCN.errorMessage}`
-                }else{
-                    mensaje = `${responseCN.errorMessage.value}`
+            if (idRC && idRC != 0) {
+                responseRC = await cancelReconciliacion(idRC);
+                console.log({ responseRC });
+                if (responseRC.status == 400) {
+                    let mensaje = `Error en cancelReconciliacion: `
+                    if (typeof responseRC.errorMessage === 'string') {
+                        mensaje = `${responseRC.errorMessage}`
+                    } else {
+                        mensaje = `${responseRC.errorMessage.value}`
+                    }
+                    if (!mensaje.includes('Document is already closed')) {
+                        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+                            `${mensaje}`, `https://srvhana:50000/b1s/v1/InternalReconciliations(${idRC})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+
+                        return res.status(400).json({ mensaje })
+                    }
                 }
-                return res.status(400).json({mensaje, responseRC})
+            }
+            responseCN = await cancelCreditNotes(idCN)
+            console.log({ responseCN });
+            if (responseCN.status == 400) {
+                let mensaje = `Error en cancelCreditNotes: `
+                if (typeof responseCN.errorMessage === 'string') {
+                    mensaje += `${responseCN.errorMessage}`
+                } else {
+                    mensaje += `${responseCN.errorMessage.value}`
+                }
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+                    `${mensaje}`, `https://srvhana:50000/b1s/v1/CreditNotes(${idCN})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+                return res.status(400).json({ mensaje, responseRC })
             }
         }
-        //cancel reconciliations 444974
+
         const responseDev = await cancelReturn(idDev)
-        if(responseDev.status==400){
+        console.log({ responseDev })
+        if (responseDev.status == 400) {
             let mensaje
-            if(typeof responseDev.errorMessage === 'string'){
-                mensaje =`${responseDev.errorMessage}`
-            }else{
+            if (typeof responseDev.errorMessage === 'string') {
+                mensaje = `${responseDev.errorMessage}`
+            } else {
                 mensaje = `${responseDev.errorMessage.value || 'Error en cancelReturn'}`
             }
-                // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-        //     `${mensaje}`, `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-            return res.status(400).json({mensaje, responseCN, responseRC})
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+                `${mensaje}`, `https://srvhana:50000/b1s/v1/Returns(${idDev})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+            return res.status(400).json({ mensaje, responseCN, responseRC })
         }
 
-        
 
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
-        //     `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`,`/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-        
-        return res.json({responseDev, responseCN, responseRC})
+        //devolucion nro: 1308 y entrega nro: 72683
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
+            `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+
+        return res.json({ responseDev, responseCN, responseRC })
     } catch (error) {
         console.log({ error })
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-        //     `${error.message || 'Error en cancelarDevolucionController'}`, `catch de cancelarDevolucionController`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+            `${error.message || 'Error en cancelarDevolucionController'}`, `catch de cancelarDevolucionController`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
         return res.status(500).json({ mensaje: error.message || 'Error en cancelarDevolucionController' })
     }
 }
@@ -5061,33 +5072,42 @@ const cancelarDevolucionController = async (req, res) => {
 const cancelarEntregaController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {idEnt, idInv} = req.query
-        let responseInv
-        if(idInv && idInv!=0){
-            responseInv = await cancelInvoice(idInv)
-            if(responseInv.status==400){
-                if(typeof responseInv.errorMessage === 'string')
-                    return res.status(400).json({mensaje: `Error en el cancel invoice: `+responseInv.errorMessage})
-                else
-                    return res.status(400).json({mensaje: `Error en el cancel invoice: `+responseInv.errorMessage.value })
-            }
-        }
+        const { idEnt, TargetType } = req.query
 
         const responseEnt = await cancelEntrega(idEnt)
-        if(responseEnt.status==400){
-            if(typeof responseEnt.errorMessage === 'string')
-                return res.status(400).json({mensaje: `Error en el cancel entrega: ` + responseEnt.errorMessage})
-            else
-                return res.status(400).json({mensaje: `Error en el cancel entrega: ` + responseEnt.errorMessage.value })
+        if (responseEnt.status == 400) {
+            let mensaje = `Error en el cancel entrega: `
+            let errorMessage = responseEnt.errorMessage
+            if (typeof errorMessage !== 'string')
+                errorMessage = responseEnt.errorMessage.value
+            console.log({ mensaje })
+            if (errorMessage.includes('cancel target documents first')) {
+                console.log('includes')
+                if (TargetType == 13) {
+                    mensaje += 'Cancele la FACTURA primero!'
+                } else if (TargetType == 16) {
+                    mensaje += 'Cancele la DEVOLUCION primero!'
+                } else {
+                    mensaje += errorMessage
+                }
+            } else {
+                mensaje += errorMessage
+            }
+
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, mensaje,
+                `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD)
+
+            return res.status(400).json({ mensaje })
         }
-        
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
-        //     `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD )
-        return res.json({responseEnt, responseInv})
+
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
+            `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD);
+
+        return res.json({ responseEnt })
     } catch (error) {
         console.log({ error })
-        // grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
-        //     `${error.message || 'Error en cancelarEntregaController'}`, `https://srvhana:50000/b1s/v1/DeliveryNotes(id)/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD )
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
+            `${error.message || 'Error en cancelarEntregaController'}`, `catch del cancelarEntregaController`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD)
         return res.status(500).json({ mensaje: error.message || 'Error en cancelarEntregaController' })
     }
 }
@@ -5111,6 +5131,172 @@ const actualizarTrasladoController = async (req, res) => {
     }
 }
 
+const crearTrasladoController = async (req, res) => {
+    try {
+
+        let {
+            DocEntry,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            SalesPersonCode,
+            DueDate,
+            CardName,
+            CardCode,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        } = req.body
+
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        // lotes si el U_BatchNum es vacio, hacer fefo
+        // referenciar a la solicitud con el BaseType = #, BaseLine = linenum,BaseEntry = #, armar siempre el json batchnum
+        console.log({
+
+        })
+
+        for (let data of StockTransferLines) {
+            const { U_BatchNum, LineNum, Quantity, ItemCode, FromWarehouseCode, NumPerMsr, ...rest } = data
+            data.BaseType = 1250000001
+            data.BaseLine = LineNum
+            data.BaseEntry = DocEntry
+            if (U_BatchNum == '') {
+                const batchData = await lotesArticuloAlmacenCantidad(ItemCode, FromWarehouseCode, Quantity)
+                if (batchData.message) {
+                    return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
+                }
+                console.log({ batchData })
+                if (batchData.length == 0) {
+                    return res.status(400).json({ mensaje: `No hay stock en el almacen: ${FromWarehouseCode} , para el articulo : ${ItemCode} y la cantidad : ${Quantity}` })
+                } else {
+                    batchNumbers = batchData.map(batch => ({
+                        BaseLineNumber: LineNum,
+                        BatchNumber: batch.BatchNum,
+                        Quantity: Number(batch.Quantity),
+                        ItemCode: batch.ItemCode
+                    }))
+
+                    data.BatchNumbers = batchNumbers
+                }
+
+            } else {
+                data.BatchNumbers = [
+                    {
+                        BaseLineNumber: LineNum,
+                        BatchNumber: U_BatchNum,
+                        Quantity: Number(Quantity) * Number(NumPerMsr),
+                        ItemCode: ItemCode
+                    }
+                ]
+            }
+        }
+
+        StockTransferLines = StockTransferLines.map((item) => {
+            const { NumPerMsr, ...rest } = item
+            return {
+                ...rest
+            }
+        })
+        console.log(JSON.stringify({
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            SalesPersonCode,
+            DueDate,
+            CardName,
+            CardCode,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        }, null, 2))
+
+        const sapResponse = await postStockTransfer({
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            SalesPersonCode,
+            DueDate,
+            CardName,
+            CardCode,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        })
+
+        const { status } = sapResponse
+
+        if (status == 400) {
+            const { errorMessage } = sapResponse
+            return res.status(400).json({ mensaje: `Error del SAP en Stock Transfer. ${errorMessage.value || 'No definido'}` })
+        }
+        const { idStockTransfer } = sapResponse
+        await insertWorkFlowWithCheck(DocEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Transito', idStockTransfer, '67')
+        return res.json({
+            sapResponse
+        })
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en crearTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const detalleTrasladoController = async (req, res) => {
+    try {
+        const docEntry = req.query.docEntry
+        const response = await detalleTraslado(docEntry)
+        let dataResponse = response.map((item) => ({
+            ...item,
+            subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity)
+        }))
+        // console.log({ dataResponse, docEntry })
+        return res.json(dataResponse)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en detalleTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const selectionBatchPlazoController = async (req, res) => {
+    try {
+        const itemCode = req.query.itemCode
+        const whsCodeFrom = req.query.whsCodeFrom
+        const plazo = req.query.plazo
+        let response = await selectionBatchPlazo(itemCode, whsCodeFrom, plazo)
+        response = response.map((item) => {
+            return {
+                ...item,
+                Quantity: +item.Quantity
+            }
+        })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchPlazoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const procesoAbastecimientoController = async (req, res) => {
+    try {
+        let response = await procesoAbastecimiento()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en procesoAbastecimientoController : ${error.message || 'No definido'}` })
+    }
+}
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -5166,7 +5352,13 @@ module.exports = {
     searchClienteController,
     reporteDevolucionCambiosController,
     reporteDevolucionRefacturacionController,
-    cancelarDevolucionController, cancelarEntregaController, getDevolucionesParaCancelarController,
+    cancelarDevolucionController,
+    cancelarEntregaController,
+    getDevolucionesParaCancelarController,
     getEntregasParaCancelarController,
     actualizarTrasladoController,
+    crearTrasladoController,
+    detalleTrasladoController,
+    selectionBatchPlazoController,
+    procesoAbastecimientoController,
 }
