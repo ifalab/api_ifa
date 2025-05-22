@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -262,6 +262,39 @@ const getLibroMayor = async (req, res) => {
         const {codigo} = req.query;
         
         const data = await ObtenerLibroMayor(codigo);
+
+        return res.status(200).json(data);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `error en getLibroMayor ${error}` })
+    }
+}
+
+const getLibroMayorFiltrado = async (req, res) => {
+    try {
+        const {
+            cuenta,
+            docFuente,
+            fechaFin,
+            fechaInicio,
+            socioNombre,
+            indicador,
+            dim1,
+            dim2,
+            dim3
+        } = req.body;
+        
+        const data = await ObtenerLibroMayorFiltrado({
+            cuenta,
+            fechaInicio,
+            fechaFin,
+            socioNombre,
+            indicador,
+            docFuente,
+            dim1,
+            dim2,
+            dim3
+        });
 
         return res.status(200).json(data);
     } catch (error) {
@@ -552,10 +585,22 @@ const reservarAsientoId = async (req, res) => {
 
         return res.status(200).json(result[0])
     } catch (error) {
-         console.error({ error });
+        console.error({ error });
         return res.status(500).json({ mensaje: `[reservarAsientoId] Error reservando id para el asiento. ${error}` });
     }
 }
+
+const beneficiarios = async(req, res) => {
+    try {
+        const result = await getBeneficiarios();
+
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: `[beneficiarios] Error reservando id para el asiento. ${error}` });
+    }
+}
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -570,5 +615,7 @@ module.exports = {
     saveDocFuentes,
     getAsientoContableCCById,
     cargarPlantillaMasivaDimensiones,
-    reservarAsientoId
+    reservarAsientoId,
+    beneficiarios,
+    getLibroMayorFiltrado
 }
