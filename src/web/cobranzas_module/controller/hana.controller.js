@@ -957,7 +957,7 @@ const auditoriaSaldoDeudor = async (cardCode, date) => {
     }
 }
 
-const obtenerBajasFacturas = async (fechaIni, fechaFin, cardCode, factura='') => {
+const obtenerBajasFacturas = async (fechaIni, fechaFin, cardCode='', factura='') => {
     try {
         if (!connection) {
             await connectHANA();

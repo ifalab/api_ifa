@@ -1895,6 +1895,19 @@ const getVentasZonaSupervisor = async (sucursal=0) => {
     }
 }
 
+const getVentasZonaAntSupervisor = async (sucursal=0) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA_ANT_SUPERVISOR(${sucursal})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasZonaAntSupervisor: ', err.message);
+        throw new Error(`Error en getVentasZonaAntSupervisor: ${err.message}`);
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1994,5 +2007,6 @@ module.exports = {
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
-    ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal
+    ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal,
+    getVentasZonaAntSupervisor
 }

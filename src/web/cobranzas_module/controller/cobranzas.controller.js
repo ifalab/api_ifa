@@ -2193,7 +2193,7 @@ const getBajasFacturasController = async (req, res) => {
     try {
         const { fechaIni, fechaFin, cardCode, factura } = req.body
         
-        const response = await obtenerBajasFacturas(fechaIni, fechaFin, cardCode, factura??'')
+        const response = await obtenerBajasFacturas(fechaIni, fechaFin, cardCode??'', factura??'')
 
         console.log({ response })
         return res.json(response)
@@ -2368,7 +2368,7 @@ const excelReporteCobro = async (req, res) => {
 const excelReporte = async (req, res) => {
     try {
       const {data, displayedColumns, cabecera} = req.body;
-      const {cardCode, cardName, fechaIni, fechaFin }= cabecera;
+      const {fechaIni, fechaFin }= cabecera;
 
     //   console.log({data});
     //   console.log({displayedColumns})
@@ -2384,7 +2384,8 @@ const excelReporte = async (req, res) => {
       const worksheet = workbook.addWorksheet('Reporte de Estado de Cuenta');
 
       worksheet.columns = [
-        // { header: 'Fecha Factura', key: 'DocDateInv', width: 15 },
+        { header: 'Cliente', key: 'CardName', width: 30 },
+        { header: 'Sucursal', key: 'SucName', width: 15 },
         { header: 'No. Factura', key: 'DocNumInv', width: 12 },
         { header: 'NumAtCard', key: 'NumAtCard', width: 14},
         { header: 'Total Factura', key: 'DocTotalInv', width: 14},
@@ -2403,62 +2404,48 @@ const excelReporte = async (req, res) => {
         { header: 'Código Cuenta', key: 'AcctCodeDis', width: 15 },
         { header: 'Nombre Cuenta', key: 'AcctNameDis', width: 40 }
       ];
-      
+
       // Insertar filas antes del encabezado
       worksheet.insertRow(1, []);
       worksheet.insertRow(1, []);
       worksheet.insertRow(1, []);
       worksheet.insertRow(1, []);
-      worksheet.insertRow(1, []);  
       // Agregar contenido a las filas de cabecera
-      worksheet.getCell('A1').value = `Reporte de estado de cuenta`;
-      worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;  
-      worksheet.getCell('A3').value = `Cliente: ${cardCode} | ${cardName}`;  
-      worksheet.getCell('A4').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`;  
+      worksheet.getCell('A1').value = `Reporte de estado de cuenta`;  
+      worksheet.getCell('A2').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`; 
+      worksheet.getCell('A3').value = `Fecha de Impresión: ${date}`;  
       // Fusionar celdas para que el texto se centre sobre varias columnas
       worksheet.mergeCells('A1:Q1');
-      worksheet.mergeCells('A2:Q2'); 
-      worksheet.mergeCells('A3:Q3');
-      worksheet.mergeCells('A4:Q4'); 
+      worksheet.mergeCells('A2:S2'); 
+      worksheet.mergeCells('A3:S3'); 
+
       // Estilizar cabecera
-      ['A1', 'A2'].forEach(cellAddress => {
-        const cell = worksheet.getCell(cellAddress);
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.fill = {
+        const cellA = worksheet.getCell('A1');
+        cellA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA.fill = {
             type: 'pattern',
             pattern: 'solid',
             fgColor: { argb: 'FFFFFF' },
         };
-        if(cellAddress === 'A1') {
-            const cell = worksheet.getCell(cellAddress);
-        cell.font = { bold: true, size: 14 }; 
-            cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                right: { style: 'thin' },
-            };  
-        }else{
-            const cell = worksheet.getCell(cellAddress); 
-            cell.font = { bold: true, size: 13 };
-            cell.border = {
-                bottom: { style: 'thin' },
-                left: { style: 'thin' },
-                right: { style: 'thin' },
-            };  
-        }
-      });
-      ['A3', 'A4'].forEach(cellAddress => {
+        cellA.font = { bold: true, size: 14 }; 
+        cellA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+        }; 
+        
+      ['A2', 'A3'].forEach(cellAddress => {
         const cell = worksheet.getCell(cellAddress);
         cell.font = { bold: true, size: 11 };
         cell.alignment = { vertical: 'middle', horizontal: 'start' };
-        
       });
-
+    
       const rowRefs = data.map(row =>
         worksheet.addRow(
-            displayedColumns.reduce((acc, column) => ({
+        displayedColumns.reduce((acc, column) => ({
             ...acc,
-            [column]: column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column]
+            [column]: row[column]?
+                (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
+                : ''
             }), {})
         )
       );
@@ -2513,10 +2500,10 @@ const excelReporte = async (req, res) => {
         }
         return  ends;
       }
-      const ends = mergeSameValues(7, ['DocNumInv', 'NumAtCard', 'DocTotalInv']);
+      const ends = mergeSameValues(6, ['CardName', 'SucName', 'DocNumInv', 'NumAtCard', 'DocTotalInv']);
       console.log({ends})
 
-      worksheet.getRow(6).eachCell(cell => {
+      worksheet.getRow(5).eachCell(cell => {
         cell.font = { bold: true };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
         cell.fill = {
