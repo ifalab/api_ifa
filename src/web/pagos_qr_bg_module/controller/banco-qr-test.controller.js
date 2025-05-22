@@ -11,6 +11,7 @@ const bancoQrClient = require('../services/banco-qr-client');
  */
 const testAutenticarController = async (req, res) => {
     try {
+        //sexo
         const resultado = await bancoQrClient.autenticarConBanco();
 
         return res.status(200).json({
