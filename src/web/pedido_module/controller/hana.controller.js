@@ -81,7 +81,7 @@ const findDescuentosCondicion = async () => {
         return await executeQuery(query)
     } catch (error) {
         console.log({ error })
-        throw new Error('Error al procesar la solicitud: findDescuentosCondicion');
+        throw new Error(`Error al procesar la solicitud: findDescuentosCondicion: ${error.message}`);
     }
 }
 
@@ -152,6 +152,20 @@ const listaPrecioOficial = async (cardCode) => {
     } catch (error) {
         console.log({ error })
         throw new Error(`Error al procesar la solicitud: listaPrecioOficial: ${error.message}`);
+    }
+}
+
+const listaPrecioOficialCortoVencimiento = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_catalogo_cv('${cardCode}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la listaPrecioOficialCortoVencimiento: ${error.message}`);
     }
 }
 
@@ -323,7 +337,7 @@ const getAllArticulos= async (itemName) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') and "ItmsGrpCod" = 105 and "validFor"='Y' order by "ItemName" limit 15`;
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where (upper("ItemName") LIKE '%${itemName}%' or upper("ItemCode") LIKE '%${itemName}%') and "ItmsGrpCod" = 105 and "validFor"='Y' order by "ItemName" limit 20`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -414,6 +428,21 @@ const articuloPorItemCode= async (itemCode) => {
     }
 }
 
+const descuentosCortoVencimiento = async()=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.IFA_VM_DESCUENTOS_POR_ARTICULO_CORTO_VENCIMIENTO`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en listaNegraDescuentos:', error.message);
+        throw { message: `Error al procesar articuloPorItemCode: ${error.message}` }
+    }
+}
+
 module.exports = {
     findClientePorVendedor,
     findDescuentosArticulos,
@@ -440,4 +469,6 @@ module.exports = {
     listaNegraDescuentos,
     clientePorCardCode,
     articuloPorItemCode,
+    descuentosCortoVencimiento,
+    listaPrecioOficialCortoVencimiento,
 }

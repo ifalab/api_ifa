@@ -1,5 +1,5 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja } = require("./hana.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
@@ -233,7 +233,6 @@ const createAsientoContableController = async (req, res) => {
                 DebitSys: 0,
                 ContraAccount: '',
                 LineMemo: glosa,
-                // Reference1: `${cheque}`,
                 Reference1: ``,
                 Reference2: '',
             }
@@ -261,80 +260,90 @@ const createAsientoContableController = async (req, res) => {
             console.log({ ...data })
 
         } else {
-            let firstAccount = {
-                AccountCode: `${cuenta}`,
-                ShortName: `${codEmp}`,
-                Credit: 0,
-                Debit: monto,
-                CreditSys: 0,
-                DebitSys: parseFloat(newValue.toFixed(2)),
-                ContraAccount: `${banckAccount}`,
-                LineMemo: `${glosa}`,
-                Reference1: `${reference}`,
-                Reference2: ''
-            }
-
-            if (voucher || voucher == '') {
-                firstAccount.AdditionalReference = voucher
-            }
-
+            //?
             let JournalEntryLines = []
-            JournalEntryLines.push(firstAccount)
-
             rendiciones.map((item) => {
                 const newValueRend = +item.Amount / usd
-                let contraAccount = {
-                    AccountCode: `${banckAccount}`,
-                    ShortName: `${banckAccount}`,
-                    Credit: +item.Amount,
-                    Debit: 0,
-                    CreditSys: parseFloat(newValueRend.toFixed(2)),
-                    DebitSys: 0,
-                    ContraAccount: '',
-                    LineMemo: glosa,
-                    // Reference1: `${cheque}`,
+                let firstAccount = {
+                    AccountCode: `${cuenta}`,
+                    ShortName: `${codEmp}`,
+                    Credit: 0,
+                    Debit: +item.Amount,
+                    CreditSys: 0,
+                    DebitSys: parseFloat(newValueRend.toFixed(2)),
+                    ContraAccount: `${banckAccount}`,
+                    LineMemo: `${glosa}`,
                     Reference1: `${reference}`,
-                    Reference2: `${item.RendicionTransId}`,
-                }
-                if (voucher || voucher == '') {
-                    contraAccount.AdditionalReference = voucher
+                    Reference2: `${item.RendicionTransId}`
                 }
 
-                if (cheque || cheque == '') {
+                if (voucher || voucher !== '') {
+                    firstAccount.AdditionalReference = voucher
+                } else {
+                    if (cheque || cheque !== '') {
+                        firstAccount.AdditionalReference = cheque
+                    }
+                }
+                JournalEntryLines.push(firstAccount)
+            })
+
+            let contraAccount = {
+                AccountCode: `${banckAccount}`,
+                ShortName: `${banckAccount}`,
+                Credit: +monto,
+                Debit: 0,
+                CreditSys: parseFloat(newValue.toFixed(2)),
+                DebitSys: 0,
+                ContraAccount: ``,
+                LineMemo: glosa,
+                Reference1: `${reference}`,
+                Reference2: ``,
+            }
+
+            if (voucher || voucher !== '') {
+                contraAccount.AdditionalReference = voucher
+            } else {
+                if (cheque || cheque !== '') {
                     contraAccount.AdditionalReference = cheque
                 }
+            }
 
+            JournalEntryLines.push(contraAccount)
 
-                JournalEntryLines.push(contraAccount)
+            const sumaDebitsSys = JournalEntryLines.reduce((sum, line) => sum + line.DebitSys, 0);
+            const sumaCreditsSys = JournalEntryLines.reduce((sum, line) => sum + line.CreditSys, 0);
+            const diferenciaSys = parseFloat((sumaDebitsSys - sumaCreditsSys).toFixed(2));
+            if (Math.abs(diferenciaSys) > 0) {
+                let ultimaLinea = JournalEntryLines[JournalEntryLines.length - 2];
+                // if (diferenciaSys > 0) {
+                // ultimaLinea.CreditSys += diferenciaSys;
+                // } else {
+                ultimaLinea.DebitSys += Math.abs(diferenciaSys);
+                // }
+            }
+            data = {
+                U_UserCode: idSap,
+                ReferenceDate: date,
+                Memo: glosa,
+                Indicator: indicador,
+                Reference: reference,
+                Reference3: cheque,
+                JournalEntryLines
+            }
 
-                data = {
-                    U_UserCode: idSap,
-                    ReferenceDate: date,
-                    Memo: glosa,
-                    Indicator: indicador,
-                    Reference: reference,
-                    Reference3: cheque,
-                    JournalEntryLines
-                }
-
-            })
-            
             console.log('con rendicion')
-            // data = { ...data, rendiciones }
             console.log({ ...data })
 
         }
-
-        // return res.json({ data, rendiciones })
         const response = await asientoContable({
             ...data
         })
         if (response.value) {
-            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. Sap Error: ${response.value || 'No definido'}` })
+            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. Sap Error: ${response.value || 'No definido'}`, data })
         }
+        console.log('respuesta: ')
+        console.log({ response })
         return res.json({ mensaje: 'Apertura de Caja creado con exito' })
-
-
 
     } catch (error) {
         console.log({ error })
@@ -386,22 +395,23 @@ const findAllAccountController = async (req, res) => {
 
 const cerrarCajaChicaController = async (req, res) => {
     try {
-        const { id, glosa } = req.body
+        const { id, glosa, montoBank, dataBankAccount,nroDeposito } = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ id, glosa })
         const data = await dataCierreCaja(id)
+        const dataRendiciones = await rendicionesPorCaja(+id)
+        console.log({ data })
         if (data.length !== 2) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error en traer los datos necesarios para el cierre de caja`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
             return res.status(400).json({ mensaje: 'Hubo un problemas en traer los datos necesarios para el cierre de caja', data })
         }
         const dataAccount = data[0]
-        const dataBankAccount = data[1]
         const tipoCambio = await tipoDeCambio()
         const usdRate = tipoCambio[0]
         const usd = +usdRate.Rate
-        const montoBank = Number(dataBankAccount.Debit)
-        const montoAccount = Number(dataAccount.Credit)
-        if (montoBank == 0 || montoAccount == 0) {
+        const montoAccount = Number(dataAccount.FondoFijo)
+        let JournalEntryLines = []
+        if (montoAccount == 0) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Error: El montoBank no puede ser cero: ${montoBank || 'no definido'} o el montoAccount no puede ser cero: ${montoAccount || 'no definido'}`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
             return res.status(400).json({ mensaje: 'El Monto de las cuentas no puede ser cero', data })
         }
@@ -411,41 +421,104 @@ const cerrarCajaChicaController = async (req, res) => {
         }
         const newMontoBank = +montoBank / usd
         const newMontoAccount = +montoAccount / usd
-        let account = {
-            AccountCode: `${dataBankAccount.Account}`,
-            ShortName: `${dataBankAccount.ShortName}`,
-            Credit: 0,
-            Debit: parseFloat(montoBank.toFixed(2)),
-            CreditSys: 0,
-            DebitSys: parseFloat(newMontoBank.toFixed(2)),
-            ContraAccount: `${dataBankAccount.ContraAct}`,
-            LineMemo: `${glosa}`,
-            Reference1: ``,
-            Reference2: ''
+
+        if (dataRendiciones.length > 0) {
+            dataRendiciones.map((item) => {
+                console.log({ item })
+                const monto = +item.Amount
+                const newMontoRendcion = +item.Amount / usd
+                console.log({ newMontoRendcion })
+                let accountPaid = {
+                    AccountCode: `2110401`,
+                    ShortName: `${dataAccount.AsociateCardCode}`,
+                    Credit: 0,
+                    Debit: parseFloat(monto.toFixed(2)),
+                    CreditSys: 0,
+                    DebitSys: parseFloat(newMontoRendcion.toFixed(2)),
+                    ContraAccount: `${dataAccount.AsociateCardCode}`,
+                    LineMemo: `${glosa}`,
+                    Reference1: ``,
+                    Reference2: ''
+                }
+
+                JournalEntryLines.push(accountPaid)
+            })
         }
+
+        if (montoBank > 0) {
+            // if (parseFloat(montoAccount.toFixed(2)) !== parseFloat(montoBank.toFixed(2))) {
+            //     grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `El monto de la Cuenta (${parseFloat(montoAccount.toFixed(2))}) no puede ser diferente que el Monto del Banco (${parseFloat(montoBank.toFixed(2))})`, ``, "contabilidad/cierre-caja-chica", process.env.PRD)
+            //     return res.status(400).json({
+            //         mensaje: `El monto de la Cuenta (${parseFloat(montoAccount.toFixed(2))}) no puede ser diferente que el Monto del Banco (${parseFloat(montoBank.toFixed(2))})`,
+            //         montoBanco: parseFloat(montoBank.toFixed(2)),
+            //         montoCuenta: parseFloat(montoAccount.toFixed(2))
+            //     })
+            // }
+
+            let account = {
+                AccountCode: `${dataBankAccount}`,
+                ShortName: `${dataBankAccount}`,
+                Credit: 0,
+                Debit: parseFloat(montoBank.toFixed(2)),
+                CreditSys: 0,
+                DebitSys: parseFloat(newMontoBank.toFixed(2)),
+                ContraAccount: `${dataAccount.AsociateCardCode}`,
+                LineMemo: `${glosa}`,
+                Reference1: ``,
+                Reference2: '',
+                Reference3: `${nroDeposito}`,
+            }
+            JournalEntryLines.push(account)
+        }
+
         let contraAccount = {
-            AccountCode: `${dataAccount.Account}`,
-            ShortName: `${dataAccount.ShortName}`,
+            AccountCode: `${dataAccount.AcctCode}`,
+            ShortName: `${dataAccount.AsociateCardCode}`,
             Credit: parseFloat(montoAccount.toFixed(2)),
             Debit: 0,
             CreditSys: parseFloat(newMontoAccount.toFixed(2)),
             DebitSys: 0,
-            ContraAccount: `${dataAccount.ContraAct}`,
+            ContraAccount: ``,
             LineMemo: `${glosa}`,
             Reference1: ``,
             Reference2: '',
         }
-        let JournalEntryLines = []
-        JournalEntryLines.push(account)
+
+
         JournalEntryLines.push(contraAccount)
         const postJournalEntry = {
             ReferenceDate: '',
             Memo: glosa,
             Indicator: '11',
             Reference: `${id}`,
+            Reference3: `${nroDeposito}`,
             JournalEntryLines
         }
+        const totalDebe = JournalEntryLines.reduce((acc, item) => {
+            const debe = Number(item.Debit)
+            return acc + debe
+        }, 0)
 
+        const totalHaber = JournalEntryLines.reduce((acc, item) => {
+            const haber = Number(item.Credit)
+            return acc + haber
+        }, 0)
+        if (totalDebe !== totalHaber) {
+            const diferencia = totalHaber - totalDebe
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `El Total Debe (${totalDebe}) no puede ser diferente que al total haber (${totalHaber}), hay una diferencia de ${diferencia}`, ``, "contabilidad/cierre-caja-chica", process.env.PRD)
+            return res.status(400).json({
+                mensaje: `El Total Debe (${totalDebe}) no puede ser diferente que al total haber (${totalHaber}), hay una diferencia de ${diferencia}`,
+                postJournalEntry,
+                dataAccount,
+                dataBankAccount,
+                dataRendiciones,
+                totalDebe,
+                totalHaber,
+            })
+        }
+        // return res.json({ postJournalEntry, dataAccount, dataBankAccount, dataRendiciones, totalDebe, totalHaber })
+        console.log('data asiento cierre:')
+        console.log({postJournalEntry})
         const response = await asientoContable({
             ...postJournalEntry
         })
@@ -518,7 +591,9 @@ const createAsientoContableCCController = async (req, res) => {
             Reference1,
             Reference2,
             Reference3,
+            Indicator,
             TransType,
+            TransId,
             details
         } = req.body
         let totalDebe = 0;
@@ -560,8 +635,9 @@ const createAsientoContableCCController = async (req, res) => {
         }
 
         console.log(user);
-
+        console.log(details);
         const comResponse = await sapService.createAsientoCC({
+            TransId: TransId,
             fechaContabilizacion: formattedDate,
             glosa: Memo,
             referencia1: Reference1,
@@ -569,13 +645,16 @@ const createAsientoContableCCController = async (req, res) => {
             referencia3: Reference3,
             transType: Number(TransType),
             fechaDueDate: formattedDueDate,
+            indicator: Indicator,
             userSign: Number(user.ID),
             details
         })
-        const { data } = comResponse
-        return res.json(data)
+        const { message, statusCode, id } = comResponse
+        console.log(message, statusCode, id);
+        return res.json({message, statusCode, id})
     } catch (error) {
-        console.log({ error })
+        console.log(JSON.stringify(error.message, null, 2));
+
         let mensaje = ''
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
@@ -603,14 +682,32 @@ const getAsientosContablesCC = async (req, res) => {
         const data = await asientosContablesCC();
 
         const groupedData = data.reduce((acc, current) => {
+            const lineData = {
+                Line_ID: current.Line_ID,
+                Account: current.Account,
+                ContraAct: current.ContraAct,
+                Debit: current.Debit,
+                Credit: current.Credit,
+                LineMemo: current.LineMemo,
+                ShortName: current.ShortName,
+                U_IdComlConcept: current.U_IdComlConcept,
+                AcctName: current.AcctName,
+                CardName: current.CardName,
+                Ref1Detail: current.Ref1Detail,
+                Ref2Detail: current.Ref2Detail,
+                Ref3Deatil: current.Ref3Deatil,
+                U_Clasif_Gastos: current.U_Clasif_Gastos,
+                Area: current.Area,
+                Tipo_Cliente: current.Tipo_Cliente,
+                Linea: current.Linea,
+                Especialidad: current.Especialidad,
+                Clasificacion_Gastos: current.Clasificacion_Gastos,
+                Conceptos_Comerciales: current.Conceptos_Comerciales,
+                Cuenta_Contable: current.Cuenta_Contable
+            };
+
             if (acc[current.TransId]) {
-                acc[current.TransId].lines.push({
-                    Line_ID: current.Line_ID,
-                    Account: current.Account,
-                    Debit: current.Debit,
-                    Credit: current.Credit,
-                    LineMemo: current.LineMemo
-                });
+                acc[current.TransId].lines.push(lineData);
             } else {
                 acc[current.TransId] = {
                     TransId: current.TransId,
@@ -622,13 +719,8 @@ const getAsientosContablesCC = async (req, res) => {
                     Ref3: current.Ref3,
                     Number: current.Number,
                     Indicator: current.Indicator,
-                    lines: [{
-                        Line_ID: current.Line_ID,
-                        Account: current.Account,
-                        Debit: current.Debit,
-                        Credit: current.Credit,
-                        LineMemo: current.LineMemo
-                    }]
+                    UserSign: current.UserSign,
+                    lines: [lineData]
                 };
             }
             return acc;
@@ -657,7 +749,7 @@ const getSucursalesCC = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getSucursalesCC], ${mensaje}` })
     }
 }
 
@@ -671,7 +763,7 @@ const getTipoClienteCC = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getTipoClienteCC], ${error}` })
     }
 }
 
@@ -685,7 +777,7 @@ const getLineasCC = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getLineasCC], ${error}` })
     }
 }
 
@@ -699,7 +791,37 @@ const getSublineasCC = async (req, res) => {
         if (error.statusCode >= 400) {
             mensaje += error.message.message || 'No definido'
         }
-        return res.status(500).json({ mensaje: `error en el controlador [getCuentasCC], ${mensaje}` })
+        return res.status(500).json({ mensaje: `error en el controlador [getSublineasCC], ${error}` })
+    }
+}
+
+const getJournalPreliminarCC = async (req, res) => {
+    try {
+        const { id } = req.query;
+        const data = await asientosPreliminaresCC(id);
+        console.log(data);
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getJournalPreliminarCC], ${mensaje}` })
+    }
+}
+
+const getJournalPreliminarCCIds = async (req, res) => {
+    try {
+        const data = await asientosPreliminaresCCIds();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getJournalPreliminarCCIds], ${mensaje}` })
     }
 }
 
@@ -730,6 +852,53 @@ const rendicionesPorCajaController = async (req, res) => {
     }
 }
 
+const getSociosNegocio = async (req, res) => {
+    try {
+        const data = await sociosNegocio();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getSociosNegocio], ${error}` })
+    }
+}
+
+const actualizarEstadoCCController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body;
+
+        console.log(id);
+        console.log(estado);
+        // Validación simple
+        if (!['nc', 'c', 'm'].includes(estado)) {
+            return res.status(400).json({ message: 'Estado inválido' });
+        }
+
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ message: 'ID inválido o no numérico' });
+        }
+
+        // Lógica para actualizar en la BD
+        await sapService.actualizarAsientoCC({
+            estado
+        }, id.toString())
+
+        res.json({ message: 'Estado actualizado correctamente' });
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [actualizarEstadoCCController], ${mensaje}` })
+    }
+
+};
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -749,4 +918,8 @@ module.exports = {
     getLineasCC,
     getSublineasCC,
     rendicionesPorCajaController,
+    getJournalPreliminarCC,
+    getJournalPreliminarCCIds,
+    getSociosNegocio,
+    actualizarEstadoCCController,
 }

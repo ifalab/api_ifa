@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "nodemon src/server.js",
-    "start": "node  src/server.js"
+    "start": "nodemon src/server.js",
+    "start-node": "node  src/server.js"
   },
   "keywords": [
     "api",
@@ -29,12 +30,14 @@
     "morgan": "^1.10.0",
     "mssql": "^11.0.1",
     "multer": "^1.4.5-lts.2",
+    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.15.2",
     "pdfmake": "^0.3.0-beta.14",
     "puppeteer": "^23.11.1",
     "qrcode": "^1.5.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

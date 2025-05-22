@@ -21,6 +21,12 @@ const { asientoContableController,
     getSublineasCC,
     getTipoClienteCC,
     rendicionesPorCajaController,
+    getJournalPreliminarCC,
+    getJournalPreliminarCCIds,
+    getSociosNegocio,
+    actualizarEstadoCCController,
+    guardarAsientoContablePreliminarCCController,
+    actualizarAsientoContablePreliminarCCController,
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -38,11 +44,16 @@ router.patch('/cierre-caja-chica', [validarToken, validarCampos],cerrarCajaChica
 router.post('/create-asiento-contable-centro-costo', [validarToken, validarCampos], createAsientoContableCCController)
 router.get('/cuentas', [validarToken, validarCampos], getCuentasCC)
 router.get('/asientos-contables-cc', [validarToken, validarCampos], getAsientosContablesCC)
+router.get('/asientos-contables-preliminares-cc', [validarToken, validarCampos], getJournalPreliminarCC)
+router.get('/asientos-contables-preliminares-cc-ids', [validarToken, validarCampos], getJournalPreliminarCCIds)
 
 router.get('/sucursales', [validarToken, validarCampos], getSucursalesCC);
 router.get('/lineas', [validarToken, validarCampos], getLineasCC);
 router.get('/tipo-cliente', [validarToken, validarCampos], getTipoClienteCC);
 router.get('/sublineas', [validarToken, validarCampos], getSublineasCC);
 router.get('/rendiciones-por-caja', [validarToken, validarCampos], rendicionesPorCajaController);
+router.get('/socios-negocio', [validarToken, validarCampos], getSociosNegocio);
+
+router.patch('/update-estado/cc/:id', actualizarEstadoCCController);
 
 module.exports = router

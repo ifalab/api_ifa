@@ -331,7 +331,7 @@ const getAllAlmacenes = async () => {
             await connectHANA();
         }
         const query = `select "WhsCode", "WhsName" from ${process.env.PRD}.IFA_DM_ALMACENES`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -340,7 +340,7 @@ const getAllAlmacenes = async () => {
     }
 }
 
-const searchArticulos= async (itemName) => {
+const searchArticulos = async (itemName) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -353,8 +353,25 @@ const searchArticulos= async (itemName) => {
         return result
     } catch (error) {
         console.error('Error en searchArticulos:', error.message);
-        throw { 
-            message: `Error al procesar searchArticulos: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar searchArticulos: ${error.message || ''}`
+        }
+    }
+}
+
+const searchClientes = async (itemName) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes where (upper("CardName") LIKE '%${itemName}%' or upper("CardCode") LIKE '%${itemName}%') limit 50`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en searchClientes:', error.message);
+        throw {
+            message: `Error al procesar searchClientes: ${error.message || ''}`
         }
     }
 }
@@ -365,7 +382,7 @@ const stockDisponiblePorSucursal = async (sucursal) => {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.ifa_lapp_inv_stock_disponible_sucursal(${sucursal})`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -382,7 +399,7 @@ const clientesBySucCode = async () => {
         const query = `SELECT 
         *
         FROM ${process.env.PRD}.IFA_DM_CLIENTES `
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -398,7 +415,7 @@ const getClienteByCardCode = async (cardCode) => {
         const query = `SELECT 
         *
         FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -437,12 +454,15 @@ const getDeudaDelCliente = async (cardCode) => {
         throw { message: `Error en getDeudaDelCliente: ${error.message}`, error }
     }
 }
-const findCliente = async (buscar, sucCode) => {
+
+const findCliente = async (buscar) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'`;
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes 
+        where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'
+        limit 50`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -455,13 +475,33 @@ const findCliente = async (buscar, sucCode) => {
     }
 }
 
+const findClienteInstituciones = async (buscar) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes 
+        where "GroupCode"=105 and ("CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%')
+        limit 50`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en findClienteInstituciones:', error);
+        throw {
+            status: 400,
+            message: `Error en findClienteInstituciones: ${error.message || ''}`
+        }
+    }
+}
+
 const getAlmacenesSucursal = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
         const query = `select "WhsCode", "WhsName", "SucCode" from ${process.env.PRD}.IFA_DM_ALMACENES`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -473,7 +513,7 @@ const getAlmacenesSucursal = async () => {
 const getStockdeItemAlmacen = async (itemCode, whsCode) => {
     try {
         if (!connection) {
-            await connectHANA();    
+            await connectHANA();
         }
         const query = `select * from ${process.env.PRD}.IFA_INV_INVENTARIO_STOCK where "ItemCode" = '${itemCode}' and "WhsCode"='${whsCode}'`;
         console.log({ query })
@@ -485,7 +525,7 @@ const getStockdeItemAlmacen = async (itemCode, whsCode) => {
     }
 }
 
-const getLineaArticulo= async (itemCode) => {
+const getLineaArticulo = async (itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -496,40 +536,57 @@ const getLineaArticulo= async (itemCode) => {
         return result
     } catch (error) {
         console.error('Error en getLineaArticulo:', error.message);
-        throw { 
-            message: `Error al procesar getLineaArticulo: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar getLineaArticulo: ${error.message || ''}`
         }
     }
 }
 
-const articuloDiccionario= async (itemCode) => {
+// const articuloDiccionario= async (itemCode) => {
+//     try {
+//         if (!connection) {
+//             await connectHANA();
+//         }
+//         const query = `
+//         select 
+//         ITEMCODE, 
+//         dmArt."ItemName" as ItemNamePrincipal, 
+//         ITEMEQ, 
+//         dmArt2."ItemName" as ItemNameEquivalente,
+//         ISACTIVE 
+//         from ${process.env.LAPP}.LAPP_HABILITACION_DICCIONARIO as hd
+//         join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt on hd.ITEMCODE = dmArt."ItemCode" 
+//         join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt2 on hd.ITEMEQ = dmArt2."ItemCode" 
+//         `;
+//         console.log({ query })
+//         const result = await executeQuery(query)
+//         return result
+//     } catch (error) {
+//         console.error('Error en articuloDiccionario:', error.message);
+//         throw { 
+//             message: `Error al procesar articuloDiccionario: ${error.message || ''}` 
+//         }
+//     }
+// }
+
+const articuloDiccionario = async () => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `
-        select 
-    ITEMCODE, 
-    dmArt."ItemName" as ItemNamePrincipal, 
-    ITEMEQ, 
-    dmArt2."ItemName" as ItemNameEquivalente,
-    ISACTIVE 
-    from ${process.env.LAPP}.LAPP_HABILITACION_DICCIONARIO as hd
-    join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt on hd.ITEMCODE = dmArt."ItemCode" 
-    join ${process.env.PRD}.IFA_DM_ARTICULOS dmArt2 on hd.ITEMEQ = dmArt2."ItemCode" 
-        `;
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_ARTICULOS_DICCIONARIO_HABILITACION ORDER BY "ItemCode"`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.error('Error en articuloDiccionario:', error.message);
-        throw { 
-            message: `Error al procesar articuloDiccionario: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar articuloDiccionario: ${error.message || ''}`
         }
     }
 }
 
-const relacionArticulo = async(itemCode) =>{
+const relacionArticulo = async (itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -540,13 +597,13 @@ const relacionArticulo = async(itemCode) =>{
         return result
     } catch (error) {
         console.error('Error en relacionArticulo:', error.message);
-        throw { 
-            message: `Error al procesar relacionArticulo: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar relacionArticulo: ${error.message || ''}`
         }
     }
 }
 
-const articulos = async() =>{
+const articulos = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -557,8 +614,331 @@ const articulos = async() =>{
         return result
     } catch (error) {
         console.error('Error en articulos:', error.message);
-        throw { 
-            message: `Error al procesar articulos: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar articulos: ${error.message || ''}`
+        }
+    }
+}
+
+const saveDiccionario = async (relaciones) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        for (const relacion of relaciones) {
+            const query = `
+          CALL "LAB_IFA_LAPP"."LAPP_SAVE_DICCIONARIO"('${relacion.desdeCode}', '${relacion.haciaCode}')
+        `;
+            console.log(`Ejecutando: ${query}`);
+            await executeQuery(query);
+        }
+
+        return { mensaje: `${relaciones.length} relaciones guardadas correctamente.` };
+
+    } catch (error) {
+        console.error('Error en saveDiccionario:', error.message);
+        throw {
+            message: `Error al procesar el diccionario: ${error.message || ''}`
+        };
+    }
+}
+
+const tipoSolicitud = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "FldValue", "Descr" from ${process.env.PRD}.ufd1 where "TableID" = 'OWTR' and "FieldID" = 115`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en tipoSolicitud:', error.message);
+        throw {
+            message: `Error al procesar tipoSolicitud: ${error.message || ''}`
+        }
+    }
+}
+
+const costoComercialByItemCode = async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "U_COSTO_COML" from ${process.env.PRD}.oitm where "ItemCode" = '${itemCode}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en costoComercialByItemCode:', error.message);
+        throw {
+            message: `Error al procesar costoComercialByItemCode: ${error.message || ''}`
+        }
+    }
+}
+
+const tipoCliente = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "GroupCode","GroupName" from ${process.env.PRD}.ifa_dm_tipos`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en tipoCliente:', error.message);
+        throw {
+            message: `Error al procesar tipoCliente: ${error.message || ''}`
+        }
+    }
+}
+
+const solicitudesPendiente = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_solicitud_pendientes_por_sucursal(${sucCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en solicitudesPendiente:', error.message);
+        throw {
+            message: `Error al procesar solicitudesPendiente: ${error.message || ''}`
+        }
+    }
+}
+
+const detalleSolicitudPendiente = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_solicitud_detalle_por_id_para_traslado(${docEntry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en detalleSolicitudPendiente:', error.message);
+        throw {
+            message: `Error al procesar detalleSolicitudPendiente: ${error.message || ''}`
+        }
+    }
+}
+
+const reporteDevolucionValorados = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dev_valorados`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en reporteDevolucionValorados:', error.message);
+        throw {
+            message: `Error al procesar reporteDevolucionValorados: ${error.message || ''}`
+        }
+    }
+}
+
+const reporteDevolucionCambios = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dev_cambios_detalle`;//
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en reporteDevolucionCambios:', error.message);
+        throw {
+            message: `Error al procesar reporteDevolucionCambios: ${error.message || ''}`
+        }
+    }
+}
+
+const reporteDevolucionRefacturacion = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en reporteDevolucionRefacturacion:', error.message);
+        throw {
+            message: `Error al procesar reporteDevolucionRefacturacion: ${error.message || ''}`
+        }
+    }
+}
+
+const getEntregasParaCancelar = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        // const query = ` select * from ${process.env.PRD}.ODLN where "DocEntry" in (72669, 72667)`
+        const query = `
+        select 
+            t0."U_UserCode", t0."DocEntry", t0."DocNum", t1."TrgetEntry", t1."TargetType", t0."DocStatus", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
+            t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
+        from ${process.env.PRD}.ODLN t0
+        join ${process.env.PRD}.dln1 t1 on t1."DocEntry"= t0."DocEntry"
+        where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
+        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -3) AND CURRENT_DATE
+        order by t0."DocDate" desc, t0."DocTime" desc`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getEntregasParaCancelar:', error.message);
+        throw {
+            message: `Error al procesar getEntregasParaCancelar: ${error.message || ''}`
+        }
+    }
+}
+
+const getInvoice = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.oinv where "DocEntry"=487939`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getEntregasParaCancelar:', error.message);
+        throw {
+            message: `Error al procesar getEntregasParaCancelar: ${error.message || ''}`
+        }
+    }
+}
+
+
+/*
+TargetType
+14: CN
+13: Invoice
+16: Return
+*/
+const getDevolucionesParaCancelar = async (id_user) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select 
+            t0."U_UserCode", t0."DocEntry", ndc."DocEntry" "TrgetEntry", rec."ReconNum", t0."DocNum", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
+            t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
+        from ${process.env.PRD}.ORDN t0
+        join ${process.env.PRD}.rdn1 t1 on t1."DocEntry"= t0."DocEntry"
+        left join ${process.env.PRD}.orin ndc on (ndc."DocEntry" = t1."TrgetEntry" 
+	        and t1."TargetType" = 14)
+        left join ${process.env.PRD}.ojdt trans on (trans."TransType" = 14 and trans."BaseRef" = ndc."DocNum")
+        left join ${process.env.PRD}.itr1 rec on rec."TransId"=trans."TransId"
+        where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
+        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -3) AND CURRENT_DATE
+        order by t0."DocDate" desc, t0."DocTime" desc`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDevolucionesParaCancelar:', error.message);
+        throw {
+            message: `Error al procesar getDevolucionesParaCancelar: ${error.message || ''}`
+        }
+    }
+}
+
+const detalleTraslado = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_detalle_por_id(${docEntry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en detalleTraslado:', error.message);
+        throw {
+            message: `Error al procesar detalleTraslado: ${error.message || ''}`
+        }
+    }
+}
+
+const selectionBatchPlazo = async (itemCode, whsCodeFrom, plazo) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_selection_batch_plazo('${itemCode}','${whsCodeFrom}',${plazo})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en selection_batch_plazo:', error.message);
+        throw {
+            message: `Error al procesar selection_batch_plazo: ${error.message || ''}`
+        }
+    }
+}
+
+const insertWorkFlowWithCheck = async (idSolicitud, tipoSolicitud, nombreProceso, username, idSap, ip, tipo, idTransito, tipoTransito) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.LAPP}.INSERT_WORKFLOW_WITHCHECK('${idSolicitud}','${tipoSolicitud}','${nombreProceso}','${username}',${idSap},'${ip}','WEB','O','${tipo}','${idTransito}','${tipoTransito}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en insertWorkFlowWithCheck:', error.message);
+        throw {
+            message: `Error al procesar insertWorkFlowWithCheck: ${error.message || ''}`
+        }
+    }
+}
+
+const getReconciliationIdByCN = async (id_CN) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }//${process.env.PRD}
+        const query = `call LAB_IFA_PRD.ifa_lapp_obtener_id_reconciliacion_por_id_ndc(${id_CN})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getReconciliationIdByCN:', error.message);
+        throw {
+            message: `Error al procesar getReconciliationIdByCN: ${error.message || ''}`
+        }
+    }
+}
+
+const procesoAbastecimiento = async (id_CN) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.LAPP}.PROCESO_ABASTECIMIENTO_STATUS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en procesoAbastecimiento:', error.message);
+        throw {
+            message: `Error al procesar procesoAbastecimiento: ${error.message || ''}`
         }
     }
 }
@@ -589,11 +969,27 @@ module.exports = {
     getClienteByCardCode,
     devolucionLayout,
     getDeudaDelCliente,
-    findCliente,
+    findCliente, findClienteInstituciones,
     getAlmacenesSucursal,
     getStockdeItemAlmacen,
     getLineaArticulo,
     relacionArticulo,
     articuloDiccionario,
-    articulos
+    articulos,
+    saveDiccionario,
+    tipoSolicitud,
+    costoComercialByItemCode,
+    tipoCliente,
+    solicitudesPendiente,
+    detalleSolicitudPendiente,
+    reporteDevolucionValorados,
+    searchClientes,
+    reporteDevolucionCambios,
+    reporteDevolucionRefacturacion,
+    getEntregasParaCancelar,
+    getDevolucionesParaCancelar, getInvoice, getReconciliationIdByCN,
+    detalleTraslado,
+    insertWorkFlowWithCheck,
+    selectionBatchPlazo,
+    procesoAbastecimiento,
 }

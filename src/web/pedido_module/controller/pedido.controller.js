@@ -24,7 +24,9 @@ const { findClientePorVendedor,
     stockInstitucionPorArticulo,
     listaNegraDescuentos,
     clientePorCardCode,
-    articuloPorItemCode
+    articuloPorItemCode,
+    descuentosCortoVencimiento,
+    listaPrecioOficialCortoVencimiento
 } = require("./hana.controller");
 const { postOrden, postQuotations, patchQuotations, getQuotation } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -39,7 +41,6 @@ const { aniadirDetalleVisita } = require("../../planificacion_module/controller/
 
 const clientesVendedorController = async (req, res) => {
     try {
-
         const { name } = req.body;
         const response = await findClientesByVendedor(name);
         let clientes = [];
@@ -61,6 +62,35 @@ const clientesVendedorController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error en el controlador' })
+    }
+}
+
+const findClienteController = async (req, res) => {
+    try {
+
+        const { name, cardCode } = req.body;
+        const response = await findClientesByVendedor(name);
+        let cliente;
+        for (const item of response) {
+            if(item.CardCode == cardCode){
+                const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
+                const saldoDisponible = (+CreditLine) - (+AmountDue);
+                cliente= {
+                    ...restCliente,
+                    CreditLine,
+                    AmountDue,
+                    mora: HvMora,
+                    saldoDisponible,
+                };
+                break;
+            }
+            
+        }
+
+        return res.json(cliente);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en findClienteController: ${error.message}` })
     }
 }
 
@@ -177,6 +207,17 @@ const listaPreciosOficilaController = async (req, res) => {
     }
 }
 
+const listaPreciosOficilaCVController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const listaPrecioResponse = await listaPrecioOficialCortoVencimiento(cardCode)
+        return res.json({ listaPrecio: listaPrecioResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
+    }
+}
+
 const procesarListaCodigo = (descuentos) => {
     let lista = []
     descuentos.map((item) => {
@@ -204,23 +245,15 @@ const sugeridosXClienteController = async (req, res, next) => {
 
         const sugeridos = await pedidoSugeridoXCliente(cardCode)
         // console.log({ sugeridos })
-        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        console.log({ user })
-        grabarLog(user.USERCODE, user.USERNAME, "Pedidos sugeridos", "Datos obtenidos con exito", `${sugeridos.query || ''}`, "pedido/sugerido-cliente", process.env.PRD)
-
         return res.json({ sugeridos: sugeridos.sugeridos })
     } catch (error) {
         console.log({ error })
 
-        const query = error.query || 'No disponible'
-        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
         let mensaje = 'Error en el controlador: sugeridosXClienteController'
         if (error.message) {
             mensaje = error.message
         }
-        // Registrar el error en los logs
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedidos sugeridos", mensaje, query, "pedido/sugerido-cliente", process.env.PRD)
 
         return res.status(500).json({ mensaje })
     }
@@ -238,7 +271,7 @@ const findZonasXVendedorController = async (req, res) => {
 }
 
 const crearOrderController = async (req, res) => {
-    const {VisitID, CardName, ...body}= req.body
+    const { VisitID, CardName, ...body } = req.body
     try {
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -275,15 +308,15 @@ const crearOrderController = async (req, res) => {
         console.log({ usuario })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
 
-        if(VisitID){
+        if (VisitID) {
             const responseAniadirVisita = await aniadirDetalleVisita(
-                VisitID, body.CardCode, CardName, 'Venta', body.Comments, body.DocTotal, 0,body.U_UserCode
+                VisitID, body.CardCode, CardName, 'Venta', body.Comments, body.DocTotal, 0, body.U_UserCode
             )
             console.log({ responseAniadirVisita })
-            if(responseAniadirVisita.message){
-                grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `¡Error al añadir Visita a la Orden!. ${responseAniadirVisita.message}`, 'USP_ADD_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
+            if (responseAniadirVisita.message) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `¡Error al añadir Visita a la Orden!. ${responseAniadirVisita.message}`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
             }
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Exito al añadir Visita a la Orden.`, 'USP_ADD_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Exito al añadir Visita a la Orden.`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "pedido/crear-orden", process.env.PRD)
         }
 
         return res.json({ ...ordenResponse })
@@ -557,10 +590,12 @@ const crearOrderCadenaController = async (req, res) => {
         ordenBody.DocumentLines.map((item) => {
             const { GrossTotal } = item
 
-            console.log({GrossTotal})
+            console.log({ GrossTotal })
             totalOrden += GrossTotal
-            console.log({totalOrden})
+            console.log({ totalOrden })
         })
+
+        totalOrden = Number(totalOrden.toFixed(2))
 
         if (totalOrden !== ordenBody.DocTotal) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
@@ -575,7 +610,7 @@ const crearOrderCadenaController = async (req, res) => {
         console.log(ordenResponse)
         if (ordenResponse.status == 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
-            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`,ordenBody })
+            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, ordenBody })
         }
         console.log({ usuario })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
@@ -1290,10 +1325,10 @@ const pedidosPorVendedorFacturadosOrdenadoController = async (req, res) => {
 
 const patchQuotationsWhscodeController = async (req, res) => {
     try {
-        const { lineNum, whsCode, id } = req.body
+        const { lineNum, whsCode, id, itemCode } = req.body
         const DocumentLines = []
 
-        DocumentLines.push({ LineNum: lineNum, WarehouseCode: whsCode })
+        DocumentLines.push({ LineNum: lineNum, WarehouseCode: whsCode, itemCode })
         console.log({ id, DocumentLines })
         const sapResponse = await patchQuotations(id, { DocumentLines })
         console.log({ sapResponse })
@@ -1304,6 +1339,19 @@ const patchQuotationsWhscodeController = async (req, res) => {
 
         return res.json({ lineNum, whsCode, id, sapResponse })
 
+    } catch (error) {
+        console.log({ error })
+        return res.status(400).json({
+            mensaje: 'Error en el controlador',
+            error
+        })
+    }
+}
+
+const descuentoCortoVencimientoController = async (req, res) => {
+    try {
+        const data = await descuentosCortoVencimiento()
+        return res.json({ articulos: data })
     } catch (error) {
         console.log({ error })
         return res.status(400).json({
@@ -1346,5 +1394,9 @@ module.exports = {
     listaNegraDescuentosController,
     crearOrderIfaController,
     pedidosPorVendedorFacturadosOrdenadoController,
-    patchQuotationsWhscodeController
+    patchQuotationsWhscodeController,
+    descuentoCortoVencimientoController,
+    findClienteController,
+    listaPreciosOficilaCVController,
+
 }

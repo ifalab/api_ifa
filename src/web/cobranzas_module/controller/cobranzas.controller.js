@@ -3,6 +3,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
+const ExcelJS = require('exceljs');
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
     detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo, getVendedores,
     getCobradores, getCobradoresBySucursales,
@@ -10,15 +11,21 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getAllSublines,
     getAllLines,
     getVendedoresBySuc,
-    getYearToDayBySuc, getYearToDayByCobrador, getYTDCobrador, getPendientesBajaPorCobrador,
+    getYearToDayBySuc, getYearToDayByCobrador, getYtdCobradores, getPendientesBajaPorCobrador,
     cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza, getBaja, getLayoutComprobanteContable,
     getBajasByUser, reporteBajaCobranzas,
-    getClienteById
+    getClienteById,
+    getComprobantesBajasByUser,
+    getClientes,
+    getEstadoCuentaCliente,
+    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { aniadirDetalleVisita } = require('../../planificacion_module/controller/hana.controller');
+const formatData = require('../utils/formatEstadoCuenta');
+
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -62,7 +69,7 @@ const cobranzasPorZonasController = async (req = request, res = response) => {
     } catch (err) {
         console.log('error en ventasInstitucionesController')
         console.log({ err })
-        return res.status(500).json({ mensaje: 'Error al procesar la solicitud' })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en cobranzasPorZonasController'}` })
     }
 }
 
@@ -895,7 +902,7 @@ const saldoDeudorInstitucionesController = async (req, res) => {
 
 const realizarCobroController = async (req, res) => {
     try {
-        const body = req.body
+        const {  VisitID, CardName, ...body} = req.body
         let CashSum = body.CashSum
         const CashAccount = body.CashAccount
         let TransferSum = body.TransferSum
@@ -911,9 +918,9 @@ const realizarCobroController = async (req, res) => {
 
         PaymentInvoices.map((item) => {
             const sum = item.SumApplied
-            console.log({ sum })
             total += +sum
         })
+        console.log({ total })
         total = Number(total.toFixed(2))
 
         if (TransferAccount || TransferAccount != null) {
@@ -936,6 +943,7 @@ const realizarCobroController = async (req, res) => {
         }
 
         body.DocDate = null
+        console.log({ body })
         const responseSap = await postIncommingPayments(body)
         if (responseSap.status !== 200) {
             let mensaje = `Error del SAP`
@@ -947,6 +955,19 @@ const realizarCobroController = async (req, res) => {
         }
 
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", "Cobranza realizada con exito", `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD)
+        
+        if(VisitID){
+            const responseAniadirVisita = await aniadirDetalleVisita(
+                VisitID, body.CardCode, CardName, 'Cobranza', 
+                body.JournalRemarks, 0, total, body.U_OSLP_ID
+            )
+            console.log({ responseAniadirVisita })
+            if(responseAniadirVisita.message){
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `¡Error al añadir Visita a la Cobranza!. ${responseAniadirVisita.message}`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD)
+            }
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `Exito al añadir Visita a la Cobranza.`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD)
+        }
+        
         return res.json({ ...responseSap, body })
     } catch (error) {
         console.log({ error })
@@ -1033,8 +1054,8 @@ PRINT\r\n
         }
 
         fs.writeFileSync(filePath, cpclContent);
-
-        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        const safeFileName = encodeURIComponent(fileName);
+        res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}"`);
         const ress = res.sendFile(filePath)
         res.on('finish', () => {
             if (fs.existsSync(filePath)) {
@@ -1466,14 +1487,15 @@ const detalleFacturaController = async (req, res) => {
 const cobranzaPorSucursalesYTiposController = async (req, res) => {
     try {
         const { sucCodes, tipos } = req.body
-        console.log({ sucCodes })
+        console.log({ sucCodes,tipos })
         let listResponse = [];
         let totalCobranza = 0
         for (const sucCode of sucCodes) {
             const porTipo = []
             for (const tipo of tipos) {
+                console.log({sucCode, tipo})
                 const cobranza = await cobranzaPorSucursalYTipo(sucCode, tipo)
-                // console.log({ cobranza })
+                console.log({ cobranza })
                 if (cobranza.status == 400) {
                     return res.status(400).json(`${cobranza.message || 'Error en cobranzaPorSucursalYTipo'}`)
                 }
@@ -1492,7 +1514,7 @@ const cobranzaPorSucursalesYTiposController = async (req, res) => {
             }
             listResponse.push(porTipo)
         }
-        console.log({ listResponse })
+        console.log(JSON.stringify(listResponse))
         return res.json({ listResponse, totalCobranza })
     } catch (error) {
         console.log({ error })
@@ -1670,16 +1692,16 @@ const getYearToDayController = async (req, res) => {
     }
 }
 
-const getYTDCobradorController = async (req, res) => {
+const getYtdCobradoresController = async (req, res) => {
     try {
-        const { sucCode, fechaInicio1, fechaFin1 } = req.body
+        const { sucCode, mes, anio } = req.body
         console.log({ body: req.body })
-        const response = await getYTDCobrador(sucCode, fechaInicio1, fechaFin1)
+        const response = await getYtdCobradores(sucCode,  mes, anio)
 
         return res.json(response)
     } catch (error) {
         console.log({ error })
-        const mensaje = error.message || 'Error en el controlador getYTDCobradorController'
+        const mensaje = error.message || 'Error en el controlador getYtdCobradoresController'
         return res.status(500).json({
             mensaje
         })
@@ -1804,11 +1826,14 @@ const darVariasDeBajaController = async (req, res) => {
 }
 
 const comprobanteContableController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const { id } = req.query
         const baja = await getBaja(id)
         console.log({ baja })
         if (baja.length == 0) {
+            grabarLog(user.USERCODE, user.USERNAME, `Cobranza Baja Comprobante`, `No se encontro una baja con DocEntry: ${id}`,
+                `ifa_lapp_cob_bajas_por_id`, `cobranza/comprobante-contable`, process.env.PRD)
             return res.status(400).json({ mensaje: `No se encontro una baja con DocEntry: ${id}` })
         }
         const { TransId } = baja[0]
@@ -1817,13 +1842,16 @@ const comprobanteContableController = async (req, res) => {
         const layout = await getLayoutComprobanteContable(TransId)
         // return res.json({layout})
         if (layout.length == 0) {
+            grabarLog(user.USERCODE, user.USERNAME, `Cobranza Baja Comprobante`, 
+                `No se encontro datos para TransId: ${TransId}, DocEntry: ${id} en el procedure ACB_INV_LayOutCoomprobanteContablePR`,
+                `ACB_INV_LayOutCoomprobanteContablePR`, `cobranza/comprobante-contable`, process.env.PRD)
             return res.status(400).json({ mensaje: `No se encontro datos para TransId: ${TransId}, DocEntry: ${id} en el procedure ACB_INV_LayOutCoomprobanteContablePR` })
         }
 
         let cabecera = []
         let detalle = []
         let sumDebit = 0; let sumSYSDeb = 0; let sumCredit = 0; let sumSYSCred = 0
-        // console.log(layout);
+
         layout.forEach((line) => {
             const { TransId,
                 RefDate,
@@ -1922,11 +1950,15 @@ const comprobanteContableController = async (req, res) => {
             'Content-Length': pdfBuffer.length
         });
 
-        return res.end(pdfBuffer);
+        grabarLog(user.USERCODE, user.USERNAME, `Cobranza Baja Comprobante`, `Exito en crear el comprobante contable`,
+            ``, `cobranza/comprobante-contable`, process.env.PRD)
 
+        return res.end(pdfBuffer);
     } catch (error) {
         console.log({ error })
         const mensaje = `${error.message || 'Error en el controlador comprobanteContableController'}`
+        grabarLog(user.USERCODE, user.USERNAME, `Cobranza Baja Comprobante`, `${mensaje || 'Error en comprobanteContableController'}`,
+            `catch del controlador comprobanteContableController`, `cobranza/comprobante-contable`, process.env.PRD)
         return res.status(500).json({
             mensaje
         })
@@ -1944,6 +1976,21 @@ const getBajasByUserController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         const mensaje = `${error.message || 'Error en el controlador getBajasByUserController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+const getComprobantesBajasController = async (req, res) => {
+    try {
+        const { id_sap } = req.query
+        const response = await getComprobantesBajasByUser(id_sap)
+
+        console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `${error.message || 'Error en el controlador getComprobantesBajasController'}`
         return res.status(500).json({
             mensaje
         })
@@ -2010,6 +2057,501 @@ const getClienteByIdController = async (req, res) => {
     }
 }
 
+const getClientesController = async (req, res) => {
+    try {
+        let response = await getClientes()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getClientesController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getEstadoCuentaClienteController = async (req, res) => {
+    try {
+        const {id} = req.query
+        let response = await getEstadoCuentaCliente(id)
+        const responseFormatted = formatData(response);
+        return res.json(responseFormatted)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = error.message || 'Error en el controlador getEstadoCuentaClienteController'
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const getEstadoCuentaClientePDFController = async (req, res) => {
+    try {
+        const { codCliente } = req.query;
+    
+        let response = await getEstadoCuentaCliente(codCliente);
+    
+        if (!response || response.length === 0) {
+            return res.status(404).json({ mensaje: "No se encontraron datos" });
+        }
+        
+        // console.log(response);
+    
+        const { CardCode, CardName, CardFName, Descr, LicTradNum, Phone1, Cellular, E_Mail, PymntGroup, Balance } = response[0];
+    
+        const detalles = response.map(item => {
+            const {
+            CardCode, CardName, CardFName, Descr, LicTradNum, Phone1, Cellular, E_Mail, PymntGroup, Balance,
+            ...resto
+            } = item;
+            return resto;
+        });
+        console.log(detalles);
+
+        // respuesta final como un objeto
+        console.log(Balance);
+        const resultadoFinal = {
+            TotalSaldo: parseFloat(Balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ,
+            CardCode,
+            CardName,
+            CardFName,
+            Descr,
+            LicTradNum,
+            Phone1,
+            Cellular,
+            E_Mail,
+            PymntGroup,
+            detalles
+        };
+
+        const ejs = require('ejs');
+        const filePath = path.join(__dirname, './pdf/template-estado-cuenta.ejs');
+        const html = await ejs.renderFile(filePath, { data: resultadoFinal, staticBaseUrl: process.env.STATIC_BASE_URL,});
+
+        // 2. Usamos Puppeteer para convertir HTML a PDF
+        const browser = await puppeteer.launch({ headless: true });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            displayHeaderFooter: true,
+            margin: {
+                bottom: '45px',
+                top: '40px',
+            },
+            headerTemplate: `<div></div>`,
+            footerTemplate: `
+                <div style="width: 100%; margin-left: 60px; margin-right: 20px; font-size: 10px; color: #555;">
+                    
+                    <!-- Footer content -->
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="width: 50%; text-align: left;">
+                            <p style="margin: 0;">Página <span class="pageNumber"></span> de <span class="totalPages"></span></p>
+                        </div>
+                        <div style="width: 50%; text-align: right;">
+                            <p>Impreso el <span class="date"></span></p>
+                        </div>
+                    </div>
+                </div>`,
+        });
+        
+
+        await browser.close();
+
+        // 3. Respondemos con el PDF
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="estado-cuenta.pdf"',
+        });
+        res.end(pdfBuffer);
+      
+    } catch (error) {
+      console.log({ error });
+      const mensaje = error.message || 'Error en el controlador getEstadoCuentaClientePDFController';
+      return res.status(500).json({ mensaje });
+    }
+}
+
+const auditoriaSaldoDeudorController = async (req, res) => {
+    try {
+        const date = req.query.date
+        const cardCode = req.query.cardCode
+        const response = await auditoriaSaldoDeudor(cardCode,date)
+        return res.status(200).json(response)
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            mensaje: 'problemas en auditoriaSaldoDeudorController',
+            error
+        })
+    }
+}
+
+const getBajasFacturasController = async (req, res) => {
+    try {
+        const { fechaIni, fechaFin, cardCode, factura } = req.body
+        
+        const response = await obtenerBajasFacturas(fechaIni, fechaFin, cardCode??'', factura??'')
+
+        console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        const mensaje = `${error.message || 'Error en el controlador getBajasFacturasController'}`
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const findClienteController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({ body })
+        const buscar = body.buscar.toUpperCase()
+        console.log({ buscar })
+        const response = await findCliente(buscar)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador findClienteController: ${error.message || ''}` })
+    }
+} 
+
+const excelReporteCobro = async (req, res) => {
+    try {
+      const {data, displayedColumns} = req.body;
+      console.log({data});
+      console.log({displayedColumns})
+      const fechaActual = new Date();
+      const date = new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }).format(fechaActual);
+  
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Reporte de Estado de Cuenta');
+
+      // Definir columnas
+      worksheet.columns = [
+        { header: 'Fecha Cobro', key: 'DocDateCob', width: 15 },
+        { header: 'No. Cobro', key: 'DocNumCob', width: 15 },
+        { header: 'Total Cobro', key: 'DocTotalCob', width: 15},
+        { header: 'Pendiente Distribuir', key: 'DisPending', width: 20},
+        { header: 'Total Distribuido', key: 'DisTotal', width: 20},
+        { header: 'Fecha Distribución', key: 'DocDateDis', width: 20 },
+        { header: 'No. Distribución', key: 'DocNumDis', width: 20 },
+        { header: 'Tipo Transacción', key: 'TransType', width: 15 },
+        { header: 'ID Línea', key: 'Line_ID', width: 10 },
+        { header: 'Fecha Transferencia', key: 'TrsfrDate', width: 20 },
+        { header: 'Ref. Transferencia', key: 'TrsfrRef', width: 20, style: { numFmt: '0' } },
+        { header: 'Código Cuenta', key: 'AcctCodeDis', width: 15 },
+        { header: 'Nombre Cuenta', key: 'AcctNameDis', width: 35 },
+      ];
+
+      // Insertar filas antes del encabezado
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);  
+      // Agregar contenido a las filas de cabecera
+      worksheet.getCell('A1').value = `Reporte de Feacturas de Estado de Cuenta`;
+      worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;  
+      // Fusionar celdas para que el texto se centre sobre varias columnas (A a M en este caso)
+      worksheet.mergeCells('A1:M1');
+      worksheet.mergeCells('A2:M2');  
+      // Estilizar cabecera
+      ['A1', 'A2'].forEach(cellAddress => {
+        const cell = worksheet.getCell(cellAddress);
+        cell.font = { bold: true, size: 14 };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        if(cellAddress === 'A1') {
+            const cell = worksheet.getCell(cellAddress); 
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };  
+        }else{
+            const cell = worksheet.getCell(cellAddress); 
+            cell.border = {
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };  
+        }
+      });
+
+      data.forEach(row => {
+        const newRow = worksheet.addRow(
+            displayedColumns.reduce((acc, column) => ({
+                ...acc,
+                [column]: column.includes('Date') ? new Date(row[column]) : 
+                (column.includes('Total') || column.includes('Pend') || column.includes('Num'))? parseFloat(row[column]): row[column]
+            }), {})
+        );
+          
+
+        /*
+        {
+            DocDateCob: new Date(row.DocDateCob),
+            DocNumCob: row.DocNumCob,
+            DocTotalCob: parseFloat(row.DocTotalCob),
+            DisPending: parseFloat(row.DisPending),
+            DisTotal: parseFloat(row.DisTotal),
+            DocDateDis: new Date(row.DocDateDis),
+            DocNumDis: row.DocNumDis,
+            TransType: row.TransType,
+            Line_ID: row.Line_ID,
+            TrsfrDate: new Date(row.TrsfrDate),
+            TrsfrRef: row.TrsfrRef,
+            AcctCodeDis: row.AcctCodeDis,
+            AcctNameDis: row.AcctNameDis,
+        }
+        */
+          // Asegurar formato con 2 decimales:
+          newRow.getCell('DocTotalCob').numFmt = '"Bs"#,##0.00';
+          newRow.getCell('DisTotal').numFmt = '"Bs"#,##0.00';
+          newRow.getCell('DisPending').numFmt = '"Bs"#,##0.00';
+          newRow.eachCell(cell => {
+            cell.border = {
+                left: {style: 'thin'},
+                right: {style: 'thin'},
+            }
+          })
+      });
+  
+      // Estilizar encabezado
+      worksheet.getRow(4).eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFFF' },
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      worksheet.lastRow.eachCell(cell => {
+        cell.border = {
+            bottom: {style: 'thin'},
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        }
+      })
+  
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=reporte_cuenta.xlsx');
+  
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      console.error({ error });
+      return res.status(500).json({ mensaje: `Error generando el Excel del reporte cuenta ${error}` });
+    }
+};
+
+const excelReporte = async (req, res) => {
+    try {
+      const {data, displayedColumns, cabecera} = req.body;
+      const {fechaIni, fechaFin }= cabecera;
+
+    //   console.log({data});
+    //   console.log({displayedColumns})
+      const fechaActual = new Date();
+      const date = new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }).format(fechaActual);
+  
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Reporte de Estado de Cuenta');
+
+      worksheet.columns = [
+        { header: 'Cliente', key: 'CardName', width: 30 },
+        { header: 'Sucursal', key: 'SucName', width: 15 },
+        { header: 'No. Factura', key: 'DocNumInv', width: 12 },
+        { header: 'NumAtCard', key: 'NumAtCard', width: 14},
+        { header: 'Total Factura', key: 'DocTotalInv', width: 14},
+        { header: 'Forma de Pago', key: 'PymntGroup', width: 16 },
+        { header: 'Fecha Cobro', key: 'DocDateCob', width: 14 },
+        { header: 'No. Cobro', key: 'DocNumCob', width: 12 },
+        { header: 'Total Cobro', key: 'DocTotalCob', width: 15},
+        { header: 'Pendiente Distribuir', key: 'DisPending', width: 20},
+        { header: 'Total Distribuido', key: 'DisTotal', width: 20},
+        { header: 'Fecha Distribución', key: 'DocDateDis', width: 20 },
+        { header: 'No. Distribución', key: 'DocNumDis', width: 17 },
+        { header: 'Tipo Transacción', key: 'TransType', width: 15 },
+        { header: 'ID Línea', key: 'Line_ID', width: 9 },
+        { header: 'Fecha Transferencia', key: 'TrsfrDate', width: 20 },
+        { header: 'Ref. Transferencia', key: 'TrsfrRef', width: 20, style: { numFmt: '0' } },
+        { header: 'Código Cuenta', key: 'AcctCodeDis', width: 15 },
+        { header: 'Nombre Cuenta', key: 'AcctNameDis', width: 40 }
+      ];
+
+      // Insertar filas antes del encabezado
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      // Agregar contenido a las filas de cabecera
+      worksheet.getCell('A1').value = `Reporte de estado de cuenta`;  
+      worksheet.getCell('A2').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`; 
+      worksheet.getCell('A3').value = `Fecha de Impresión: ${date}`;  
+      // Fusionar celdas para que el texto se centre sobre varias columnas
+      worksheet.mergeCells('A1:Q1');
+      worksheet.mergeCells('A2:S2'); 
+      worksheet.mergeCells('A3:S3'); 
+
+      // Estilizar cabecera
+        const cellA = worksheet.getCell('A1');
+        cellA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        cellA.font = { bold: true, size: 14 }; 
+        cellA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+        }; 
+        
+      ['A2', 'A3'].forEach(cellAddress => {
+        const cell = worksheet.getCell(cellAddress);
+        cell.font = { bold: true, size: 11 };
+        cell.alignment = { vertical: 'middle', horizontal: 'start' };
+      });
+    
+      const rowRefs = data.map(row =>
+        worksheet.addRow(
+        displayedColumns.reduce((acc, column) => ({
+            ...acc,
+            [column]: row[column]?
+                (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
+                : ''
+            }), {})
+        )
+      );
+
+        // Apply formatting per row
+      rowRefs.forEach(row => {
+        row.getCell('DocTotalInv').numFmt = '"Bs"#,##0.00';
+        row.getCell('DocTotalCob').numFmt = '"Bs"#,##0.00';
+        row.getCell('DisTotal').numFmt = '"Bs"#,##0.00';
+        row.getCell('DisPending').numFmt = '"Bs"#,##0.00';
+
+        row.eachCell(cell => {
+            cell.border = {
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+            };
+        });
+      });
+        
+      function mergeSameValues(startRowIndex, columnKeys) {
+        const ends=[]
+        let i = 0;
+        while (i < data.length) {
+            let j = i + 1;
+            while (
+            j < data.length &&
+            columnKeys.every(key => data[i][key] === data[j][key])
+            ) {
+            j++;
+            }
+
+            if (j - i > 1) {
+            const start = startRowIndex + i;
+            const end = startRowIndex + j - 1;
+            columnKeys.forEach(key => {
+                const col = worksheet.getColumn(key);
+                const cellIndex = col.number;
+                worksheet.mergeCells(start, cellIndex, end, cellIndex);
+                worksheet.getCell(start, cellIndex).alignment = {
+                vertical: 'middle',
+                horizontal: 'center'
+                };
+                // worksheet.getCell(end, cellIndex).border = 
+                
+            });
+            ends.push(end);
+            }else{
+                const end = startRowIndex + j - 1
+                ends.push(end);
+            }
+            i = j;
+        }
+        return  ends;
+      }
+      const ends = mergeSameValues(6, ['CardName', 'SucName', 'DocNumInv', 'NumAtCard', 'DocTotalInv']);
+      console.log({ends})
+
+      worksheet.getRow(5).eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFFF' },
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      worksheet.lastRow.eachCell(cell => {
+        cell.border = {
+            bottom: {style: 'thin'},
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        }
+      })
+      
+      ends.forEach( end => {
+        worksheet.getRow(end).eachCell(cell => {
+            cell.border = {
+                bottom: {style: 'thin'},
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+        })
+      });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=reporte_cuenta.xlsx');
+  
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      console.error({ error });
+      const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+      grabarLog(user.USERCODE, user.USERNAME,`Cobranzas Reporte de estado de cuenta`, `Error generando el Excel del reporte cuenta ${error}`,
+        'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+      );
+      return res.status(500).json({ mensaje: `Error generando el Excel del reporte cuenta ${error}` });
+    }
+};
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -2057,11 +2599,18 @@ module.exports = {
     getAllLinesController,
     getCobradoresBySucursalController,
     getYearToDayController, getCuentasBancoParaBajaCobranzaController,
-    getYTDCobradorController, getPendientesBajaPorCobradorController,
+    getYtdCobradoresController, getPendientesBajaPorCobradorController,
     darDeBajaController, getCuentasParaBajaController, comprobanteContableController,
     darVariasDeBajaController,
     getBajasByUserController,
     anularBajaController, reporteBajaCobranzasController,
     getCobradoresBySucursalesController,
-    getClienteByIdController
+    getClienteByIdController,
+    getComprobantesBajasController,
+    getClientesController,
+    getEstadoCuentaClienteController,
+    getEstadoCuentaClientePDFController,
+    auditoriaSaldoDeudorController,
+    getBajasFacturasController, findClienteController,
+    excelReporte
 }

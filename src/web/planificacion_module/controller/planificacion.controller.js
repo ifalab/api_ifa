@@ -3,8 +3,9 @@ const {
     getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita, getDetalleVisitasCreadas,
-    getCabeceraVisitaCreada
+    getCabeceraVisitaCreada, getClienteByCode, actualizarVisita, getUltimaVisita, parapruebas, getPlanVendedor
 } = require("./hana.controller")
+const { grabarLog } = require("../../shared/controller/hana.controller");
 
 const vendedoresPorSucCodeController = async (req, res) => {
     try {
@@ -45,6 +46,42 @@ const getClientesDelVendedorController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en el controlador getClientesDelVendedorController: ${error.message}` })
     }
 }
+const getClienteByCodeController = async (req, res) => {
+    try {
+        const { id } = req.query
+        let response = await getClienteByCode(id)
+        if(response.length>0){
+            response = response[0]
+        }
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getClienteByCodeController: ${error.message}` })
+    }
+}
+
+const getPlanVendedorController = async (req, res) => {
+    try {
+        const { idVendedor, mes, año } = req.body
+        let response = await getPlanVendedor(idVendedor, mes, año)
+        let cabecera= null
+        let detalle = []
+        response.forEach( (res)=>{
+            let {PlanID, Title,PlanVisitDate, PlanVisitTimeFrom, PlanVisitTimeTo, ...rest} = res
+            if(!cabecera){
+                cabecera= {PlanID, Title}
+            }
+            const PlanVisitDateNew = new Date(PlanVisitDate)
+            PlanVisitTimeFrom = String(PlanVisitTimeFrom).length<4? `0${PlanVisitTimeFrom}`:PlanVisitTimeFrom
+            PlanVisitTimeTo = String(PlanVisitTimeTo).length<4? `0${PlanVisitTimeTo}`:PlanVisitTimeTo
+            detalle.push({PlanVisitDateNew, PlanVisitDate, PlanVisitTimeFrom,PlanVisitTimeTo, ...rest})
+        })
+        return res.json({cabecera, detalle})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getPlanVendedorController: ${error.message}` })
+    }
+}
 
 const getCicloVendedorController = async (req, res) => {
     try {
@@ -76,7 +113,7 @@ const getDetalleCicloVendedorController = async (req, res) => {
     }
 }
 
-const insertarVisitaController = async (req, res) => {
+const insertarPlanController = async (req, res) => {
     try {
         const { descripcion, cod_vendedor, nom_vendedor, usuario, fechaIni, fechaFin, details } = req.body
         let allResponses = []
@@ -84,52 +121,96 @@ const insertarVisitaController = async (req, res) => {
         console.log({ responseCabecera })
         allResponses.push(responseCabecera)
         // return res.json({responseCabecera})
-        const cabecera_id = responseCabecera.id
+        const cabecera_id = responseCabecera[0].PlanId
         for(const detail of details){
             const { cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, comentario } = detail
             let responseDetalle = await insertarDetalleVisita(cabecera_id, cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario)
-            console.log({ responseDetalle })
-            allResponses.push(responseDetalle)  
+            console.log({ responseDetalle }) 
+            allResponses.push(responseDetalle) 
         }
         
-        return res.json({allResponses})
+        return res.json({allResponses, cabecera_id})
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador insertarVisitaController: ${error.message}` })
+        return res.status(500).json({ mensaje: `Error en el controlador insertarPlanController: ${error.message}` })
     }
 }
 
 const insertarCabeceraVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const { descripcion, cod_vendedor, nom_vendedor, usuario, fechaIni, fechaFin} = req.body
         let response = await insertarCabeceraVisita(descripcion, cod_vendedor, nom_vendedor, usuario, fechaIni, fechaFin)
+        
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Planificar", 'Exito al crear cabecera plan visita', 
+            `IFA_CRM_AGREGAR_VISIT_PLAN_HEADER`, "planificacion/cabecera-visita", process.env.PRD)
         return res.json({response})
     } catch (error) {
         console.log({ error })
+
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Planificar", error.message, 
+            `IFA_CRM_AGREGAR_VISIT_PLAN_HEADER`, "planificacion/cabecera-visita", process.env.PRD)
+
         return res.status(500).json({ mensaje: `Error en el controlador insertarCabeceraVisitaController: ${error.message}` })
     }
 }
 
 const insertarDetalleVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {cabecera_id, cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario } = req.body
         let response = await insertarDetalleVisita(cabecera_id, cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario)
 
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Planificar", 'Exito al crear detalle plan visita', 
+            `IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL`, "planificacion/detalle-visita", process.env.PRD)
         return res.json({response})
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Planificar", error.message, 
+            `IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL`, "planificacion/detalle-visita", process.env.PRD)
+        
         return res.status(500).json({ mensaje: `Error en el controlador insertarDetalleVisitaController: ${error.message}` })
     }
 }
 
+const insertarDetallesFechasVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const {cabecera_id, cod_cliente, nom_cliente, fechas, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario } = req.body
+        let responses = []
+        for(const fecha of fechas){
+            let response = await insertarDetalleVisita(cabecera_id, cod_cliente, nom_cliente, fecha, hora_ini, hora_fin, cod_vendedor, nom_vendedor, comentario, usuario)
+            responses.push(response)
+        }
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Planificar", 'Exito al crear detalle plan visita', 
+            `IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL`, "planificacion/detalle-fechas-visita", process.env.PRD)
+        
+        return res.json({responses})
+    } catch (error) {
+        console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Planificar", error.message, 
+            `IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL`, "planificacion/detalle-fechas-visita", process.env.PRD)
+        
+        return res.status(500).json({ mensaje: `Error en el controlador insertarDetallesFechasVisitaController: ${error.message}` })
+    }
+}
+
+
 const actualizarDetalleVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {id, fecha, hora_ini, hora_fin, usuario } = req.body
         let response = await actualizarDetalleVisita(id, fecha, hora_ini, hora_fin, usuario )
 
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Planificar", 'Exito al actualizar detalle plan visita', 
+            `IFA_CRM_ACTUALIZAR_VISIT_PLAN_DETAIL`, "planificacion/actualizar-visita", process.env.PRD)
+        
         return res.json({response})
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Planificar", `Error en actualizarDetalleVisitaController: ${error.message}`, 
+            `IFA_CRM_ACTUALIZAR_VISIT_PLAN_DETAIL`, "planificacion/actualizar-visita", process.env.PRD)
+        
         return res.status(500).json({ 
             mensaje: `Error en el controlador actualizarDetalleVisitaController: ${error.message}` 
         })
@@ -137,13 +218,20 @@ const actualizarDetalleVisitaController = async (req, res) => {
 }
 
 const cambiarEstadoCicloController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {plan_id, status, usuario } = req.body
         let response = await cambiarEstadoCiclo(plan_id, status, usuario )
 
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Aprobacion", 'Exito al cambiar estado del ciclo', 
+            `IFA_CRM_CHANGE_STATUS_CICLO`, "planificacion/estado-ciclo", process.env.PRD)
+        
         return res.json({response})
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Aprobacion", `Error en cambiarEstadoCicloController: ${error.message}`, 
+            `IFA_CRM_CHANGE_STATUS_CICLO`, "planificacion/estado-ciclo", process.env.PRD)
+        
         return res.status(500).json({ 
             mensaje: `Error en el controlador cambiarEstadoCicloController: ${error.message}` 
         })
@@ -151,14 +239,20 @@ const cambiarEstadoCicloController = async (req, res) => {
 }
 
 const cambiarEstadoVisitasController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {id_detalle, id_plan, cliente, fechaIni, fechaFin, status, usuario} = req.body
         let response = await cambiarEstadoVisitas(id_detalle??-1, id_plan??-1,
             cliente??'', fechaIni??'', fechaFin??'', status, usuario )
-
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Aprobacion", 'Exito al cambiar estado de la visita', 
+            `IFA_CRM_CHANGE_STATUS_VISITAS`, "planificacion/estado-visita", process.env.PRD)
+        
         return res.json({response})
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Aprobacion", `${error.message || 'Error en el controlador cambiarEstadoVisitasController'}`, 
+            `IFA_CRM_CHANGE_STATUS_VISITAS`, "planificacion/estado-visita", process.env.PRD)
+        
         return res.status(500).json({ 
             mensaje: `Error en el controlador cambiarEstadoVisitasController: ${error.message}` 
         })
@@ -166,13 +260,20 @@ const cambiarEstadoVisitasController = async (req, res) => {
 }
 
 const eliminarDetalleVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {id } = req.query
         let response = await eliminarDetalleVisita(id)
 
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Eliminar Visita", 'Exito al eliminar la visita', 
+            `delete from ifa_crm_visit_plan_detail "PlanDetailID"=${id}`, "planificacion/eliminar-visita", process.env.PRD)
+        
         return res.json({response})
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Eliminar Visita", `${error.message || 'Error en el controlador eliminarDetalleVisitaController'}`, 
+            `delete from ifa_crm_visit_plan_detail "PlanDetailID"=${id}`, "planificacion/eliminar-visita", process.env.PRD)
+        
         return res.status(500).json({ 
             mensaje: `Error en el controlador eliminarDetalleVisitaController: ${error.message}` 
         })
@@ -201,6 +302,7 @@ const getVisitasParaHoyController = async (req, res) => {
 }
 
 const marcarVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const {SlpCode, SlpName, ClientCode, ClientName, IdPlan, IdPlanDetail, VisitDate,
             VisitStatus, Comments, Longitude, Latitude, ReasonNotVisit, usuario} = req.body
@@ -218,9 +320,16 @@ const marcarVisitaController = async (req, res) => {
         if(response.length > 0){
             response = response[0]
         }
+
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Marcar Visita", `Exito al marcar la visita`, 
+            `IFA_CRM_AGREGAR_VISIT_HEADER`, "planificacion/marcar-visita", process.env.PRD)
+        
         return res.json(response)
     } catch (error) {
         console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Marcar Visita", `${error.message || 'Error en el controlador marcarVisitaController'}`, 
+            `IFA_CRM_AGREGAR_VISIT_HEADER`, "planificacion/marcar-visita", process.env.PRD)
+        
         return res.status(500).json({
             mensaje: `Error en el controlador marcarVisitaController: ${error.message}`
         })
@@ -231,7 +340,11 @@ const getCabeceraVisitasCreadasController = async (req, res) => {
     try {
         const {id_vendedor} = req.query
         let response = await getCabeceraVisitasCreadas(id_vendedor)
-
+        response.map(item => {
+            item.VISITTIME = String(item.VISITTIME).length === 3 ?
+            `0${String(item.VISITTIME).slice(0,1)}:${String(item.VISITTIME).slice(1,3)}`:
+            `${String(item.VISITTIME).slice(0,2)}:${String(item.VISITTIME).slice(2,4)}`
+        })
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -284,12 +397,56 @@ const aniadirDetalleVisitaController = async (req, res) => {
     }
 }
 
+const actualizarVisitaController = async (req, res) => {
+    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const {VisitID, comentario} = req.body
+        let response = await actualizarVisita(VisitID, comentario)
+        console.log({response})
+        if(response.length > 0){
+            response = response[0]
+        }
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Editar Visita", `Exito al actualizar comentario visita`, 
+            `UPDATE IFA_CRM_VISIT_HEADER`, "planificacion/actualizar-visita-creada", process.env.PRD)
+        
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        
+        grabarLog(user.USERCODE, user.USERNAME, "Planificacion Editar Visita", `${error.message || 'Error en el controlador actualizarVisitaController'}`, 
+            `UPDATE IFA_CRM_VISIT_HEADER`, "planificacion/actualizar-visita-creada", process.env.PRD)
+        
+        return res.status(500).json({
+            mensaje: `Error en el controlador actualizarVisitaController: ${error.message}`
+        })
+    }
+}
+
+const getUltimaVisitaController = async (req, res) => {
+    try {
+        const {id_vendedor} = req.query
+        let response = await getUltimaVisita(id_vendedor)
+        console.log({response})
+        if(response.length>0){
+            return res.json(response[0])
+        }else{
+            return res.status(400).json({mensaje:`No tiene ninguna visita`})
+        }
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `${error.message || 'Error en el controlador getUltimaVisitaController'}`
+        })
+    }
+}
+
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
-    insertarVisitaController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
+    insertarPlanController, insertarDetalleVisitaController, insertarCabeceraVisitaController,
     actualizarDetalleVisitaController, cambiarEstadoCicloController, cambiarEstadoVisitasController,
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
-    getCabeceraVisitaCreadaController
+    getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController, getClienteByCodeController,
+    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController
 }

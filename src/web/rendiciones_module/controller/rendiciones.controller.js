@@ -1,4 +1,5 @@
 const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module/controllers/hana.controller")
+const { grabarLog } = require("../../shared/controller/hana.controller")
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
     getProveedor, searchBeneficiarios,
@@ -9,7 +10,15 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     busquedaProd,
     busquedaProveedor,
     lineaDetalleCC,
-    idJournalPreliminar
+    idJournalPreliminar, getRendicionesByEstado,
+    cambiarPreliminarRendicion,
+    findAllRendiciones,
+    detallePreliminarCC,
+    empleadoConCajaChicas,
+    listaRendicionesByCODEMP,
+    allGastosRange,
+    importeByRend,
+    updateSendToAccounting,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -159,6 +168,8 @@ const crearRendicionController = async (req, res) => {
             glosaRend,
             listaGastos
         } = req.body
+        const user = req.usuarioAutorizado
+        const code = user.USERCODE || 'no definido'
         const date = new Date()
         const year = date.getFullYear()
         const month = date.getMonth() + 1
@@ -249,7 +260,8 @@ const crearRendicionController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta,
-                new_cod_proveedor
+                new_cod_proveedor,
+                code
             )
             result.push(responseHana[0] || responseHana)
 
@@ -277,6 +289,8 @@ const crearActualizarGastoController = async (req, res) => {
             estado,
             listaGastos
         } = req.body
+        const user = req.usuarioAutorizado
+        const code = user.USERCODE || 'no definido'
         const response = await cambiarEstadoRendicion(idRendicion, estado)
         const status = response[0]
         if (response.error) return res.status(404).json({ mensaje: 'error al cambiar el estado de la rendicion' })
@@ -338,9 +352,15 @@ const crearActualizarGastoController = async (req, res) => {
                 new_cod_proveedor
             } = item
 
-            const fecha = new_fecha.split('/')
-            const fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
-            console.log({ fechaFormateada, fecha, new_fecha })
+            let fechaFormateada
+            if (String(new_fecha).includes('/')) {
+                const fecha = new_fecha.split('/')
+                fechaFormateada = `${fecha[2]}-${fecha[1]}-${fecha[0]}`
+                console.log({ fechaFormateada, fecha, new_fecha })
+            } else {
+                fechaFormateada = new_fecha
+            }
+
             if (id_gasto == 0) {
                 const responseHana = await crearGasto(
                     new_nit,
@@ -370,7 +390,8 @@ const crearActualizarGastoController = async (req, res) => {
                     new_beneficiario,
                     new_cod_beneficiario,
                     new_detalle_cuenta,
-                    new_cod_proveedor
+                    new_cod_proveedor,
+                    code
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -403,6 +424,7 @@ const crearActualizarGastoController = async (req, res) => {
                     new_cod_beneficiario,
                     new_detalle_cuenta,
                     new_cod_proveedor,
+                    code
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -432,6 +454,8 @@ const gastosEnRevisionController = async (req, res) => {
             listaGastos
         } = req.body
         const response = await cambiarEstadoRendicion(idRendicion, estado)
+        const user = req.usuarioAutorizado
+        const code = user.USERCODE || 'no definido'
         const status = response[0]
         if (response.error) return res.status(404).json({ mensaje: 'error al cambiar el estado de la rendicion' })
         if (status.reponse != 200) return res.status(404).json({ mensaje: 'no se encontro la rendicion' })
@@ -518,7 +542,8 @@ const gastosEnRevisionController = async (req, res) => {
                     year,
                     new_id_cuenta,
                     new_detalle_cuenta,
-                    new_cod_proveedor
+                    new_cod_proveedor,
+                    code
                 )
                 result.push(responseHana[0] || responseHana)
             } else {
@@ -547,7 +572,8 @@ const gastosEnRevisionController = async (req, res) => {
                     idRendicion,
                     '',
                     new_id_cuenta,
-                    new_detalle_cuenta
+                    new_detalle_cuenta,
+                    code
                 )
                 result.push(responseHana[0] || responseHana)
             }
@@ -615,6 +641,7 @@ const verRendicionesEnRevisionController = async (req, res) => {
     }
 }
 
+
 const sendToSapController = async (req, res) => {
     const {
         codEmp,
@@ -625,6 +652,7 @@ const sendToSapController = async (req, res) => {
         fechaContabilizado,
         listaGastos,
     } = req.body
+    const user = req.usuarioAutorizado
 
     try {
         let listRecibos = []
@@ -632,6 +660,7 @@ const sendToSapController = async (req, res) => {
         let listFacturasND = []
         let listResHana = []
         let errores = []
+        const code = user.USERCODE || 'no definido'
 
         console.log(JSON.stringify({
             codEmp,
@@ -642,17 +671,9 @@ const sendToSapController = async (req, res) => {
             fechaContabilizado,
             listaGastos,
         }, null, 2))
-        // return res.json({
-        //     codEmp,
-        //     estado,
-        //     idRendicion,
-        //     transacId,
-        //     glosaRend,
-        //     fechaContabilizado,
-        //     listaGastos,
-        // })
         for (const iterator of listaGastos) {
             if (iterator.new_estado !== '2') {
+                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error Todas las filas deben estar EN REVISION`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Todas las filas deben estar EN REVISION' });
                 break
             }
@@ -689,8 +710,7 @@ const sendToSapController = async (req, res) => {
             listRecibos,
             listFacturasND
         })
-
-        //!------------------------------------------- PRUEBA
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Send to Sap ejecutado`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
         const { statusCode, data } = await sapService.sendRendiciones({
             usd,
             codEmp,
@@ -703,24 +723,9 @@ const sendToSapController = async (req, res) => {
             listRecibos,
             listFacturasND,
         });
-
         console.log({ data, statusCode })
-        // console.log(JSON.stringify({
-        //     usd,
-        //     codEmp,
-        //     estado,
-        //     idRendicion,
-        //     transacId,
-        //     glosaRend,
-        //     fechaContabilizado,
-        //     listFacturas,
-        //     listRecibos,
-        //     listFacturasND,
-        // }, null, 2))
-        // console.log('DATOS de REND-----------------------------------------------------------')
-        // console.log({ statusCode, data })
-        // // return res.json({ statusCode, data })
         if (data.status >= 400) {
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Hubo un Error al Enviar las Rendiciones. ${data.message || 'Error no definido'}`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
                 const responseSap = await actualizarEstadoComentario(id_gasto, 2, `No se pudo contabilizar, error del SAP. ${data.message || ''}`)
@@ -734,7 +739,6 @@ const sendToSapController = async (req, res) => {
             return res.status(400).json({ mensaje: `No se pudo crear la rendicion. ${data.message}`, listResHana });
 
         }
-        //!------------------------------------------- PRUEBA
         //! enviar centro de costo:
 
         let journalLines = []
@@ -748,12 +752,13 @@ const sendToSapController = async (req, res) => {
                     Line_ID: 1,
                     AccountCode: '2110401',
                     ShortName: codEmp,
-                    ContraAccount: factura.new_cuenta_productiva,
+                    ContraAccount: factura.new_gasto,
                     Debit: 0,
                     Credit: factura.new_importeTotal,
                     DebitSys: 0,
                     CreditSys: Number(totalDolar),
                     ProjectCode: '',
+                    I_IdConceptoComercial: factura.new_id_cuenta,
                     AdditionalReference: factura.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -788,14 +793,15 @@ const sendToSapController = async (req, res) => {
                 },
                 {
                     Line_ID: 0,
-                    AccountCode: factura.new_cuenta_productiva,
-                    ShortName: factura.new_cuenta_productiva,
+                    AccountCode: factura.new_gasto,
+                    ShortName: factura.new_gasto,
                     ContraAccount: codEmp,
                     Debit: factura.new_importeTotal,
                     Credit: 0,
                     DebitSys: +totalDolar,
                     CreditSys: 0,
                     ProjectCode: '',
+                    I_IdConceptoComercial: factura.new_id_cuenta,
                     AdditionalReference: factura.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -840,12 +846,13 @@ const sendToSapController = async (req, res) => {
                     Line_ID: 1,
                     AccountCode: '2110401',
                     ShortName: codEmp,
-                    ContraAccount: recibos.new_cuenta_productiva,
+                    ContraAccount: recibos.new_gasto,
                     Debit: 0,
                     Credit: recibos.new_importeTotal,
                     DebitSys: 0,
                     CreditSys: Number(totalDolar),
                     ProjectCode: '',
+                    I_IdConceptoComercial: recibos.new_id_cuenta,
                     AdditionalReference: recibos.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -880,14 +887,15 @@ const sendToSapController = async (req, res) => {
                 },
                 {
                     Line_ID: 0,
-                    AccountCode: recibos.new_cuenta_productiva,
-                    ShortName: recibos.new_cuenta_productiva,
+                    AccountCode: recibos.new_gasto,
+                    ShortName: recibos.new_gasto,
                     ContraAccount: codEmp,
                     Debit: recibos.new_importeTotal,
                     Credit: 0,
                     DebitSys: +totalDolar,
                     CreditSys: 0,
                     ProjectCode: '',
+                    I_IdConceptoComercial: recibos.new_id_cuenta,
                     AdditionalReference: recibos.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -933,12 +941,13 @@ const sendToSapController = async (req, res) => {
                     Line_ID: 1,
                     AccountCode: '2110401',
                     ShortName: codEmp,
-                    ContraAccount: fnd.new_cuenta_productiva,
+                    ContraAccount: fnd.new_gasto,
                     Debit: 0,
                     Credit: fnd.new_importeTotal,
                     DebitSys: 0,
                     CreditSys: Number(totalDolar),
                     ProjectCode: '',
+                    I_IdConceptoComercial: fnd.new_id_cuenta,
                     AdditionalReference: fnd.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -973,14 +982,15 @@ const sendToSapController = async (req, res) => {
                 },
                 {
                     Line_ID: 0,
-                    AccountCode: fnd.new_cuenta_productiva,
-                    ShortName: fnd.new_cuenta_productiva,
+                    AccountCode: fnd.new_gasto,
+                    ShortName: fnd.new_gasto,
                     ContraAccount: codEmp,
                     Debit: fnd.new_importeTotal,
                     Credit: 0,
                     DebitSys: +totalDolar,
                     CreditSys: 0,
                     ProjectCode: '',
+                    I_IdConceptoComercial: fnd.new_id_cuenta,
                     AdditionalReference: fnd.id_gasto,
                     Reference1: transacId,
                     Reference2: idRendicion,
@@ -1020,12 +1030,13 @@ const sendToSapController = async (req, res) => {
         })
         //***
         let idx = 0
-        const idJournalCom = await idJournalPreliminar()
+        const idJournalCom = await idJournalPreliminar(glosaRend)
         if (idJournalCom.length == 0) {
-            return res.status(400).json({mensaje:'No hay datos al buscar el ID en IFA COM'})
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error no hay datos al buscar el ID en IFA COM`, "CALL LAB_IFA_COM.IFA_INSERT_JOURNALS_PRELIMINAR();", process.env.PRD)
+            return res.status(400).json({ mensaje: 'No hay datos al buscar el ID en IFA COM' })
         }
         const idCom = idJournalCom[0].TransId
-        
+
         for (const item of journalLines) {
             item.Line_ID = idx
             const response = await lineaDetalleCC(
@@ -1039,6 +1050,7 @@ const sendToSapController = async (req, res) => {
                 item.DebitSys,
                 item.CreditSys,
                 item.ProjectCode,
+                item.I_IdConceptoComercial,
                 item.AdditionalReference,
                 item.Reference1,
                 item.Reference2,
@@ -1072,10 +1084,16 @@ const sendToSapController = async (req, res) => {
                 item.U_BenefCode,
                 item.U_CardCode
             )
-            if(response.error){
-                return res.status(400).json({response})
+            if (response.error) {
+                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error al intentar enviar datos LineaDetalle,IDCOM:${idCom || 'No definido'},AccountCode:${item.AccountCode || 'No definido'},U_B_cuf:${item.U_B_cuf || 'No definido'} `, `CALL "LAB_IFA_COM"."spInsertarLineaDetalle" (....)`, process.env.PRD)
+                return res.status(400).json({ mensaje: `Error al guardar el detalle en COM. ${response.error || 'No definido'}`, response })
             }
             idx++
+        }
+
+        const responsePreliminar = await detallePreliminarCC();
+        if (responsePreliminar.error) {
+            return res.status(400).json({ responsePreliminar })
         }
         // return res.json({
         //     usd,
@@ -1155,7 +1173,8 @@ const sendToSapController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta,
-                new_cod_proveedor
+                new_cod_proveedor,
+                code
             )
             listResHana.push(responseHana)
         }))
@@ -1221,7 +1240,8 @@ const sendToSapController = async (req, res) => {
                 new_beneficiario,
                 new_cod_beneficiario,
                 new_detalle_cuenta,
-                new_cod_proveedor
+                new_cod_proveedor,
+                code
             )
             listResHana.push(responseHana)
 
@@ -1231,7 +1251,7 @@ const sendToSapController = async (req, res) => {
         console.log({ estadoRend })
         return res.status(statusCode).json({ mensaje: `Se registro la rendicion en el SAP con exito.`, data, listResHana });
     } catch (error) {
-        console.log('Error: --------------------------------------------')
+        console.error('Error: --------------------------------------------')
         console.error({ error });
         console.error({ errorMessage: error.message });
 
@@ -1242,9 +1262,10 @@ const sendToSapController = async (req, res) => {
         let listErrores = []
         let estadoRend
         estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
-        console.log({ data })
+        console.error({ data })
         if (error.message.error?.message) {
-            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${error.message.error?.message || ''}`, estadoRend });
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, `rendicion/send-to-sap`, process.env.PRD)
+            return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, estadoRend });
         }
         if (error.response) {
             if (error.response.length > 0) {
@@ -1269,6 +1290,7 @@ const sendToSapController = async (req, res) => {
 
         }
         console.log({ data, listResSap, estadoRend })
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''}`, `rendicion/send-to-sap`, process.env.PRD)
         return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion`, data, listResSap, estadoRend, listErrores });
     }
 }
@@ -1590,6 +1612,117 @@ const proveedoresController = async (req, res) => {
     }
 }
 
+const getRendicionesByEstadoController = async (req, res) => {
+    try {
+        const estado = req.query.estado
+        const rendiciones = await getRendicionesByEstado(estado)
+        return res.status(200).json(rendiciones)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
+const cambiarPreliminarController = async (req, res) => {
+    try {
+        const idRend = req.query.idRend
+        const rendiciones = await cambiarPreliminarRendicion(idRend)
+        return res.status(200).json(rendiciones)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || ''}` })
+    }
+}
+
+const findAllRendicionesController = async (req, res) => {
+    try {
+        const response = await findAllRendiciones()
+        const listaRendiciones = []
+
+        await Promise.all(response.map(async (item) => {
+            const { CODEMP, ...rest } = item
+            Empleado = await employedByCardCode(CODEMP)
+            if (Empleado && Empleado[0]) {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: Empleado[0]
+                })
+            } else {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: null
+                })
+            }
+
+        }))
+
+        return res.json(listaRendiciones)
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const empleadoConCajaChicasController = async (req, res) => {
+    try {
+        const response = await empleadoConCajaChicas()
+        let result = response.map((item) => {
+            const { PASSWORD, ...rest } = item
+            return {
+                ...rest
+            }
+        })
+        return res.json(result)
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const listaRendicionesByCodEmpController = async (req, res) => {
+    try {
+        const codEmp = req.query.codEmp
+        const response = await listaRendicionesByCODEMP(codEmp)
+        return res.json(response)
+    } catch (error) {
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const allGastosRangeController = async (req, res) => {
+    try {
+        const starDate = req.query.starDate
+        const endDate = req.query.endDate
+        const response = await allGastosRange(starDate, endDate)
+        let result = []
+        for (let element of response) {
+            const { ID_RENDICION_GASTOS } = element
+            const dataImporte = await importeByRend(ID_RENDICION_GASTOS)
+            if (dataImporte.length > 0) {
+                const { IMPORTETOTAL } = dataImporte[0]
+                element = {
+                    ...element,
+                    IMPORTETOTALREND: IMPORTETOTAL
+                }
+            }
+
+            result.push(element)
+        }
+        return res.json(result)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const updateSenToAccountingController = async (req, res) => {
+    try {
+        const idRend = req.query.idRend
+        const response = await updateSendToAccounting(idRend)
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
 
 module.exports = {
     findAllAperturaController,
@@ -1620,5 +1753,12 @@ module.exports = {
     actualizarCCRendController,
     actualizarGlosaPRDGastoController,
     buscarCuentaProdController,
-    proveedoresController
+    proveedoresController,
+    getRendicionesByEstadoController,
+    cambiarPreliminarController,
+    findAllRendicionesController,
+    empleadoConCajaChicasController,
+    listaRendicionesByCodEmpController,
+    allGastosRangeController,
+    updateSenToAccountingController
 }

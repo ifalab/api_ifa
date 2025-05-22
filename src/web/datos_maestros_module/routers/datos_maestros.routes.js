@@ -15,7 +15,10 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getIdsDescuentoEspecialController, getDescuentosEspecialesByIdController, getVendedoresController,
     getZonasController, getAllTiposController, getZonasTiposPorVendedorController, asignarZonasYTiposAVendedoresController,
     deleteZonasYTiposAVendedoresController, getDescuentosEspecialesLineaController, deleteDescuentosEspecialesLineaController,
-    cargarPreciosExcelController
+    cargarPreciosExcelController,
+    setDescuentoOfertasPorCortoVencimientoController,
+    getIdDescuentosCantidadCortoController,
+    getDescuentosCantidadCortoController
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
@@ -37,10 +40,16 @@ router.patch('/actualizar-cliente', [validarToken, validarCampos], actualizarDat
 router.post('/descuento-linea', [validarToken, validarCampos], descuentoOfertasPorLineaController)
 router.get('/lineas', [validarToken, validarCampos], getAllLineasController)
 router.post('/descuento-cantidad', [validarToken, validarCampos], setDescuentoOfertasPorCantidadController)
+router.post('/descuento-corto-vencimiento', [validarToken, validarCampos], setDescuentoOfertasPorCortoVencimientoController)
+
 router.get('/articulos', [validarToken, validarCampos], getArticulosController)
 router.post('/find-cliente', [validarToken, validarCampos], findClienteController)
 router.get('/get-id-desc', [validarToken, validarCampos], getIdDescuentosCantidadController)
+router.get('/get-id-desc-corto', [validarToken, validarCampos], getIdDescuentosCantidadCortoController)
+// getDescuentosCantidadCortoController
 router.post('/get-desc-cant', [validarToken, validarCampos], getDescuentosCantidadController)
+router.post('/get-desc-cant-corto', [validarToken, validarCampos], getDescuentosCantidadCortoController)
+
 router.get('/get-item', [validarToken, validarCampos], getArticuloByCodeController)
 router.post('/descuento-especial', [validarToken, validarCampos], setDescuentoEspecialController)
 router.get('/get-desc-linea', [validarToken, validarCampos], getAllDescuentosLineaController)

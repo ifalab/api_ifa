@@ -16,7 +16,9 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     listaNegraDescuentosController,
     pedidosPorVendedorFacturadosOrdenadoController, 
     crearOrderIfaController,
-    patchQuotationsWhscodeController} = require('../controller/pedido.controller')
+    patchQuotationsWhscodeController,
+    descuentoCortoVencimientoController, findClienteController,
+    listaPreciosOficilaCVController} = require('../controller/pedido.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const router = Router()
 
@@ -27,6 +29,7 @@ router.get('/catalogo', [validarToken, validarCampos], catalogoController)
 router.get('/regla-articulo', [validarToken, validarCampos], descuentoArticuloController)
 router.get('/regla-condicion', [validarToken, validarCampos], descuentoCondicionController)
 router.get('/lista-precio', [validarToken, validarCampos], listaPreciosOficilaController)
+router.get('/lista-precio-cv', [validarToken, validarCampos], listaPreciosOficilaCVController)
 router.get('/sugerido-zona', [validarToken, validarCampos], sugeridosXZonaController)
 router.get('/sugerido-cliente', [validarToken, validarCampos], sugeridosXClienteController)
 router.get('/zonas-vendedor', [validarToken, validarCampos], findZonasXVendedorController)
@@ -53,6 +56,9 @@ router.get('/lista-negra-desc', [validarToken, validarCampos], listaNegraDescuen
 
 router.get('/facturados-vendedor-ord', [validarToken, validarCampos], pedidosPorVendedorFacturadosOrdenadoController)
 router.patch('/patch-quotation-whscode', [validarToken, validarCampos], patchQuotationsWhscodeController)
+router.get('/descuento-corto-vencimiento', [validarToken, validarCampos], descuentoCortoVencimientoController)
+
+router.post('/cliente-vendedor-cardcode', [validarToken, validarCampos], findClienteController)
 
 
 module.exports = router

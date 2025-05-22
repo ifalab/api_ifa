@@ -48,7 +48,7 @@ const findClientesByVendedor = async(id_vendedor)=>{
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_PRD.ifa_lapp_clientes_by_vendedor(${id_vendedor})`
+        const query = `call LAB_IFA_PRD.IFA_LAPP_CLIENTES_POR_VENDEDOR(${id_vendedor})`
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {

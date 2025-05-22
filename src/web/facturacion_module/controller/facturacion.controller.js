@@ -82,13 +82,13 @@ const facturacionController = async (req, res) => {
 
         if (U_B_State == 'R') {
             endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado R - Procesado , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturar-exportacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado R - Procesado , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado R - Procesado', })
         }
 
         if (U_B_State == 'E') {
             endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado E - Error , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturar-exportacion", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado E - Error , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado E - Error', })
         }
         // return {id}
@@ -222,7 +222,7 @@ const facturacionController = async (req, res) => {
                     batchData.map((item) => {
                         new_quantity += Number(item.Quantity).toFixed(6)
                     })
-                    //console.log({ batchData })
+                   
                     batchNumbers = batchData.map(batch => ({
                         BaseLineNumber: LineNum,
                         BatchNumber: batch.BatchNum,
@@ -561,7 +561,7 @@ const facturacionController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `error no hay datos en CORREO. codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || 'No definido'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
             }
-            
+
             dataToProsin.usuario = user.USERNAME || 'No definido'
             const responseProsin = await facturacionProsin(dataToProsin, user)
             // return res.json({bodyFinalFactura,responseProsin,deliveryData})
@@ -905,7 +905,21 @@ const noteEntregaController = async (req, res) => {
         await page.setContent(htmlContent, { waitUntil: 'load' });
         const pdfBuffer = await page.pdf({
             format: 'A4',
-            printBackground: true
+            printBackground: true,
+            displayHeaderFooter: true,
+            margin: { bottom: '50px', top: '10px' },
+            // headerTemplate:`
+            //     <div style="padding:1 0;">
+
+            //     </div>`,
+            footerTemplate: `
+                <div style="width: 100%; margin-left: 60px; margin-right: 20px; font-size: 10px; color: #555;">
+                    <div style="display: flex;align-items: center;">
+                        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: black;">
+                            <p>"Estimado Cliente: Firma en conformidad al recibir el pedido. En provincia, reclamos dentro de las 24 horas."</p>
+                        </div>
+                    </div>
+                </div>`,
         });
 
         await browser.close();
@@ -1139,7 +1153,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
         }
         let { estado } = estadoFacturaResponse[0]
-
+        console.log({estado})
         if (estado) {
             responseProsin = await anulacionFacturacion({
                 sucursal,
@@ -1151,7 +1165,7 @@ const cancelToProsinController = async (req, res) => {
                 usuario,
                 mediaPagina,
             }, user)
-            console.log(responseProsin);
+            console.log({responseProsin});
 
             if (responseProsin.data.mensaje) {
                 const mess = responseProsin.data.mensaje.split('§')
@@ -1288,18 +1302,19 @@ const cancelToProsinController = async (req, res) => {
 
 const pedidosFacturadosController = async (req, res) => {
     try {
-        const { SucCodes } = req.body
+        let { SucCodes, fecha } = req.body
         if (SucCodes.length == 0) return res.status(400).json({ mensaje: 'el SucCodes es obligatorio y debe tener un item o mas' })
         let facturados = []
+        if (!fecha) fecha = ''
         console.log({ SucCodes })
         for (const ItemCode of SucCodes) {
-            const facturas = await pedidosFacturados(ItemCode)
+            const facturas = await pedidosFacturados(ItemCode, fecha)
             facturados = facturados.concat(facturas)
         }
         return res.json({ facturados })
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'error en el controlador' })
+        return res.status(500).json({ mensaje: `error en el controlador pedidosFacturadosController: ${error.message}` })
     }
 }
 

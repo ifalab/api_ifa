@@ -57,11 +57,16 @@ const sapService = {
     async createAsientoCC(body) {
       try {
           console.log({body})
-          const response = await httpClient.post('/contabilidad/centro-costo/asiento', body);
+          const response = await httpClient.post('/contabilidad/centro-costo/asiento', body, {
+            headers: {
+                'x-custom-lang': 'es',  // o el idioma que quieras enviar
+            },
+          });
           console.log(response);
           return {
-              statusCode: response.status,
-              data: response.data,
+              statusCode: response.data.status,
+              message: response.data.message,
+              id: response.data.id,
           };
       } catch (error) {
           
@@ -79,7 +84,59 @@ const sapService = {
               message: error.message || 'Error desconocido en la solicitud POST',
           };
       }
-  },
+    },
+    async actualizarAsientoCC(body, id) {
+        try {
+            console.log({body})
+            const response = await httpClient.patch(`/contabilidad/centro-costo/asiento/${id}`, body);
+            console.log(response);
+            return {
+                statusCode: response.status,
+                data: response.data,
+            };
+        } catch (error) {
+            
+          if (error.response) {
+              
+                throw {
+                    statusCode: error.response.status,
+                    message: error.response.data || 'Error en la solicitud PATCH',
+                };
+            }
+
+            // Otros errores (como errores de red)
+            throw {
+                statusCode: 500,
+                message: error.message || 'Error desconocido en la solicitud PATCH',
+            };
+        }
+    },
+    async actualizarAsientoPreliminarCC(body, id) {
+        try {
+            console.log({body})
+            const response = await httpClient.patch(`/contabilidad/centro-costo/asiento/preliminar/${id}`, body);
+            console.log(response);
+            return {
+                statusCode: response.status,
+                data: response.data,
+            };
+        } catch (error) {
+            
+          if (error.response) {
+              
+                throw {
+                    statusCode: error.response.status,
+                    message: error.response.data || 'Error en la solicitud PATCH',
+                };
+            }
+
+            // Otros errores (como errores de red)
+            throw {
+                statusCode: 500,
+                message: error.message || 'Error desconocido en la solicitud PATCH',
+            };
+        }
+    }
 };
 
 

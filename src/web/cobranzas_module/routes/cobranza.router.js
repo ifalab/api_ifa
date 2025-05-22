@@ -8,10 +8,16 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getAllLinesController,
     getCobradoresBySucursalController,
     getYearToDayController,
-    getYTDCobradorController, getPendientesBajaPorCobradorController, darDeBajaController,
+    getYtdCobradoresController, getPendientesBajaPorCobradorController, darDeBajaController,
     getCuentasParaBajaController,getCuentasBancoParaBajaCobranzaController,comprobanteContableController, 
     darVariasDeBajaController, getBajasByUserController, anularBajaController,
-    reporteBajaCobranzasController, getCobradoresBySucursalesController, getClienteByIdController
+    reporteBajaCobranzasController, getCobradoresBySucursalesController, getClienteByIdController,
+    getComprobantesBajasController,
+    getClientesController,
+    getEstadoCuentaClienteController,
+    getEstadoCuentaClientePDFController,
+    auditoriaSaldoDeudorController, getBajasFacturasController, findClienteController,
+    excelReporte
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -68,7 +74,7 @@ router.get('/sublineas',[validarToken, validarCampos], getAllSublinesController)
 router.get('/lineas',[validarToken, validarCampos], getAllLinesController)
 router.get('/cobradores-by-suc',[validarToken, validarCampos],getCobradoresBySucursalController)
 router.post('/ytd',[validarToken, validarCampos], getYearToDayController)
-router.post('/ytd-cobrador',[validarToken, validarCampos], getYTDCobradorController)
+router.post('/ytd-cobradores',[validarToken, validarCampos], getYtdCobradoresController)
 router.get('/pendientes-baja',[validarToken, validarCampos], getPendientesBajaPorCobradorController)
 router.post('/baja',[validarToken, validarCampos], darDeBajaController)
 router.get('/cuentas-baja',[validarToken, validarCampos], getCuentasParaBajaController)
@@ -76,11 +82,19 @@ router.get('/cuentas-banco-baja',[validarToken, validarCampos], getCuentasBancoP
 router.get('/comprobante-contable',[validarToken, validarCampos], comprobanteContableController)
 router.post('/baja-varias',[validarToken, validarCampos], darVariasDeBajaController)
 router.get('/get-bajas',[validarToken, validarCampos], getBajasByUserController)
+router.get('/get-comprobantes-bajas',[validarToken, validarCampos], getComprobantesBajasController)
 router.get('/anular-baja',[validarToken, validarCampos], anularBajaController)
 
 router.post('/reporte-baja',[validarToken, validarCampos], reporteBajaCobranzasController)
 router.post('/cobradores-sucursales',[validarToken, validarCampos], getCobradoresBySucursalesController)
+router.post('/bajas-facturas',[validarToken, validarCampos], getBajasFacturasController)
 
 router.get('/cliente-by-id',[validarToken, validarCampos], getClienteByIdController)
+router.get('/clientes',[validarToken, validarCampos], getClientesController)
+router.get('/cliente/estado-cuenta',[validarToken, validarCampos], getEstadoCuentaClienteController)
+router.get('/cliente/estado-cuenta/pdf', [validarToken, validarCampos], getEstadoCuentaClientePDFController);
+router.get('/auditoria-saldo-dedudor', [validarToken, validarCampos], auditoriaSaldoDeudorController);
+router.post('/buscar-cliente',[validarToken, validarCampos], findClienteController)
+router.post('/excel-reporte',[validarToken, validarCampos], excelReporte)
 
 module.exports = router

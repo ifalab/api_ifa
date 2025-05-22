@@ -231,7 +231,8 @@ const cobranzaPorZona = async (username) => {
         const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA"(${username})`
         return await executeQuery(query)
     } catch (error) {
-        console
+        console.error(error)
+        throw new Error(`Error en cobranzaPorZona: ${error.message}`);
     }
 }
 
@@ -615,6 +616,7 @@ const cobranzaPorSucursalYTipo = async (sucCode, tipo) => {
             await connectHANA()
         }
         const query = `call "LAB_IFA_LAPP".LAPP_COB_COBRANZA_ZONA_POR_SUCURSAL_Y_TIPO(${sucCode}, '${tipo}')`
+        console.log({ query })
         const result = await executeQuery(query)
         return {
             status: 200,
@@ -763,17 +765,17 @@ const getYearToDayByCobrador = async (cobradorName, dim2, fechaInicio1, fechaFin
         throw new Error(`error en getYearToDayByCobrador: ${error.message || ''}`)
     }
 }
-const getYTDCobrador = async (sucCode, fechaInicio1, fechaFin1) => {
+const getYtdCobradores = async (sucCode, mes, anio) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_DATA.ytd_of_cobradores_sucursal(${sucCode},'${fechaInicio1}', '${fechaFin1}')`
+        const query = `call ${process.env.PRD}.cobradores_ytd_sucursal(${sucCode},${mes}, ${anio})`
         const result = await executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error(`error en getYTDCobrador: ${error.message || ''}`)
+        throw new Error(`error en getYtdCobradores: ${error.message || ''}`)
     }
 }
 
@@ -859,6 +861,21 @@ const getBajasByUser = async (id_sap) => {
         throw new Error(`Error en getBajasByUser: ${error.message || ''}`)
     }
 }
+
+const getComprobantesBajasByUser = async (id_sap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_cob_bajas_por_usuario_comprobante(${id_sap})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getComprobantesBajasByUser: ${error.message || ''}`)
+    }
+}
+
 const reporteBajaCobranzas = async (UserSign, month, year) => {
     try {
         if (!connection) {
@@ -891,6 +908,88 @@ const getClienteById = async (id) => {
     } catch (error) {
         console.log({ error })
         throw new Error(`Error en getClienteById: ${error.message || ''}`)
+    }
+}
+
+const getClientes = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select * from ${process.env.PRD}.ifa_dm_clientes WHERE "validFor" = 'Y'`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getClientes: ${error.message || ''}`)
+    }
+}
+
+
+const getEstadoCuentaCliente = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = ` CALL ${process.env.PRD}.ifa_lapp_cob_estado_de_cuenta_por_cliente('${id}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getEstadoCuentaCliente: ${error.message || ''}`)
+    }
+}
+
+const auditoriaSaldoDeudor = async (cardCode, date) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_saldo_deudor_analisis_por_fecha('${cardCode}','${date}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`error en auditoriaSaldoDeudor: ${error.message || ''}`)
+    }
+}
+
+const obtenerBajasFacturas = async (fechaIni, fechaFin, cardCode='', factura='') => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        //${process.env.PRD}
+        const query = `call ${process.env.PRD}.IFA_LAPP_COB_OBTENER_BAJAS_COBRANZAS_FACTURAS_POR_CLIENTE_Y_FECHAS('${fechaIni}','${fechaFin}','${cardCode}','${factura}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en obtenerBajasFacturas: ${error.message || ''}`)
+    }
+}
+
+const findCliente = async (buscar) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT "CardCode", "CardName", "SucName" FROM ${process.env.PRD}.ifa_dm_clientes 
+        where "CardCode" LIKE '%${buscar}%' OR "CardName" LIKE '%${buscar}%'
+        limit 50`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en findCliente:', error);
+        throw {
+            status: 400,
+            message: `Error en findCliente: ${error.message || ''}`
+        }
     }
 }
 
@@ -941,10 +1040,15 @@ module.exports = {
     getVendedoresBySuc,
     getYearToDayBySuc,
     getYearToDayByCobrador,
-    getYTDCobrador,
+    getYtdCobradores,
     getPendientesBajaPorCobrador, cuentasParaBajaCobranza, cuentasBancoParaBajaCobranza,
     getBaja, getLayoutComprobanteContable,
     getBajasByUser,
     reporteBajaCobranzas, getCobradoresBySucursales,
-    getClienteById
+    getClienteById,
+    getClientes,
+    getEstadoCuentaCliente,
+    getComprobantesBajasByUser,
+    auditoriaSaldoDeudor,
+    obtenerBajasFacturas, findCliente
 }

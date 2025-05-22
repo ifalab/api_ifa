@@ -326,7 +326,7 @@ const ventasPorZonasVendedorMesAnt = async (username, line, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT('${username}','${line}','${groupBy}');`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT(${username},'${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.log({ error })
@@ -471,7 +471,7 @@ const descripcionArticulo = async (itemCode) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en descripcionArticulo')
+        throw new Error(`Error en descripcionArticulo: ${error.message}`)
     }
 }
 
@@ -561,7 +561,7 @@ const unidadMedida = async (itemCode) => {
         return result
     } catch (error) {
         console.log({ error })
-        throw new Error('error en descripcionArticulo')
+        throw new Error(`Error en descripcionArticulo: ${error.message}`)
     }
 }
 
@@ -857,7 +857,7 @@ const cantidadVentasPorZonasVendedor = async (username, line, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA('${username}','${line}','${groupBy}');`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA(${username},'${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en cantidadVentasPorZonasVendedor: ', err.message);
@@ -870,7 +870,7 @@ const cantidadVentasPorZonasMesAnt = async (username, line, groupBy) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT('${username}','${line}','${groupBy}');`;
+        const query = `call "LAB_IFA_LAPP".LAPP_VEN_VENTAS_ZONA_ANT(${username},'${line}','${groupBy}');`;
         return await executeQuery(query);
     } catch (err) {
         console.log({ err })
@@ -1435,6 +1435,479 @@ const reporteSinUbicacionCliente = async (sucCode) => {
     }
 }
 
+const getClientName = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "CardName" from ${process.env.PRD}.ifa_dm_clientes where "CardCode" = '${cardCode}'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getClientName: ${error.message || ''}`
+        }
+    }
+}
+
+///Solicitud Descuentos
+const agregarSolicitudDeDescuento = async (p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
+    p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin,  p_CreatedBy) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.ifa_crm_solicitar_descuento(${p_SlpCode}, 
+        '${p_SlpName}', '${p_ClientCode}', '${p_ClientName}', '${p_ItemCode}', '${p_ItemName}', 
+        ${p_CantMin}, ${p_DescPrct}, '${p_FechaIni}', '${p_FechaFin}', ${p_CreatedBy})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en agregarSolicitudDeDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const actualizarStatusSolicitudDescuento = async (id, status, p_CreatedBy, p_SlpCode, p_ClientCode, p_ItemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFA_CRM_ACTUALIZAR_STATUS_SOLICITUD_DESCUENTO(
+            ${id}, ${status}, ${p_CreatedBy}, ${p_SlpCode}, '${p_ClientCode}', '${p_ItemCode}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en actualizarStatusSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const getVendedoresSolicitudDescuento = async (status) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "SlpCode", "SlpName"
+        from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
+        group by "SlpCode", "SlpName"`
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedoresSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const getVendedoresSolicitudDescByStatus = async (status) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select "SlpCode", "SlpName", "Status"
+        from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
+        where "Status" = ${status} and "Deleted"=0
+        group by "SlpCode", "SlpName", "Status"`
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedoresSolicitudDescByStatus: ${error.message || ''}`
+        }
+    }
+}
+
+const getVendedoresSolicitudDescByStatusSucursal = async (status, sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select t0."SlpCode", t0."SlpName", t0."Status", t1."SucCode"
+        from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO t0
+        join ${process.env.PRD}.ifa_dm_vendedores t1 on t1."SlpCode" = t0."SlpCode"
+        where t0."Status" = ${status} and t0."Deleted"=0 and t1."SucCode"=${sucursal}
+        group by t0."SlpCode", t0."SlpName", t0."Status", t1."SucCode"`
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedoresSolicitudDescByStatusSucursal: ${error.message || ''}`
+        }
+    }
+}
+
+const getSolicitudesDescuentoByStatus = async (status, slpCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+            const query = `select *
+            from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
+            where  "Status" = ${status} and "SlpCode" = ${slpCode} 
+            and "Deleted" = 0`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en actualizarStatusSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const getSolicitudesDescuentoByVendedor = async (slpCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select *
+            from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
+            where "SlpCode" = ${slpCode} and "Deleted" = 0 
+            order by "CreatedAt" desc, "StatusUpdatedAt" desc
+            limit 50`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getSolicitudesDescuentoByVendedor: ${error.message || ''}`
+        }
+    }
+}
+
+const actualizarSolicitudDescuento = async (id, p_FechaIni, p_FechaFin, p_CantMin, p_DescPrct) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+            const query = `call ${process.env.PRD}.IFA_CRM_EDITAR_SOLICITUD_DESCUENTO(
+                ${id}, '${p_FechaIni}', '${p_FechaFin}', ${p_CantMin}, ${p_DescPrct}
+            )`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en actualizarSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const deleteSolicitudDescuento = async (id) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+            const query = `UPDATE ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
+                set "Deleted" = 1
+                where "Id"=${id};`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en deleteSolicitudDescuento: ${error.message || ''}`
+        }
+    }
+}
+
+const getVentasPrespuestosSubLinea = async() => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            SELECT * FROM LAB_IFA_DATA.ven_ventas_resumen_by_dim ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
+        `
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVentasPrespuestosSubLinea: ${error.message || ''}`
+        }
+    }
+}
+
+const getVentasPrespuestosSubLineaAnterior = async() => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `
+            SELECT * FROM LAB_IFA_DATA.VEN_VENTAS_RESUMEN_BY_DIM_ANT ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
+        `
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVentasPrespuestosSubLineaAnterior: ${error.message || ''}`
+        }
+    }
+}
+
+
+const CREATETABLE = async (subscription) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `create column table ${process.env.PRD}."PUSH_SUBSCRIPTIONS" (
+            "Id" integer GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+            "Subscription" NCLOB
+        )`
+
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en notificationSubscription: ${error.message || ''}`
+        }
+    }
+}
+
+const notificationSubscription = async (subscription) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `INSERT INTO ${process.env.PRD}.PUSH_SUBSCRIPTIONS ("Subscription") VALUES ('${subscription}')`
+
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en notificationSubscription: ${error.message || ''}`
+        }
+    }
+}
+
+const notificationUnsubscribe = async (subscription) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `delete from ${process.env.PRD}.PUSH_SUBSCRIPTIONS 
+        where TO_VARCHAR("Subscription") = TO_VARCHAR('${subscription}')`
+
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en notificationUnsubscribe: ${error.message || ''}`
+        }
+    }
+}
+
+const getSubscriptions = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT "Subscription" FROM ${process.env.PRD}.PUSH_SUBSCRIPTIONS`
+
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getSubscriptions: ${error.message || ''}`
+        }
+    }
+}
+
+const insertNotification = async (title, body, vendedor=-1, created_at, usuario) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+
+        let query = `call ${process.env.PRD}.INSERTAR_NOTIFICACION('${title}','${body}', ${vendedor}, ${usuario})`
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            result
+        }
+    } catch (error) {
+        return {
+            status:400,
+            message: `Error en insertNotification: ${error.message || ''}`
+        }
+    }
+}
+
+const getNotifications = async (vendedor=-1, usuario, subscription) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `call ${process.env.PRD}.GET_NOTIFICATIONS(${vendedor}, ${usuario}, '${subscription}')`     
+
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en getNotifications: ${error.message || ''}`
+        }
+    }
+}
+
+const getNotificationsPorSucursal = async (usuario, subscription, sucursal) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `
+            SELECT n.* FROM ${process.env.PRD}.NOTIFICACION_SOLICITUD_DESCUENTO n
+            INNER JOIN ${process.env.PRD}.NOTIFICACION_SOLICITUD_DESCUENTO_SUBSCRIPTOR s 
+            ON n."id" = s."id_notificacion"
+            join ${process.env.PRD}.ifa_dm_vendedores t on t."SlpCode"= n."vendedor"
+            where n."created_by" != ${usuario}
+            and s."delete" = 0
+            and s."id_subscriptor" IN (
+                SELECT "Id"
+                FROM "PUSH_SUBSCRIPTIONS"
+                WHERE TO_VARCHAR("Subscription") = TO_VARCHAR(${subscription})
+            )
+            and t."SucCode"=${sucursal}
+            order by "created_at" desc
+            limit 10;`     
+
+        return await executeQuery(query)
+    } catch (error) {
+        throw {
+            message: `Error en getNotificationsPorSucursal: ${error.message || ''}`
+        }
+    }
+}
+
+const deleteNotification = async (id_notification, subscription) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `call ${process.env.PRD}.DELETE_NOTIFICATION(${id_notification},'${subscription}')`     
+        console.log(query)
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en deleteNotification: ${error.message || ''}`
+        }
+    }
+}
+
+const getVendedorByCode = async (code) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SlpCode"=${code}`     
+        console.log(query)
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedorByCode: ${error.message || ''}`
+        }
+    }
+}
+
+const getDescuentosDeVendedoresParaPedido = async (cliente, vendedor,fecha) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        let query = `select "ClientCode", "ItemCode", "CantMin", "DescPrct" 
+        from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
+        where '${fecha}' between "FechaIni" and "FechaFin" 
+        and "ClientCode"='${cliente}' and "SlpCode"=${vendedor}
+        and "Status"=2 and "Deleted"=0`     
+        console.log(query)
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getDescuentosDeVendedoresParaPedido: ${error.message || ''}`
+        }
+    }
+}
+
+const ventasPorZonasVendedor2 = async (userCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA2('${userCode}');`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en ventas por zona: ', err.message);
+        throw new Error(`Error al procesar la solicitud ventasPorZonasVendedor2: ${err.message}`);
+    }
+}
+
+const ventasPorZonasVendedorMesAnt2 = async (userCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA_ANT2(${userCode});`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en ventas por zona: ', err.message);
+        throw new Error(`Error al procesar la solicitud ventasPorZonasVendedorMesAnt2: ${err.message}`);
+    }
+}
+
+
+const getUbicacionClientesByVendedor = async (codVendedor) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_ubicacion_clientes_by_vendedor(${codVendedor})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getUbicacionClientesByVendedor: ', err.message);
+        throw new Error(`Error en getUbicacionClientesByVendedor: ${err.message}`);
+    }
+}
+
+const getVentasZonaSupervisor = async (sucursal=0) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA_SUPERVISOR(${sucursal})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasZonaSupervisor: ', err.message);
+        throw new Error(`Error en getVentasZonaSupervisor: ${err.message}`);
+    }
+}
+
+const getVentasZonaAntSupervisor = async (sucursal=0) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA_ANT_SUPERVISOR(${sucursal})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasZonaAntSupervisor: ', err.message);
+        throw new Error(`Error en getVentasZonaAntSupervisor: ${err.message}`);
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1522,4 +1995,18 @@ module.exports = {
     reporteConUbicacionCliente,
     reporteSinUbicacionCliente,
     searchVendedorByIDSAP,
+    agregarSolicitudDeDescuento,
+    getVendedoresSolicitudDescByStatus, actualizarStatusSolicitudDescuento,
+    getSolicitudesDescuentoByStatus,
+    getClientName,
+    actualizarSolicitudDescuento, deleteSolicitudDescuento, notificationSubscription,
+    getSubscriptions, CREATETABLE,
+    getVentasPrespuestosSubLinea,
+    getVentasPrespuestosSubLineaAnterior,
+    getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
+    deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
+    getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
+    ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
+    ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal,
+    getVentasZonaAntSupervisor
 }

@@ -387,6 +387,74 @@ const setDescuentoOfertasPorCantidad = async (row, itemCode, cantMin, cantMax, d
     }
 }
 
+const setDescuentoOfertasPorCantidadCortoVencimiento = async (row, itemCode, cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del) => {
+    let query = ''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos_detalle_corto_vencimiento(${row},'${itemCode}',${cantMin}, ${cantMax}, ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap}, '${del}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        console.log(result)
+        if (typeof result === 'number')
+            return {
+                status: 200,
+                message: '',
+                data: result,
+                query
+            }
+        return {
+            status: result[0].response || 200,
+            message: result[0].message || '',
+            data: result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en setDescuentoOfertasPorCantidadCortoVencimiento:', error);
+        return {
+            status: 400,
+            message: `Error en setDescuentoOfertasPorCantidadCortoVencimiento: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
+const setDescuentoOfertasPorCortoVencimiento = async (row, itemCode, cantMin, cantMax, desc, fechaInicial, fechaFinal, id_sap, del) => {
+    let query = ''
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        query = `call ${process.env.PRD}.ifa_dm_agregar_descuentos_articulos_detalle_corto_vencimiento(${row},'${itemCode}',${cantMin}, ${cantMax}, ${desc}, '${fechaInicial}', '${fechaFinal}', ${id_sap}, '${del}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        console.log(result)
+        if (typeof result === 'number')
+            return {
+                status: 200,
+                message: '',
+                data: result,
+                query
+            }
+        return {
+            status: result[0].response || 200,
+            message: result[0].message || '',
+            data: result,
+            query
+        }
+    } catch (error) {
+        console.error('Error en setDescuentoOfertasPorCortoVencimiento:', error);
+        return {
+            status: 400,
+            message: `Error en setDescuentoOfertasPorCortoVencimiento: ${error.message || ''}`,
+            query
+        }
+    }
+}
+
 const getArticulos = async (lineCode) => {
     try {
         if (!connection) {
@@ -441,6 +509,24 @@ const getIdDescuentosCantidad = async (itemCode) => {
     }
 }
 
+const getIdDescuentosCortoCantidad = async (itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_id_descuentos_por_articulo_cv('${itemCode}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getIdDescuentosCortoCantidad:', error);
+        throw {
+            status: 400,
+            message: `Error en getIdDescuentosCortoCantidad: ${error.message || ''}`
+        }
+    }
+}
+
 const getDescuentosCantidad = async (docNum, itemCode) => {
     try {
         if (!connection) {
@@ -455,6 +541,24 @@ const getDescuentosCantidad = async (docNum, itemCode) => {
         throw {
             status: 400,
             message: `Error en getDescuentosCantidad: ${error.message || ''}`
+        }
+    }
+}
+
+const getDescuentosCantidadCorto = async (docNum, itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_obtener_descuentos_articulo_cv_por_id(${docNum},'${itemCode}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDescuentosCantidadCorto:', error);
+        throw {
+            status: 400,
+            message: `Error en getDescuentosCantidadCorto: ${error.message || ''}`
         }
     }
 }
@@ -780,7 +884,6 @@ const getDescuentosEspecialesLinea = async (cardCode) => {
             await connectHANA();
         }
         const query = `SELECT * FROM ${process.env.PRD}.IFA_CRM_DESCUENTOS_POR_LINEA WHERE CURRENT_DATE BETWEEN "FromDate" AND "ToDate" AND "CardCode" = '${cardCode}'`;
-        // const query = `SELECT * FROM LAB_IFA_PRD.IFA_CRM_DESCUENTOS_POR_LINEA WHERE CURRENT_DATE BETWEEN "FromDate" AND "ToDate" AND "CardCode" = '${cardCode}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -932,4 +1035,8 @@ module.exports = {
     articuloByItemCode,
     updateListaPrecios,
     desactivePriceList,
+    getIdDescuentosCortoCantidad,
+    setDescuentoOfertasPorCortoVencimiento,
+    getDescuentosCantidadCorto,
+    setDescuentoOfertasPorCantidadCortoVencimiento,
 }

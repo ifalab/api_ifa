@@ -191,19 +191,19 @@ const facturaPedidoDB = async (whsCode) => {
     }
 }
 
-const pedidosFacturados = async (SucCode) => {
+const pedidosFacturados = async (SucCode, fecha) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode})`;
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_pedidos_facturados(${SucCode}, '${fecha}')`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
 
     } catch (error) {
         console.error('Error en pedidosFacturados:', error.message);
-        return { message: 'Error al procesar la solicitud: pedidosFacturados' }
+        return { message: `Error al procesar la solicitud: pedidosFacturados: ${error.message}` }
     }
 }
 

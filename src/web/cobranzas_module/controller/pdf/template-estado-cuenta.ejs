@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <div class="header">
+            <div class="logo">
+                <img src="<%= staticBaseUrl %>/ifa_logo.png" alt="Laboratorios IFA Logo" style="max-width: 70px;">
+            </div>
+            <div class="title">
+                <h2>Estado de Cuenta</h2>
+                <p>al 28 de abril del 2025</p>
+            </div>
+        </div>
+    </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            margin-left: 60px;
+            margin-right: 20px;
+        }
+        .header {
+            position: relative;
+            width: 100%;
+            height: 60px;
+        }
+        .logo {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .title {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translate(-50%, 15%);
+            text-align: center;
+        }
+        .title h2, .title p {
+            margin: 0;
+        }
+        .divider {
+            border-bottom: 2px solid #000;
+            margin: 10px 0;
+        }
+        .divider-datos {
+            border-bottom: 1px solid #25232377;
+            margin: 10px 0;
+        }
+        .info-box {
+            display: flex;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .left-box {
+            width: 25%;
+            padding: 0px 5px 0px 0px;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+        .right-box {
+            width: 75%;
+            padding: 0px 10px 0px 10px;
+        }
+        .saldo-pendiente {
+            border-radius: 10px;
+            background-color: rgb(207, 14, 14);
+            color: white;
+            padding: 10px 0 10px 0;
+            text-align: center;
+        }
+        .info-grid {
+            display: flex;
+        }
+        .info-grid p {
+            margin: 0;
+        }
+        .label {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+        .label-condicion-pago{
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        thead{
+            background-color: rgb(207, 14, 14);
+            color: white;
+        }
+        thead th:first-child {
+            border-top-left-radius: 10px;
+        }
+        thead th:nth-child(2) {
+            max-width: 70px;
+            word-break: break-word;
+        }
+        thead th:nth-child(5) {
+            max-width: 30px;
+            word-break: break-word;
+        }
+        thead th:last-child {
+            border-top-right-radius: 10px;
+        }
+        tfoot td:first-child {
+            border-bottom-left-radius: 10px;
+        }
+
+        tfoot td:last-child {
+            border-bottom-right-radius: 10px;
+        }
+        th, td {
+            padding: 4px;
+        }
+        th:nth-child(1), th:nth-child(2), th:nth-child(3), th:nth-child(4), th:nth-child(5), th:nth-child(6) {
+            text-align: left;
+        }
+        th:nth-child(7), th:nth-child(8), th:nth-child(9){
+            text-align: right;
+        }
+        td:nth-child(3), td:nth-child(6) {
+            max-width: 100px;
+            word-break: break-word;
+        }
+        td:nth-child(1), td:nth-child(2), td:nth-child(3), td:nth-child(4), td:nth-child(5),td:nth-child(6) {
+            text-align: left;
+        }
+        td:nth-child(7), td:nth-child(8), td:nth-child(9){
+            text-align: right;
+        }
+        .fila-borde {
+            border-bottom: 1px solid #000;
+        }
+        .fila-pago {
+            background-color: #fcc5c5;
+        }
+        .texto-verde {
+            color: green;
+        }
+        .texto-rojo {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <img src="<%= staticBaseUrl %>/ifa_logo.png" alt="Laboratorios IFA Logo" style="max-width: 70px;">
+        </div>
+        <div class="title">
+            <h2>Estado de Cuenta</h2>
+            <p>al 28 de abril del 2025</p>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="info-box">
+        <div class="left-box">
+            <div class="saldo-pendiente">
+                <p><strong>Saldo Pendiente</strong></p>
+                <h2><strong>Bs <%= data.TotalSaldo %></strong></h2>
+            </div>
+            
+        </div>
+    
+        <div class="right-box">
+            <div class="info-grid">
+                <div>
+                    <p><span class="label">Código Cliente:</span> <%= data.CardCode %></p>
+                    <p><span class="label">Cliente:</span> <%= data.CardName %></p>
+                    <p><span class="label">Razon Social:</span> <%= data.CardFName %></p>
+                    <p><span class="label">Email:</span> <%= data.E_Mail %></p>
+                </div>
+            </div>
+    
+            <div class="divider-datos"></div>
+    
+            <div class="info-grid">
+                <div style="width: 265px;">
+                    <p><span class="label">NIT:</span> <%= data.LicTradNum || "No disponible" %></p>
+                    <p><span class="label">Teléfono:</span> <%= data.Phone1 || "No disponible" %></p>
+                    <p><span class="label">Celular:</span> <%= data.Cellular || "No disponible" %></p>
+                </div>
+                <div>
+                    <p><span class="label-condicion-pago">Condición de Pago:</span> <%= data.PymntGroup || "No disponible" %></p>
+                </div>
+            </div>
+        </div>
+    </div>    
+
+    <div class="divider"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Fecha Vencimiento</th>
+                <th>Documento</th>
+                <th>Trans</th>
+                <th>Vigencia</th>
+                <th>Detalle</th>
+                <th>Cargo</th>
+                <th>Abono</th>
+                <th>Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% data.detalles.forEach(detalle => { %>
+                <% 
+                    let clasesFila = 'fila-borde'; 
+                    let clasesTexto = '';
+                    
+                    if (detalle.Transaccion === 'Pago') {
+                        clasesFila += ' fila-pago';
+
+                        if (detalle.pagovsvenc) {
+                            const pagovsvencLower = detalle.pagovsvenc.toLowerCase();
+                            if (pagovsvencLower.includes('mora')) {
+                                clasesTexto = ' texto-rojo';
+                            } else if (pagovsvencLower.includes('a')) {
+                                clasesTexto = ' texto-verde';
+                            }
+                        }
+                    }
+
+                    if (detalle.Transaccion === 'Factura' || detalle.Transaccion === 'Carga') {
+
+                        if (detalle.vencimiento) {
+                            const vencimientoNumero = detalle.vencimiento;
+                            if( parseFloat(detalle.Saldo || 0) === 0 || vencimientoNumero > 0){
+                                clasesTexto = 'texto-verde';
+                            }else if ( parseFloat(detalle.Saldo || 0) > 0 || vencimientoNumero < 0){
+                                clasesTexto='texto-rojo'
+                            }
+                        }
+                    }
+                %>
+                <tr class="<%= clasesFila  %>">
+                    <% if (detalle.Transaccion === "Factura" || detalle.Transaccion === "Carga") { %>
+                        <td><%= (detalle.Fecha || '').substring(0,10) %></td>
+                        <td><%= (detalle.FechaVencimiento || '').substring(0,10) %></td>
+                        <td><%= detalle.Documento %></td>
+                        <td><%= detalle.Transaccion %></td>
+                        <td class="<%= clasesTexto %>">
+                            <%= parseFloat(detalle.Saldo || 0) === 0 ? 'Pagada' : (detalle.vencimiento + ' d') %>
+                        </td>                        
+                        <td><%= detalle.Comentarios %></td>
+                        <td><%= parseFloat(detalle.Cargo || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                        <td><%= parseFloat(detalle.Abono || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                        <td><%= parseFloat(detalle.Saldo || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                    <% } else if (detalle.Transaccion === "Pago") { %>
+                        <td><%= (detalle.FechaPago || '').substring(0,10) %></td>
+                        <td><hr style="background-color: white; color: white; border: none; height: 2px;">
+                        </td>
+                        <td><%= detalle.NroPago %></td>
+                        <td><%= detalle.Transaccion %></td>
+                        <td class="<%= clasesTexto %>"><%= detalle.pagovsvenc %></td>
+                        <td><%= detalle.Comentarios %></td>
+                        <td><%= parseFloat(detalle.Cargo || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                        <td><%= parseFloat(detalle.Abono || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                        <td><%= parseFloat(detalle.Saldo || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                    <% } %>
+                </tr>
+            <% }) %>
+        </tbody>        
+        <tfoot>
+            <tr style="border-top: 2px solid #000; background-color: rgb(207, 14, 14); color: white;">
+                <td colspan="5"></td>
+                <td style="font-weight: bold;">Saldo pendiente</td>
+                <td></td>
+                <td style="font-weight: bold;">Bs</td>
+                <td style="font-weight: bold;"><%= data.TotalSaldo %></td>
+            </tr>
+        </tfoot>
+    </table>
+</body>
+</html>
