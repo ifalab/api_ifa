@@ -3,6 +3,7 @@ const { sql, poolGenesisPromise } = require('../service/sqlGenesis')
 async function getFacturasParaDevolucion(cardCode, itemCode, lote) {
     try {
         const pool = await poolGenesisPromise;
+        console.log({cardCode, itemCode, lote})
         const result = await pool.request()
             .input('I_CardCode', sql.VarChar(50), cardCode)
             .input('I_ItemCode', sql.VarChar(50), itemCode)

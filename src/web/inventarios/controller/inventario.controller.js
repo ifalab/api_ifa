@@ -3459,11 +3459,6 @@ const imprimibleSalidaController = async (req, res) => {
         //! Definir nombre del archivo
         const fileName = `salida_${data.DocNum}_${new Date()}.pdf`;
 
-        //! Registrar en el log
-        // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
-        //     "Nota Creada con éxito", layout.query || '', "facturacion/nota-entrega", process.env.PRD);
-
-        //! Enviar el PDF como respuesta
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,

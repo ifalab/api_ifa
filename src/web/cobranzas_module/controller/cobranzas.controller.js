@@ -3,6 +3,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const QRCode = require('qrcode');
 const { request, response } = require("express")
+const ExcelJS = require('exceljs');
 const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas, cobranzaIfavet, cobranzaPorSucursalMesAnterior, cobranzaNormalesMesAnterior, cobranzaCadenasMesAnterior, cobranzaIfavetMesAnterior, cobranzaMasivo, cobranzaInstituciones, cobranzaMasivoMesAnterior, cobranzaPorSupervisor, cobranzaPorZona, cobranzaHistoricoNacional, cobranzaHistoricoNormales, cobranzaHistoricoCadenas, cobranzaHistoricoIfaVet, cobranzaHistoricoInstituciones, cobranzaHistoricoMasivos, cobranzaPorZonaMesAnt, cobranzaSaldoDeudor, clientePorVendedor, clientesInstitucionesSaldoDeudor, saldoDeudorInstituciones, cobroLayout, resumenCobranzaLayout, cobrosRealizados, clientesPorVendedor, clientesPorSucursal, clientePorVendedorId, cobranzaSaldoDeudorDespachador, clientesPorDespachador, cobranzaSaldoAlContadoDeudor,
     detalleFactura, cobranzaNormalesPorSucursal, cobranzaPorSucursalYTipo, getVendedores,
     getCobradores, getCobradoresBySucursales,
@@ -2192,23 +2193,10 @@ const getBajasFacturasController = async (req, res) => {
     try {
         const { fechaIni, fechaFin, cardCode, factura } = req.body
         
-        const response = await obtenerBajasFacturas(fechaIni, fechaFin, cardCode, factura??'')
-        const cabecera = []
-
-        for(const linea of response){
-            let {DocDateInv, DocNumInv, NumAtCard, DocTotalInv, SucName, Type, PymntGroup, DocNumCob, ...rest} = linea
-            if(cabecera.length==0 || cabecera[cabecera.length-1].DocNumInv!=DocNumInv){
-                cabecera.push({DocDateInv, DocNumInv, NumAtCard, DocTotalInv, SucName, Type, PymntGroup, 
-                    detalle: DocNumCob==null?[]:[{DocNumCob,...rest}]
-                })
-            }else{
-                cabecera[cabecera.length-1].detalle.push(DocNumCob==null?[]:[{DocNumCob,...rest}])
-            }
-        }
+        const response = await obtenerBajasFacturas(fechaIni, fechaFin, cardCode??'', factura??'')
 
         console.log({ response })
-        // console.log({cabecera})
-        return res.json(cabecera)
+        return res.json(response)
     } catch (error) {
         console.log({ error })
         const mensaje = `${error.message || 'Error en el controlador getBajasFacturasController'}`
@@ -2231,6 +2219,338 @@ const findClienteController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en el controlador findClienteController: ${error.message || ''}` })
     }
 } 
+
+const excelReporteCobro = async (req, res) => {
+    try {
+      const {data, displayedColumns} = req.body;
+      console.log({data});
+      console.log({displayedColumns})
+      const fechaActual = new Date();
+      const date = new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }).format(fechaActual);
+  
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Reporte de Estado de Cuenta');
+
+      // Definir columnas
+      worksheet.columns = [
+        { header: 'Fecha Cobro', key: 'DocDateCob', width: 15 },
+        { header: 'No. Cobro', key: 'DocNumCob', width: 15 },
+        { header: 'Total Cobro', key: 'DocTotalCob', width: 15},
+        { header: 'Pendiente Distribuir', key: 'DisPending', width: 20},
+        { header: 'Total Distribuido', key: 'DisTotal', width: 20},
+        { header: 'Fecha Distribución', key: 'DocDateDis', width: 20 },
+        { header: 'No. Distribución', key: 'DocNumDis', width: 20 },
+        { header: 'Tipo Transacción', key: 'TransType', width: 15 },
+        { header: 'ID Línea', key: 'Line_ID', width: 10 },
+        { header: 'Fecha Transferencia', key: 'TrsfrDate', width: 20 },
+        { header: 'Ref. Transferencia', key: 'TrsfrRef', width: 20, style: { numFmt: '0' } },
+        { header: 'Código Cuenta', key: 'AcctCodeDis', width: 15 },
+        { header: 'Nombre Cuenta', key: 'AcctNameDis', width: 35 },
+      ];
+
+      // Insertar filas antes del encabezado
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);  
+      // Agregar contenido a las filas de cabecera
+      worksheet.getCell('A1').value = `Reporte de Feacturas de Estado de Cuenta`;
+      worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;  
+      // Fusionar celdas para que el texto se centre sobre varias columnas (A a M en este caso)
+      worksheet.mergeCells('A1:M1');
+      worksheet.mergeCells('A2:M2');  
+      // Estilizar cabecera
+      ['A1', 'A2'].forEach(cellAddress => {
+        const cell = worksheet.getCell(cellAddress);
+        cell.font = { bold: true, size: 14 };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        if(cellAddress === 'A1') {
+            const cell = worksheet.getCell(cellAddress); 
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };  
+        }else{
+            const cell = worksheet.getCell(cellAddress); 
+            cell.border = {
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };  
+        }
+      });
+
+      data.forEach(row => {
+        const newRow = worksheet.addRow(
+            displayedColumns.reduce((acc, column) => ({
+                ...acc,
+                [column]: column.includes('Date') ? new Date(row[column]) : 
+                (column.includes('Total') || column.includes('Pend') || column.includes('Num'))? parseFloat(row[column]): row[column]
+            }), {})
+        );
+          
+
+        /*
+        {
+            DocDateCob: new Date(row.DocDateCob),
+            DocNumCob: row.DocNumCob,
+            DocTotalCob: parseFloat(row.DocTotalCob),
+            DisPending: parseFloat(row.DisPending),
+            DisTotal: parseFloat(row.DisTotal),
+            DocDateDis: new Date(row.DocDateDis),
+            DocNumDis: row.DocNumDis,
+            TransType: row.TransType,
+            Line_ID: row.Line_ID,
+            TrsfrDate: new Date(row.TrsfrDate),
+            TrsfrRef: row.TrsfrRef,
+            AcctCodeDis: row.AcctCodeDis,
+            AcctNameDis: row.AcctNameDis,
+        }
+        */
+          // Asegurar formato con 2 decimales:
+          newRow.getCell('DocTotalCob').numFmt = '"Bs"#,##0.00';
+          newRow.getCell('DisTotal').numFmt = '"Bs"#,##0.00';
+          newRow.getCell('DisPending').numFmt = '"Bs"#,##0.00';
+          newRow.eachCell(cell => {
+            cell.border = {
+                left: {style: 'thin'},
+                right: {style: 'thin'},
+            }
+          })
+      });
+  
+      // Estilizar encabezado
+      worksheet.getRow(4).eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFFF' },
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      worksheet.lastRow.eachCell(cell => {
+        cell.border = {
+            bottom: {style: 'thin'},
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        }
+      })
+  
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=reporte_cuenta.xlsx');
+  
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      console.error({ error });
+      return res.status(500).json({ mensaje: `Error generando el Excel del reporte cuenta ${error}` });
+    }
+};
+
+const excelReporte = async (req, res) => {
+    try {
+      const {data, displayedColumns, cabecera} = req.body;
+      const {fechaIni, fechaFin }= cabecera;
+
+    //   console.log({data});
+    //   console.log({displayedColumns})
+      const fechaActual = new Date();
+      const date = new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }).format(fechaActual);
+  
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Reporte de Estado de Cuenta');
+
+      worksheet.columns = [
+        { header: 'Cliente', key: 'CardName', width: 30 },
+        { header: 'Sucursal', key: 'SucName', width: 15 },
+        { header: 'No. Factura', key: 'DocNumInv', width: 12 },
+        { header: 'NumAtCard', key: 'NumAtCard', width: 14},
+        { header: 'Total Factura', key: 'DocTotalInv', width: 14},
+        { header: 'Forma de Pago', key: 'PymntGroup', width: 16 },
+        { header: 'Fecha Cobro', key: 'DocDateCob', width: 14 },
+        { header: 'No. Cobro', key: 'DocNumCob', width: 12 },
+        { header: 'Total Cobro', key: 'DocTotalCob', width: 15},
+        { header: 'Pendiente Distribuir', key: 'DisPending', width: 20},
+        { header: 'Total Distribuido', key: 'DisTotal', width: 20},
+        { header: 'Fecha Distribución', key: 'DocDateDis', width: 20 },
+        { header: 'No. Distribución', key: 'DocNumDis', width: 17 },
+        { header: 'Tipo Transacción', key: 'TransType', width: 15 },
+        { header: 'ID Línea', key: 'Line_ID', width: 9 },
+        { header: 'Fecha Transferencia', key: 'TrsfrDate', width: 20 },
+        { header: 'Ref. Transferencia', key: 'TrsfrRef', width: 20, style: { numFmt: '0' } },
+        { header: 'Código Cuenta', key: 'AcctCodeDis', width: 15 },
+        { header: 'Nombre Cuenta', key: 'AcctNameDis', width: 40 }
+      ];
+
+      // Insertar filas antes del encabezado
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      // Agregar contenido a las filas de cabecera
+      worksheet.getCell('A1').value = `Reporte de estado de cuenta`;  
+      worksheet.getCell('A2').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`; 
+      worksheet.getCell('A3').value = `Fecha de Impresión: ${date}`;  
+      // Fusionar celdas para que el texto se centre sobre varias columnas
+      worksheet.mergeCells('A1:Q1');
+      worksheet.mergeCells('A2:S2'); 
+      worksheet.mergeCells('A3:S3'); 
+
+      // Estilizar cabecera
+        const cellA = worksheet.getCell('A1');
+        cellA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        cellA.font = { bold: true, size: 14 }; 
+        cellA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+        }; 
+        
+      ['A2', 'A3'].forEach(cellAddress => {
+        const cell = worksheet.getCell(cellAddress);
+        cell.font = { bold: true, size: 11 };
+        cell.alignment = { vertical: 'middle', horizontal: 'start' };
+      });
+    
+      const rowRefs = data.map(row =>
+        worksheet.addRow(
+        displayedColumns.reduce((acc, column) => ({
+            ...acc,
+            [column]: row[column]?
+                (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
+                : ''
+            }), {})
+        )
+      );
+
+        // Apply formatting per row
+      rowRefs.forEach(row => {
+        row.getCell('DocTotalInv').numFmt = '"Bs"#,##0.00';
+        row.getCell('DocTotalCob').numFmt = '"Bs"#,##0.00';
+        row.getCell('DisTotal').numFmt = '"Bs"#,##0.00';
+        row.getCell('DisPending').numFmt = '"Bs"#,##0.00';
+
+        row.eachCell(cell => {
+            cell.border = {
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+            };
+        });
+      });
+        
+      function mergeSameValues(startRowIndex, columnKeys) {
+        const ends=[]
+        let i = 0;
+        while (i < data.length) {
+            let j = i + 1;
+            while (
+            j < data.length &&
+            columnKeys.every(key => data[i][key] === data[j][key])
+            ) {
+            j++;
+            }
+
+            if (j - i > 1) {
+            const start = startRowIndex + i;
+            const end = startRowIndex + j - 1;
+            columnKeys.forEach(key => {
+                const col = worksheet.getColumn(key);
+                const cellIndex = col.number;
+                worksheet.mergeCells(start, cellIndex, end, cellIndex);
+                worksheet.getCell(start, cellIndex).alignment = {
+                vertical: 'middle',
+                horizontal: 'center'
+                };
+                // worksheet.getCell(end, cellIndex).border = 
+                
+            });
+            ends.push(end);
+            }else{
+                const end = startRowIndex + j - 1
+                ends.push(end);
+            }
+            i = j;
+        }
+        return  ends;
+      }
+      const ends = mergeSameValues(6, ['CardName', 'SucName', 'DocNumInv', 'NumAtCard', 'DocTotalInv']);
+      console.log({ends})
+
+      worksheet.getRow(5).eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFFF' },
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      worksheet.lastRow.eachCell(cell => {
+        cell.border = {
+            bottom: {style: 'thin'},
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        }
+      })
+      
+      ends.forEach( end => {
+        worksheet.getRow(end).eachCell(cell => {
+            cell.border = {
+                bottom: {style: 'thin'},
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+        })
+      });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=reporte_cuenta.xlsx');
+  
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      console.error({ error });
+      const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+      grabarLog(user.USERCODE, user.USERNAME,`Cobranzas Reporte de estado de cuenta`, `Error generando el Excel del reporte cuenta ${error}`,
+        'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+      );
+      return res.status(500).json({ mensaje: `Error generando el Excel del reporte cuenta ${error}` });
+    }
+};
 
 module.exports = {
     cobranzaGeneralController,
@@ -2291,5 +2611,6 @@ module.exports = {
     getEstadoCuentaClienteController,
     getEstadoCuentaClientePDFController,
     auditoriaSaldoDeudorController,
-    getBajasFacturasController, findClienteController
+    getBajasFacturasController, findClienteController,
+    excelReporte
 }
