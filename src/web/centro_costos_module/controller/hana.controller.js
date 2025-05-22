@@ -17,6 +17,49 @@ const ObtenerLibroMayor = async (cuenta) => {
     }
 };
 
+const ObtenerLibroMayorFiltrado = async (body) => {
+    try {
+        const {
+            cuenta,
+            fechaInicio,
+            fechaFin,
+            socioNombre,
+            indicador = '',
+            docFuente = '',
+            dim1 = 0,
+            dim2 = 0,
+            dim3 = 0
+        } = body;
+
+        const number_cuenta = Number(cuenta);
+        if (!number_cuenta || isNaN(number_cuenta)) {
+        throw new Error(`Cuenta inválida: ${cuenta}`);
+        }
+
+        console.log('ObtenerLibroMayor EXECUTE');
+
+        const query = `
+        CALL LAB_IFA_COM.fin_obtener_mayor_general_filtrado(
+            '${number_cuenta}',
+            '${fechaInicio || '1900-01-01'}',
+            '${fechaFin || '9999-12-31'}',
+            '${socioNombre || ''}',
+            '${indicador}',
+            '${docFuente}',
+            ${dim1},
+            ${dim2},
+            ${dim3}
+        )
+        `;
+
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw new Error(`error en ObtenerLibroMayor, ${error}`);
+    }
+};
+
 const cuentasCC = async () => {
     try {
         console.log('cuentasCC EXECUTE');
@@ -106,6 +149,18 @@ const getIdReserva = async () => {
         throw new Error(`Error en getIdReserva, ${error}`);
     }
 }
+
+const getBeneficiarios = async () => {
+    try {
+        console.log('getBeneficiarios EXECUTE');
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_BENEFICIARIOS`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw new Error(`Error en getBeneficiarios, ${error}`);
+    }
+}
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -115,5 +170,7 @@ module.exports = {
     getClasificacionGastos,
     postDocFuente,
     asientosContablesCCById,
-    getIdReserva
+    getIdReserva,
+    getBeneficiarios,
+    ObtenerLibroMayorFiltrado
 };

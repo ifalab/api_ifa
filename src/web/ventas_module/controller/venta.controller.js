@@ -2382,12 +2382,12 @@ const agregarSolicitudDeDescuentoController = async (req, res) => {
             let { p_ClientCode, p_ClientName, p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin } = solicitud
             if (!p_FechaIni || p_FechaIni === '') {
                 const fecha = new Date()
-                p_FechaIni = fecha.toISOString().split('T')[0]
+                p_FechaIni = fecha.toISOString()
             }
             if (!p_FechaFin || p_FechaFin === '') {
                 const fechaIni = new Date(p_FechaIni)
                 fechaIni.setDate(fechaIni.getDate() + 3)
-                p_FechaFin = fechaIni.toISOString().split('T')[0]
+                p_FechaFin = fechaIni.toISOString()
             }
             const response = await agregarSolicitudDeDescuento(p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
                 p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin, p_CreatedBy)
@@ -2833,7 +2833,7 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
         ////
         const { cliente, vendedor } = req.body;
         const fecha = new Date()
-        const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString().split('T')[0])
+        const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
         console.log(response)
         return res.json(response);
     } catch (error) {
@@ -2951,87 +2951,6 @@ const getVentasZonaSupervisorController = async (req, res) => {
         }else{
             console.log('is mes actual')
             response = await getVentasZonaSupervisor(sucursal??0)
-        }
-        let SucCode = ''
-        let totalQuotaByLineItem = {};
-        let totalSalesByLineItem = {};
-
-        const results = []
-        response.forEach((r, index) => {
-            if (r.SucCode == SucCode) {
-                const res1 = r
-                res1.cumplimiento = +r.cumplimiento
-                res1.hide = true
-                results.push(res1)
-
-                totalQuotaByLineItem[r.SucCode] += +r.Quota;
-                totalSalesByLineItem[r.SucCode] += +r.Sales;
-                if ((response.length - 1) == index) {
-                    const res = {
-                        SucName: `Total ${r.SucName}`,
-                        Quota: +totalQuotaByLineItem[r.SucCode],
-                        Sales: +totalSalesByLineItem[r.SucCode],
-                        cumplimiento: (+totalSalesByLineItem[r.SucCode] / +totalQuotaByLineItem[r.SucCode]) * 100,
-                        isSubtotal: true,
-                        hide: false
-                    }
-                    results.push(res)
-                }
-            } else {
-                SucCode = r.SucCode;
-                totalQuotaByLineItem[r.SucCode] = +r.Quota;
-                totalSalesByLineItem[r.SucCode] = +r.Sales;
-
-                if (index > 0) {
-                    const res = {
-                        SucName: `Total ${response[index - 1].SucName}`,
-                        Quota: +totalQuotaByLineItem[response[index - 1].SucCode],
-                        Sales: +totalSalesByLineItem[response[index - 1].SucCode],
-                        cumplimiento: (+totalSalesByLineItem[response[index - 1].SucCode] / +totalQuotaByLineItem[response[index - 1].SucCode]) * 100,
-                        isSubtotal: true,
-                        hide: false
-                    }
-                    results.push(res)
-                }
-                const res1 = r
-                res1.cumplimiento = +r.cumplimiento
-                res1.hide = false
-                results.push(res1)
-
-                if ((response.length - 1) == index) {
-                    const res = {
-                        SucName: `Total ${r.SucName}`,
-                        Quota: +totalQuotaByLineItem[r.SucCode],
-                        Sales: +totalSalesByLineItem[r.SucCode],
-                        cumplimiento: (+totalSalesByLineItem[r.SucCode] / +totalQuotaByLineItem[r.SucCode]) * 100,
-                        isSubtotal: true,
-                        hide: false
-                    }
-                    results.push(res)
-                }
-            }
-            // grandTotalQuota += +r.Quota;
-            // grandTotalSales += +r.Sales;
-        });
-        // console.log(response)
-        return res.json(results);
-    } catch (error) {
-        console.error({ error })
-        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getVentasZonaSupervisorController'}` })
-    }
-}
-
-const getVentasZonaSupervisorSucursalController = async (req, res) => {
-    try {
-        const {sucursal, isMesAnterior} = req.query
-        console.log({sucursal, isMesAnterior})
-        let response
-        if(isMesAnterior=='true'){
-            console.log('is mes anterior')
-            response = await getVentasZonaAntSupervisor(sucursal??0)
-        }else{
-            console.log('is mes actual')
-            response = await getVentasZonaSupervisor(100)//
         }
         let SucCode = ''
         let totalQuotaByLineItem = {};
