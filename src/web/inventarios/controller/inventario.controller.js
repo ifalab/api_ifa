@@ -31,7 +31,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getEntregasParaCancelar,
     detalleTraslado,
     insertWorkFlowWithCheck,
-    selectionBatchPlazo, getReconciliationIdByCN } = require("./hana.controller")
+    selectionBatchPlazo, getReconciliationIdByCN, 
+    procesoAbastecimiento} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice } = require("./sld.controller")
@@ -4546,22 +4547,6 @@ const solicitudTrasladoController = async (req, res) => {
             StockTransferLines
         } = req.body
         const user = req.usuarioAutorizado
-        // console.log({
-        //     Comments,
-        //     JournalMemo,
-        //     FromWarehouse,
-        //     U_TIPO_TRASLADO,
-        //     U_GroupCode,
-        //     ToWarehouse,
-        //     U_UserCode,
-        //     SalesPersonCode,
-        //     DueDate,
-        //     CardName,
-        //     CardCode,
-        //     U_FECHA_FACT,
-        //     U_Autorizacion,
-        //     StockTransferLines
-        // })
         console.log(JSON.stringify({
             Comments,
             JournalMemo,
@@ -4569,6 +4554,7 @@ const solicitudTrasladoController = async (req, res) => {
             U_TIPO_TRASLADO,
             U_GroupCode,
             ToWarehouse,
+            SalesPersonCode,
             CardName,
             CardCode,
             U_UserCode,
@@ -4582,6 +4568,7 @@ const solicitudTrasladoController = async (req, res) => {
             JournalMemo,
             FromWarehouse,
             U_TIPO_TRASLADO,
+            SalesPersonCode,
             U_GroupCode,
             ToWarehouse,
             CardName,
@@ -4608,7 +4595,7 @@ const solicitudTrasladoController = async (req, res) => {
             return res.status(400).json({ mensaje })
         }
         const { idTransfer } = sapResponse
-        await insertWorkFlowWithCheck(idTransfer, user.USERNAME || 'No definido', user.ID_SAP || 0, '')
+        await insertWorkFlowWithCheck(idTransfer, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Solicitud', idTransfer, '1250000001')
         return res.json({ sapResponse })
     } catch (error) {
         console.log({ error })
@@ -5021,63 +5008,63 @@ const cancelarDevolucionController = async (req, res) => {
         let responseCN
         let responseRC
         if (idCN != 0) {
-            if(idRC && idRC!=0){
+            if (idRC && idRC != 0) {
                 responseRC = await cancelReconciliacion(idRC);
-                console.log({responseRC});
-                if(responseRC.status==400){
+                console.log({ responseRC });
+                if (responseRC.status == 400) {
                     let mensaje = `Error en cancelReconciliacion: `
-                    if(typeof responseRC.errorMessage === 'string'){
-                        mensaje =`${responseRC.errorMessage}`
-                    }else{
+                    if (typeof responseRC.errorMessage === 'string') {
+                        mensaje = `${responseRC.errorMessage}`
+                    } else {
                         mensaje = `${responseRC.errorMessage.value}`
                     }
-                    if(!mensaje.includes('Document is already closed')){
-                        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-                        `${mensaje}`, `https://srvhana:50000/b1s/v1/InternalReconciliations(${idRC})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-                        
-                        return res.status(400).json({mensaje})
+                    if (!mensaje.includes('Document is already closed')) {
+                        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+                            `${mensaje}`, `https://srvhana:50000/b1s/v1/InternalReconciliations(${idRC})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+
+                        return res.status(400).json({ mensaje })
                     }
                 }
             }
             responseCN = await cancelCreditNotes(idCN)
-            console.log({responseCN});
-            if(responseCN.status==400){
+            console.log({ responseCN });
+            if (responseCN.status == 400) {
                 let mensaje = `Error en cancelCreditNotes: `
-                if(typeof responseCN.errorMessage === 'string'){
-                    mensaje +=`${responseCN.errorMessage}`
-                }else{
+                if (typeof responseCN.errorMessage === 'string') {
+                    mensaje += `${responseCN.errorMessage}`
+                } else {
                     mensaje += `${responseCN.errorMessage.value}`
                 }
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-                    `${mensaje}`, `https://srvhana:50000/b1s/v1/CreditNotes(${idCN})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-                return res.status(400).json({mensaje, responseRC})
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+                    `${mensaje}`, `https://srvhana:50000/b1s/v1/CreditNotes(${idCN})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+                return res.status(400).json({ mensaje, responseRC })
             }
         }
 
         const responseDev = await cancelReturn(idDev)
-        console.log({responseDev})
-        if(responseDev.status==400){
+        console.log({ responseDev })
+        if (responseDev.status == 400) {
             let mensaje
             if (typeof responseDev.errorMessage === 'string') {
                 mensaje = `${responseDev.errorMessage}`
             } else {
                 mensaje = `${responseDev.errorMessage.value || 'Error en cancelReturn'}`
             }
-            grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-            `${mensaje}`, `https://srvhana:50000/b1s/v1/Returns(${idDev})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-            return res.status(400).json({mensaje, responseCN, responseRC})
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+                `${mensaje}`, `https://srvhana:50000/b1s/v1/Returns(${idDev})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+            return res.status(400).json({ mensaje, responseCN, responseRC })
         }
 
-        
-//devolucion nro: 1308 y entrega nro: 72683
+
+        //devolucion nro: 1308 y entrega nro: 72683
         grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, `Exito en la cancelacion de la devolucion`,
-            `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`,`/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
-        
-        return res.json({responseDev, responseCN, responseRC})
+            `https://srvhana:50000/b1s/v1/Returns(id)/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+
+        return res.json({ responseDev, responseCN, responseRC })
     } catch (error) {
         console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`, 
-            `${error.message || 'Error en cancelarDevolucionController'}`, `catch de cancelarDevolucionController`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD )
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+            `${error.message || 'Error en cancelarDevolucionController'}`, `catch de cancelarDevolucionController`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
         return res.status(500).json({ mensaje: error.message || 'Error en cancelarDevolucionController' })
     }
 }
@@ -5085,42 +5072,42 @@ const cancelarDevolucionController = async (req, res) => {
 const cancelarEntregaController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const {idEnt, TargetType} = req.query
-        
+        const { idEnt, TargetType } = req.query
+
         const responseEnt = await cancelEntrega(idEnt)
-        if(responseEnt.status==400){
+        if (responseEnt.status == 400) {
             let mensaje = `Error en el cancel entrega: `
             let errorMessage = responseEnt.errorMessage
-            if(typeof errorMessage !== 'string')
+            if (typeof errorMessage !== 'string')
                 errorMessage = responseEnt.errorMessage.value
-            console.log({mensaje})
-            if(errorMessage.includes('cancel target documents first')){
+            console.log({ mensaje })
+            if (errorMessage.includes('cancel target documents first')) {
                 console.log('includes')
-                if(TargetType==13){
+                if (TargetType == 13) {
                     mensaje += 'Cancele la FACTURA primero!'
-                }else if(TargetType==16){
+                } else if (TargetType == 16) {
                     mensaje += 'Cancele la DEVOLUCION primero!'
-                }else{
+                } else {
                     mensaje += errorMessage
                 }
-            }else{
+            } else {
                 mensaje += errorMessage
             }
 
             grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, mensaje,
-                `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD )
-            
-            return res.status(400).json({mensaje})
-        }
-        
-        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
-            `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`,`/inventario/cancelar-entrega`, process.env.DBSAPPRD );
+                `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD)
 
-        return res.json({responseEnt})
+            return res.status(400).json({ mensaje })
+        }
+
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`, `Exito en la cancelacion de la entrega`,
+            `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD);
+
+        return res.json({ responseEnt })
     } catch (error) {
         console.log({ error })
         grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Entrega`,
-            `${error.message || 'Error en cancelarEntregaController'}`, `catch del cancelarEntregaController`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD )
+            `${error.message || 'Error en cancelarEntregaController'}`, `catch del cancelarEntregaController`, `/inventario/cancelar-entrega`, process.env.DBSAPPRD)
         return res.status(500).json({ mensaje: error.message || 'Error en cancelarEntregaController' })
     }
 }
@@ -5165,6 +5152,7 @@ const crearTrasladoController = async (req, res) => {
             StockTransferLines
         } = req.body
 
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         // lotes si el U_BatchNum es vacio, hacer fefo
         // referenciar a la solicitud con el BaseType = #, BaseLine = linenum,BaseEntry = #, armar siempre el json batchnum
         console.log({
@@ -5253,7 +5241,8 @@ const crearTrasladoController = async (req, res) => {
             const { errorMessage } = sapResponse
             return res.status(400).json({ mensaje: `Error del SAP en Stock Transfer. ${errorMessage.value || 'No definido'}` })
         }
-
+        const { idStockTransfer } = sapResponse
+        await insertWorkFlowWithCheck(DocEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Transito', idStockTransfer, '67')
         return res.json({
             sapResponse
         })
@@ -5286,16 +5275,26 @@ const selectionBatchPlazoController = async (req, res) => {
         const whsCodeFrom = req.query.whsCodeFrom
         const plazo = req.query.plazo
         let response = await selectionBatchPlazo(itemCode, whsCodeFrom, plazo)
-        response = response.map((item)=>{
-            return  {
+        response = response.map((item) => {
+            return {
                 ...item,
-                Quantity:+item.Quantity
+                Quantity: +item.Quantity
             }
         })
         return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en selectionBatchPlazoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const procesoAbastecimientoController = async (req, res) => {
+    try {
+        let response = await procesoAbastecimiento()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en procesoAbastecimientoController : ${error.message || 'No definido'}` })
     }
 }
 module.exports = {
@@ -5353,12 +5352,13 @@ module.exports = {
     searchClienteController,
     reporteDevolucionCambiosController,
     reporteDevolucionRefacturacionController,
-    cancelarDevolucionController, 
-    cancelarEntregaController, 
+    cancelarDevolucionController,
+    cancelarEntregaController,
     getDevolucionesParaCancelarController,
     getEntregasParaCancelarController,
     actualizarTrasladoController,
     crearTrasladoController,
     detalleTrasladoController,
     selectionBatchPlazoController,
+    procesoAbastecimientoController,
 }
