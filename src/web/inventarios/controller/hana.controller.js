@@ -892,12 +892,12 @@ const selectionBatchPlazo = async (itemCode, whsCodeFrom, plazo) => {
     }
 }
 
-const insertWorkFlowWithCheck = async (docEntry, username, idSap, ip) => {
+const insertWorkFlowWithCheck = async (idSolicitud, tipoSolicitud, nombreProceso, username, idSap, ip, tipo, idTransito, tipoTransito) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.LAPP}.INSERT_WORKFLOW_WITHCHECK('${docEntry}','1250000001','Proceso de Abastecimiento Normal','${username}',${idSap},'${ip}','WEB','O','Solicitud','${docEntry}','1250000001')`;
+        const query = `call ${process.env.LAPP}.INSERT_WORKFLOW_WITHCHECK('${idSolicitud}','${tipoSolicitud}','${nombreProceso}','${username}',${idSap},'${ip}','WEB','O','${tipo}','${idTransito}','${tipoTransito}')`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -908,10 +908,6 @@ const insertWorkFlowWithCheck = async (docEntry, username, idSap, ip) => {
         }
     }
 }
-
-
-
-
 
 const getReconciliationIdByCN = async (id_CN) => {
     try {
@@ -926,6 +922,23 @@ const getReconciliationIdByCN = async (id_CN) => {
         console.error('Error en getReconciliationIdByCN:', error.message);
         throw {
             message: `Error al procesar getReconciliationIdByCN: ${error.message || ''}`
+        }
+    }
+}
+
+const procesoAbastecimiento = async (id_CN) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.LAPP}.PROCESO_ABASTECIMIENTO_STATUS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en procesoAbastecimiento:', error.message);
+        throw {
+            message: `Error al procesar procesoAbastecimiento: ${error.message || ''}`
         }
     }
 }
@@ -978,4 +991,5 @@ module.exports = {
     detalleTraslado,
     insertWorkFlowWithCheck,
     selectionBatchPlazo,
+    procesoAbastecimiento,
 }
