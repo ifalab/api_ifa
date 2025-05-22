@@ -31,8 +31,9 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getEntregasParaCancelar,
     detalleTraslado,
     insertWorkFlowWithCheck,
-    selectionBatchPlazo, getReconciliationIdByCN, 
-    procesoAbastecimiento} = require("./hana.controller")
+    selectionBatchPlazo, getReconciliationIdByCN,
+    procesoAbastecimiento,
+    datosRecepcionTraslado } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice } = require("./sld.controller")
@@ -5297,6 +5298,29 @@ const procesoAbastecimientoController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en procesoAbastecimientoController : ${error.message || 'No definido'}` })
     }
 }
+
+const datosRecepcionTrasladoController = async (req, res) => {
+    try {
+        const docEntry = req.query.docEntry
+        if (!docEntry || docEntry == '') {
+            res.status(400).json({ mensaje: `Error, no existe el Doc Entry`, docEntry })
+        }
+        let response = await datosRecepcionTraslado(docEntry)
+        if (response.length == 0) {
+            res.status(400).json({ mensaje: `No hay datos en la peticion`, response, docEntry })
+        }
+        response = response.map((item) => {
+            return {
+                ...item,
+                U_COSTO_COM: Number(+item.U_COSTO_COM).toFixed(4)
+            }
+        })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en datosRecepcionTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -5361,4 +5385,5 @@ module.exports = {
     detalleTrasladoController,
     selectionBatchPlazoController,
     procesoAbastecimientoController,
+    datosRecepcionTrasladoController,
 }
