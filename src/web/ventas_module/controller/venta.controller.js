@@ -96,7 +96,7 @@ const {
     getClientName, getSolicitudesDescuentoByVendedor, getNotifications, insertNotification,
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode,
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
-    getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal,
+    getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
     getVentasZonaAntSupervisor
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
@@ -2595,18 +2595,20 @@ webpush.setVapidDetails(
 const sendNotificationController = async (req, res) => {
     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-        const { title, body, vendedor, excludeEndpoint, usuario } = req.body
+        const { title, body, vendedor, rol, excludeEndpoint, usuario } = req.body
         console.log({ excludeEndpoint })
+        const date = new Date()
         let dato = {
             title: `${title}`,
             body: `${body}`,
-            created_at: new Date(),
+            created_at: date,
             vendedor: vendedor,
         }
         const rows = await getSubscriptions()
         console.log({ rows })
 
-        const responseInsert = await insertNotification(title, body, vendedor, dato.created_at, usuario)
+
+        const responseInsert = await insertNotification(title, body, vendedor, rol, date.toISOString(), usuario)
         console.log({ responseInsert })
         //{ status: 200,
         //  result: [ { V_ID_NOTIFICACION: 4 } ]
@@ -2617,7 +2619,6 @@ const sendNotificationController = async (req, res) => {
         rows.forEach(row => {
             const sub = JSON.parse(row.Subscription);
             if (sub.endpoint !== excludeEndpoint) {
-                console.log(`Enviando`, sub.endpoint)
                 webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
             } else {
                 console.log('Excluded', sub.endpoint);
@@ -2636,9 +2637,9 @@ const sendNotificationController = async (req, res) => {
 
 const getNotificationController = async (req, res) => {
     try {
-        const { vendedor, usuario, subscription } = req.body
+        const { vendedor, usuario } = req.body
 
-        const response = await getNotifications(vendedor, usuario, JSON.stringify(subscription))
+        const response = await getNotifications(vendedor, usuario)
         return res.json(response);
     } catch (error) {
         console.error({ error })
@@ -2648,8 +2649,8 @@ const getNotificationController = async (req, res) => {
 
 const deleteNotificationController = async (req, res) => {
     try {
-        const { id_notification, subscription } = req.body
-        const response = await deleteNotification(id_notification, JSON.stringify(subscription))
+        const { id_notification, id_usuario } = req.body
+        const response = await deleteNotification(id_notification, id_usuario)
         console.log(response)
         return res.json(response);
     } catch (error) {
@@ -2942,16 +2943,23 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
 
 const getVentasZonaSupervisorController = async (req, res) => {
     try {
-        const {sucursal, isMesAnterior} = req.query
-        console.log({sucursal, isMesAnterior})
-        let response
-        if(isMesAnterior=='true'){
-            console.log('is mes anterior')
-            response = await getVentasZonaAntSupervisor(sucursal??0)
-        }else{
-            console.log('is mes actual')
-            response = await getVentasZonaSupervisor(sucursal??0)
+        const {sucursales, isMesAnterior} = req.body
+        console.log({sucursales, isMesAnterior})
+        let response = []
+        for(const sucursal of sucursales){
+            let response1
+            if(isMesAnterior=='true'){
+                console.log('is mes anterior')
+                response1 = await getVentasZonaAntSupervisor(sucursal??0)
+            }else{
+                console.log('is mes actual')
+                response1 = await getVentasZonaSupervisor(sucursal??0)
+            }
+            console.log({response1})
+            response = [...response, ...response1]
         }
+        response.sort((a, b) => a.SucCode - b.SucCode);
+        console.log({response})
         let SucCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
@@ -3010,10 +3018,7 @@ const getVentasZonaSupervisorController = async (req, res) => {
                     results.push(res)
                 }
             }
-            // grandTotalQuota += +r.Quota;
-            // grandTotalSales += +r.Sales;
         });
-        // console.log(response)
         return res.json(results);
     } catch (error) {
         console.error({ error })

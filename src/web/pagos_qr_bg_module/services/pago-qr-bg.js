@@ -3,8 +3,8 @@ const hanaController = require('../controller/hana.controller');
 
 // Configuración para JWT y autenticación
 const JWT_SECRET = process.env.JWT_SECRET || 'o3fbuiepqfhu3irflnp3n';
-const BANK_USERNAME = process.env.BANK_USERNAME || "121724";
-const BANK_PASSWORD = process.env.BANK_PASSWORD || "1234";
+const BANK_USERNAME = process.env.BANK_USERNAME || "BANCO GANADERO";
+const BANK_PASSWORD = process.env.BANK_PASSWORD || "bg_ifa345@@";
 
 /**
  * Servicio para autenticar al banco y generar token JWT
@@ -22,7 +22,7 @@ const autenticarBanco = async (userName, password) => {
         }
 
         const token = jwt.sign(
-            { userName, role: 'bank' },
+            { userName, role: 'BANCO_BG' },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -57,7 +57,7 @@ const registrarPago = async (qrId, transactionId, payDate) => {
         const fechaPago = `${year}-${month}-${day}`;
 
         // Registrar la notificación en la base de datos usando el controlador HANA
-        console.log(`[PAGO-QRzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz] Registrando pago: QR='${qrId}', Transacción=${transactionId}, Fecha=${fechaPago}`);
+        console.log(`[PAGO-qr] Registrando pago: QR='${qrId}', Transacción=${transactionId}, Fecha=${fechaPago}`);
 
         const resultado = await hanaController.registrarNotificacionPago(qrId, transactionId, fechaPago);
 
@@ -146,7 +146,8 @@ const listarNotificacionesPago = async () => {
 const verificarTokenBanco = (token) => {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        console.log('[PAGO-QR] Token verificado:', decoded);
+        // console.log('[PAGO-QR] Token verificado:', decoded);
+        // console.log("[VERIFICAR_TOKEN_BANCO] Token verificado:", decoded);
         return {
             result: true,
             userData: decoded

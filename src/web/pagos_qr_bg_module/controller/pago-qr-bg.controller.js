@@ -39,7 +39,7 @@ const validarFecha = (fecha) => {
 const autenticarBancoController = async (req, res) => {
     try {
         const { userName, password } = req.body;
-        console.log(`[PAGO-QR] Autenticando banco: ${userName}, ${password}`);
+        // console.log(`[PAGO-QR] Autenticando banco: ${userName}, ${password}`);
 
         // Validar campos requeridos
         if (!userName || !password) {
