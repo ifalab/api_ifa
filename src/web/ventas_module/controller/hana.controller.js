@@ -1726,13 +1726,13 @@ const getSubscriptions = async () => {
     }
 }
 
-const insertNotification = async (title, body, vendedor=-1, created_at, usuario) => {
+const insertNotification = async (title, body, vendedor=-1, rol, created_at, usuario) => {
     try {
         if (!connection) {
             await connectHANA()
         }
 
-        let query = `call ${process.env.PRD}.INSERTAR_NOTIFICACION('${title}','${body}', ${vendedor}, ${usuario})`
+        let query = `call ${process.env.PRD}.INSERTAR_NOTIFICACION('${title}','${body}', '${rol}',${vendedor},'${created_at}',${usuario})`
         const result = await executeQuery(query)
         return {
             status: 200,
@@ -1746,12 +1746,12 @@ const insertNotification = async (title, body, vendedor=-1, created_at, usuario)
     }
 }
 
-const getNotifications = async (vendedor=-1, usuario, subscription) => {
+const getNotifications = async (vendedor=-1, usuario) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        let query = `call ${process.env.PRD}.GET_NOTIFICATIONS(${vendedor}, ${usuario}, '${subscription}')`     
+        let query = `call ${process.env.PRD}.GET_NOTIFICATIONS(${vendedor}, ${usuario})`     
 
         return await executeQuery(query)
     } catch (error) {
@@ -1761,41 +1761,12 @@ const getNotifications = async (vendedor=-1, usuario, subscription) => {
     }
 }
 
-const getNotificationsPorSucursal = async (usuario, subscription, sucursal) => {
+const deleteNotification = async (id_notification, id_usuario) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        let query = `
-            SELECT n.* FROM ${process.env.PRD}.NOTIFICACION_SOLICITUD_DESCUENTO n
-            INNER JOIN ${process.env.PRD}.NOTIFICACION_SOLICITUD_DESCUENTO_SUBSCRIPTOR s 
-            ON n."id" = s."id_notificacion"
-            join ${process.env.PRD}.ifa_dm_vendedores t on t."SlpCode"= n."vendedor"
-            where n."created_by" != ${usuario}
-            and s."delete" = 0
-            and s."id_subscriptor" IN (
-                SELECT "Id"
-                FROM "PUSH_SUBSCRIPTIONS"
-                WHERE TO_VARCHAR("Subscription") = TO_VARCHAR(${subscription})
-            )
-            and t."SucCode"=${sucursal}
-            order by "created_at" desc
-            limit 10;`     
-
-        return await executeQuery(query)
-    } catch (error) {
-        throw {
-            message: `Error en getNotificationsPorSucursal: ${error.message || ''}`
-        }
-    }
-}
-
-const deleteNotification = async (id_notification, subscription) => {
-    try {
-        if (!connection) {
-            await connectHANA()
-        }
-        let query = `call ${process.env.PRD}.DELETE_NOTIFICATION(${id_notification},'${subscription}')`     
+        let query = `call ${process.env.PRD}.DELETE_NOTIFICATION(${id_notification},${id_usuario})`     
         console.log(query)
         const result = await executeQuery(query)
         return result
@@ -2007,6 +1978,6 @@ module.exports = {
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
-    ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal, getNotificationsPorSucursal,
+    ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
     getVentasZonaAntSupervisor
 }
