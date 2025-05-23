@@ -27,7 +27,7 @@ const connectHANA = () => {
 };
 
 const executeQuery = async (query, params = []) => {
-    console.log('Ejecutando query:', query);
+    // console.log('Ejecutando query:', query);
     console.log('Parámetros:', params);
 
     return new Promise((resolve, reject) => {
