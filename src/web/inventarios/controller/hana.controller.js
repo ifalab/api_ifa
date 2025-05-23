@@ -943,6 +943,23 @@ const procesoAbastecimiento = async (id_CN) => {
     }
 }
 
+const datosRecepcionTraslado = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_traslados_detalle_por_id(${docEntry})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en datosRecepcionTraslado:', error.message);
+        throw {
+            message: `Error al procesar datosRecepcionTraslado: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -992,4 +1009,5 @@ module.exports = {
     insertWorkFlowWithCheck,
     selectionBatchPlazo,
     procesoAbastecimiento,
+    datosRecepcionTraslado,
 }
