@@ -563,8 +563,8 @@ const facturacionController = async (req, res) => {
             }
 
             dataToProsin.usuario = user.USERNAME || 'No definido'
+            // return res.json({dataToProsin})
             const responseProsin = await facturacionProsin(dataToProsin, user)
-            // return res.json({bodyFinalFactura,responseProsin,deliveryData})
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
             console.log({ dataProsin })
