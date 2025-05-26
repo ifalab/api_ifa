@@ -204,6 +204,6 @@ router.get('/presupuesto/anterior/sublinea', [validarToken, validarCampos], vent
 
 router.post('/ventas-zona2', [validarToken, validarCampos], ventasPorZonasVendedor2Controller)
 router.get('/ubicacion-clientes-vendedor', [validarToken, validarCampos], getUbicacionClientesByVendedorController)
-router.get('/get-ventas-supervisor', [validarToken, validarCampos], getVentasZonaSupervisorController)
+router.post('/get-ventas-supervisor', [validarToken, validarCampos], getVentasZonaSupervisorController)
 
 module.exports = router
