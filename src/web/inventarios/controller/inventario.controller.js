@@ -31,8 +31,9 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getEntregasParaCancelar,
     detalleTraslado,
     insertWorkFlowWithCheck,
-    selectionBatchPlazo, getReconciliationIdByCN, 
-    procesoAbastecimiento} = require("./hana.controller")
+    selectionBatchPlazo, getReconciliationIdByCN,
+    procesoAbastecimiento,
+    datosRecepcionTraslado } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice } = require("./sld.controller")
@@ -4836,14 +4837,23 @@ const devoluccionInstitucionesController = async (req, res) => {
 
 const solicitudesTrasladoController = async (req, res) => {
     try {
-        const { listSucCode } = req.body
+        const { listSucCode,roleAll } = req.body
+        const user = req.usuarioAutorizado
+        const { ID_SAP } = user
         let listSolicitudes = []
         if (listSucCode.length == 0) {
             return res.status(400).json({ mensaje: `Usted No tiene Sucursales asignadas` })
         }
         for (const sucCode of listSucCode) {
-            const response = await solicitudesPendiente(sucCode)
+            let response = await solicitudesPendiente(sucCode)
+            if(!roleAll){
+                response = response.filter((item) => item.UserCode == ID_SAP)
+            }
             listSolicitudes = [...listSolicitudes, ...response]
+        }
+        // console.log(JSON.stringify({ listSolicitudes }, null, 2))
+        if (listSolicitudes.length > 0) {
+            listSolicitudes.sort((a, b) => new Date(b.CreateDate) - new Date(a.CreateDate));
         }
         return res.json(listSolicitudes)
     } catch (error) {
@@ -5115,7 +5125,7 @@ const cancelarEntregaController = async (req, res) => {
 const actualizarTrasladoController = async (req, res) => {
     try {
         const body = req.body
-        const { DocEntry, ...restData } = body
+        const { DocEntry, isReception, ...restData } = body
         if (!DocEntry) {
             return res.status(400).json({ mensaje: 'Debe existir un Doc Entry en la peticion' })
         }
@@ -5135,6 +5145,8 @@ const crearTrasladoController = async (req, res) => {
     try {
 
         let {
+            isReception,
+            BaseEntry,
             DocEntry,
             Comments,
             JournalMemo,
@@ -5152,18 +5164,37 @@ const crearTrasladoController = async (req, res) => {
             StockTransferLines
         } = req.body
 
+        console.log(JSON.stringify({
+            isReception,
+            DocEntry,
+            Comments,
+            JournalMemo,
+            FromWarehouse,
+            U_TIPO_TRASLADO,
+            U_GroupCode,
+            ToWarehouse,
+            U_UserCode,
+            SalesPersonCode,
+            DueDate,
+            CardName,
+            CardCode,
+            U_FECHA_FACT,
+            U_Autorizacion,
+            StockTransferLines
+        }, null, 2))
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        // lotes si el U_BatchNum es vacio, hacer fefo
-        // referenciar a la solicitud con el BaseType = #, BaseLine = linenum,BaseEntry = #, armar siempre el json batchnum
-        console.log({
-
-        })
-
         for (let data of StockTransferLines) {
             const { U_BatchNum, LineNum, Quantity, ItemCode, FromWarehouseCode, NumPerMsr, ...rest } = data
-            data.BaseType = 1250000001
-            data.BaseLine = LineNum
-            data.BaseEntry = DocEntry
+            if (isReception) {
+                data.BaseType = 67
+                data.BaseLine = LineNum
+                data.BaseEntry = DocEntry
+            } else {
+                data.BaseType = 1250000001
+                data.BaseLine = LineNum
+                data.BaseEntry = DocEntry
+            }
+
             if (U_BatchNum == '') {
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, FromWarehouseCode, Quantity)
                 if (batchData.message) {
@@ -5202,6 +5233,8 @@ const crearTrasladoController = async (req, res) => {
             }
         })
         console.log(JSON.stringify({
+            isReception,
+            DocEntry,
             Comments,
             JournalMemo,
             FromWarehouse,
@@ -5235,6 +5268,7 @@ const crearTrasladoController = async (req, res) => {
             StockTransferLines
         })
 
+        console.log({ sapResponse })
         const { status } = sapResponse
 
         if (status == 400) {
@@ -5242,7 +5276,12 @@ const crearTrasladoController = async (req, res) => {
             return res.status(400).json({ mensaje: `Error del SAP en Stock Transfer. ${errorMessage.value || 'No definido'}` })
         }
         const { idStockTransfer } = sapResponse
-        await insertWorkFlowWithCheck(DocEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Transito', idStockTransfer, '67')
+
+        if (isReception || isReception == false) {
+            (isReception)
+                ? await insertWorkFlowWithCheck(BaseEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Recepcion', idStockTransfer, '67')
+                : await insertWorkFlowWithCheck(DocEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Transito', idStockTransfer, '67')
+        }
         return res.json({
             sapResponse
         })
@@ -5295,6 +5334,29 @@ const procesoAbastecimientoController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en procesoAbastecimientoController : ${error.message || 'No definido'}` })
+    }
+}
+
+const datosRecepcionTrasladoController = async (req, res) => {
+    try {
+        const docEntry = req.query.docEntry
+        if (!docEntry || docEntry == '') {
+            res.status(400).json({ mensaje: `Error, no existe el Doc Entry`, docEntry })
+        }
+        let response = await datosRecepcionTraslado(docEntry)
+        if (response.length == 0) {
+            res.status(400).json({ mensaje: `No hay datos en la peticion`, response, docEntry })
+        }
+        response = response.map((item) => {
+            return {
+                ...item,
+                U_COSTO_COM: Number(+item.U_COSTO_COM).toFixed(4)
+            }
+        })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en datosRecepcionTrasladoController : ${error.message || 'No definido'}` })
     }
 }
 module.exports = {
@@ -5361,4 +5423,5 @@ module.exports = {
     detalleTrasladoController,
     selectionBatchPlazoController,
     procesoAbastecimientoController,
+    datosRecepcionTrasladoController,
 }
