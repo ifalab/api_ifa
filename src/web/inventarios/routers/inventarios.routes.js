@@ -43,7 +43,7 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     detalleTrasladoController,
     selectionBatchPlazoController,
     procesoAbastecimientoController,
-    datosRecepcionTrasladoController
+    datosRecepcionTrasladoController, excelDevolucion, cancelarCambioMalEstadoController
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -108,13 +108,15 @@ router.post('/solicitudes-traslado', [validarToken, validarCampos], solicitudesT
 router.get('/detalle-solicitud-traslado', [validarToken, validarCampos], detalleSolicitudTrasladoController)
 router.patch('/actualizar-traslado', [validarToken, validarCampos], actualizarTrasladoController)
 //!------------------------ reporte devoluciones
-router.get('/reporte-devolucion-valorados', [validarToken, validarCampos], reporteDevolucionValoradosController)
-router.get('/reporte-devolucion-cambios', [validarToken, validarCampos], reporteDevolucionCambiosController)
-router.get('/reporte-devolucion-refacturacion', [validarToken, validarCampos], reporteDevolucionRefacturacionController)
+router.post('/reporte-devolucion-valorados', [validarToken, validarCampos], reporteDevolucionValoradosController)
+router.post('/reporte-devolucion-cambios', [validarToken, validarCampos], reporteDevolucionCambiosController)
+router.post('/reporte-devolucion-refacturacion', [validarToken, validarCampos], reporteDevolucionRefacturacionController)
 router.post('/search-clientes', [validarToken, validarCampos], searchClienteController)
+router.post('/excel-devolucion', [validarToken, validarCampos], excelDevolucion)
+router.get('/cancelar-cambio-mal-estado', [validarToken, validarCampos], cancelarCambioMalEstadoController)
 
 router.get('/cancelar-devolucion', [validarToken, validarCampos], cancelarDevolucionController)
-router.get('/get-devoluciones', [validarToken, validarCampos], getDevolucionesParaCancelarController)
+router.post('/get-devoluciones', [validarToken, validarCampos], getDevolucionesParaCancelarController)
 router.get('/get-entregas', [validarToken, validarCampos], getEntregasParaCancelarController)
 router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
 router.post('/crear-traslado', [validarToken, validarCampos], crearTrasladoController)

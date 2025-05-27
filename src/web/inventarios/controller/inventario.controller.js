@@ -1,6 +1,7 @@
 const { json } = require("express")
 const ejs = require('ejs');
 const QRCode = require('qrcode');
+const ExcelJS = require('exceljs');
 const puppeteer = require('puppeteer');
 const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacion, inventarioValorado,
     descripcionArticulo, fechaVencLote, stockDisponible, inventarioHabilitacionDict, stockDisponibleIfavet,
@@ -3992,6 +3993,7 @@ const facturacionCambioValoradoController = async (req, res) => {
         }
         //TODO --------------------------------------------------------------  PROSIN
         const responseGenesis = await spObtenerCUF(deliveryData)
+        console.log({responseGenesis})
         if (responseGenesis.message) {
             grabarLog(user.USERCODE, user.USERNAME, "Inventario Facturacion Cambio Valorado", `${responseGenesis.message}`, `spObtenerCUF`, "inventario/facturacion-cambio", process.env.PRD)
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
@@ -4000,7 +4002,7 @@ const facturacionCambioValoradoController = async (req, res) => {
         let responseHanaB
         //? si existe el cuf:
         if (responseGenesis.length != 0) {
-
+            console.log('el cuf ya existe')
             const dataGenesis = responseGenesis[0]
             cuf = dataGenesis.cuf
             const nroFactura = dataGenesis.factura
@@ -4100,6 +4102,7 @@ const facturacionCambioValoradoController = async (req, res) => {
 
         } else {
             //? si no existe el cuf:
+            console.log('el cuf No existe')
             let dataToProsin = {}
             const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
             if (direccion == null || direccion == undefined) {
@@ -4125,6 +4128,7 @@ const facturacionCambioValoradoController = async (req, res) => {
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura, cuf })
             }
             dataToProsin.usuario = user.USERNAME || 'No definido'
+            // return res.json({dataToProsin})
             const responseProsin = await facturacionProsin(dataToProsin, user)
             console.log({ responseProsin })
             const { data: dataProsin } = responseProsin
@@ -4885,7 +4889,9 @@ const detalleSolicitudTrasladoController = async (req, res) => {
 
 const reporteDevolucionValoradosController = async (req, res) => {
     try {
-        const response = await reporteDevolucionValorados()
+        const {fechaIni, fechaFin} = req.body
+        console.log({fechaIni, fechaFin})
+        const response = await reporteDevolucionValorados(fechaIni, fechaFin)
         console.log({ response })
         return res.json(response)
     } catch (error) {
@@ -4908,8 +4914,10 @@ const searchClienteController = async (req, res) => {
 
 const reporteDevolucionCambiosController = async (req, res) => {
     try {
-        const response = await reporteDevolucionCambios()
-        console.log({ response })
+        const {fechaIni, fechaFin} = req.body
+        console.log({fechaIni, fechaFin})
+        const response = await reporteDevolucionCambios(fechaIni, fechaFin)
+        // console.log({ response })
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -4919,8 +4927,10 @@ const reporteDevolucionCambiosController = async (req, res) => {
 
 const reporteDevolucionRefacturacionController = async (req, res) => {
     try {
-        const response = await reporteDevolucionRefacturacion()
-        console.log({ response })
+        const {fechaIni, fechaFin} = req.body
+        console.log({fechaIni, fechaFin})
+        const response = await reporteDevolucionRefacturacion(fechaIni, fechaFin)
+        // console.log({ response })
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -4930,12 +4940,19 @@ const reporteDevolucionRefacturacionController = async (req, res) => {
 
 const getDevolucionesParaCancelarController = async (req, res) => {
     try {
-        const { id_user } = req.query
-        const response = await getDevolucionesParaCancelar(id_user)
+        let { id_user, fechaIni, fechaFin } = req.body
+        if(!fechaIni){
+            const newDate = new Date();
+            fechaIni=newDate.toISOString().split('T')[0]
+        }
+        if(!fechaFin){
+            fechaFin = fechaIni
+        }
+        const response = await getDevolucionesParaCancelar(id_user, fechaIni, fechaFin)
         // console.log({ response })
         let cabecera = []
         for (const line of response) {
-            let { U_UserCode, DocEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TrgetEntry, ...rest } = line
+            let { U_UserCode, DocEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TrgetEntry, TransClass, ...rest } = line
             if (cabecera.length == 0) {
                 DocTime = String(DocTime)
                 if (DocTime.length == 4) {
@@ -4944,7 +4961,7 @@ const getDevolucionesParaCancelarController = async (req, res) => {
                     DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                 }
                 cabecera = [{
-                    U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                    U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TransClass, 
                     detalle: [{ ...rest }]
                 }]
             } else {
@@ -4958,7 +4975,7 @@ const getDevolucionesParaCancelarController = async (req, res) => {
                         DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                     }
                     cabecera.push({
-                        U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                        U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TransClass, 
                         detalle: [{ ...rest }]
                     })
                 }
@@ -4978,7 +4995,7 @@ const getEntregasParaCancelarController = async (req, res) => {
         // console.log({ response })
         let cabecera = []
         for (const line of response) {
-            let { U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, ...rest } = line
+            let { U_UserCode, DocEntry, DocNum, TrgetEntry, TargetType, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, ...rest } = line
             if (cabecera.length == 0) {
                 DocTime = String(DocTime)
                 if (DocTime.length == 4) {
@@ -4987,7 +5004,7 @@ const getEntregasParaCancelarController = async (req, res) => {
                     DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                 }
                 cabecera = [{
-                    U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                    U_UserCode, DocEntry, DocNum, TrgetEntry, TargetType, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
                     detalle: [{ ...rest }]
                 }]
             } else {
@@ -5001,7 +5018,7 @@ const getEntregasParaCancelarController = async (req, res) => {
                         DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                     }
                     cabecera.push({
-                        U_UserCode, DocEntry, DocNum, TrgetEntry, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
+                        U_UserCode, DocEntry, DocNum, TrgetEntry, TargetType, CardCode, CardName, Comments, DocDate, DocTime, DocTotal,
                         detalle: [{ ...rest }]
                     })
                 }
@@ -5371,6 +5388,184 @@ const datosRecepcionTrasladoController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en datosRecepcionTrasladoController : ${error.message || 'No definido'}` })
     }
 }
+
+const cancelarCambioMalEstadoController = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const { idEnt, idDev } = req.query
+
+        let responseDev
+        if(idDev && idDev!= null){
+            responseDev = await cancelReturn(idDev)
+            console.log({ responseDev })
+            if (responseDev.status == 400) {
+                let mensajeDv
+                if (typeof responseDev.errorMessage === 'string') {
+                    mensajeDv = `${responseDev.errorMessage}`
+                } else {
+                    mensajeDv = `${responseDev.errorMessage.value || 'Error en cancelReturn'}`
+                }
+                if (!mensajeDv.includes('Document is already closed')){
+                    grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Cambio Mal Estado`,
+                        `${mensajeDv}`, `https://srvhana:50000/b1s/v1/Returns(${idDev})/Cancel`, `/inventario/cancelar-cambio-mal-estado`, process.env.DBSAPPRD)
+                    return res.status(400).json({ mensajeDv })
+                }
+            }
+        }
+        const responseEnt = await cancelEntrega(idEnt)
+        if (responseEnt.status == 400) {
+            let mensaje = `Error en el cancel entrega: `
+            let errorMessage = responseEnt.errorMessage
+            if (typeof errorMessage !== 'string')
+                errorMessage = responseEnt.errorMessage.value
+            console.log({ mensaje })
+            mensaje += errorMessage
+
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Cambio Mal Estado`, mensaje,
+                `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`, `/inventario/cancelar-cambio-mal-estado`, process.env.DBSAPPRD)
+
+            return res.status(400).json({ mensaje, responseDev })
+        }
+
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Cambio Mal Estado`, `Exito en la cancelacion del cambio por mal estado/vencimiento`,
+            `https://srvhana:50000/b1s/v1/DeliveryNotes(${idEnt})/Cancel`, `/inventario/cancelar-cambio-mal-estado`, process.env.DBSAPPRD);
+
+        return res.json({ responseEnt, responseDev })
+    } catch (error) {
+        console.log({ error })
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Cambio Mal Estado`,
+            `${error.message || 'Error en cancelarCambioMalEstadoController'}`, `catch del cancelarCambioMalEstadoController`, `/inventario/cancelar-cambio-mal-estado`, process.env.DBSAPPRD)
+        return res.status(500).json({ mensaje: error.message || 'Error en cancelarCambioMalEstadoController' })
+    }
+}
+
+
+const excelDevolucion = async (req, res) => {
+    try {
+      const {data, displayedColumns, cabecera} = req.body;
+      const {fechaIni, fechaFin }= cabecera;
+
+    //   console.log({data});
+    //   console.log({displayedColumns})
+      const fechaActual = new Date();
+      const date = new Intl.DateTimeFormat('es-VE', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      }).format(fechaActual);
+  
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Devoluciones');
+
+      worksheet.columns = [
+        { header: 'Clase', key: 'TransClass', width: 12 },
+        { header: 'No. Devolucion', key: 'DocNum', width: 15 },
+        { header: 'Cod Cliente', key: 'CardCode', width: 14},
+        { header: 'Cliente', key: 'CardName', width: 40 },
+        { header: 'Comentario', key: 'Comments', width: 50 },
+        { header: 'Fecha', key: 'DocDate', width: 13 },
+        { header: 'Total', key: 'DocTotal', width: 13 }
+      ];
+
+      // Insertar filas antes del encabezado
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      worksheet.insertRow(1, []);
+      // Agregar contenido a las filas de cabecera
+      worksheet.getCell('A1').value = `Devoluciones`;  
+      worksheet.getCell('A2').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`; 
+      worksheet.getCell('A3').value = `Fecha de Impresión: ${date}`;  
+      // Fusionar celdas para que el texto se centre sobre varias columnas
+      worksheet.mergeCells('A1:G1');
+      worksheet.mergeCells('A2:G2'); 
+      worksheet.mergeCells('A3:G3'); 
+
+      // Estilizar cabecera
+        const cellA = worksheet.getCell('A1');
+        cellA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        cellA.font = { bold: true, size: 14 }; 
+        cellA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        }; 
+        
+      ['A2', 'A3'].forEach(cellAddress => {
+        const cell = worksheet.getCell(cellAddress);
+        cell.font = { bold: true, size: 11 };
+        cell.alignment = { vertical: 'middle', horizontal: 'start' };
+      });
+    
+      const rowRefs = data.map(row =>
+        worksheet.addRow(
+        displayedColumns.reduce((acc, column) => ({
+            ...acc,
+            [column]: row[column]?
+                (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
+                : ''
+            }), {})
+        )
+      );
+
+      // Apply formatting per row
+      rowRefs.forEach(row => {
+        row.getCell('DocTotal').numFmt = '"Bs"#,##0.00';
+
+        row.eachCell(cell => {
+            cell.border = {
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+            };
+        });
+      });
+    
+      worksheet.getRow(5).eachCell(cell => {
+        cell.font = { bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFFF' },
+        };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      worksheet.lastRow.eachCell(cell => {
+        cell.border = {
+            bottom: {style: 'thin'},
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        }
+      })
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
+  
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      console.error({ error });
+      const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel del reporte cuenta ${error}`,
+    //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+    //   );
+      return res.status(500).json({ mensaje: `Error generando el Excel de devoluciones ${error}` });
+    }
+};
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -5435,5 +5630,5 @@ module.exports = {
     detalleTrasladoController,
     selectionBatchPlazoController,
     procesoAbastecimientoController,
-    datosRecepcionTrasladoController,
+    datosRecepcionTrasladoController, excelDevolucion, cancelarCambioMalEstadoController
 }
