@@ -146,6 +146,11 @@
             border-top: 1px solid black;
             margin-top: 2rem;
         }
+        .signature-name{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         tfoot{
             font-weight: bold;
             border-top: 0.5px solid black;
@@ -172,8 +177,8 @@
                 <p><strong>Origen del asiento:</strong> Cobranzas Nro. <%= comprobante.BaseRef %></p>
                 <p><strong>Tipo de asiento:</strong> Modulo</p>
                 <p><strong>Nro de documento fiscal base:</strong> <%= comprobante.NumAtCard %></p>
-                <p><strong>Codigo del Cobrador:</strong> <%= comprobante.ClpCode %></p>
-                <p><strong>Nombre del Cobrador:</strong> <%= comprobante.ClpName %></p>
+                <p><strong>Cobrador:</strong> <%= comprobante.ClpCode %> |  <%= comprobante.ClpName %></p>
+                <p><strong>Cliente:</strong> <%= comprobante.CardCode %> |  <%= comprobante.CardName %></p>
             </div>
             <div class="detalle-right">
                 <p><strong>Referencia 1:</strong> <%= comprobante.Ref1 %></p>
@@ -227,8 +232,8 @@
 
         <!-- Footer -->
         <div class="footer-signatures">
-            <div>
-                <div style="align-items: center;"> <%= comprobante.U_NAME %></div>
+            <div class="signature-name">
+                <div class="text-center"> <%= comprobante.U_NAME %></div>
                 <div class="div-signature" style="width: 100%;">CREADO POR</div>
             </div>
             <div class="div-signature">REVISADO POR</div>

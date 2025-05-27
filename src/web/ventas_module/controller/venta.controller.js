@@ -2948,7 +2948,7 @@ const getVentasZonaSupervisorController = async (req, res) => {
         let response = []
         for(const sucursal of sucursales){
             let response1
-            if(isMesAnterior=='true'){
+            if(isMesAnterior==true || isMesAnterior=='true'){
                 console.log('is mes anterior')
                 response1 = await getVentasZonaAntSupervisor(sucursal??0)
             }else{

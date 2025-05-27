@@ -17,7 +17,7 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getEstadoCuentaClienteController,
     getEstadoCuentaClientePDFController,
     auditoriaSaldoDeudorController, getBajasFacturasController, findClienteController,
-    excelReporte, cobranzasSupervisorController
+    excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -97,5 +97,6 @@ router.get('/auditoria-saldo-dedudor', [validarToken, validarCampos], auditoriaS
 router.post('/buscar-cliente',[validarToken, validarCampos], findClienteController)
 router.post('/excel-reporte',[validarToken, validarCampos], excelReporte)
 router.post('/cobranzas-supervisor',[validarToken, validarCampos], cobranzasSupervisorController)
+router.post('/cobranzas-no-user',[validarToken, validarCampos], cobranzasPorZonasNoUserController)
 
 module.exports = router

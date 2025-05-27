@@ -18,7 +18,8 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getComprobantesBajasByUser,
     getClientes,
     getEstadoCuentaCliente,
-    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor
+    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor,
+    cobranzaPorZonaNoUser
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -1873,6 +1874,7 @@ const comprobanteContableController = async (req, res) => {
                 U_NAME,
                 Voucher,
                 Ref3Line,
+                CardCode, CardName,
                 ...rest } = line
             const fechaTax = formattedDataInvoice(TaxDate)
             sumDebit += +Debit
@@ -1899,7 +1901,8 @@ const comprobanteContableController = async (req, res) => {
                     NumAtCard,
                     U_NAME,
                     Voucher,
-                    Ref3Line
+                    Ref3Line,
+                    CardCode, CardName
                 })
             }
             detalle.push({
@@ -2416,14 +2419,13 @@ const cobranzasSupervisorController = async (req, res) => {
         let response = []
         for(const sucursal of sucursales){
             let response1
-            if(isMesAnterior=='true'){
+            if(isMesAnterior==true || isMesAnterior=='true'){
                 console.log('is mes anterior')
                 response1 = await cobranzaPorZonaAntSupervisor(sucursal??0)
             }else{
                 console.log('is mes actual')
                 response1 = await cobranzaPorZonaSupervisor(sucursal??0)
             }
-            console.log({response1})
             response = [...response, ...response1]
         }
         console.log({response})
@@ -2493,6 +2495,23 @@ const cobranzasSupervisorController = async (req, res) => {
     }
 }
 
+const cobranzasPorZonasNoUserController = async (req = request, res = response) => {
+    const { sucursal, isAnt } = req.body;
+    try {
+        const response = await cobranzaPorZonaNoUser(sucursal, isAnt );
+        console.log({ response })
+        
+        return res.status(200).json({
+            response,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en cobranzasPorZonasController'}` })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -2553,6 +2572,6 @@ module.exports = {
     getEstadoCuentaClientePDFController,
     auditoriaSaldoDeudorController,
     getBajasFacturasController, findClienteController,
-    excelReporte, cobranzasSupervisorController
+    excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController
 
 }

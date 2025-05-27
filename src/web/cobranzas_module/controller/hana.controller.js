@@ -1019,6 +1019,19 @@ const cobranzaPorZonaAntSupervisor = async (sucursal) => {
     }
 }
 
+const cobranzaPorZonaNoUser = async (sucursal, isAnt) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }//isAnt = 0:false, 1:true
+        const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_NOUSER"(${sucursal}, ${isAnt})`
+        return await executeQuery(query)
+    } catch (error) {
+        console.error(error)
+        throw new Error(`Error en cobranzaPorZonaNoUser: ${error.message}`);
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -1076,5 +1089,6 @@ module.exports = {
     getEstadoCuentaCliente,
     getComprobantesBajasByUser,
     auditoriaSaldoDeudor,
-    obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor
+    obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor,
+    cobranzaPorZonaNoUser
 }
