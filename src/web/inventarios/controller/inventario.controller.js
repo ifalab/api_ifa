@@ -4545,6 +4545,8 @@ const solicitudTrasladoController = async (req, res) => {
             CardCode,
             U_FECHA_FACT,
             U_Autorizacion,
+            //! cambiar o eliminar para cuendo se guarde el almacen destino final
+            U_B_destplace,
             StockTransferLines
         } = req.body
         const user = req.usuarioAutorizado
@@ -4562,6 +4564,7 @@ const solicitudTrasladoController = async (req, res) => {
             DueDate,
             U_FECHA_FACT,
             U_Autorizacion,
+            U_B_destplace,
             StockTransferLines
         }, null, 2))
         const sapResponse = await postInventoryTransferRequests({
@@ -4578,6 +4581,7 @@ const solicitudTrasladoController = async (req, res) => {
             DueDate,
             U_FECHA_FACT,
             U_Autorizacion,
+            U_B_destplace,
             StockTransferLines
         })
 
@@ -4837,7 +4841,7 @@ const devoluccionInstitucionesController = async (req, res) => {
 
 const solicitudesTrasladoController = async (req, res) => {
     try {
-        const { listSucCode,roleAll } = req.body
+        const { listSucCode, roleAll } = req.body
         const user = req.usuarioAutorizado
         const { ID_SAP } = user
         let listSolicitudes = []
@@ -4846,7 +4850,7 @@ const solicitudesTrasladoController = async (req, res) => {
         }
         for (const sucCode of listSucCode) {
             let response = await solicitudesPendiente(sucCode)
-            if(!roleAll){
+            if (!roleAll) {
                 response = response.filter((item) => item.UserCode == ID_SAP)
             }
             listSolicitudes = [...listSolicitudes, ...response]
@@ -5126,9 +5130,11 @@ const actualizarTrasladoController = async (req, res) => {
     try {
         const body = req.body
         const { DocEntry, isReception, ...restData } = body
+        console.log(JSON.stringify({body},null,2))
         if (!DocEntry) {
             return res.status(400).json({ mensaje: 'Debe existir un Doc Entry en la peticion' })
         }
+        console.log(JSON.stringify({DocEntry, restData},null,2))
         const response = await patchInventoryTransferRequests(DocEntry, restData)
         if (response.status == 400) {
             const mensaje = response.errorMessage.value
@@ -5330,6 +5336,12 @@ const selectionBatchPlazoController = async (req, res) => {
 const procesoAbastecimientoController = async (req, res) => {
     try {
         let response = await procesoAbastecimiento()
+        response = response.map((item) => {
+            return {
+                ...item,
+                Fulfilled: Number(item.Fulfilled)/100
+            }
+        })
         return res.json(response)
     } catch (error) {
         console.log({ error })
