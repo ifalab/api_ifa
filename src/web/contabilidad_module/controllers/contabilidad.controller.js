@@ -627,6 +627,8 @@ const createAsientoContableCCController = async (req, res) => {
             totalHaber += Number(item.Debit)
         })
 
+        totalDebe = Number(totalDebe.toFixed(6));
+        totalHaber = Number(totalHaber.toFixed(6));
         console.log({ totalDebe, totalHaber })
         if (totalDebe != totalHaber) {
             return res.status(400).json({
