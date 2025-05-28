@@ -34,7 +34,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     insertWorkFlowWithCheck,
     selectionBatchPlazo, getReconciliationIdByCN,
     procesoAbastecimiento,
-    datosRecepcionTraslado } = require("./hana.controller")
+    datosRecepcionTraslado,
+    updateOpenqtyTrasladoSolicitud } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice } = require("./sld.controller")
@@ -3993,7 +3994,7 @@ const facturacionCambioValoradoController = async (req, res) => {
         }
         //TODO --------------------------------------------------------------  PROSIN
         const responseGenesis = await spObtenerCUF(deliveryData)
-        console.log({responseGenesis})
+        console.log({ responseGenesis })
         if (responseGenesis.message) {
             grabarLog(user.USERCODE, user.USERNAME, "Inventario Facturacion Cambio Valorado", `${responseGenesis.message}`, `spObtenerCUF`, "inventario/facturacion-cambio", process.env.PRD)
             return res.status(400).json({ mensaje: `${responseGenesis.message || 'Error en la consulta spObtenerCUF'}` })
@@ -4604,7 +4605,7 @@ const solicitudTrasladoController = async (req, res) => {
             return res.status(400).json({ mensaje })
         }
         const { idTransfer } = sapResponse
-        await insertWorkFlowWithCheck(idTransfer, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Solicitud', idTransfer, '1250000001')
+        await insertWorkFlowWithCheck(idTransfer, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Solicitud', idTransfer, '1250000001', '', '')
         return res.json({ sapResponse })
     } catch (error) {
         console.log({ error })
@@ -4876,7 +4877,7 @@ const detalleSolicitudTrasladoController = async (req, res) => {
         const response = await detalleSolicitudPendiente(docEntry)
         let dataResponse = response.map((item) => ({
             ...item,
-            QuantityMod: +item.Quantity || 0,
+            QuantityMod: +item.OpenQty || 0,
             subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity)
         }))
         // console.log({ dataResponse, docEntry })
@@ -4889,8 +4890,8 @@ const detalleSolicitudTrasladoController = async (req, res) => {
 
 const reporteDevolucionValoradosController = async (req, res) => {
     try {
-        const {fechaIni, fechaFin} = req.body
-        console.log({fechaIni, fechaFin})
+        const { fechaIni, fechaFin } = req.body
+        console.log({ fechaIni, fechaFin })
         const response = await reporteDevolucionValorados(fechaIni, fechaFin)
         console.log({ response })
         return res.json(response)
@@ -4914,8 +4915,8 @@ const searchClienteController = async (req, res) => {
 
 const reporteDevolucionCambiosController = async (req, res) => {
     try {
-        const {fechaIni, fechaFin} = req.body
-        console.log({fechaIni, fechaFin})
+        const { fechaIni, fechaFin } = req.body
+        console.log({ fechaIni, fechaFin })
         const response = await reporteDevolucionCambios(fechaIni, fechaFin)
         // console.log({ response })
         return res.json(response)
@@ -4927,8 +4928,8 @@ const reporteDevolucionCambiosController = async (req, res) => {
 
 const reporteDevolucionRefacturacionController = async (req, res) => {
     try {
-        const {fechaIni, fechaFin} = req.body
-        console.log({fechaIni, fechaFin})
+        const { fechaIni, fechaFin } = req.body
+        console.log({ fechaIni, fechaFin })
         const response = await reporteDevolucionRefacturacion(fechaIni, fechaFin)
         // console.log({ response })
         return res.json(response)
@@ -4941,11 +4942,11 @@ const reporteDevolucionRefacturacionController = async (req, res) => {
 const getDevolucionesParaCancelarController = async (req, res) => {
     try {
         let { id_user, fechaIni, fechaFin } = req.body
-        if(!fechaIni){
+        if (!fechaIni) {
             const newDate = new Date();
-            fechaIni=newDate.toISOString().split('T')[0]
+            fechaIni = newDate.toISOString().split('T')[0]
         }
-        if(!fechaFin){
+        if (!fechaFin) {
             fechaFin = fechaIni
         }
         const response = await getDevolucionesParaCancelar(id_user, fechaIni, fechaFin)
@@ -4961,7 +4962,7 @@ const getDevolucionesParaCancelarController = async (req, res) => {
                     DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                 }
                 cabecera = [{
-                    U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TransClass, 
+                    U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TransClass,
                     detalle: [{ ...rest }]
                 }]
             } else {
@@ -4975,7 +4976,7 @@ const getDevolucionesParaCancelarController = async (req, res) => {
                         DocTime = `${DocTime.slice(0, 1)}:${DocTime.slice(1, 3)}`
                     }
                     cabecera.push({
-                        U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TransClass, 
+                        U_UserCode, DocEntry, TrgetEntry, DocNum, CardCode, CardName, Comments, DocDate, DocTime, DocTotal, TransClass,
                         detalle: [{ ...rest }]
                     })
                 }
@@ -5147,11 +5148,11 @@ const actualizarTrasladoController = async (req, res) => {
     try {
         const body = req.body
         const { DocEntry, isReception, ...restData } = body
-        console.log(JSON.stringify({body},null,2))
+        console.log(JSON.stringify({ body }, null, 2))
         if (!DocEntry) {
             return res.status(400).json({ mensaje: 'Debe existir un Doc Entry en la peticion' })
         }
-        console.log(JSON.stringify({DocEntry, restData},null,2))
+        console.log(JSON.stringify({ DocEntry, restData }, null, 2))
         const response = await patchInventoryTransferRequests(DocEntry, restData)
         if (response.status == 400) {
             const mensaje = response.errorMessage.value
@@ -5184,6 +5185,7 @@ const crearTrasladoController = async (req, res) => {
             CardCode,
             U_FECHA_FACT,
             U_Autorizacion,
+            U_B_destplace,
             StockTransferLines
         } = req.body
 
@@ -5202,6 +5204,7 @@ const crearTrasladoController = async (req, res) => {
             CardName,
             CardCode,
             U_FECHA_FACT,
+            U_B_destplace,
             U_Autorizacion,
             StockTransferLines
         }, null, 2))
@@ -5218,7 +5221,7 @@ const crearTrasladoController = async (req, res) => {
                 data.BaseEntry = DocEntry
             }
 
-            if (U_BatchNum == '') {
+            if (U_BatchNum == '' && isReception == false) {
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, FromWarehouseCode, Quantity)
                 if (batchData.message) {
                     return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
@@ -5233,10 +5236,8 @@ const crearTrasladoController = async (req, res) => {
                         Quantity: Number(batch.Quantity),
                         ItemCode: batch.ItemCode
                     }))
-
                     data.BatchNumbers = batchNumbers
                 }
-
             } else {
                 data.BatchNumbers = [
                     {
@@ -5249,32 +5250,76 @@ const crearTrasladoController = async (req, res) => {
             }
         }
 
+        const isMoreThanTwo = StockTransferLines.some((item) => item.BatchNumbers.length > 1)
+        let idx = 0
+        let newStockTransferLines = []
+        let updateStockTransferLines = []
+        if (isMoreThanTwo) {
+            for (const line of StockTransferLines) {
+                const { BatchNumbers, NumPerMsr, ...rest } = line;
+
+                if (BatchNumbers.length > 1) {
+                    for (const [batchIndex, batch] of BatchNumbers.entries()) {
+                        if (batchIndex == 0) {
+                            newStockTransferLines.push({
+                                ...rest,
+                                LineNum: idx,
+                                Quantity: batch.Quantity / NumPerMsr,
+                                BatchNumbers: [{
+                                    ...batch,
+                                    BaseLineNumber: idx
+                                }],
+                            });
+                            idx++
+                        } else {
+                            newStockTransferLines.push({
+                                ...rest,
+                                BaseLine: -1,
+                                BaseType: null,
+                                BaseEntry: null,
+                                LineNum: idx,
+                                Quantity: batch.Quantity / NumPerMsr,
+                                BatchNumbers: [{
+                                    ...batch,
+                                    BaseLineNumber: idx
+                                }],
+                            });
+
+                            updateStockTransferLines.push({
+                                // idTralado: DocEntry,
+                                LineTralado: idx,
+                                itemcode: line.ItemCode,
+                                idSolicitud: line.BaseEntry,
+                                LineSolicitud: line.BaseLine
+                            })
+
+                            idx++
+
+                        }
+
+                    }
+                } else {
+                    const batchValue = BatchNumbers[0]
+                    newStockTransferLines.push({
+                        ...rest,
+                        LineNum: idx,
+                        BatchNumbers: (batchValue)
+                            ? [{ ...batchValue, BaseLineNumber: idx }]
+                            : [],
+                    });
+                    idx++
+                }
+            }
+        }
+
         StockTransferLines = StockTransferLines.map((item) => {
             const { NumPerMsr, ...rest } = item
             return {
                 ...rest
             }
         })
-        console.log(JSON.stringify({
-            isReception,
-            DocEntry,
-            Comments,
-            JournalMemo,
-            FromWarehouse,
-            U_TIPO_TRASLADO,
-            U_GroupCode,
-            ToWarehouse,
-            U_UserCode,
-            SalesPersonCode,
-            DueDate,
-            CardName,
-            CardCode,
-            U_FECHA_FACT,
-            U_Autorizacion,
-            StockTransferLines
-        }, null, 2))
 
-        const sapResponse = await postStockTransfer({
+        const data = {
             Comments,
             JournalMemo,
             FromWarehouse,
@@ -5288,7 +5333,21 @@ const crearTrasladoController = async (req, res) => {
             CardCode,
             U_FECHA_FACT,
             U_Autorizacion,
-            StockTransferLines
+            U_B_destplace,
+            StockTransferLines: (isMoreThanTwo && isReception == false) ? newStockTransferLines : StockTransferLines,
+        }
+        // return res.json({
+        //     updateStockTransferLines,
+        //     data,
+        //     StockTransferLines,
+        //     newStockTransferLines
+        // })
+        console.log('data:')
+        console.log(JSON.stringify({
+            data
+        }, null, 2))
+        const sapResponse = await postStockTransfer({
+            ...data
         })
 
         console.log({ sapResponse })
@@ -5296,17 +5355,30 @@ const crearTrasladoController = async (req, res) => {
 
         if (status == 400) {
             const { errorMessage } = sapResponse
-            return res.status(400).json({ mensaje: `Error del SAP en Stock Transfer. ${errorMessage.value || 'No definido'}` })
+            return res.status(400).json({ mensaje: `Error del SAP en Stock Transfer. ${errorMessage.value || errorMessage || 'No definido'}` })
         }
         const { idStockTransfer } = sapResponse
 
+        console.log(JSON.stringify({
+            updateStockTransferLines
+        }, null, 2))
+        let listResponseUpdateOpenQty = []
+        for (const element of updateStockTransferLines) {
+            const { LineTralado, itemcode, idSolicitud, LineSolicitud, } = element
+            console.log({ idStockTransfer, LineTralado, itemcode, idSolicitud, LineSolicitud })
+            const updateResponse = await updateOpenqtyTrasladoSolicitud(idStockTransfer, LineTralado, itemcode, idSolicitud, LineSolicitud)
+            listResponseUpdateOpenQty.push({ ...updateResponse })
+            console.log({ updateResponse })
+        }
+
         if (isReception || isReception == false) {
             (isReception)
-                ? await insertWorkFlowWithCheck(BaseEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Recepcion', idStockTransfer, '67')
-                : await insertWorkFlowWithCheck(DocEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Transito', idStockTransfer, '67')
+                ? await insertWorkFlowWithCheck(BaseEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Recepcion', idStockTransfer, '67', '67', DocEntry)
+                : await insertWorkFlowWithCheck(DocEntry, '1250000001', 'Proceso de Abastecimiento Normal', user.USERNAME || 'No definido', user.ID_SAP || 0, '', 'Transito', idStockTransfer, '67', '1250000001', DocEntry)
         }
         return res.json({
-            sapResponse
+            sapResponse,
+            listResponseUpdateOpenQty
         })
 
     } catch (error) {
@@ -5323,7 +5395,6 @@ const detalleTrasladoController = async (req, res) => {
             ...item,
             subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity)
         }))
-        // console.log({ dataResponse, docEntry })
         return res.json(dataResponse)
     } catch (error) {
         console.log({ error })
@@ -5356,9 +5427,11 @@ const procesoAbastecimientoController = async (req, res) => {
         response = response.map((item) => {
             return {
                 ...item,
-                Fulfilled: Number(item.Fulfilled)/100
+                Fulfilled: Number(item.Fulfilled) / 100
             }
         })
+        console.log(JSON.stringify({ response }, null, 2))
+        response = response.sort((a, b) => new Date(b.SolicitudDateTime) - new Date(a.SolicitudDateTime))
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -5395,7 +5468,7 @@ const cancelarCambioMalEstadoController = async (req, res) => {
         const { idEnt, idDev } = req.query
 
         let responseDev
-        if(idDev && idDev!= null){
+        if (idDev && idDev != null) {
             responseDev = await cancelReturn(idDev)
             console.log({ responseDev })
             if (responseDev.status == 400) {
@@ -5405,7 +5478,7 @@ const cancelarCambioMalEstadoController = async (req, res) => {
                 } else {
                     mensajeDv = `${responseDev.errorMessage.value || 'Error en cancelReturn'}`
                 }
-                if (!mensajeDv.includes('Document is already closed')){
+                if (!mensajeDv.includes('Document is already closed')) {
                     grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Cambio Mal Estado`,
                         `${mensajeDv}`, `https://srvhana:50000/b1s/v1/Returns(${idDev})/Cancel`, `/inventario/cancelar-cambio-mal-estado`, process.env.DBSAPPRD)
                     return res.status(400).json({ mensajeDv })
@@ -5442,47 +5515,47 @@ const cancelarCambioMalEstadoController = async (req, res) => {
 
 const excelDevolucion = async (req, res) => {
     try {
-      const {data, displayedColumns, cabecera} = req.body;
-      const {fechaIni, fechaFin }= cabecera;
+        const { data, displayedColumns, cabecera } = req.body;
+        const { fechaIni, fechaFin } = cabecera;
 
-    //   console.log({data});
-    //   console.log({displayedColumns})
-      const fechaActual = new Date();
-      const date = new Intl.DateTimeFormat('es-VE', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      }).format(fechaActual);
-  
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Devoluciones');
+        //   console.log({data});
+        //   console.log({displayedColumns})
+        const fechaActual = new Date();
+        const date = new Intl.DateTimeFormat('es-VE', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+        }).format(fechaActual);
 
-      worksheet.columns = [
-        { header: 'Clase', key: 'TransClass', width: 12 },
-        { header: 'No. Devolucion', key: 'DocNum', width: 15 },
-        { header: 'Cod Cliente', key: 'CardCode', width: 14},
-        { header: 'Cliente', key: 'CardName', width: 40 },
-        { header: 'Comentario', key: 'Comments', width: 50 },
-        { header: 'Fecha', key: 'DocDate', width: 13 },
-        { header: 'Total', key: 'DocTotal', width: 13 }
-      ];
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Devoluciones');
 
-      // Insertar filas antes del encabezado
-      worksheet.insertRow(1, []);
-      worksheet.insertRow(1, []);
-      worksheet.insertRow(1, []);
-      worksheet.insertRow(1, []);
-      // Agregar contenido a las filas de cabecera
-      worksheet.getCell('A1').value = `Devoluciones`;  
-      worksheet.getCell('A2').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`; 
-      worksheet.getCell('A3').value = `Fecha de Impresión: ${date}`;  
-      // Fusionar celdas para que el texto se centre sobre varias columnas
-      worksheet.mergeCells('A1:G1');
-      worksheet.mergeCells('A2:G2'); 
-      worksheet.mergeCells('A3:G3'); 
+        worksheet.columns = [
+            { header: 'Clase', key: 'TransClass', width: 12 },
+            { header: 'No. Devolucion', key: 'DocNum', width: 15 },
+            { header: 'Cod Cliente', key: 'CardCode', width: 14 },
+            { header: 'Cliente', key: 'CardName', width: 40 },
+            { header: 'Comentario', key: 'Comments', width: 50 },
+            { header: 'Fecha', key: 'DocDate', width: 13 },
+            { header: 'Total', key: 'DocTotal', width: 13 }
+        ];
 
-      // Estilizar cabecera
+        // Insertar filas antes del encabezado
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        // Agregar contenido a las filas de cabecera
+        worksheet.getCell('A1').value = `Devoluciones`;
+        worksheet.getCell('A2').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`;
+        worksheet.getCell('A3').value = `Fecha de Impresión: ${date}`;
+        // Fusionar celdas para que el texto se centre sobre varias columnas
+        worksheet.mergeCells('A1:G1');
+        worksheet.mergeCells('A2:G2');
+        worksheet.mergeCells('A3:G3');
+
+        // Estilizar cabecera
         const cellA = worksheet.getCell('A1');
         cellA.alignment = { vertical: 'middle', horizontal: 'center' };
         cellA.fill = {
@@ -5490,79 +5563,79 @@ const excelDevolucion = async (req, res) => {
             pattern: 'solid',
             fgColor: { argb: 'FFFFFF' },
         };
-        cellA.font = { bold: true, size: 14 }; 
+        cellA.font = { bold: true, size: 14 };
         cellA.border = {
             top: { style: 'thin' },
             bottom: { style: 'thin' },
             left: { style: 'thin' },
             right: { style: 'thin' },
-        }; 
-        
-      ['A2', 'A3'].forEach(cellAddress => {
-        const cell = worksheet.getCell(cellAddress);
-        cell.font = { bold: true, size: 11 };
-        cell.alignment = { vertical: 'middle', horizontal: 'start' };
-      });
-    
-      const rowRefs = data.map(row =>
-        worksheet.addRow(
-        displayedColumns.reduce((acc, column) => ({
-            ...acc,
-            [column]: row[column]?
-                (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
-                : ''
-            }), {})
-        )
-      );
+        };
 
-      // Apply formatting per row
-      rowRefs.forEach(row => {
-        row.getCell('DocTotal').numFmt = '"Bs"#,##0.00';
+        ['A2', 'A3'].forEach(cellAddress => {
+            const cell = worksheet.getCell(cellAddress);
+            cell.font = { bold: true, size: 11 };
+            cell.alignment = { vertical: 'middle', horizontal: 'start' };
+        });
 
-        row.eachCell(cell => {
+        const rowRefs = data.map(row =>
+            worksheet.addRow(
+                displayedColumns.reduce((acc, column) => ({
+                    ...acc,
+                    [column]: row[column] ?
+                        (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
+                        : ''
+                }), {})
+            )
+        );
+
+        // Apply formatting per row
+        rowRefs.forEach(row => {
+            row.getCell('DocTotal').numFmt = '"Bs"#,##0.00';
+
+            row.eachCell(cell => {
+                cell.border = {
+                    left: { style: 'thin' },
+                    right: { style: 'thin' },
+                };
+            });
+        });
+
+        worksheet.getRow(5).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFFF' },
+            };
             cell.border = {
-            left: { style: 'thin' },
-            right: { style: 'thin' },
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
             };
         });
-      });
-    
-      worksheet.getRow(5).eachCell(cell => {
-        cell.font = { bold: true };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFFFFF' },
-        };
-        cell.border = {
-          top: { style: 'thin' },
-          bottom: { style: 'thin' },
-          left: { style: 'thin' },
-          right: { style: 'thin' },
-        };
-      });
 
-      worksheet.lastRow.eachCell(cell => {
-        cell.border = {
-            bottom: {style: 'thin'},
-            left: { style: 'thin' },
-            right: { style: 'thin' },
-        }
-      })
+        worksheet.lastRow.eachCell(cell => {
+            cell.border = {
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+        })
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
-  
-      await workbook.xlsx.write(res);
-      res.end();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
+
+        await workbook.xlsx.write(res);
+        res.end();
     } catch (error) {
-      console.error({ error });
-      const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-    //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel del reporte cuenta ${error}`,
-    //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
-    //   );
-      return res.status(500).json({ mensaje: `Error generando el Excel de devoluciones ${error}` });
+        console.error({ error });
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel del reporte cuenta ${error}`,
+        //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+        //   );
+        return res.status(500).json({ mensaje: `Error generando el Excel de devoluciones ${error}` });
     }
 };
 
