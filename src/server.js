@@ -47,7 +47,6 @@ app.use('/v1/web/produccion', require('./web/produccion_module/routes/produccion
 //TODO DIGILITZACION --------------------------------------------------------------------------------------
 app.use('/v1/web/contabilidad/digitalizacion', require('./web/contabilidad_module/routers/digitalizacion.routes'));
 
-
 //TODO BANCO QR --------------------------------------------------------------------------------------
 app.use('/v1/web/pago-qr-bg', require('./web/pagos_qr_bg_module/routes/pago-qr.bg.routes'));
 app.use('/v1/web/pago-qr-bg/test', require('./web/pagos_qr_bg_module/routes/banco-qr-test.routes'));
