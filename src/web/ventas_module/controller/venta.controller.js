@@ -98,7 +98,7 @@ const {
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
     getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
     getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje, getVentasLineaSupervisor,
-    getVentasTipoSupervisor
+    getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3261,6 +3261,31 @@ const ventasTipoSupervisorController = async (req, res) => {
     }
 }
 
+const clientesVendedorBloqueadosPorcentajeController = async (req, res) => {
+    try {
+        const {slpCode} = req.query;
+        const response = await clientesVendedorBloqueadosPorcentaje(slpCode)
+        console.log({ response })
+        let totalBloqueados = 0
+        let totalUniversal = 0
+
+        response.map((r) => {
+            totalBloqueados += +r.Bloqueados
+            totalUniversal += +r.Universal
+        });
+
+        const totales = {
+            totalBloqueados,
+            totalUniversal,
+            totalPrct: totalUniversal === 0 ? 0 : totalBloqueados / totalUniversal
+        };
+        return res.json({response, totales})
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en clientesVendedorBloqueadosPorcentajeController: ${error.message}` })
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -3352,5 +3377,5 @@ module.exports = {
     ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVentasZonaSupervisorController,
     getVendedoresSolicitudDescByStatusSucursalController,
     vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController,
-    ventasLineaSupervisorController, ventasTipoSupervisorController
+    ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController
 };
