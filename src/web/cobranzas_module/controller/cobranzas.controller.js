@@ -1042,6 +1042,7 @@ TEXT 7 0 30 ${yPosition + 100} Saldo Cliente: ${parseFloat(comprobante.Balance).
 TEXT 7 0 30 ${yPosition + 120} Firma                  Sello\r\n
 LINE 30 ${yPosition + 270} 200 ${yPosition + 270} 2
 LINE 350 ${yPosition + 270} 520 ${yPosition + 270} 2
+LINE 0 ${yPosition + 350} 570 ${yPosition + 350} 2
 FORM\r\n
 PRINT\r\n
 `;
