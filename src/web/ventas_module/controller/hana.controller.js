@@ -226,7 +226,7 @@ const ventasPorSupervisor = async (userCode, dim1, dim2, dim3, groupBy) => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasUsuario:', error.message);
-        throw new Error('Error al procesar la solicitud: ventasUsuario');
+        throw new Error(`Error al procesar ventasPorSupervisor: ${error.message}`);
     }
 }
 
@@ -1879,6 +1879,69 @@ const getVentasZonaAntSupervisor = async (sucursal=0) => {
     }
 }
 
+const clientesZonaBloqueadosPorcentaje = async (sucursales) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.IFA_VEN_CLIENTES_BLOQUEADOS_PRCT where "SucCode" in (${sucursales})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesZonaBloqueadosPorcentaje: ${error.message || ''}`
+        }
+    }
+}
+/*
+LAPP_VEN_VENTAS_LINEA_SUPERVISOR
+(
+	"SucCode", 
+	"SucName",
+	"rowspan",
+	"LineName",
+	"Quota",
+	"Sales",
+	"cumplimiento"
+)
+*/
+const getVentasLineaSupervisor = async (sucursales) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUPERVISOR where "SucCode" in (${sucursales})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasLineaSupervisor: ', err.message);
+        throw new Error(`Error en getVentasLineaSupervisor: ${err.message}`);
+    }
+}
+// LAPP_VEN_VENTAS_TIPO_SUPERVISOR
+// (
+// 	"SucCode",
+// 	"LineName",
+// 	"TypeCode", 
+// 	"TypeName",
+// 	"Quota",
+// 	"Sales",
+// 	"cumplimiento"
+// ) 
+const getVentasTipoSupervisor = async (sucursal, linea) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_TIPO_SUPERVISOR 
+        where "SucCode"=${sucursal} and "LineName"='${linea}'`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasTipoSupervisor: ', err.message);
+        throw new Error(`Error en getVentasTipoSupervisor: ${err.message}`);
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1979,5 +2042,6 @@ module.exports = {
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
     ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
-    getVentasZonaAntSupervisor
+    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje,
+    getVentasLineaSupervisor, getVentasTipoSupervisor, getVentasTipoSupervisor
 }

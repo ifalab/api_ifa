@@ -162,7 +162,8 @@
      <!-- Tabla de movimientos contables -->
      <table>
       <thead>
-        <tr>
+        <tr>           
+          <th>Agencia</th>
           <th>Cuenta</th>
           <th>Nombre Cuenta</th>
           <th>Debe BS.</th>
@@ -181,10 +182,11 @@
       <tbody>
         <% data.lines.forEach(function(line) { %>
           <tr>
+            <td><%= line.Indicator %></td>
             <td><%= line.Account %></td>
             <td><%= line.AcctName %></td>
             <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>      
-            <td><%= line.LineMemo %></td>
+            <td style="min-width: 250px;"><%= line.LineMemo %></td>
             <td><%= line.Ref1Detail || '-' %></td>
             <td><%= line.Ref2Detail || '-' %></td>
             <td><%= line.Ref3Deatil || '-' %></td>
@@ -200,7 +202,7 @@
     </table>
     <div class="footer-signatures">
         <div>
-            <div style="align-items: center;"> <%= data.nombre %></div>
+            <div style="align-items: center;"> <%= data.nombre %></div> 
             <div class="div-signature" style="width: 100%;">CREADO POR</div>
         </div>
         <div class="div-signature">REVISADO POR</div>

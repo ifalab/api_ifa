@@ -792,7 +792,7 @@ const reporteDevolucionRefacturacion = async (fechaIni, fechaFin) => {
     }
 }
 
-const getEntregasParaCancelar = async (id_user) => {
+const getEntregasParaCancelar = async (id_user, fechaIni, fechaFin) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -804,8 +804,8 @@ const getEntregasParaCancelar = async (id_user) => {
             t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
         from ${process.env.PRD}.ODLN t0
         join ${process.env.PRD}.dln1 t1 on t1."DocEntry"= t0."DocEntry"
-        where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
-        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -3) AND CURRENT_DATE
+        where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}'
+        AND t0."DocDate" BETWEEN '${fechaIni}' and '${fechaFin}'
         order by t0."DocDate" desc, t0."DocTime" desc`;
         console.log({ query })
         const result = await executeQuery(query)

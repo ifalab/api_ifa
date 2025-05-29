@@ -43,7 +43,7 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     detalleTrasladoController,
     selectionBatchPlazoController,
     procesoAbastecimientoController,
-    datosRecepcionTrasladoController, excelDevolucion, cancelarCambioMalEstadoController
+    datosRecepcionTrasladoController, excelDevolucion, cancelarCambioMalEstadoController, excelReporte
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -114,10 +114,11 @@ router.post('/reporte-devolucion-refacturacion', [validarToken, validarCampos], 
 router.post('/search-clientes', [validarToken, validarCampos], searchClienteController)
 router.post('/excel-devolucion', [validarToken, validarCampos], excelDevolucion)
 router.get('/cancelar-cambio-mal-estado', [validarToken, validarCampos], cancelarCambioMalEstadoController)
+router.post('/excel-reporte', [validarToken, validarCampos], excelReporte)
 
 router.get('/cancelar-devolucion', [validarToken, validarCampos], cancelarDevolucionController)
 router.post('/get-devoluciones', [validarToken, validarCampos], getDevolucionesParaCancelarController)
-router.get('/get-entregas', [validarToken, validarCampos], getEntregasParaCancelarController)
+router.post('/get-entregas', [validarToken, validarCampos], getEntregasParaCancelarController)
 router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
 router.post('/crear-traslado', [validarToken, validarCampos], crearTrasladoController)
 router.get('/detalle-traslado', [validarToken, validarCampos], detalleTrasladoController)
