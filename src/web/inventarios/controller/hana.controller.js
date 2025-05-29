@@ -729,12 +729,16 @@ const detalleSolicitudPendiente = async (docEntry) => {
     }
 }
 
-const reporteDevolucionValorados = async () => {
+const reporteDevolucionValorados = async (fechaIni, fechaFin) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dev_valorados`;
+        let query
+        if (!fechaIni && !fechaFin)
+            query = `select * from ${process.env.PRD}.ifa_dev_valorados`;
+        else
+            query = `select * from ${process.env.PRD}.ifa_dev_valorados where "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -746,12 +750,16 @@ const reporteDevolucionValorados = async () => {
     }
 }
 
-const reporteDevolucionCambios = async () => {
+const reporteDevolucionCambios = async (fechaIni, fechaFin) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dev_cambios_detalle`;//
+        let query
+        if (!fechaIni && !fechaFin)
+            query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
+        else
+            query = `select * from ${process.env.PRD}.ifa_dev_cambios where "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -763,12 +771,16 @@ const reporteDevolucionCambios = async () => {
     }
 }
 
-const reporteDevolucionRefacturacion = async () => {
+const reporteDevolucionRefacturacion = async (fechaIni, fechaFin) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
+        let query
+        if (!fechaIni && !fechaFin)
+            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
+        else
+            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -780,7 +792,7 @@ const reporteDevolucionRefacturacion = async () => {
     }
 }
 
-const getEntregasParaCancelar = async (id_user) => {
+const getEntregasParaCancelar = async (id_user, fechaIni, fechaFin) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -792,8 +804,8 @@ const getEntregasParaCancelar = async (id_user) => {
             t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
         from ${process.env.PRD}.ODLN t0
         join ${process.env.PRD}.dln1 t1 on t1."DocEntry"= t0."DocEntry"
-        where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
-        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -3) AND CURRENT_DATE
+        where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}'
+        AND t0."DocDate" BETWEEN '${fechaIni}' and '${fechaFin}'
         order by t0."DocDate" desc, t0."DocTime" desc`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -830,13 +842,21 @@ TargetType
 13: Invoice
 16: Return
 */
-const getDevolucionesParaCancelar = async (id_user) => {
+const getDevolucionesParaCancelar = async (id_user, fechaIni, fechaFin) => {
     try {
         if (!connection) {
             await connectHANA();
-        }
+        }//ADD_DAYS(CURRENT_DATE, -3) AND CURRENT_DATE
         const query = `select 
             t0."U_UserCode", t0."DocEntry", ndc."DocEntry" "TrgetEntry", rec."ReconNum", t0."DocNum", t0."CardCode", t0."CardName", t0."Comments", t0."DocDate", t0."DocTime", t0."DocTotal",
+            case when t0."Comments" like 'CAMBIO X VENCIMIENTO%' 
+            then 'Vencido' 
+            when t0."Comments" like 'CAMBIO X MAL ESTADO%' 
+            then 'Mal estado' 
+            when t0."Comments" like 'CAMBIO X VALORADO%' 
+            then 'Valorado'
+            else 'Otro' 
+            end "TransClass",
             t1."ItemCode", t1."Dscription", t1."Quantity", t1."GTotal" "Total"
         from ${process.env.PRD}.ORDN t0
         join ${process.env.PRD}.rdn1 t1 on t1."DocEntry"= t0."DocEntry"
@@ -845,7 +865,7 @@ const getDevolucionesParaCancelar = async (id_user) => {
         left join ${process.env.PRD}.ojdt trans on (trans."TransType" = 14 and trans."BaseRef" = ndc."DocNum")
         left join ${process.env.PRD}.itr1 rec on rec."TransId"=trans."TransId"
         where t0."CANCELED" = 'N' and t0."U_UserCode"='${id_user}' 
-        AND t0."DocDate" BETWEEN ADD_DAYS(CURRENT_DATE, -3) AND CURRENT_DATE
+        AND t0."DocDate" BETWEEN '${fechaIni}' and '${fechaFin}'
         order by t0."DocDate" desc, t0."DocTime" desc`;
         console.log({ query })
         const result = await executeQuery(query)
@@ -892,12 +912,12 @@ const selectionBatchPlazo = async (itemCode, whsCodeFrom, plazo) => {
     }
 }
 
-const insertWorkFlowWithCheck = async (idSolicitud, tipoSolicitud, nombreProceso, username, idSap, ip, tipo, idTransito, tipoTransito) => {
+const insertWorkFlowWithCheck = async (idSolicitud, tipoSolicitud, nombreProceso, username, idSap, ip, tipo, idTransito, tipoTransito, baseType, baseKey) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.LAPP}.INSERT_WORKFLOW_WITHCHECK('${idSolicitud}','${tipoSolicitud}','${nombreProceso}','${username}',${idSap},'${ip}','WEB','O','${tipo}','${idTransito}','${tipoTransito}')`;
+        const query = `call ${process.env.LAPP}.INSERT_WORKFLOW_WITHCHECK('${idSolicitud}','${tipoSolicitud}','${nombreProceso}','${username}',${idSap},'${ip}','WEB','O','${tipo}','${idTransito}','${tipoTransito}','${baseType}','${baseKey}')`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -960,6 +980,22 @@ const datosRecepcionTraslado = async (docEntry) => {
     }
 }
 
+const updateOpenqtyTrasladoSolicitud = async (idTralado, LineTralado, itemcode, idSolicitud, LineSolicitud) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_sis_update_openqty_traslado_solicitud_segun_traslados(${idTralado},${LineTralado},'${itemcode}',${idSolicitud},${LineSolicitud})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en updateOpenqtyTrasladoSolicitud:', error.message);
+        throw {
+            message: `Error al procesar updateOpenqtyTrasladoSolicitud: ${error.message || ''}`
+        }
+    }
+}
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1010,4 +1046,5 @@ module.exports = {
     selectionBatchPlazo,
     procesoAbastecimiento,
     datosRecepcionTraslado,
+    updateOpenqtyTrasladoSolicitud,
 }

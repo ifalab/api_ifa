@@ -18,7 +18,8 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getComprobantesBajasByUser,
     getClientes,
     getEstadoCuentaCliente,
-    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente
+    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor,
+    cobranzaPorZonaNoUser
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -1874,6 +1875,7 @@ const comprobanteContableController = async (req, res) => {
                 U_NAME,
                 Voucher,
                 Ref3Line,
+                CardCode, CardName,
                 ...rest } = line
             const fechaTax = formattedDataInvoice(TaxDate)
             sumDebit += +Debit
@@ -1900,7 +1902,8 @@ const comprobanteContableController = async (req, res) => {
                     NumAtCard,
                     U_NAME,
                     Voucher,
-                    Ref3Line
+                    Ref3Line,
+                    CardCode, CardName
                 })
             }
             detalle.push({
@@ -2408,6 +2411,108 @@ const excelReporte = async (req, res) => {
     }
 };
 
+const cobranzasSupervisorController = async (req, res) => {
+    try {
+        const {sucursales, isMesAnterior} = req.body
+        console.log({sucursales, isMesAnterior})
+        sucursales.sort((a, b) => a - b);
+        console.log({sucursales});
+        let response = []
+        for(const sucursal of sucursales){
+            let response1
+            if(isMesAnterior==true || isMesAnterior=='true'){
+                console.log('is mes anterior')
+                response1 = await cobranzaPorZonaAntSupervisor(sucursal??0)
+            }else{
+                console.log('is mes actual')
+                response1 = await cobranzaPorZonaSupervisor(sucursal??0)
+            }
+            response = [...response, ...response1]
+        }
+        console.log({response})
+        let SucCode = ''
+        let totalQuotaBySuc = {};
+        let totalCollectionBySuc = {};
+
+        const results = []
+        response.forEach((r, index) => {
+            if (r.SucCode == SucCode) {
+                const res1 = r
+                res1.cumplimiento = +r.cumplimiento
+                res1.hide = true
+                results.push(res1)
+
+                totalQuotaBySuc[r.SucCode] += +r.Quota;
+                totalCollectionBySuc[r.SucCode] += +r.Collection;
+                if ((response.length - 1) == index) {
+                    const res = {
+                        SucName: `Total ${r.SucName}`,
+                        Quota: +totalQuotaBySuc[r.SucCode],
+                        Collection: +totalCollectionBySuc[r.SucCode],
+                        cumplimiento: (+totalCollectionBySuc[r.SucCode] / +totalQuotaBySuc[r.SucCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
+                }
+            } else {
+                SucCode = r.SucCode;
+                totalQuotaBySuc[r.SucCode] = +r.Quota;
+                totalCollectionBySuc[r.SucCode] = +r.Collection;
+
+                if (index > 0) {
+                    const res = {
+                        SucName: `Total ${response[index - 1].SucName}`,
+                        Quota: +totalQuotaBySuc[response[index - 1].SucCode],
+                        Collection: +totalCollectionBySuc[response[index - 1].SucCode],
+                        cumplimiento: (+totalCollectionBySuc[response[index - 1].SucCode] / +totalQuotaBySuc[response[index - 1].SucCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
+                }
+                const res1 = r
+                res1.cumplimiento = +r.cumplimiento
+                res1.hide = false
+                results.push(res1)
+
+                if ((response.length - 1) == index) {
+                    const res = {
+                        SucName: `Total ${r.SucName}`,
+                        Quota: +totalQuotaBySuc[r.SucCode],
+                        Collection: +totalCollectionBySuc[r.SucCode],
+                        cumplimiento: (+totalCollectionBySuc[r.SucCode] / +totalQuotaBySuc[r.SucCode]) * 100,
+                        isSubtotal: true,
+                        hide: false
+                    }
+                    results.push(res)
+                }
+            }
+        });
+        return res.json(results)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador cobranzasSupervisorController: ${error.message || ''}` })
+    }
+}
+
+const cobranzasPorZonasNoUserController = async (req = request, res = response) => {
+    const { sucursal, isAnt } = req.body;
+    try {
+        const response = await cobranzaPorZonaNoUser(sucursal, isAnt );
+        console.log({ response })
+        
+        return res.status(200).json({
+            response,
+            mensaje: "Todas las zonas del usuario"
+        });
+    } catch (err) {
+        console.log('error en ventasInstitucionesController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en cobranzasPorZonasController'}` })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -2468,5 +2573,6 @@ module.exports = {
     getEstadoCuentaClientePDFController,
     auditoriaSaldoDeudorController,
     getBajasFacturasController, findClienteController,
-    excelReporte
+    excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController
+
 }

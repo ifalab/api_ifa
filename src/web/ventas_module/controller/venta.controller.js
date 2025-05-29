@@ -97,7 +97,7 @@ const {
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode,
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
     getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
-    getVentasZonaAntSupervisor
+    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -605,7 +605,7 @@ const ventasPorSupervisorController = async (req, res) => {
     } catch (error) {
         console.log('error en ventasPorSupervisorController')
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error al procesar la solicitud', error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud', error: error.message })
     }
 }
 
@@ -2948,7 +2948,7 @@ const getVentasZonaSupervisorController = async (req, res) => {
         let response = []
         for(const sucursal of sucursales){
             let response1
-            if(isMesAnterior=='true'){
+            if(isMesAnterior==true || isMesAnterior=='true'){
                 console.log('is mes anterior')
                 response1 = await getVentasZonaAntSupervisor(sucursal??0)
             }else{
@@ -3025,6 +3025,100 @@ const getVentasZonaSupervisorController = async (req, res) => {
         return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getVentasZonaSupervisorController'}` })
     }
 }
+
+const clientesBloqueadosPorcentajeController = async (req, res) => {
+    try {
+        const sucursales  = req.body;
+        const response = await clientesZonaBloqueadosPorcentaje(sucursales.toString());
+        console.log({response})
+        let SucCode = ''
+        let ZoneCode = ''
+        let totalBloqueadosBySucCode = {};
+        let totalUniBySucCode = {};
+        let totalBloqueados = 0
+        let totalUniversal = 0
+
+        const results = []
+        response.forEach((r, index) => {
+            if (r.SucCode == SucCode) {
+                const res1 = r
+                res1.Porcentaje = +r.Porcentaje
+                res1.hide = true
+                res1.hideZona= ZoneCode == r.ZoneCode
+                results.push(res1)
+                if(ZoneCode != r.ZoneCode){
+                    ZoneCode = r.ZoneCode
+                    totalBloqueadosBySucCode[r.SucCode] += +r.Bloqueados;
+                    totalUniBySucCode[r.SucCode] += +r.Universal;
+                }
+            
+
+                if ((response.length - 1) == index) {
+                    const res = {
+                        SucName: `Total ${r.SucName}`,
+                        Bloqueados: +totalBloqueadosBySucCode[r.SucCode],
+                        Universal: +totalUniBySucCode[r.SucCode],
+                        Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] / +totalUniBySucCode[r.SucCode] ) ,
+                        isSubtotal: true,
+                        hide: false,
+                        hideZona: ZoneCode == r.ZoneCode
+                    }
+                    results.push(res)
+                }
+            } else {
+                SucCode = r.SucCode;
+                totalBloqueadosBySucCode[r.SucCode] = +r.Bloqueados;
+                totalUniBySucCode[r.SucCode] = +r.Universal;
+
+                if (index > 0) {
+                    const res = {
+                        SucName: `Total ${response[index - 1].SucName}`,
+                        Universal: +totalUniBySucCode[response[index - 1].SucCode],
+                        Bloqueados: +totalBloqueadosBySucCode[response[index - 1].SucCode],
+                        Porcentaje: (+totalBloqueadosBySucCode[response[index - 1].SucCode] / +totalUniBySucCode[response[index - 1].SucCode]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideZona: ZoneCode == r.ZoneCode
+                    }
+                    results.push(res)
+                }
+                const res1 = r
+                res1.Porcentaje = +r.Porcentaje
+                res1.hide = false
+                res1.hideZona= ZoneCode == r.ZoneCode
+                results.push(res1)
+
+                if ((response.length - 1) == index) {
+                    const res = {
+                        SucName: `Total ${r.SucName}`,
+                        Universal: +totalUniBySucCode[r.SucCode],
+                        Bloqueados: +totalBloqueadosBySucCode[r.SucCode],
+                        Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] /+totalUniBySucCode[r.SucCode]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideZona: ZoneCode == r.ZoneCode
+                    }
+                    results.push(res)
+                }
+            }
+            if(ZoneCode != r.ZoneCode){
+                ZoneCode = r.ZoneCode;
+                totalBloqueados += +r.Bloqueados
+                totalUniversal += +r.Universal
+            }
+            
+        });
+        const totales = {
+            totalBloqueados, totalUniversal,
+            totalPrct: totalUniversal==0?0:totalBloqueados/totalUniversal
+        }
+        return res.json({results, totales});
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador clientesBloqueadosPorcentajeController'}` })
+    }
+}
+
 
 module.exports = {
     ventasPorSucursalController,
@@ -3116,5 +3210,5 @@ module.exports = {
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
     ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVentasZonaSupervisorController,
     getVendedoresSolicitudDescByStatusSucursalController,
-    vendedorPorListSucCodeController,
+    vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController
 };

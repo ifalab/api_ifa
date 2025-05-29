@@ -226,7 +226,7 @@ const ventasPorSupervisor = async (userCode, dim1, dim2, dim3, groupBy) => {
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasUsuario:', error.message);
-        throw new Error('Error al procesar la solicitud: ventasUsuario');
+        throw new Error(`Error al procesar ventasPorSupervisor: ${error.message}`);
     }
 }
 
@@ -1879,6 +1879,22 @@ const getVentasZonaAntSupervisor = async (sucursal=0) => {
     }
 }
 
+const clientesZonaBloqueadosPorcentaje = async (sucursales) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.IFA_VEN_CLIENTES_BLOQUEADOS_PRCT where "SucCode" in (${sucursales})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesZonaBloqueadosPorcentaje: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1979,5 +1995,5 @@ module.exports = {
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
     ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
-    getVentasZonaAntSupervisor
+    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje
 }

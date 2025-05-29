@@ -17,7 +17,7 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getEstadoCuentaClienteController,
     getEstadoCuentaClientePDFController,
     auditoriaSaldoDeudorController, getBajasFacturasController, findClienteController,
-    excelReporte
+    excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -65,7 +65,7 @@ router.get('/cobros-realizados',[validarToken, validarCampos],cobrosRealizadosCo
 router.post('/clientes-sucursal',[validarToken, validarCampos],clientesPorSucursalController)
 router.get('/clientes-despachador',[validarToken, validarCampos],clientesPorDespachadorController)
 router.get('/detalle-factura',[validarToken, validarCampos],detalleFacturaController)
-router.post('/cob-sucursales-tipos',[validarToken, validarCampos],cobranzaPorSucursalesYTiposController)
+router.post('/cob-sucursales-tipos',[validarToken, validarCampos], cobranzaPorSucursalesYTiposController)
 router.post('/cob-sucursal-tipos',[validarToken, validarCampos],cobranzaPorSucursalYTiposController)
 router.get('/get-cobradores',[validarToken, validarCampos],getCobradoresController)
 router.patch('/get-cobradores-by-suc',[validarToken, validarCampos],getVendedoresBySucursalesController)
@@ -96,5 +96,7 @@ router.get('/cliente/estado-cuenta/pdf', [validarToken, validarCampos], getEstad
 router.get('/auditoria-saldo-dedudor', [validarToken, validarCampos], auditoriaSaldoDeudorController);
 router.post('/buscar-cliente',[validarToken, validarCampos], findClienteController)
 router.post('/excel-reporte',[validarToken, validarCampos], excelReporte)
+router.post('/cobranzas-supervisor',[validarToken, validarCampos], cobranzasSupervisorController)
+router.post('/cobranzas-no-user',[validarToken, validarCampos], cobranzasPorZonasNoUserController)
 
 module.exports = router
