@@ -278,7 +278,7 @@ const getLibroMayorFiltrado = async (req, res) => {
             fechaFin,
             fechaInicio,
             socioNombre,
-            indicador,
+            agencia,
             dim1,
             dim2,
             dim3
@@ -289,7 +289,7 @@ const getLibroMayorFiltrado = async (req, res) => {
             fechaInicio,
             fechaFin,
             socioNombre,
-            indicador,
+            agencia,
             docFuente,
             dim1,
             dim2,
@@ -306,6 +306,7 @@ const getLibroMayorFiltrado = async (req, res) => {
 const excelLibroMayor = async (req, res) => {
     try {
       const data = req.body;
+      console.log(data);
 
       const fechaActual = new Date();
       const date = new Intl.DateTimeFormat('es-VE', {
@@ -321,16 +322,18 @@ const excelLibroMayor = async (req, res) => {
       // Definir columnas
       worksheet.columns = [
         { header: 'Fecha', key: 'RefDate', width: 15 },
-        { header: 'Transacción', key: 'TransId', width: 15 },
+        { header: 'Transacción', key: 'TransId', width: 10 },
         { header: 'Glosa', key: 'Memo', width: 30 },
         { header: 'Referencia 1', key: 'Ref1', width: 20, style: { numFmt: '0' } },
         { header: 'Referencia 2', key: 'Ref2', width: 15, style: { numFmt: '0' } },
         { header: 'Referencia 3', key: 'Ref3', width: 15, style: { numFmt: '0' } },
         { header: 'Línea', key: 'Line_ID', width: 10 },
+        { header: 'Agencia', key: 'Indicator', width: 10 },
         { header: 'Cuenta', key: 'Account', width: 20 },
         { header: 'Nombre Cuenta', key: 'AcctName', width: 40 },
         { header: 'Código Cuenta Asociada', key: 'ShortName', width: 20 },
         { header: 'Nombre Cuenta Asociada', key: 'CardName', width: 30 },
+        { header: 'Documento Origen', key: 'DocFuenteCod', width: 20 },
         { header: 'Débito', key: 'Debit', width: 15 },
         { header: 'Crédito', key: 'Credit', width: 15 },
       ];
@@ -340,11 +343,11 @@ const excelLibroMayor = async (req, res) => {
       worksheet.insertRow(1, []);
       worksheet.insertRow(1, []);  
       // Agregar contenido a las filas de cabecera
-      worksheet.getCell('A1').value = `Libro Mayor de la cuenta ${data[0].Account} | ${data[0].AcctName}`;
+      worksheet.getCell('A1').value = `Libro Mayor de la cuenta | ${data[1].Account} | ${data[1].AcctName}`;
       worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;  
       // Fusionar celdas para que el texto se centre sobre varias columnas (A a M en este caso)
-      worksheet.mergeCells('A1:M1');
-      worksheet.mergeCells('A2:M2');  
+      worksheet.mergeCells('A1:O1');
+      worksheet.mergeCells('A2:O2');  
       // Estilizar cabecera
       ['A1', 'A2'].forEach(cellAddress => {
         const cell = worksheet.getCell(cellAddress);
@@ -371,19 +374,21 @@ const excelLibroMayor = async (req, res) => {
             };  
         }
       });
-      data.forEach(row => {
+      data.forEach((row, index) => {
         const newRow = worksheet.addRow({
             RefDate: new Date(row.RefDate),
             TransId: row.TransId,
             Memo: row.Memo,
-            Ref1: parseInt(row.Ref1),
-            Ref2: parseInt(row.Ref2),
-            Ref3: row.Ref3 ?? parseInt(row.Ref3),
+            Ref1: row.Ref1 ? parseInt(row.Ref1) : '',
+            Ref2: row.Ref2 ? parseInt(row.Ref2) : '',
+            Ref3: row.Ref3 ? parseInt(row.Ref3) : '',
             Line_ID: row.Line_ID,
-            Account: parseInt(row.Account),
+            Indicator: row.Indicator,
+            Account: row.Account ? parseInt(row.Account) : '',
             AcctName: row.AcctName,
             ShortName: String(row.ShortName),
-            CardName: row.CardName,
+            CardName: row.CardName ?? '',
+            DocFuenteCod: row.DocFuenteCod,
             Debit: parseFloat(row.Debit),
             Credit: parseFloat(row.Credit),
           });
@@ -395,8 +400,44 @@ const excelLibroMayor = async (req, res) => {
             cell.border = {
                 left: {style: 'thin'},
                 right: {style: 'thin'},
+                bottom: index === data.length - 1 ? { style: 'thin' } : undefined,
             }
           })
+      });
+
+      const totalDebit = data.reduce((sum, row) => sum + parseFloat(row.Debit || 0), 0);
+      const totalCredit = data.reduce((sum, row) => sum + parseFloat(row.Credit || 0), 0);
+
+      const totalRow = worksheet.addRow({
+        RefDate: '',
+        TransId: '',
+        Memo: 'TOTAL',
+        Ref1: '',
+        Ref2: '',
+        Ref3: '',
+        Line_ID: '',
+        Indicator: '',
+        Account: '',
+        AcctName: '',
+        ShortName: '',
+        CardName: '',
+        DocFuenteCod: '',
+        Debit: totalDebit,
+        Credit: totalCredit,
+      });
+
+      // Aplicar formato a la fila total
+      totalRow.getCell('Debit').numFmt = '"Bs"#,##0.00';
+      totalRow.getCell('Credit').numFmt = '"Bs"#,##0.00';
+  
+      totalRow.eachCell(cell => {
+        cell.font = { bold: true };
+        cell.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'double' },
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        };
       });
   
       // Estilizar encabezado

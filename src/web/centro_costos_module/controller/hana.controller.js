@@ -18,13 +18,14 @@ const ObtenerLibroMayor = async (cuenta) => {
 };
 
 const ObtenerLibroMayorFiltrado = async (body) => {
+    console.log(body);
     try {
         const {
             cuenta,
             fechaInicio,
             fechaFin,
             socioNombre,
-            indicador = '',
+            agencia = '',
             docFuente = '',
             dim1 = 0,
             dim2 = 0,
@@ -44,7 +45,7 @@ const ObtenerLibroMayorFiltrado = async (body) => {
             '${fechaInicio || '1900-01-01'}',
             '${fechaFin || '9999-12-31'}',
             '${socioNombre || ''}',
-            '${indicador}',
+            '${agencia}',
             '${docFuente}',
             ${dim1},
             ${dim2},
