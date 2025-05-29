@@ -5221,7 +5221,7 @@ const crearTrasladoController = async (req, res) => {
                 data.BaseEntry = DocEntry
             }
 
-            if (U_BatchNum == '' && isReception == false) {
+            if (U_BatchNum == '' || !U_BatchNum && isReception == false) {
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, FromWarehouseCode, Quantity)
                 if (batchData.message) {
                     return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
