@@ -1894,6 +1894,53 @@ const clientesZonaBloqueadosPorcentaje = async (sucursales) => {
         }
     }
 }
+/*
+LAPP_VEN_VENTAS_LINEA_SUPERVISOR
+(
+	"SucCode", 
+	"SucName",
+	"rowspan",
+	"LineName",
+	"Quota",
+	"Sales",
+	"cumplimiento"
+)
+*/
+const getVentasLineaSupervisor = async (sucursales) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUPERVISOR where "SucCode" in (${sucursales})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasLineaSupervisor: ', err.message);
+        throw new Error(`Error en getVentasLineaSupervisor: ${err.message}`);
+    }
+}
+// LAPP_VEN_VENTAS_TIPO_SUPERVISOR
+// (
+// 	"SucCode",
+// 	"LineName",
+// 	"TypeCode", 
+// 	"TypeName",
+// 	"Quota",
+// 	"Sales",
+// 	"cumplimiento"
+// ) 
+const getVentasTipoSupervisor = async (sucursal, linea) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_TIPO_SUPERVISOR 
+        where "SucCode"=${sucursal} and "LineName"='${linea}'`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasTipoSupervisor: ', err.message);
+        throw new Error(`Error en getVentasTipoSupervisor: ${err.message}`);
+    }
+}
 
 module.exports = {
     ventaPorSucursal,
@@ -1995,5 +2042,6 @@ module.exports = {
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
     ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
-    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje
+    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje,
+    getVentasLineaSupervisor, getVentasTipoSupervisor, getVentasTipoSupervisor
 }

@@ -97,7 +97,8 @@ const {
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode,
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
     getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
-    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje
+    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje, getVentasLineaSupervisor,
+    getVentasTipoSupervisor
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3061,7 +3062,7 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
                         Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] / +totalUniBySucCode[r.SucCode] ) ,
                         isSubtotal: true,
                         hide: false,
-                        hideZona: ZoneCode == r.ZoneCode
+                        hideZona: false
                     }
                     results.push(res)
                 }
@@ -3078,7 +3079,7 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
                         Porcentaje: (+totalBloqueadosBySucCode[response[index - 1].SucCode] / +totalUniBySucCode[response[index - 1].SucCode]),
                         isSubtotal: true,
                         hide: false,
-                        hideZona: ZoneCode == r.ZoneCode
+                        hideZona: false
                     }
                     results.push(res)
                 }
@@ -3096,7 +3097,7 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
                         Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] /+totalUniBySucCode[r.SucCode]),
                         isSubtotal: true,
                         hide: false,
-                        hideZona: ZoneCode == r.ZoneCode
+                        hideZona: false
                     }
                     results.push(res)
                 }
@@ -3119,6 +3120,146 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
     }
 }
 
+const ventasLineaSupervisorController = async (req, res) => {
+    try {
+        const sucursales = req.body;
+        const response = await getVentasLineaSupervisor(sucursales.toString());
+        console.log({ response });
+
+        let SucCode = null;
+        let LineName = '';
+        let totalSalesBySucCode = {};
+        let totalUniBySucCode = {};
+        let totalSales = 0;
+        let totalQuota = 0;
+
+        const results = [];
+
+        response.forEach((r, index) => {
+            const currentSuc = r.SucCode;
+            const currentLine = r.LineName;
+
+            // Inicializar acumuladores si no existen
+            if (!totalSalesBySucCode[currentSuc]) totalSalesBySucCode[currentSuc] = 0;
+            if (!totalUniBySucCode[currentSuc]) totalUniBySucCode[currentSuc] = 0;
+
+            if (currentSuc === SucCode) {
+                // MISMA SUCURSAL
+                const res1 = { ...r };
+                res1.cumplimiento = +r.cumplimiento;
+                res1.hide = true;
+                res1.hideLine = LineName === currentLine;
+                results.push(res1);
+
+                totalSalesBySucCode[currentSuc] += +r.Sales;
+                totalUniBySucCode[currentSuc] += +r.Quota;
+
+                // Último elemento
+                if (index === response.length - 1) {
+                    results.push({
+                        SucName: `Total ${r.SucName}`,
+                        Sales: +totalSalesBySucCode[currentSuc],
+                        Quota: +totalUniBySucCode[currentSuc],
+                        cumplimiento: totalUniBySucCode[currentSuc] === 0 ? 0 : (+totalSalesBySucCode[currentSuc] / +totalUniBySucCode[currentSuc]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideLine: false
+                    });
+                }
+            } else {
+                // NUEVA SUCURSAL
+
+                // Agregar subtotal anterior si no es el primer elemento
+                if (index > 0) {
+                    const prevSuc = response[index - 1].SucCode;
+                    const prevName = response[index - 1].SucName;
+
+                    results.push({
+                        SucName: `Total ${prevName}`,
+                        Quota: +totalUniBySucCode[prevSuc],
+                        Sales: +totalSalesBySucCode[prevSuc],
+                        cumplimiento: totalUniBySucCode[prevSuc] === 0 ? 0 : (+totalSalesBySucCode[prevSuc] / +totalUniBySucCode[prevSuc]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideLine: false
+                    });
+                }
+
+                const res1 = { ...r };
+                res1.cumplimiento = +r.cumplimiento;
+                res1.hide = false;
+                res1.hideLine = LineName === currentLine;
+                results.push(res1);
+
+                // Reiniciar acumuladores para nueva sucursal
+                totalSalesBySucCode[currentSuc] = +r.Sales;
+                totalUniBySucCode[currentSuc] = +r.Quota;
+
+                // Si es el último
+                if (index === response.length - 1) {
+                    results.push({
+                        SucName: `Total ${r.SucName}`,
+                        Quota: +totalUniBySucCode[currentSuc],
+                        Sales: +totalSalesBySucCode[currentSuc],
+                        cumplimiento: totalUniBySucCode[currentSuc] === 0 ? 0 : (+totalSalesBySucCode[currentSuc] / +totalUniBySucCode[currentSuc]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideLine: false
+                    });
+                }
+            }
+
+            // Actualizar totales generales
+            totalSales += +r.Sales;
+            totalQuota += +r.Quota;
+
+            // Actualizar estado actual
+            SucCode = currentSuc;
+            LineName = currentLine;
+        });
+
+        const totales = {
+            totalSales,
+            totalQuota,
+            totalPrct: totalQuota === 0 ? 0 : totalSales / totalQuota
+        };
+
+        return res.json({ results, totales });
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador ventasLineaSupervisorController'}` })
+    }
+}
+
+
+const ventasTipoSupervisorController = async (req, res) => {
+    try {
+        const {sucursal, linea} = req.body;
+        const response = await getVentasTipoSupervisor(sucursal, linea);
+        console.log({ response });
+
+        let totalSales = 0;
+        let totalQuota = 0;
+
+        response.map((r) => {
+            totalSales += +r.Sales;
+            totalQuota += +r.Quota;
+        });
+
+        const totales = {
+            totalSales,
+            totalQuota,
+            totalPrct: totalQuota === 0 ? 0 : totalSales / totalQuota
+        };
+
+        return res.json({ response, totales });
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador ventasTipoSupervisorController'}` })
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -3210,5 +3351,6 @@ module.exports = {
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
     ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVentasZonaSupervisorController,
     getVendedoresSolicitudDescByStatusSucursalController,
-    vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController
+    vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController,
+    ventasLineaSupervisorController, ventasTipoSupervisorController
 };
