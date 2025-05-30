@@ -5649,7 +5649,7 @@ const excelDevolucion = async (req, res) => {
     }
 };
 
-///FALTA!
+
 const excelReporte = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
@@ -5670,20 +5670,8 @@ const excelReporte = async (req, res) => {
       worksheet.columns = displayedColumns.map((column) => ({
         header: headerColumns[column],
         key: column,
-        width: 10, // temporary, will auto-adjust later
+        width: 10
       }));
-
-    //   worksheet.columns = [
-    //     { header: 'Clase', key: 'TransClass', width: 12 },
-    //     { header: 'Sucursal', key: 'SucName', width: 20 },
-    //     { header: 'Realizado Por', key: 'UserName', width: 30 },
-    //     { header: 'No. Devolucion', key: 'DocNumIngreso', width: 15 },
-    //     { header: 'No. Entrega', key: 'DocNumSalida', width: 15 },
-    //     { header: 'Cod Cliente', key: 'CardCode', width: 14},
-    //     { header: 'Cliente', key: 'CardName', width: 40 },
-    //     { header: 'Comentario', key: 'Comments', width: 50 },
-    //     { header: 'Fecha', key: 'DocDate', width: 13 },
-    //   ];
 
       // Insertar filas antes del encabezado
       worksheet.insertRow(1, []);

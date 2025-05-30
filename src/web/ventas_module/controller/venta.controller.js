@@ -98,7 +98,7 @@ const {
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
     getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
     getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje, getVentasLineaSupervisor,
-    getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje
+    getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3029,8 +3029,15 @@ const getVentasZonaSupervisorController = async (req, res) => {
 
 const clientesBloqueadosPorcentajeController = async (req, res) => {
     try {
-        const sucursales  = req.body;
-        const response = await clientesZonaBloqueadosPorcentaje(sucursales.toString());
+        const {sucursales, grupo}  = req.body;
+        let response
+        if(grupo){
+            console.log('con grupo')
+            response = await clientesZonaBloqueadosPorGrupo(sucursales.toString(), grupo);
+        }else{
+            console.log('sin grupo');
+            response = await clientesZonaBloqueadosPorcentaje(sucursales.toString());
+        }
         console.log({response})
         let SucCode = ''
         let ZoneCode = ''
@@ -3286,6 +3293,183 @@ const clientesVendedorBloqueadosPorcentajeController = async (req, res) => {
     }
 }
 
+
+const excelClientesBloqueados = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const { data, displayedColumns, grupo } = req.body;
+
+          console.log({data});
+          console.log({displayedColumns})
+        const fechaActual = new Date();
+        const date = new Intl.DateTimeFormat('es-VE', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+        }).format(fechaActual);
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Devoluciones');
+
+        worksheet.columns = [
+            { header: 'Sucursal', key: 'SucName', width: 20 },
+            { header: 'Vendedor', key: 'SlpName', width: 40 },
+            { header: 'Zona', key: 'ZoneName', width: 25 },
+            { header: 'Universal', key: 'Universal', width: 15 },
+            { header: 'Bloqueados', key: 'Bloqueados', width: 15 },
+            { header: 'Porcentaje', key: 'Porcentaje', width: 12 }
+        ];
+
+        // Insertar filas antes del encabezado
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+
+        worksheet.getCell('A1').value = `Clientes Bloqueados por Zona`;
+        worksheet.mergeCells('A1:F1');
+        worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;
+        worksheet.mergeCells('A2:F2');
+
+      if(grupo){
+        worksheet.getCell('A3').value = `Grupo: ${grupo}`;
+        worksheet.mergeCells('A3:F3');
+      }
+        
+        // Estilizar cabecera
+        const cellA = worksheet.getCell('A1');
+        cellA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        cellA.font = { bold: true, size: 14 };
+        cellA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        };
+
+        ['A2', 'A3'].forEach(cellAddress => {
+            const cell = worksheet.getCell(cellAddress);
+            cell.font = { bold: true, size: 11 };
+            cell.alignment = { vertical: 'middle', horizontal: 'start' };
+        });
+
+        const rowRefs = data.map(row =>
+            worksheet.addRow(
+                displayedColumns.reduce((acc, column) => ({
+                    ...acc,
+                    [column]: row[column] ? (
+                        column=='Porcentaje'? row[column]==0?'0':+((parseFloat(row[column])*100).toFixed(2)) :
+                        (column=='Universal' || column=='Bloqueados') ? parseFloat(row[column]) : 
+                        row[column] )
+                        : ''
+                }), {})
+            )
+        );
+        // Apply formatting per row
+        rowRefs.forEach(row => {
+            row.eachCell(cell => {
+                cell.border = {
+                    left: { style: 'thin' },
+                    right: { style: 'thin' },
+                };
+            });
+        });
+
+        function mergeSameValues(startRowIndex, columnKeys) {
+        const ends=[]
+        let i = 0;
+        while (i < data.length) {
+            let j = i + 1;
+            while (
+            j < data.length &&
+            columnKeys.every(key => data[i][key] === data[j][key])
+            ) {
+            j++;
+            }
+
+            if (j - i > 1) {
+            const start = startRowIndex + i;
+            const end = startRowIndex + j - 1;
+            columnKeys.forEach(key => {
+                const col = worksheet.getColumn(key);
+                const cellIndex = col.number;
+                worksheet.mergeCells(start, cellIndex, end, cellIndex);
+                worksheet.getCell(start, cellIndex).alignment = {
+                vertical: 'middle',
+                horizontal: 'center'
+                };
+                // worksheet.getCell(end, cellIndex).border = 
+                
+            });
+            ends.push(end);
+            }else{
+                const end = startRowIndex + j - 1
+                ends.push(end);
+            }
+            i = j;
+        }
+        return  ends;
+      }
+      const ends = mergeSameValues(5, ['ZoneName', 'Universal', 'Bloqueados', 'Porcentaje']);
+      console.log({ends})
+
+
+        worksheet.getRow(4).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFFF' },
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };
+        });
+
+        worksheet.lastRow.eachCell(cell => {
+            cell.border = {
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+        })
+
+        ends.forEach( end => {
+        worksheet.getRow(end).eachCell(cell => {
+            cell.border = {
+                bottom: {style: 'thin'},
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+        })
+      });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
+  
+    //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones`,
+    //     '', 'cobranza/excel-reporte', process.env.PRD
+    //   );
+      await workbook.xlsx.write(res);
+      res.end();
+    } catch (error) {
+      console.error({ error });
+    //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel de devoluciones ${error}`,
+    //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+    //   );
+      return res.status(500).json({ mensaje: `Error generando el Excel de clientes bloqueados ${error}` });
+    }
+};
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -3377,5 +3561,6 @@ module.exports = {
     ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVentasZonaSupervisorController,
     getVendedoresSolicitudDescByStatusSucursalController,
     vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController,
-    ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController
+    ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController,
+    excelClientesBloqueados
 };

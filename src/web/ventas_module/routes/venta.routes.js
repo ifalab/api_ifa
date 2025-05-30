@@ -91,7 +91,8 @@ const {
     getDescuentosDelVendedorParaPedidoController, ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController,
     getVentasZonaSupervisorController,
     vendedorPorListSucCodeController, getVendedoresSolicitudDescByStatusSucursalController, clientesBloqueadosPorcentajeController,
-    ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController
+    ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController,
+    excelClientesBloqueados
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -212,5 +213,7 @@ router.post('/clientes-bloqueados-prct', [validarToken, validarCampos], clientes
 router.post('/ventas-lineas-supervisor', [validarToken, validarCampos], ventasLineaSupervisorController)
 router.post('/ventas-tipos-supervisor', [validarToken, validarCampos], ventasTipoSupervisorController)
 router.get('/clientes-vendedor-bloq', [validarToken, validarCampos], clientesVendedorBloqueadosPorcentajeController)
+
+router.post('/excel-clientes-blq', [validarToken, validarCampos], excelClientesBloqueados)
 
 module.exports = router
