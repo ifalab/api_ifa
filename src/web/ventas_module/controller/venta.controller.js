@@ -1937,7 +1937,6 @@ const ReporteOfertaPDFController = async (req, res) => {
             printBackground: true
         });
 
-        await browser.close();
         console.log('PDF Buffer Size:', pdfBuffer.length);
 
         const fileName = `${data.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
@@ -1952,6 +1951,8 @@ const ReporteOfertaPDFController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }finally {
+        if (browser) await browser.close();
     }
 }
 

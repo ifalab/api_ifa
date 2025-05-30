@@ -922,8 +922,6 @@ const noteEntregaController = async (req, res) => {
                 </div>`,
         });
 
-        await browser.close();
-
         //! Definir nombre del archivo
         const fileName = `nota_entrega_${data.DocNum}.pdf`;
 
@@ -950,6 +948,8 @@ const noteEntregaController = async (req, res) => {
         const query = error.query || "No disponible"
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", mensaje, query, "facturacion/nota-entrega", process.env.PRD)
         return res.status(500).json({ mensaje });
+    } finally {
+        if (browser) await browser.close();
     }
 }
 
