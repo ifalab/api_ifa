@@ -1894,18 +1894,23 @@ const clientesZonaBloqueadosPorcentaje = async (sucursales) => {
         }
     }
 }
-/*
-LAPP_VEN_VENTAS_LINEA_SUPERVISOR
-(
-	"SucCode", 
-	"SucName",
-	"rowspan",
-	"LineName",
-	"Quota",
-	"Sales",
-	"cumplimiento"
-)
-*/
+
+const clientesVendedorBloqueadosPorcentaje = async (slpCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.IFA_VEN_CLIENTES_VENDEDOR_BLOQUEADO where "SlpCode" = ${slpCode}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesVendedorBloqueadosPorcentaje: ${error.message || ''}`
+        }
+    }
+}
+
 const getVentasLineaSupervisor = async (sucursales) => {
     try {
         if (!connection) {
@@ -1918,16 +1923,7 @@ const getVentasLineaSupervisor = async (sucursales) => {
         throw new Error(`Error en getVentasLineaSupervisor: ${err.message}`);
     }
 }
-// LAPP_VEN_VENTAS_TIPO_SUPERVISOR
-// (
-// 	"SucCode",
-// 	"LineName",
-// 	"TypeCode", 
-// 	"TypeName",
-// 	"Quota",
-// 	"Sales",
-// 	"cumplimiento"
-// ) 
+
 const getVentasTipoSupervisor = async (sucursal, linea) => {
     try {
         if (!connection) {
@@ -2043,5 +2039,6 @@ module.exports = {
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
     ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
     getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje,
-    getVentasLineaSupervisor, getVentasTipoSupervisor, getVentasTipoSupervisor
+    getVentasLineaSupervisor, getVentasTipoSupervisor, getVentasTipoSupervisor,
+    clientesVendedorBloqueadosPorcentaje
 }
