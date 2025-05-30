@@ -222,7 +222,7 @@ const facturacionController = async (req, res) => {
                     batchData.map((item) => {
                         new_quantity += Number(item.Quantity).toFixed(6)
                     })
-                   
+
                     batchNumbers = batchData.map(batch => ({
                         BaseLineNumber: LineNum,
                         BatchNumber: batch.BatchNum,
@@ -1153,7 +1153,7 @@ const cancelToProsinController = async (req, res) => {
             return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
         }
         let { estado } = estadoFacturaResponse[0]
-        console.log({estado})
+        console.log({ estado })
         if (estado) {
             responseProsin = await anulacionFacturacion({
                 sucursal,
@@ -1165,7 +1165,7 @@ const cancelToProsinController = async (req, res) => {
                 usuario,
                 mediaPagina,
             }, user)
-            console.log({responseProsin});
+            console.log({ responseProsin });
 
             if (responseProsin.data.mensaje) {
                 const mess = responseProsin.data.mensaje.split('§')
@@ -2996,6 +2996,7 @@ const crearPedidoExportacionController = async (req, res) => {
             DocDate,
             PuertoDestino,
             TransFrontNac,
+            PickRmrk,
             SegFrontNac,
             LicTradNum,
             TransFrontInt,
@@ -3049,6 +3050,7 @@ const crearPedidoExportacionController = async (req, res) => {
         bodyToOrder.DocDueDate = docDueData
         bodyToOrder.CardCode = CardCode
         bodyToOrder.FederalTaxID = LicTradNum
+        bodyToOrder.PickRemark = PickRmrk
         bodyToOrder.Comments = 'PEDIDO PARA EXPORTACION DESDE LA WEB'
         bodyToOrder.JournalMemo = ''
         bodyToOrder.PaymentGroupCode = paymentCode
@@ -3171,7 +3173,7 @@ const facturarExportacionController = async (req, res) => {
     try {
         const id = req.query.id
         const user = req.usuarioAutorizado
-        const id_sap = user.ID_SAP
+        const id_sap = user.ID_SAP || 0
         let deliveryData
         let deliveryBody
         let usd = 0
@@ -3187,7 +3189,7 @@ const facturarExportacionController = async (req, res) => {
 
         const responseDeliveryByID = await getOrdersById(id)
         // const setOrderResponse = await setOrderState(id, '') // null 
-        // return res.json({setOrderResponse}) 
+        // return res.json({responseDeliveryByID}) 
         if (responseDeliveryByID.length == 0) {
             endTime = Date.now();
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se encontro la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
@@ -3429,6 +3431,7 @@ const facturarExportacionController = async (req, res) => {
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion exportacion", `Se envio postEntrega,  CardCode: ${finalDataEntrega.CardCode || ''}, U_UserCode: ${finalDataEntrega.U_UserCode || ''}, U_NIT: ${finalDataEntrega.U_NIT || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `https://srvhana:50000/b1s/v1/DeliveryNotes`, process.env.PRD)
+            // return res.json({ mensaje: 'after post entrega', finalDataEntrega })
             deliveryBody = await postEntrega(finalDataEntrega)
 
             if (deliveryBody.lang) {
@@ -3447,6 +3450,7 @@ const facturarExportacionController = async (req, res) => {
             console.log('3 post entrega')
             console.log({ deliveryBody })
             const responseHana = await obtenerEntregaDetalleExportacion(deliveryBody.deliveryN44umber);
+            // return res.json({ responseHana })
             deliveryBody.responseData = responseHana
 
         }
@@ -3644,7 +3648,7 @@ const facturarExportacionController = async (req, res) => {
                     GrossTotal: Math.round((Number(GrossTotal) / usd) * 100) / 100,
                     WarehouseCode,
                     AccountCode,
-                    TaxCode,
+                    TaxCode: 'IVA_EXE',
                     MeasureUnit,
                     UnitsOfMeasurment: Number(UnitsOfMeasurment),
                     U_DESCLINEA: 0
@@ -3748,8 +3752,17 @@ const facturarExportacionController = async (req, res) => {
                 item.montoDescuento = 0
                 item.subTotal = Number(item.subTotal).toFixed(2)
             })
+            let informacionAdd = ''
+            const infoAdd = dataToProsin.PickRmrk || ''
+            const arrayInfoAdd = infoAdd.split('-')
             // dataToProsin.paquetes1 = Number(200)
-            // return res.json({dataToProsin})
+            if (arrayInfoAdd.length > 0) {
+                informacionAdd = arrayInfoAdd[1]
+                // informacionAdd = informacionAdd.slice(0,-1)
+            }
+            // return res.json({ dataToProsin,arrayInfoAdd,informacionAdd })
+
+            // return res.json({informacionAdd,infoAdd})
             const { } = dataToProsin
             let formatedDataToProsin = {
                 sucursal: dataToProsin.sucursal,
@@ -3774,7 +3787,7 @@ const facturarExportacionController = async (req, res) => {
                 // totalGastosInternacionales: Number(dataToProsin.TransFrontInt || 0) + Number(dataToProsin.SegFrontInt || 0) + Number(dataToProsin.OtrosInt || 0),
                 totalGastosNacionalesFob: 0,
                 totalGastosInternacionales: 0,
-                informacionAdicional: 'Se declara que la transaccion comercial entre LABORATORIOS IFA S.A. Y LIQUICAPS tiene condicion de pago al credito a 90 dias, a partir de la fecha de emision de la factura comercial',
+                informacionAdicional: (informacionAdd) ? informacionAdd.slice(0, -1) : ' ',
                 descuentoAdicional: Number(dataToProsin.descuentoAdicional),
                 codigoMoneda: dataToProsin.codigoMoneda,
                 tipoCambio: usd,
@@ -3843,13 +3856,13 @@ const facturarExportacionController = async (req, res) => {
                 formatedDataToProsin.numeroDescripcionPaquetesBultos.push(
                     {
                         campo: 'Cajas',
-                        // valor: Number(200)
                         valor: Number(dataToProsin.paquetes1)
                     },
                 )
             }
             // const setOrderResponsew = await setOrderState(id, '') //! pendiente 
             // return res.json({ formatedDataToProsin, dataToProsin })
+
             BodyToProsin = formatedDataToProsin
 
             if (formatedDataToProsin.lugarDestino == null || formatedDataToProsin.lugarDestino == '') {
@@ -4028,7 +4041,7 @@ const facturarExportacionController = async (req, res) => {
                     GrossTotal: Math.round((Number(GrossTotal) / usd) * 100) / 100,
                     WarehouseCode,
                     AccountCode,
-                    TaxCode,
+                    TaxCode: 'IVA_EXE',
                     MeasureUnit,
                     UnitsOfMeasurment: Number(UnitsOfMeasurment),
                     U_DESCLINEA: 0

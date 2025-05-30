@@ -1895,6 +1895,79 @@ const clientesZonaBloqueadosPorcentaje = async (sucursales) => {
     }
 }
 
+const clientesVendedorBloqueadosPorcentaje = async (slpCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.IFA_VEN_CLIENTES_VENDEDOR_BLOQUEADO where "SlpCode" = ${slpCode}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesVendedorBloqueadosPorcentaje: ${error.message || ''}`
+        }
+    }
+}
+
+const getVentasLineaSupervisor = async (sucursales) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUPERVISOR where "SucCode" in (${sucursales})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasLineaSupervisor: ', err.message);
+        throw new Error(`Error en getVentasLineaSupervisor: ${err.message}`);
+    }
+}
+
+const getVentasTipoSupervisor = async (sucursal, linea) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_TIPO_SUPERVISOR 
+        where "SucCode"=${sucursal} and "LineName"='${linea}'`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasTipoSupervisor: ', err.message);
+        throw new Error(`Error en getVentasTipoSupervisor: ${err.message}`);
+    }
+}
+/*
+"IFA_VEN_CLIENTES_BLOQUEADOS_GROUP" ( "SucCode",
+	 "SucName",
+	 "GroupCode",
+	 "GroupName",
+	 "ZoneCode",
+	 "ZoneName",
+	 "rowspanZona",
+	 "rowspan",
+	 "SlpCode",
+	 "SlpName",
+	 "Universal",
+	 "Bloqueados",
+	 "Porcentaje" 
+*/
+const clientesZonaBloqueadosPorGrupo = async (sucursales, grupo) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `select * from ${process.env.PRD}.IFA_VEN_CLIENTES_BLOQUEADOS_GROUP where "SucCode" in (${sucursales}) and "GroupCode"=${grupo}`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesZonaBloqueadosPorGrupo: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -1995,5 +2068,7 @@ module.exports = {
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
     ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
-    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje
+    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje,
+    getVentasLineaSupervisor, getVentasTipoSupervisor, getVentasTipoSupervisor,
+    clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo
 }

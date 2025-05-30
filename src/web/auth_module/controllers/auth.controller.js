@@ -42,9 +42,12 @@ const authLoginV2 = async (req, res) => {
     let userCode
     try {
         const { usercode, password } = req.body
-        userCode= usercode;
+        userCode = usercode;
         const response = await findUserByUsercode(usercode)
-        // return res.json({ response })
+        // const dateNow = new Date()
+        // let dateMoreThan90 = new Date()
+        // dateMoreThan90.setDate(dateNow.getDate() + 90)
+        // return res.json({ response, dateNow, dateMoreThan90 })
         console.log({ response })
         if (response.length == 0) return res.status(401).json({ mensaje: 'Por favor revise sus credenciales' })
         const user = response[0]
@@ -1040,7 +1043,7 @@ const updatePasswordController = async (req, res) => {
         }
 
         const salt = await bcrypt.genSalt()
-        console.log({ newPassword, salt})
+        console.log({ newPassword, salt })
         const encrypt = bcrypt.hashSync(newPassword, salt)
         console.log({ id, encrypt })
         const responsePass = await updatePasswordByUser(id, encrypt)
