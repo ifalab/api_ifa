@@ -1153,6 +1153,7 @@ const comprobantePDFController = async (req, res) => {
             format: 'A4',
             printBackground: true
         });
+        await browser.close();
         console.log('PDF Buffer Size:', pdfBuffer.length);
 
         const fileName = `${comprobante.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
@@ -1167,9 +1168,10 @@ const comprobantePDFController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error del controlador' })
-    } finally {
-        if (browser) await browser.close();
-    }
+    } 
+    // finally {
+    //     if (browser) await browser.close();
+    // }
 }
 
 const getMounth = (month) => {
@@ -1966,9 +1968,10 @@ const comprobanteContableController = async (req, res) => {
         return res.status(500).json({
             mensaje
         })
-    } finally {
-        if (browser) await browser.close();
-    }
+    } 
+    // finally {
+    //     if (browser) await browser.close();
+    // }
 }
 
 
@@ -2138,6 +2141,7 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
         const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
+        await browser.close();
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
@@ -2173,9 +2177,10 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
       console.log({ error });
       const mensaje = error.message || 'Error en el controlador getEstadoCuentaClientePDFController';
       return res.status(500).json({ mensaje });
-    } finally {
-        if (browser) await browser.close();
-    }
+    } 
+    // finally {
+    //     if (browser) await browser.close();
+    // }
 }
 
 const auditoriaSaldoDeudorController = async (req, res) => {

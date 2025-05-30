@@ -3328,6 +3328,8 @@ const imprimibleDevolucionController = async (req, res) => {
             printBackground: true
         });
 
+        await browser.close();
+
         //! Definir nombre del archivo
         const fileName = `devolucion_${data.DocNum}_${new Date()}.pdf`;
 
@@ -3355,9 +3357,10 @@ const imprimibleDevolucionController = async (req, res) => {
             `${error.message || 'Error en el controlador imprimibleDevolucionController'}`, 'catch del controlador',
             "inventario/imprimible-devolucion", process.env.PRD)
         return res.status(500).json({ mensaje: `error en el controlador imprimibleDevolucionController. ${error.message || ''}` })
-    }finally {
-        if (browser) await browser.close();
     }
+    // finally {
+    //     if (browser) await browser.close();
+    // }
 }
 
 const imprimibleSalidaController = async (req, res) => {
@@ -3457,6 +3460,7 @@ const imprimibleSalidaController = async (req, res) => {
             printBackground: true
         });
 
+        await browser.close();
         //! Definir nombre del archivo
         const fileName = `salida_${data.DocNum}_${new Date()}.pdf`;
 
@@ -3478,9 +3482,10 @@ const imprimibleSalidaController = async (req, res) => {
             "inventario/imprimible-salida", process.env.PRD);
 
         return res.status(500).json({ mensaje: `error en el controlador imprimibleSalidaController. ${error.message || ''}` })
-    }finally {
-        if (browser) await browser.close();
     }
+    // finally {
+    //     if (browser) await browser.close();
+    // }
 }
 
 const devolucionPorValoradoDifArticulosController = async (req, res) => {

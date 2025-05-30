@@ -822,6 +822,7 @@ const pedidoLayoutController = async (req, res) => {
             printBackground: true
         });
 
+        await browser.close();
         //! Definir nombre del archivo
         const fileName = `nota_pedido_${data.DocNum}.pdf`;
 
@@ -848,9 +849,10 @@ const pedidoLayoutController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", mensaje, query, "pedido/pedido-layout", process.env.PRD)
 
         return res.status(500).json({ mensaje })
-    }finally {
-        if (browser) await browser.close();
     }
+    // finally {
+    //     if (browser) await browser.close();
+    // }
 }
 
 const pedidosPorVendedorHoyController = async (req, res) => {

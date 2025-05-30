@@ -903,6 +903,7 @@ const noteEntregaController = async (req, res) => {
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
+        await browser.close();
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
@@ -948,9 +949,10 @@ const noteEntregaController = async (req, res) => {
         const query = error.query || "No disponible"
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", mensaje, query, "facturacion/nota-entrega", process.env.PRD)
         return res.status(500).json({ mensaje });
-    } finally {
-        if (browser) await browser.close();
-    }
+    } 
+    // finally {
+    //     if (browser) await browser.close();
+    // }
 }
 
 const listaFacturasAnular = async (req, res) => {
