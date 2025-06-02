@@ -105,6 +105,7 @@ const { grabarLog } = require("../../shared/controller/hana.controller");
 const { postInventoryTransferRequests } = require("./sld.controller");
 const { validarExcel } = require("../../../helpers/validacionesExcel");
 const { Console } = require("console");
+const { isatty } = require("tty");
 
 
 
@@ -2857,6 +2858,7 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
 const ventasPorZonasVendedor2Controller = async (req, res) => {
     try {
         const { usercode, isAnt } = req.body;
+        console.log({usercode,isAnt})
         let response
         if (isAnt == true) {
             console.log('isAnt')

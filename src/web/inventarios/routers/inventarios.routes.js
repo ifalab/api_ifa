@@ -123,6 +123,6 @@ router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaCo
 router.post('/crear-traslado', [validarToken, validarCampos], crearTrasladoController)
 router.get('/detalle-traslado', [validarToken, validarCampos], detalleTrasladoController)
 router.get('/selection-batch-plazo', [validarToken, validarCampos], selectionBatchPlazoController)
-router.get('/proceso-abastecimiento', [validarToken, validarCampos], procesoAbastecimientoController)
+router.post('/proceso-abastecimiento', [validarToken, validarCampos], procesoAbastecimientoController)
 router.get('/datos-recepcion-traslado', [validarToken, validarCampos], datosRecepcionTrasladoController)
 module.exports = router
