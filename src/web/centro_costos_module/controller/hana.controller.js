@@ -178,6 +178,19 @@ const getAsientosSAP = async (codigo) => {
     }
 };
 
+const ejecutarInsertSAP = async (codigo) => {
+    try {
+        const query = `
+            CALL LAB_IFA_COM.IFA_CC_INSERTAR_ASIENTO_SAP(${codigo});
+        `;
+        const result = await executeQueryWithConnection(query);
+        return result || []; // Devuelve [] si es null/undefined
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en ejecutarInsertSAP, ${error}`);
+    }
+};
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -190,5 +203,6 @@ module.exports = {
     getIdReserva,
     getBeneficiarios,
     ObtenerLibroMayorFiltrado,
-    getAsientosSAP
+    getAsientosSAP,
+    ejecutarInsertSAP
 };
