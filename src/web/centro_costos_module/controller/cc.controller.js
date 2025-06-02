@@ -239,7 +239,13 @@ const getPDFAsientoContableCC = async (req, res) => {
             mensaje: `Error en el controlador getPDFAsientoContableCC, ${error.message || 'error desconocido'}`,
         });
     } finally {
-        if (browser) await browser.close();
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
     }
 }
 

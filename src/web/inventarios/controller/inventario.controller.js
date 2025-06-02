@@ -3235,6 +3235,7 @@ const detalleFacturasController = async (req, res) => {
 }
 
 const imprimibleDevolucionController = async (req, res) => {
+    let browser;
     try {
         const { id } = req.body
         console.log({ id })
@@ -3319,7 +3320,7 @@ const imprimibleDevolucionController = async (req, res) => {
         const htmlContent = await ejs.renderFile(htmlTemplate, { data, qrCode });
 
         //! Generar el PDF con Puppeteer
-        const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+        browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
@@ -3328,15 +3329,15 @@ const imprimibleDevolucionController = async (req, res) => {
             printBackground: true
         });
 
-        await browser.close();
-
+        
         //! Definir nombre del archivo
         const fileName = `devolucion_${data.DocNum}_${new Date()}.pdf`;
-
+        
         //! Registrar en el log
         // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
         //     "Nota Creada con éxito", layout.query || '', "facturacion/nota-entrega", process.env.PRD);
-
+        
+        // await browser.close();
         //! Enviar el PDF como respuesta
         res.set({
             'Content-Type': 'application/pdf',
@@ -3358,12 +3359,19 @@ const imprimibleDevolucionController = async (req, res) => {
             "inventario/imprimible-devolucion", process.env.PRD)
         return res.status(500).json({ mensaje: `error en el controlador imprimibleDevolucionController. ${error.message || ''}` })
     }
-    // finally {
-    //     if (browser) await browser.close();
-    // }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
+    }
 }
 
 const imprimibleSalidaController = async (req, res) => {
+    let browser;
     try {
         const { id } = req.body
 
@@ -3451,7 +3459,7 @@ const imprimibleSalidaController = async (req, res) => {
         const htmlContent = await ejs.renderFile(htmlTemplate, { data, qrCode });
 
         //! Generar el PDF con Puppeteer
-        const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+        browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
@@ -3460,10 +3468,10 @@ const imprimibleSalidaController = async (req, res) => {
             printBackground: true
         });
 
-        await browser.close();
         //! Definir nombre del archivo
         const fileName = `salida_${data.DocNum}_${new Date()}.pdf`;
-
+        
+        // await browser.close();
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,
@@ -3483,9 +3491,15 @@ const imprimibleSalidaController = async (req, res) => {
 
         return res.status(500).json({ mensaje: `error en el controlador imprimibleSalidaController. ${error.message || ''}` })
     }
-    // finally {
-    //     if (browser) await browser.close();
-    // }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
+    }
 }
 
 const devolucionPorValoradoDifArticulosController = async (req, res) => {

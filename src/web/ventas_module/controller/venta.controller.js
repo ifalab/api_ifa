@@ -1885,6 +1885,7 @@ const getYTDDelVendedorMontoController = async (req, res) => {
 }
 
 const ReporteOfertaPDFController = async (req, res) => {
+    let browser;
     try {
         const id = req.query.id
 
@@ -1929,7 +1930,7 @@ const ReporteOfertaPDFController = async (req, res) => {
         });
 
 
-        const browser = await puppeteer.launch();
+        browser = await puppeteer.launch();
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
@@ -1937,12 +1938,12 @@ const ReporteOfertaPDFController = async (req, res) => {
             format: 'A4',
             printBackground: true
         });
-        await browser.close();
-
+        
         console.log('PDF Buffer Size:', pdfBuffer.length);
-
+        
         const fileName = `${data.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
-
+        
+        await browser.close();
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,
@@ -1954,9 +1955,15 @@ const ReporteOfertaPDFController = async (req, res) => {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
     }
-    // finally {
-    //     if (browser) await browser.close();
-    // }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
+    }
 }
 
 const getCoberturaController = async (req, res) => {
