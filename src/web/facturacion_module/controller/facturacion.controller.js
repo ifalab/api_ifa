@@ -3184,7 +3184,8 @@ const facturarExportacionController = async (req, res) => {
 
         const usdRate = await tipoDeCambio()
         if (usdRate.length == 0) {
-            return res.json({ mensaje: 'No se obtuvo el tipo de cambio' })
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `No se obtuvo el tipo de cambio`, `CALL "${process.env.PRD}".IFA_CON_MONEDAS_TIPOS();`, "facturacion/facturar-exportacion", process.env.PRD)
+            return res.status(400).json({ mensaje: 'No se obtuvo el tipo de cambio' })
         }
         usd = +usdRate[0].Rate
         // return res.json({ usd })

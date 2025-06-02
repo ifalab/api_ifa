@@ -4997,11 +4997,11 @@ const getDevolucionesParaCancelarController = async (req, res) => {
 const getEntregasParaCancelarController = async (req, res) => {
     try {
         const { id_user, fechaIni, fechaFin } = req.body
-        if(!fechaIni){
+        if (!fechaIni) {
             const newDate = new Date();
-            fechaIni=newDate.toISOString().split('T')[0]
+            fechaIni = newDate.toISOString().split('T')[0]
         }
-        if(!fechaFin){
+        if (!fechaFin) {
             fechaFin = fechaIni
         }
         const response = await getEntregasParaCancelar(id_user, fechaIni, fechaFin)
@@ -5435,6 +5435,7 @@ const selectionBatchPlazoController = async (req, res) => {
 
 const procesoAbastecimientoController = async (req, res) => {
     try {
+        const { listSucCode } = req.body
         let response = await procesoAbastecimiento()
         response = response.map((item) => {
             return {
@@ -5444,7 +5445,11 @@ const procesoAbastecimientoController = async (req, res) => {
         })
         console.log(JSON.stringify({ response }, null, 2))
         response = response.sort((a, b) => new Date(b.SolicitudDateTime) - new Date(a.SolicitudDateTime))
-        return res.json(response)
+        let result = []
+        for (const element of listSucCode) {
+            result = [...result, ...response.filter((item) => Number(item.SucCode) == element)]
+        }
+        return res.json(result)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en procesoAbastecimientoController : ${error.message || 'No definido'}` })
@@ -5462,9 +5467,13 @@ const datosRecepcionTrasladoController = async (req, res) => {
             res.status(400).json({ mensaje: `No hay datos en la peticion`, response, docEntry })
         }
         response = response.map((item) => {
+            const newDate = new Date(item.ExpDate || '')
+            const day = newDate.getDate()
+            const month = newDate.getMonth() + 1
             return {
                 ...item,
-                U_COSTO_COM: Number(+item.U_COSTO_COM).toFixed(4)
+                U_COSTO_COM: Number(+item.U_COSTO_COM).toFixed(4),
+                ExpDate: `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${newDate.getFullYear()}`
             }
         })
         return res.json(response)
@@ -5637,20 +5646,20 @@ const excelDevolucion = async (req, res) => {
             }
         })
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
-  
-      grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones ${error}`,
-        '', 'cobranza/excel-reporte', process.env.PRD
-      );
-      await workbook.xlsx.write(res);
-      res.end();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
+
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones ${error}`,
+            '', 'cobranza/excel-reporte', process.env.PRD
+        );
+        await workbook.xlsx.write(res);
+        res.end();
     } catch (error) {
-      console.error({ error });
-      grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel de devoluciones ${error}`,
-        'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
-      );
-      return res.status(500).json({ mensaje: `Error generando el Excel de devoluciones ${error}` });
+        console.error({ error });
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Devolucion`, `Error generando el Excel de devoluciones ${error}`,
+            'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+        );
+        return res.status(500).json({ mensaje: `Error generando el Excel de devoluciones ${error}` });
     }
 };
 
@@ -5658,41 +5667,41 @@ const excelDevolucion = async (req, res) => {
 const excelReporte = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
-      const {data, displayedColumns, headerColumns, cabecera} = req.body;
-      const {fechaIni, fechaFin }= cabecera;
-      console.log('headerColumns', headerColumns);
-      const fechaActual = new Date();
-      const date = new Intl.DateTimeFormat('es-VE', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-      }).format(fechaActual);
-  
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Devoluciones');
-      
-      worksheet.columns = displayedColumns.map((column) => ({
-        header: headerColumns[column],
-        key: column,
-        width: 10
-      }));
+        const { data, displayedColumns, headerColumns, cabecera } = req.body;
+        const { fechaIni, fechaFin } = cabecera;
+        console.log('headerColumns', headerColumns);
+        const fechaActual = new Date();
+        const date = new Intl.DateTimeFormat('es-VE', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+        }).format(fechaActual);
 
-      // Insertar filas antes del encabezado
-      worksheet.insertRow(1, []);
-      worksheet.insertRow(1, []);
-      worksheet.insertRow(1, []);
-      worksheet.insertRow(1, []);
-      worksheet.getCell('A1').value = `Devoluciones`;  
-      worksheet.getCell('A2').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`; 
-      worksheet.getCell('A3').value = `Fecha de Impresión: ${date}`;  
-      const letra = String.fromCharCode('A'.charCodeAt(0) + (displayedColumns.length - 1));
-      console.log({letra})
-      worksheet.mergeCells(`A1:${letra}1`);
-      worksheet.mergeCells(`A2:${letra}2`); 
-      worksheet.mergeCells(`A3:${letra}3`); 
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Devoluciones');
 
-      // Estilizar cabecera
+        worksheet.columns = displayedColumns.map((column) => ({
+            header: headerColumns[column],
+            key: column,
+            width: 10
+        }));
+
+        // Insertar filas antes del encabezado
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.getCell('A1').value = `Devoluciones`;
+        worksheet.getCell('A2').value = `Fechas: Desde ${fechaIni} Hasta ${fechaFin}`;
+        worksheet.getCell('A3').value = `Fecha de Impresión: ${date}`;
+        const letra = String.fromCharCode('A'.charCodeAt(0) + (displayedColumns.length - 1));
+        console.log({ letra })
+        worksheet.mergeCells(`A1:${letra}1`);
+        worksheet.mergeCells(`A2:${letra}2`);
+        worksheet.mergeCells(`A3:${letra}3`);
+
+        // Estilizar cabecera
         const cellA = worksheet.getCell('A1');
         cellA.alignment = { vertical: 'middle', horizontal: 'center' };
         cellA.fill = {
@@ -5700,88 +5709,88 @@ const excelReporte = async (req, res) => {
             pattern: 'solid',
             fgColor: { argb: 'FFFFFF' },
         };
-        cellA.font = { bold: true, size: 14 }; 
+        cellA.font = { bold: true, size: 14 };
         cellA.border = {
             top: { style: 'thin' },
             bottom: { style: 'thin' },
             left: { style: 'thin' },
             right: { style: 'thin' },
-        }; 
-        
-      ['A2', 'A3'].forEach(cellAddress => {
-        const cell = worksheet.getCell(cellAddress);
-        cell.font = { bold: true, size: 11 };
-        cell.alignment = { vertical: 'middle', horizontal: 'start' };
-      });
-    
-      data.map(row =>
-        worksheet.addRow(
-          displayedColumns.reduce((acc, column) => ({
-            ...acc,
-            [column]: row[column]?
-                (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
-                : ''
-            }), {})
-        )
-      );
+        };
 
-    //   rowRefs.forEach(row => {
-    //     row.eachCell(cell => {
-    //         cell.border = {
-    //         left: { style: 'thin' },
-    //         right: { style: 'thin' },
-    //         };
-    //     });
-    //   });
-      worksheet.columns.forEach(column, index => {
-        console.log({column})
-        let maxLength = column.header.length;
-        column.eachCell({ includeEmpty: true }, cell => {
-            const cellValue = cell.value ? cell.value.toString() : '';
-            maxLength = Math.max(maxLength, cellValue.length);
+        ['A2', 'A3'].forEach(cellAddress => {
+            const cell = worksheet.getCell(cellAddress);
+            cell.font = { bold: true, size: 11 };
+            cell.alignment = { vertical: 'middle', horizontal: 'start' };
+        });
+
+        data.map(row =>
+            worksheet.addRow(
+                displayedColumns.reduce((acc, column) => ({
+                    ...acc,
+                    [column]: row[column] ?
+                        (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
+                        : ''
+                }), {})
+            )
+        );
+
+        //   rowRefs.forEach(row => {
+        //     row.eachCell(cell => {
+        //         cell.border = {
+        //         left: { style: 'thin' },
+        //         right: { style: 'thin' },
+        //         };
+        //     });
+        //   });
+        worksheet.columns.forEach(column, index => {
+            console.log({ column })
+            let maxLength = column.header.length;
+            column.eachCell({ includeEmpty: true }, cell => {
+                const cellValue = cell.value ? cell.value.toString() : '';
+                maxLength = Math.max(maxLength, cellValue.length);
+                cell.border = {
+                    left: { style: 'thin' },
+                    right: { style: 'thin' },
+                };
+            });
+            column.width = maxLength; //+ 2;
+        });
+
+        worksheet.getRow(5).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFFF' },
+            };
             cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
                 left: { style: 'thin' },
                 right: { style: 'thin' },
             };
         });
-        column.width = maxLength; //+ 2;
-      });
 
-      worksheet.getRow(5).eachCell(cell => {
-        cell.font = { bold: true };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFFFFF' },
-        };
-        cell.border = {
-          top: { style: 'thin' },
-          bottom: { style: 'thin' },
-          left: { style: 'thin' },
-          right: { style: 'thin' },
-        };
-      });
+        worksheet.lastRow.eachCell(cell => {
+            cell.border = {
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+        })
 
-      worksheet.lastRow.eachCell(cell => {
-        cell.border = {
-            bottom: {style: 'thin'},
-            left: { style: 'thin' },
-            right: { style: 'thin' },
-        }
-      })
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
-  
-      await workbook.xlsx.write(res);
-      res.end();
+        await workbook.xlsx.write(res);
+        res.end();
     } catch (error) {
-      console.error({ error });
-    //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel del reporte cuenta ${error}`,
-    //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
-    //   );
-      return res.status(500).json({ mensaje: `Error generando el Excel de cambio por mal estado ${error}` });
+        console.error({ error });
+        //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel del reporte cuenta ${error}`,
+        //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+        //   );
+        return res.status(500).json({ mensaje: `Error generando el Excel de cambio por mal estado ${error}` });
     }
 };
 
