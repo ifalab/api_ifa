@@ -819,6 +819,7 @@ const facturacionStatusListController = async (req, res) => {
 }
 
 const noteEntregaController = async (req, res) => {
+    let browser;
     try {
         const delivery = req.query.delivery;
         const user = req.usuarioAutorizado
@@ -899,11 +900,10 @@ const noteEntregaController = async (req, res) => {
         const htmlContent = await ejs.renderFile(htmlTemplate, { data, qrCode });
 
         //! Generar el PDF con Puppeteer
-        const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+        browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
-        await browser.close();
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
@@ -929,7 +929,6 @@ const noteEntregaController = async (req, res) => {
         //! Registrar en el log
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
             "Nota Creada con éxito", response.query, "facturacion/nota-entrega", process.env.PRD);
-
         //! Enviar el PDF como respuesta
         res.set({
             'Content-Type': 'application/pdf',
@@ -950,9 +949,15 @@ const noteEntregaController = async (req, res) => {
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega", mensaje, query, "facturacion/nota-entrega", process.env.PRD)
         return res.status(500).json({ mensaje });
     } 
-    // finally {
-    //     if (browser) await browser.close();
-    // }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
+    }
 }
 
 const listaFacturasAnular = async (req, res) => {

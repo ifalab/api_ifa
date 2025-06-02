@@ -1093,6 +1093,7 @@ const formattedDataInvoice = (invoiceData) => {
 }
 
 const comprobantePDFController = async (req, res) => {
+    let browser;
     try {
         const id = req.query.id
         const response = await cobroLayout(id)
@@ -1145,7 +1146,7 @@ const comprobantePDFController = async (req, res) => {
         });
 
 
-        const browser = await puppeteer.launch();
+        browser = await puppeteer.launch();
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
@@ -1153,7 +1154,6 @@ const comprobantePDFController = async (req, res) => {
             format: 'A4',
             printBackground: true
         });
-        await browser.close();
         console.log('PDF Buffer Size:', pdfBuffer.length);
 
         const fileName = `${comprobante.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
@@ -1169,9 +1169,15 @@ const comprobantePDFController = async (req, res) => {
         console.log({ error })
         return res.status(500).json({ mensaje: 'error del controlador' })
     } 
-    // finally {
-    //     if (browser) await browser.close();
-    // }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
+    }
 }
 
 const getMounth = (month) => {
@@ -1831,6 +1837,7 @@ const darVariasDeBajaController = async (req, res) => {
 
 const comprobanteContableController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    let browser;
     try {
         const { id } = req.query
         const baja = await getBaja(id)
@@ -1936,7 +1943,7 @@ const comprobanteContableController = async (req, res) => {
         });
 
 
-        const browser = await puppeteer.launch();
+        browser = await puppeteer.launch();
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
@@ -1969,9 +1976,15 @@ const comprobanteContableController = async (req, res) => {
             mensaje
         })
     } 
-    // finally {
-    //     if (browser) await browser.close();
-    // }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
+    }
 }
 
 
@@ -2095,6 +2108,7 @@ const getEstadoCuentaClienteController = async (req, res) => {
 }
 
 const getEstadoCuentaClientePDFController = async (req, res) => {
+    let browser;
     try {
         const { codCliente } = req.query;
     
@@ -2138,10 +2152,9 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
         const html = await ejs.renderFile(filePath, { data: resultadoFinal, staticBaseUrl: process.env.STATIC_BASE_URL,});
 
         // 2. Usamos Puppeteer para convertir HTML a PDF
-        const browser = await puppeteer.launch({ headless: true });
+        browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
-        await browser.close();
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
@@ -2165,6 +2178,7 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
                     </div>
                 </div>`,
         });
+        // await browser.close();
 
         // 3. Respondemos con el PDF
         res.set({
@@ -2178,9 +2192,15 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
       const mensaje = error.message || 'Error en el controlador getEstadoCuentaClientePDFController';
       return res.status(500).json({ mensaje });
     } 
-    // finally {
-    //     if (browser) await browser.close();
-    // }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
+    }
 }
 
 const auditoriaSaldoDeudorController = async (req, res) => {

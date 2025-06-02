@@ -709,6 +709,7 @@ const pedidosPorVendedorAnuladosController = async (req, res) => {
 }
 
 const pedidoLayoutController = async (req, res) => {
+    let browser;
     try {
         const delivery = req.query.delivery;
         console.log({ delivery })
@@ -813,7 +814,7 @@ const pedidoLayoutController = async (req, res) => {
         //     stream.pipe(res);
         // });
 
-        const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+        browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
@@ -822,15 +823,15 @@ const pedidoLayoutController = async (req, res) => {
             printBackground: true
         });
 
-        await browser.close();
         //! Definir nombre del archivo
         const fileName = `nota_pedido_${data.DocNum}.pdf`;
-
+        
         //! Registrar en el log
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
             "Nota Creada con éxito", response.query, "facturacion/nota-entrega", process.env.PRD);
-
-        //! Enviar el PDF como respuesta
+            
+            //! Enviar el PDF como respuesta
+        await browser.close();
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,
@@ -850,9 +851,15 @@ const pedidoLayoutController = async (req, res) => {
 
         return res.status(500).json({ mensaje })
     }
-    // finally {
-    //     if (browser) await browser.close();
-    // }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
+    }
 }
 
 const pedidosPorVendedorHoyController = async (req, res) => {
