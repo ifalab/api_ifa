@@ -162,6 +162,22 @@ const getBeneficiarios = async () => {
         throw new Error(`Error en getBeneficiarios, ${error}`);
     }
 }
+
+const getAsientosSAP = async (codigo) => {
+    try {
+        const query = `
+            SELECT *
+            FROM ${process.env.PRD}."IFA_CON_ASIENTOS"
+            WHERE "DocNumFiscal" = '${codigo}';
+        `;
+        const result = await executeQueryWithConnection(query);
+        return result || []; // Devuelve [] si es null/undefined
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en getAsientosSAP, ${error}`);
+    }
+};
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -173,5 +189,6 @@ module.exports = {
     asientosContablesCCById,
     getIdReserva,
     getBeneficiarios,
-    ObtenerLibroMayorFiltrado
+    ObtenerLibroMayorFiltrado,
+    getAsientosSAP
 };

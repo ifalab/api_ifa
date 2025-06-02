@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -648,6 +648,24 @@ const beneficiarios = async(req, res) => {
     }
 }
 
+const asientosContadoSAP = async (req, res) => {
+    try {
+        const codigo = req.query.codigo;
+
+        if (!codigo) {
+            return res.status(400).json({ mensaje: 'Código requerido en query param (?codigo=)' });
+        }
+
+        const result = await getAsientosSAP(codigo);
+
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: `[asientosContadoSAP] Error al recuperar el asiento. ${error}` });
+    }
+};
+
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -664,5 +682,6 @@ module.exports = {
     cargarPlantillaMasivaDimensiones,
     reservarAsientoId,
     beneficiarios,
-    getLibroMayorFiltrado
+    getLibroMayorFiltrado,
+    asientosContadoSAP
 }
