@@ -3329,14 +3329,14 @@ const imprimibleDevolucionController = async (req, res) => {
             printBackground: true
         });
 
-        
+
         //! Definir nombre del archivo
         const fileName = `devolucion_${data.DocNum}_${new Date()}.pdf`;
-        
+
         //! Registrar en el log
         // grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
         //     "Nota Creada con éxito", layout.query || '', "facturacion/nota-entrega", process.env.PRD);
-        
+
         // await browser.close();
         //! Enviar el PDF como respuesta
         res.set({
@@ -3470,7 +3470,7 @@ const imprimibleSalidaController = async (req, res) => {
 
         //! Definir nombre del archivo
         const fileName = `salida_${data.DocNum}_${new Date()}.pdf`;
-        
+
         // await browser.close();
         res.set({
             'Content-Type': 'application/pdf',
@@ -4869,6 +4869,7 @@ const solicitudesTrasladoController = async (req, res) => {
         const user = req.usuarioAutorizado
         const { ID_SAP } = user
         let listSolicitudes = []
+        console.log({ listSucCode, ID_SAP })
         if (listSucCode.length == 0) {
             return res.status(400).json({ mensaje: `Usted No tiene Sucursales asignadas` })
         }
@@ -5417,10 +5418,16 @@ const detalleTrasladoController = async (req, res) => {
     try {
         const docEntry = req.query.docEntry
         const response = await detalleTraslado(docEntry)
-        let dataResponse = response.map((item) => ({
-            ...item,
-            subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity)
-        }))
+        let dataResponse = response.map((item) => {
+            const newDate = new Date(item.ExpDate || '')
+            const day = newDate.getDate()
+            const month = newDate.getMonth() + 1
+            return {
+                ...item,
+                subTotal: Number(item.U_COSTO_COM) * Number(item.Quantity),
+                ExpDate: `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${newDate.getFullYear()}`
+            }
+        })
         return res.json(dataResponse)
     } catch (error) {
         console.log({ error })
