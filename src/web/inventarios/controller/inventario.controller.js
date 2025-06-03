@@ -4155,7 +4155,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             console.log({ dataProsin })
             if (dataProsin && dataProsin.estado != 200) {
                 grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error de facturacionProsin ${dataProsin.mensaje || ''}`, 'facturacionProsin', 'inventario/facturacion-cambio', process.env.PRD)
-                return res.status(400).json({ mensaje: `Error de facturacionProsin ${dataProsin.mensaje || ''}`, dataProsin, dataToProsin, bodyFinalFactura, cuf })
+                return res.status(400).json({ mensaje: `Error de facturacionProsin ${dataProsin.mensaje || ''}`, dataProsin, dataToProsin, bodyFinalFactura, cuf,responseProsin })
             }
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
