@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -665,6 +665,34 @@ const asientosContadoSAP = async (req, res) => {
     }
 };
 
+const cargarAsientoSAP = async (req, res) => {
+    try {
+        const { codigo } = req.body;
+
+        if (!codigo) {
+            return res.status(400).json({
+                status: false,
+                mensaje: 'Código requerido en query param (?codigo=)',
+                data: []
+            });
+        }
+
+        await ejecutarInsertSAP(codigo); // Solo ejecutamos, sin esperar retorno
+
+        return res.status(200).json({
+            status: true,
+            mensaje: 'Asiento cargado correctamente en SAP',
+            data: []
+        });
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[cargarAsientoSAP] Error al cargar el asiento en SAP: ${error.message}`,
+            data: []
+        });
+    }
+};
 
 module.exports = {
     postInventoryEntriesController,
@@ -683,5 +711,6 @@ module.exports = {
     reservarAsientoId,
     beneficiarios,
     getLibroMayorFiltrado,
-    asientosContadoSAP
+    asientosContadoSAP,
+    cargarAsientoSAP
 }
