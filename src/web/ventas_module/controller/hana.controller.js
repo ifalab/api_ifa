@@ -1853,12 +1853,12 @@ const getUbicacionClientesByVendedor = async (codVendedor) => {
     }
 }
 
-const getVentasZonaSupervisor = async (sucursal=0) => {
+const getVentasZonaSupervisor = async (sucursales) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA_SUPERVISOR(${sucursal})`;
+        const query = `SELECT * FROM  LAB_IFA_LAPP.LAPP_VEN_VENTAS_ZONA_SUPERVISOR WHERE "SucCode" in (${sucursales})`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en getVentasZonaSupervisor: ', err.message);
@@ -1866,12 +1866,12 @@ const getVentasZonaSupervisor = async (sucursal=0) => {
     }
 }
 
-const getVentasZonaAntSupervisor = async (sucursal=0) => {
+const getVentasZonaAntSupervisor = async (sucursales) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA_ANT_SUPERVISOR(${sucursal})`;
+        const query = `SELECT * FROM  LAB_IFA_LAPP.LAPP_VEN_VENTAS_ZONA_ANT_SUPERVISOR WHERE "SucCode" in (${sucursales})`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en getVentasZonaAntSupervisor: ', err.message);
@@ -1924,6 +1924,36 @@ const getVentasLineaSupervisor = async (sucursales) => {
     }
 }
 
+const getVentasLineaSucursalSupervisor = async (sucursales, isMesAnterior) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        let query
+        if(isMesAnterior==true || isMesAnterior=='true')
+            query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUC_SUPERVISOR_ANT where "SucCode" in (${sucursales})`;
+        else
+            query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUC_SUPERVISOR where "SucCode" in (${sucursales})`
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasLineaSucursalSupervisor: ', err.message);
+        throw new Error(`Error en getVentasLineaSucursalSupervisor: ${err.message}`);
+    }
+}
+
+const getVentasLineaSupervisorAnt = async (sucursales) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUPERVISOR_ANT where "SucCode" in (${sucursales})`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasLineaSupervisorAnt: ', err.message);
+        throw new Error(`Error en getVentasLineaSupervisorAnt: ${err.message}`);
+    }
+}
+
 const getVentasTipoSupervisor = async (sucursal, linea) => {
     try {
         if (!connection) {
@@ -1935,6 +1965,20 @@ const getVentasTipoSupervisor = async (sucursal, linea) => {
     } catch (err) {
         console.error('Error en getVentasTipoSupervisor: ', err.message);
         throw new Error(`Error en getVentasTipoSupervisor: ${err.message}`);
+    }
+}
+
+const getVentasTipoSupervisorAnt = async (sucursal, linea) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_TIPO_SUPERVISOR_ANT 
+        where "SucCode"=${sucursal} and "LineName"='${linea}'`;
+        return await executeQuery(query);
+    } catch (err) {
+        console.error('Error en getVentasTipoSupervisorAnt: ', err.message);
+        throw new Error(`Error en getVentasTipoSupervisorAnt: ${err.message}`);
     }
 }
 /*
@@ -2070,5 +2114,6 @@ module.exports = {
     ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
     getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje,
     getVentasLineaSupervisor, getVentasTipoSupervisor, getVentasTipoSupervisor,
-    clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo
+    clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo, getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt,
+    getVentasLineaSucursalSupervisor
 }
