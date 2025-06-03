@@ -4875,12 +4875,11 @@ const solicitudesTrasladoController = async (req, res) => {
         }
         for (const sucCode of listSucCode) {
             let response = await solicitudesPendiente(sucCode)
-            if (!roleAll) {
+            if (!roleAll && ID_SAP!==null) {
                 response = response.filter((item) => item.UserCode == ID_SAP)
+                listSolicitudes = [...listSolicitudes, ...response]
             }
-            listSolicitudes = [...listSolicitudes, ...response]
         }
-        // console.log(JSON.stringify({ listSolicitudes }, null, 2))
         if (listSolicitudes.length > 0) {
             listSolicitudes.sort((a, b) => new Date(b.CreateDate) - new Date(a.CreateDate));
         }
