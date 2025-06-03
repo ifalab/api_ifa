@@ -165,11 +165,9 @@ const getBeneficiarios = async () => {
 
 const getAsientosSAP = async (codigo) => {
     try {
-        const query = `
-            SELECT *
-            FROM ${process.env.PRD}."IFA_CON_ASIENTOS"
-            WHERE "DocNumFiscal" = '${codigo}';
-        `;
+        console.log(codigo);
+        const query = `SELECT * FROM LAB_IFA_PRD."IFA_CON_ASIENTOS" WHERE "TransId" = ${codigo};`;
+        console.log(query);
         const result = await executeQueryWithConnection(query);
         return result || []; // Devuelve [] si es null/undefined
     } catch (error) {
@@ -191,6 +189,29 @@ const ejecutarInsertSAP = async (codigo) => {
     }
 };
 
+const updateAsientoContabilizado = async (TransId, Memo, Ref3) => {
+    try {
+        const query = `CALL "LAB_IFA_COM".ifa_cc_actualizar_asiento_memo_ref3(${TransId}, '${Memo}', ${Ref3})`;
+        const result = await executeQueryWithConnection(query);
+        return result || [];
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en updateAsientoContabilizado: ${error.message}`);
+    }
+};
+
+const asientoContableCC = async (id) => {
+  console.log('asientosContablesCC EXECUTE');
+  const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_JOURNAL WHERE "TransId" = ${id}`;
+  return await executeQueryWithConnection(query);
+};
+
+const postAnularAsientoCC = async(id) => {
+    console.log('postAnularAsientoCC EXECUTE');
+    const query = `CALL LAB_IFA_COM.IFA_CC_ANULAR_ASIENTO(${id})`;
+    return await executeQueryWithConnection(query);
+}
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -204,5 +225,8 @@ module.exports = {
     getBeneficiarios,
     ObtenerLibroMayorFiltrado,
     getAsientosSAP,
-    ejecutarInsertSAP
+    ejecutarInsertSAP,
+    updateAsientoContabilizado,
+    asientoContableCC,
+    postAnularAsientoCC
 };

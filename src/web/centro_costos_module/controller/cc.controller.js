@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -657,6 +657,7 @@ const asientosContadoSAP = async (req, res) => {
         }
 
         const result = await getAsientosSAP(codigo);
+        console.log(result)
 
         return res.status(200).json(result);
     } catch (error) {
@@ -694,6 +695,122 @@ const cargarAsientoSAP = async (req, res) => {
     }
 };
 
+const actualizarAsientoContabilizado = async (req, res) => {
+    try {
+        const { TransId, Memo, Ref3 } = req.body;
+
+        if (!TransId || Memo == null || Ref3 == null) {
+            return res.status(400).json({
+                status: false,
+                mensaje: '[actualizarAsientoContabilizado] Datos incompletos en la petición',
+                data: []
+            });
+        }
+
+        await updateAsientoContabilizado(TransId, Memo, Ref3)
+
+        return res.status(200).json({
+            status: true,
+            mensaje: 'Asiento actualizado correctamente',
+            data: []
+        });
+
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[actualizarAsientoContabilizado] Error al actualizar el asiento de CC: ${error.message}`,
+            data: []
+        });
+    }
+}
+
+const getAsientoContableCC = async (req, res) => {
+    try {
+        const {id} = req.query;
+        console.log(id);
+        const data = await asientoContableCC(id);
+
+        const groupedData = data.reduce((acc, current) => {
+            const lineData = {
+                Line_ID: current.Line_ID,
+                Account: current.Account,
+                ContraAct: current.ContraAct,
+                Debit: current.Debit,
+                Credit: current.Credit,
+                LineMemo: current.LineMemo,
+                ShortName: current.ShortName,
+                U_IdComlConcept: current.U_IdComlConcept,
+                AcctName: current.AcctName,
+                CardName: current.CardName,
+                Ref1Detail: current.Ref1Detail,
+                Ref2Detail: current.Ref2Detail,
+                Ref3Deatil: current.Ref3Deatil,
+                U_Clasif_Gastos: current.U_Clasif_Gastos,
+                Area: current.Area,
+                Tipo_Cliente: current.Tipo_Cliente,
+                Linea: current.Linea,
+                Especialidad: current.Especialidad,
+                Clasificacion_Gastos: current.Clasificacion_Gastos,
+                Conceptos_Comerciales: current.Conceptos_Comerciales,
+                Cuenta_Contable: current.Cuenta_Contable,
+                Indicator: current.Indicator
+            };
+
+            if (acc[current.TransId]) {
+                acc[current.TransId].lines.push(lineData);
+            } else {
+                acc[current.TransId] = {
+                    TransId: current.TransId,
+                    TransType: current.TransType,
+                    RefDate: current.RefDate,
+                    Memo: current.Memo,
+                    Ref1: current.Ref1,
+                    Ref2: current.Ref2,
+                    Ref3: current.Ref3,
+                    Number: current.Number,
+                    Indicator: current.Indicator,
+                    UserSign: current.UserSign,
+                    lines: [lineData]
+                };
+            }
+            return acc;
+        }, {});
+
+        const formattedData = Object.values(groupedData);
+
+        return res.json(formattedData);
+    } catch (error) {
+       console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[getAsientoContableCC] Error al obtener el asiento CC: ${error.message}`,
+            data: []
+        });
+    }
+}
+
+const anularAsientoCC = async(req, res) => {
+    const {id} = req.body;
+    try {
+        await postAnularAsientoCC(id);
+        
+        return res.status(200).json({
+            status: true,
+            mensaje: 'Asiento anulado correctamente',
+            data: []
+        });
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[anularAsientoCC] Error al anualar el asiento en CC: ${error.message}`,
+            data: []
+        });
+    }
+}
+
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -712,5 +829,8 @@ module.exports = {
     beneficiarios,
     getLibroMayorFiltrado,
     asientosContadoSAP,
-    cargarAsientoSAP
+    cargarAsientoSAP,
+    actualizarAsientoContabilizado,
+    getAsientoContableCC,
+    anularAsientoCC
 }
