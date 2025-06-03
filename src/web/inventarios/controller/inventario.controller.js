@@ -4910,9 +4910,9 @@ const detalleSolicitudTrasladoController = async (req, res) => {
 
 const reporteDevolucionValoradosController = async (req, res) => {
     try {
-        const { fechaIni, fechaFin } = req.body
-        console.log({ fechaIni, fechaFin })
-        const response = await reporteDevolucionValorados(fechaIni, fechaFin)
+        const { fechaIni, fechaFin, user } = req.body
+        console.log({ fechaIni, fechaFin, user })
+        const response = await reporteDevolucionValorados(fechaIni, fechaFin, user )
         console.log({ response })
         return res.json(response)
     } catch (error) {
@@ -4935,9 +4935,9 @@ const searchClienteController = async (req, res) => {
 
 const reporteDevolucionCambiosController = async (req, res) => {
     try {
-        const { fechaIni, fechaFin } = req.body
-        console.log({ fechaIni, fechaFin })
-        const response = await reporteDevolucionCambios(fechaIni, fechaFin)
+        const { fechaIni, fechaFin, user } = req.body
+        console.log({ fechaIni, fechaFin, user })
+        const response = await reporteDevolucionCambios(fechaIni, fechaFin, user)
         // console.log({ response })
         return res.json(response)
     } catch (error) {
@@ -4948,9 +4948,9 @@ const reporteDevolucionCambiosController = async (req, res) => {
 
 const reporteDevolucionRefacturacionController = async (req, res) => {
     try {
-        const { fechaIni, fechaFin } = req.body
-        console.log({ fechaIni, fechaFin })
-        const response = await reporteDevolucionRefacturacion(fechaIni, fechaFin)
+        const { fechaIni, fechaFin, user } = req.body
+        console.log({ fechaIni, fechaFin, user })
+        const response = await reporteDevolucionRefacturacion(fechaIni, fechaFin, user )
         // console.log({ response })
         return res.json(response)
     } catch (error) {
@@ -5094,9 +5094,11 @@ const cancelarDevolucionController = async (req, res) => {
                 } else {
                     mensaje += `${responseCN.errorMessage.value}`
                 }
-                grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
-                    `${mensaje}`, `https://srvhana:50000/b1s/v1/CreditNotes(${idCN})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
-                return res.status(400).json({ mensaje, responseRC })
+                if (!mensaje.includes('Document is already closed')) {
+                    grabarLog(user.USERCODE, user.USERNAME, `Inventario Cancelar Devolucion`,
+                        `${mensaje}`, `https://srvhana:50000/b1s/v1/CreditNotes(${idCN})/Cancel`, `/inventario/cancelar-devolucion`, process.env.DBSAPPRD)
+                    return res.status(400).json({ mensaje, responseRC })
+                }
             }
         }
 
@@ -5578,8 +5580,8 @@ const excelDevolucion = async (req, res) => {
             { header: 'Clase', key: 'TransClass', width: 12 },
             { header: 'No. Devolucion', key: 'DocNum', width: 15 },
             { header: 'Cod Cliente', key: 'CardCode', width: 14 },
-            { header: 'Cliente', key: 'CardName', width: 40 },
-            { header: 'Comentario', key: 'Comments', width: 50 },
+            { header: 'Cliente', key: 'CardName', width: 50 },
+            { header: 'Comentario', key: 'Comments', width: 60 },
             { header: 'Fecha', key: 'DocDate', width: 13 },
             { header: 'Total', key: 'DocTotal', width: 13 }
         ];
@@ -5670,15 +5672,15 @@ const excelDevolucion = async (req, res) => {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
 
-        grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones ${error}`,
-            '', 'cobranza/excel-reporte', process.env.PRD
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones`,
+            '', 'inventario/excel-devolucion', process.env.PRD
         );
         await workbook.xlsx.write(res);
         res.end();
     } catch (error) {
         console.error({ error });
         grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Devolucion`, `Error generando el Excel de devoluciones ${error}`,
-            'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+            'catch de excelReporte', 'inventario/excel-devolucion', process.env.PRD
         );
         return res.status(500).json({ mensaje: `Error generando el Excel de devoluciones ${error}` });
     }
@@ -5708,7 +5710,8 @@ const excelReporte = async (req, res) => {
             width: 10
         }));
 
-        // Insertar filas antes del encabezado
+        console.log({columns: worksheet.columns})
+
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
@@ -5749,32 +5752,33 @@ const excelReporte = async (req, res) => {
                 displayedColumns.reduce((acc, column) => ({
                     ...acc,
                     [column]: row[column] ?
-                        (column.includes('Date') ? new Date(row[column]) : (column.includes('Total') || column.includes('Pend') || column.includes('Num')) ? parseFloat(row[column]) : row[column])
+                        (column.includes('Date') ? new Date(row[column]) : 
+                        (column.includes('Num') ? parseFloat(row[column]) : row[column]))
                         : ''
                 }), {})
             )
         );
-
-        //   rowRefs.forEach(row => {
-        //     row.eachCell(cell => {
-        //         cell.border = {
-        //         left: { style: 'thin' },
-        //         right: { style: 'thin' },
-        //         };
-        //     });
-        //   });
-        worksheet.columns.forEach(column, index => {
-            console.log({ column })
-            let maxLength = column.header.length;
-            column.eachCell({ includeEmpty: true }, cell => {
-                const cellValue = cell.value ? cell.value.toString() : '';
+        
+        worksheet.columns.forEach(column => {
+            const header = column.header.toString()
+            let maxLength = header.length;
+            
+            column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+              if(rowNumber >4){
+                let cellValue = cell.value ? cell.value.toString() : '';
+                if(header.includes('Fecha') && cell.value instanceof Date){
+                    console.log({fecha: cell.value.toString()})
+                    const dateValue = new Date(cell.value.toString())
+                    cellValue = dateValue.toISOString().split('T')[0]
+                }
                 maxLength = Math.max(maxLength, cellValue.length);
                 cell.border = {
                     left: { style: 'thin' },
                     right: { style: 'thin' },
                 };
+              }
             });
-            column.width = maxLength; //+ 2;
+            column.width = maxLength + 3;
         });
 
         worksheet.getRow(5).eachCell(cell => {
@@ -5805,13 +5809,16 @@ const excelReporte = async (req, res) => {
         res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
 
         await workbook.xlsx.write(res);
+        grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Reporte Devolucion`, `Exito en el reporte de devoluciones`,
+            '', 'inventario/excel-reporte', process.env.PRD
+        );
         res.end();
     } catch (error) {
         console.error({ error });
-        //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel del reporte cuenta ${error}`,
-        //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
-        //   );
-        return res.status(500).json({ mensaje: `Error generando el Excel de cambio por mal estado ${error}` });
+        grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Reporte Devolucion`, `Error generando el Excel del reporte de devoluciones ${error}`,
+        'catch de excelReporte', 'inventario/excel-reporte', process.env.PRD
+        );
+        return res.status(500).json({ mensaje: `Error generando el Excel de reporte de devolucion ${error}` });
     }
 };
 
@@ -5879,6 +5886,6 @@ module.exports = {
     detalleTrasladoController,
     selectionBatchPlazoController,
     procesoAbastecimientoController,
-    datosRecepcionTrasladoController, excelDevolucion, cancelarCambioMalEstadoController,
-    excelReporte
+    datosRecepcionTrasladoController, cancelarCambioMalEstadoController,
+    excelReporte, excelDevolucion
 }

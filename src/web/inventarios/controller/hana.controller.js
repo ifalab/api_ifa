@@ -729,16 +729,16 @@ const detalleSolicitudPendiente = async (docEntry) => {
     }
 }
 
-const reporteDevolucionValorados = async (fechaIni, fechaFin) => {
+const reporteDevolucionValorados = async (fechaIni, fechaFin, user) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         let query
         if (!fechaIni && !fechaFin)
-            query = `select * from ${process.env.PRD}.ifa_dev_valorados`;
+            query = `select * from ${process.env.PRD}.ifa_dev_valorados where "UserID"=${user}`;
         else
-            query = `select * from ${process.env.PRD}.ifa_dev_valorados where "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
+            query = `select * from ${process.env.PRD}.ifa_dev_valorados where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -750,16 +750,16 @@ const reporteDevolucionValorados = async (fechaIni, fechaFin) => {
     }
 }
 
-const reporteDevolucionCambios = async (fechaIni, fechaFin) => {
+const reporteDevolucionCambios = async (fechaIni, fechaFin, user) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         let query
         if (!fechaIni && !fechaFin)
-            query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
+            query = `select * from ${process.env.PRD}.ifa_dev_cambios where "UserID"=${user}`;
         else
-            query = `select * from ${process.env.PRD}.ifa_dev_cambios where "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
+            query = `select * from ${process.env.PRD}.ifa_dev_cambios where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -771,16 +771,16 @@ const reporteDevolucionCambios = async (fechaIni, fechaFin) => {
     }
 }
 
-const reporteDevolucionRefacturacion = async (fechaIni, fechaFin) => {
+const reporteDevolucionRefacturacion = async (fechaIni, fechaFin, user) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         let query
         if (!fechaIni && !fechaFin)
-            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
+            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user}`;
         else
-            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
+            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user} and "DocDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
