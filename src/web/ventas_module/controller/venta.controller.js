@@ -98,7 +98,8 @@ const {
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
     getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
     getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje, getVentasLineaSupervisor,
-    getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo
+    getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo,
+    getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt, getVentasLineaSucursalSupervisor
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2959,19 +2960,13 @@ const getVentasZonaSupervisorController = async (req, res) => {
         const {sucursales, isMesAnterior} = req.body
         console.log({sucursales, isMesAnterior})
         let response = []
-        for(const sucursal of sucursales){
-            let response1
-            if(isMesAnterior==true || isMesAnterior=='true'){
-                console.log('is mes anterior')
-                response1 = await getVentasZonaAntSupervisor(sucursal??0)
-            }else{
-                console.log('is mes actual')
-                response1 = await getVentasZonaSupervisor(sucursal??0)
-            }
-            console.log({response1})
-            response = [...response, ...response1]
+        if(isMesAnterior==true || isMesAnterior=='true'){
+            console.log('is mes anterior')
+            response = await getVentasZonaAntSupervisor(sucursales.toString())
+        }else{
+            console.log('is mes actual')
+            response = await getVentasZonaSupervisor(sucursales.toString())
         }
-        response.sort((a, b) => a.SucCode - b.SucCode);
         console.log({response})
         let SucCode = ''
         let totalQuotaByLineItem = {};
@@ -3141,8 +3136,16 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
 
 const ventasLineaSupervisorController = async (req, res) => {
     try {
-        const sucursales = req.body;
-        const response = await getVentasLineaSupervisor(sucursales.toString());
+        const {sucursales, isMesAnterior} = req.body
+        console.log({sucursales, isMesAnterior})
+        let response = []
+        if(isMesAnterior==true || isMesAnterior=='true'){
+            console.log('is mes anterior')
+            response = await getVentasLineaSupervisorAnt(sucursales.toString());
+        }else{
+            console.log('is mes actual')
+            response = await getVentasLineaSupervisor(sucursales.toString());
+        }
         console.log({ response });
 
         let SucCode = null;
@@ -3251,11 +3254,121 @@ const ventasLineaSupervisorController = async (req, res) => {
     }
 }
 
+const ventasLineaSucursalSupervisorController = async (req, res) => {
+    try {
+        const {sucursales, isMesAnterior} = req.body
+        console.log({sucursales, isMesAnterior})
+        let response = await getVentasLineaSucursalSupervisor(sucursales.toString(), isMesAnterior);
+        console.log({response})
+        // return res.json({response, response1})
+        let LineName = '';
+        let totalSalesByLineName = {};
+        let totalUniByLineName = {};
+        let totalSales = 0;
+        let totalQuota = 0;
+
+        const results = [];
+
+        response.forEach((r, index) => {
+            const currentLine = r.LineName;
+
+            // Inicializar acumuladores si no existen
+            if (!totalSalesByLineName[currentLine]) totalSalesByLineName[currentLine] = 0;
+            if (!totalUniByLineName[currentLine]) totalUniByLineName[currentLine] = 0;
+
+            if (currentLine === LineName) {
+                // MISMA SUCURSAL
+                const res1 = { ...r };
+                res1.cumplimiento = +r.cumplimiento;
+                res1.hide = true;
+                results.push(res1);
+
+                totalSalesByLineName[currentLine] += +r.Sales;
+                totalUniByLineName[currentLine] += +r.Quota;
+
+                // Último elemento
+                if (index === response.length - 1) {
+                    results.push({
+                        LineName: `Total ${r.LineName}`,
+                        Sales: +totalSalesByLineName[currentLine],
+                        Quota: +totalUniByLineName[currentLine],
+                        cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
+                        isSubtotal: true,
+                        hide: false
+                    });
+                }
+            } else {
+                // NUEVA SUCURSAL
+
+                // Agregar subtotal anterior si no es el primer elemento
+                if (index > 0) {
+                    const prevName = response[index - 1].LineName;
+
+                    results.push({
+                        LineName: `Total ${prevName}`,
+                        Quota: +totalUniByLineName[prevName],
+                        Sales: +totalSalesByLineName[prevName],
+                        cumplimiento: totalUniByLineName[prevName] === 0 ? 0 : (+totalSalesByLineName[prevName] / +totalUniByLineName[prevName]),
+                        isSubtotal: true,
+                        hide: false
+                    });
+                }
+
+                const res1 = { ...r };
+                res1.cumplimiento = +r.cumplimiento;
+                res1.hide = false;
+                results.push(res1);
+
+                // Reiniciar acumuladores para nueva sucursal
+                totalSalesByLineName[currentLine] = +r.Sales;
+                totalUniByLineName[currentLine] = +r.Quota;
+
+                // Si es el último
+                if (index === response.length - 1) {
+                    results.push({
+                        LineName: `Total ${r.LineName}`,
+                        Quota: +totalUniByLineName[currentLine],
+                        Sales: +totalSalesByLineName[currentLine],
+                        cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
+                        isSubtotal: true,
+                        hide: false
+                    });
+                }
+            }
+
+            // Actualizar totales generales
+            totalSales += +r.Sales;
+            totalQuota += +r.Quota;
+
+            // Actualizar estado actual
+            LineName = currentLine;
+        });
+
+        const totales = {
+            totalSales,
+            totalQuota,
+            totalPrct: totalQuota === 0 ? 0 : totalSales / totalQuota
+        };
+
+        return res.json({ results, totales });
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador ventasLineaSucursalSupervisorController'}` })
+    }
+}
 
 const ventasTipoSupervisorController = async (req, res) => {
     try {
-        const {sucursal, linea} = req.body;
-        const response = await getVentasTipoSupervisor(sucursal, linea);
+        const {sucursal, linea, isMesAnterior} = req.body;
+        let response
+        if(isMesAnterior==true || isMesAnterior=='true'){
+            console.log('is mes anterior')
+            response = await getVentasTipoSupervisorAnt(sucursal, linea);
+        }else{
+            console.log('is mes actual')
+            response = await getVentasTipoSupervisor(sucursal, linea);
+        }
         console.log({ response });
 
         let totalSales = 0;
@@ -3304,7 +3417,6 @@ const clientesVendedorBloqueadosPorcentajeController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en clientesVendedorBloqueadosPorcentajeController: ${error.message}` })
     }
 }
-
 
 const excelClientesBloqueados = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -3574,5 +3686,5 @@ module.exports = {
     getVendedoresSolicitudDescByStatusSucursalController,
     vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController,
     ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController,
-    excelClientesBloqueados
+    excelClientesBloqueados, ventasLineaSucursalSupervisorController
 };
