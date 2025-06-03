@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP } = require('../controller/cc.controller')
+const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC } = require('../controller/cc.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -27,5 +27,8 @@ router.get('/reservar/cc/id', [validarToken, validarCampos], reservarAsientoId)
 router.get('/beneficiarios', [validarToken, validarCampos], beneficiarios)
 router.get('/asientos/sap', [validarToken, validarCampos], asientosContadoSAP)
 router.post('/asientos/sap', [validarToken, validarCampos], cargarAsientoSAP)
+router.patch('/asientos/contabilizados', [validarToken, validarCampos], actualizarAsientoContabilizado)
+router.get('/asiento-contable-cc', [validarToken, validarCampos], getAsientoContableCC)
+router.post('/anular/cc', [validarToken, validarCampos], anularAsientoCC)
 
 module.exports = router
