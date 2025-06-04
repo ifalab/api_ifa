@@ -212,6 +212,31 @@ const postAnularAsientoCC = async(id) => {
     return await executeQueryWithConnection(query);
 }
 
+const postDescontabilizarAsientoCC = async(id) => {
+    try {
+        console.log('postDescontabilizarAsientoCC EXECUTE');
+        const query = `CALL LAB_IFA_COM.IFA_CC_DESCONTABILIZAR_ASIENTO_CONTABLE(${id})`;
+        console.log(query);
+        return await executeQueryWithConnection(query);
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en postDescontabilizarAsientoCC: ${error.message}`);
+    }
+}
+
+
+const getBalanceGeneralCC = async() => {
+    try {
+        console.log('getBalanceGeneralCC EXECUTE');
+        const query = `SELECT * FROM LAB_IFA_COM.FIN_BALANCE_SHEET`;
+        console.log(query);
+        return await executeQueryWithConnection(query);
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en getBalanceGeneralCC: ${error.message}`);
+    }
+}
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -228,5 +253,7 @@ module.exports = {
     ejecutarInsertSAP,
     updateAsientoContabilizado,
     asientoContableCC,
-    postAnularAsientoCC
+    postAnularAsientoCC,
+    postDescontabilizarAsientoCC,
+    getBalanceGeneralCC
 };
