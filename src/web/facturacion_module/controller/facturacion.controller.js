@@ -52,11 +52,16 @@ const facturacionController = async (req, res) => {
         let endTime = Date.now();
         const { id } = req.body
         const user = req.usuarioAutorizado
-        const id_sap = user.ID_SAP
+        const id_sap = user.ID_SAP || 0
+
         idData = id
         let deliveryData
         let deliveryBody
         let finalDataEntrega
+
+        if (id_sap == 0) {
+            return res.status(400).json({ mensaje: 'Debe tener ID SAP' })
+        }
 
         const responseDeliveryByID = await getOrdersById(id)
         if (responseDeliveryByID.length == 0) {
@@ -2083,6 +2088,7 @@ const facturacionInstitucionesController = async (req, res) => {
 
             //TODO --------------------------------------------------------------  INVOICE
             console.log({ responseHanaB })
+            responseHanaB.U_UserCode = id_sap
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             if (invoiceResponse.status == 400) {
@@ -2280,6 +2286,13 @@ const facturacionVehiculo = async (req, res) => {
 
     let body = {};
     try {
+
+        const idSap = user.ID_SAP || 0
+
+        if (idSap == 0) {
+            return res.status(400).json({ mensaje: `Usted no tiene ID SAP` })
+        }
+
         const data = await obtenerPedidoDetalle(nro_ped);
         const detalle = data.map(item => ({
             producto: item.ItemCode,
@@ -2393,7 +2406,7 @@ const facturacionVehiculo = async (req, res) => {
                 DocumentLines: DocumentLinesHana,
                 DocumentAdditionalExpenses
             }
-
+            responseHanaB.U_UserCode = idSap
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
 
@@ -2491,7 +2504,7 @@ const facturacionVehiculo = async (req, res) => {
                 DocumentLines: DocumentLinesHana,
                 DocumentAdditionalExpenses
             }
-
+            responseHanaB.U_UserCode = idSap
             const invoiceResponse = await postInvoice(responseHanaB)
             console.log({ invoiceResponse })
             // return res.json({ invoiceResponse })

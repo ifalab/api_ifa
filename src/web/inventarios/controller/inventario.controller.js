@@ -570,23 +570,23 @@ const stockDisponibleIfavetController = async (req, res) => {
         });
         const result = []
         formattedStock.map((item) => {
-            if (item.itemcode != '103-012-015' &&
-                item.itemcode != '103-012-017' &&
-                item.itemcode != '103-012-016' &&
-                item.itemcode != '103-005-001' &&
-                item.itemcode != '103-012-019' &&
-                item.itemcode != '103-012-018' &&
-                item.itemcode != '103-011-001' &&
-                item.itemcode != '103-012-020' &&
-                item.itemcode != '103-012-022' &&
-                item.itemcode != '103-012-021' &&
-                item.itemcode != '103-012-024' &&
-                item.itemcode != '103-012-023' &&
-                item.itemcode != '103-012-027' &&
-                item.itemcode != '103-012-026' &&
-                item.itemcode != '103-004-003') {
+            // if (item.itemcode != '103-012-015' &&
+            //     item.itemcode != '103-012-017' &&
+            //     item.itemcode != '103-012-016' &&
+            //     item.itemcode != '103-005-001' &&
+            //     item.itemcode != '103-012-019' &&
+            //     item.itemcode != '103-012-018' &&
+            //     item.itemcode != '103-011-001' &&
+            //     item.itemcode != '103-012-020' &&
+            //     item.itemcode != '103-012-022' &&
+            //     item.itemcode != '103-012-021' &&
+            //     item.itemcode != '103-012-024' &&
+            //     item.itemcode != '103-012-023' &&
+            //     item.itemcode != '103-012-027' &&
+            //     item.itemcode != '103-012-026' &&
+            //     item.itemcode != '103-004-003') {
                 result.push(item)
-            }
+            // }
         })
         return res.json({ stock: result });
     } catch (error) {
