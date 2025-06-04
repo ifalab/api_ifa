@@ -570,23 +570,23 @@ const stockDisponibleIfavetController = async (req, res) => {
         });
         const result = []
         formattedStock.map((item) => {
-            if (item.itemcode != '103-012-015' &&
-                item.itemcode != '103-012-017' &&
-                item.itemcode != '103-012-016' &&
-                item.itemcode != '103-005-001' &&
-                item.itemcode != '103-012-019' &&
-                item.itemcode != '103-012-018' &&
-                item.itemcode != '103-011-001' &&
-                item.itemcode != '103-012-020' &&
-                item.itemcode != '103-012-022' &&
-                item.itemcode != '103-012-021' &&
-                item.itemcode != '103-012-024' &&
-                item.itemcode != '103-012-023' &&
-                item.itemcode != '103-012-027' &&
-                item.itemcode != '103-012-026' &&
-                item.itemcode != '103-004-003') {
+            // if (item.itemcode != '103-012-015' &&
+            //     item.itemcode != '103-012-017' &&
+            //     item.itemcode != '103-012-016' &&
+            //     item.itemcode != '103-005-001' &&
+            //     item.itemcode != '103-012-019' &&
+            //     item.itemcode != '103-012-018' &&
+            //     item.itemcode != '103-011-001' &&
+            //     item.itemcode != '103-012-020' &&
+            //     item.itemcode != '103-012-022' &&
+            //     item.itemcode != '103-012-021' &&
+            //     item.itemcode != '103-012-024' &&
+            //     item.itemcode != '103-012-023' &&
+            //     item.itemcode != '103-012-027' &&
+            //     item.itemcode != '103-012-026' &&
+            //     item.itemcode != '103-004-003') {
                 result.push(item)
-            }
+            // }
         })
         return res.json({ stock: result });
     } catch (error) {
@@ -4875,12 +4875,11 @@ const solicitudesTrasladoController = async (req, res) => {
         }
         for (const sucCode of listSucCode) {
             let response = await solicitudesPendiente(sucCode)
-            if (!roleAll) {
+            if (!roleAll && ID_SAP!==null) {
                 response = response.filter((item) => item.UserCode == ID_SAP)
+                listSolicitudes = [...listSolicitudes, ...response]
             }
-            listSolicitudes = [...listSolicitudes, ...response]
         }
-        // console.log(JSON.stringify({ listSolicitudes }, null, 2))
         if (listSolicitudes.length > 0) {
             listSolicitudes.sort((a, b) => new Date(b.CreateDate) - new Date(a.CreateDate));
         }
