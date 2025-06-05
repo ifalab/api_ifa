@@ -6,7 +6,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC } = require('./hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -810,6 +810,44 @@ const anularAsientoCC = async(req, res) => {
     }
 }
 
+const descontabilizarAsientoCC = async(req, res) => {
+    const {id} = req.body;
+    try {
+        await postDescontabilizarAsientoCC(id);
+        
+        return res.status(200).json({
+            status: true,
+            mensaje: 'Asiento descontabilizado correctamente',
+            data: []
+        });
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[descontabilizarAsientoCC] Error al descontabilizar el asiento en CC: ${error.message}`,
+            data: []
+        });
+    }
+}
+
+const obtenerBalanceGeneral = async(req, res) => {
+    try {
+        const data = await getBalanceGeneralCC();
+        
+        return res.status(200).json({
+            status: true,
+            mensaje: 'Asiento descontabilizado correctamente',
+            data: data
+        });
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[obtenerBalanceGeneral] Error al obtener el balance geenral CC: ${error.message}`,
+            data: []
+        });
+    }
+}
 
 module.exports = {
     postInventoryEntriesController,
@@ -832,5 +870,7 @@ module.exports = {
     cargarAsientoSAP,
     actualizarAsientoContabilizado,
     getAsientoContableCC,
-    anularAsientoCC
+    anularAsientoCC,
+    descontabilizarAsientoCC,
+    obtenerBalanceGeneral
 }
