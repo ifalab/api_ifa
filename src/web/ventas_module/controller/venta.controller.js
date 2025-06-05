@@ -99,7 +99,8 @@ const {
     getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
     getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje, getVentasLineaSupervisor,
     getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo,
-    getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt, getVentasLineaSucursalSupervisor
+    getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt, getVentasLineaSucursalSupervisor,
+    ventasVendedoresByLineasSucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1940,11 +1941,11 @@ const ReporteOfertaPDFController = async (req, res) => {
             format: 'A4',
             printBackground: true
         });
-        
+
         console.log('PDF Buffer Size:', pdfBuffer.length);
-        
+
         const fileName = `${data.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
-        
+
         await browser.close();
         res.set({
             'Content-Type': 'application/pdf',
@@ -2170,7 +2171,7 @@ const vendedorPorSucCodeController = async (req, res) => {
 const vendedorPorListSucCodeController = async (req, res) => {
     try {
         const { listSuc } = req.body
-        console.log({listSuc})
+        console.log({ listSuc })
         let responseData = []
 
         for (const element of listSuc) {
@@ -2493,13 +2494,13 @@ const getVendedoresSolicitudDescByStatusController = async (req, res) => {
 
 const getVendedoresSolicitudDescByStatusSucursalController = async (req, res) => {
     try {
-        const {status, sucursal} = req.query
+        const { status, sucursal } = req.query
         let response
-        if(sucursal==0)
-            response =  await getVendedoresSolicitudDescByStatus(status)
+        if (sucursal == 0)
+            response = await getVendedoresSolicitudDescByStatus(status)
         else
             response = await getVendedoresSolicitudDescByStatusSucursal(status, sucursal)
-        console.log({response})
+        console.log({ response })
         return res.json(
             response
         )
@@ -2847,7 +2848,7 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
         ////
         const { cliente, vendedor } = req.body;
         const fecha = new Date()
-        const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
+        const response = await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
         console.log(response)
         return res.json(response);
     } catch (error) {
@@ -2859,7 +2860,7 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
 const ventasPorZonasVendedor2Controller = async (req, res) => {
     try {
         const { usercode, isAnt } = req.body;
-        console.log({usercode,isAnt})
+        console.log({ usercode, isAnt })
         let response
         if (isAnt == true) {
             console.log('isAnt')
@@ -2957,17 +2958,17 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
 
 const getVentasZonaSupervisorController = async (req, res) => {
     try {
-        const {sucursales, isMesAnterior} = req.body
-        console.log({sucursales, isMesAnterior})
+        const { sucursales, isMesAnterior } = req.body
+        console.log({ sucursales, isMesAnterior })
         let response = []
-        if(isMesAnterior==true || isMesAnterior=='true'){
+        if (isMesAnterior == true || isMesAnterior == 'true') {
             console.log('is mes anterior')
             response = await getVentasZonaAntSupervisor(sucursales.toString())
-        }else{
+        } else {
             console.log('is mes actual')
             response = await getVentasZonaSupervisor(sucursales.toString())
         }
-        console.log({response})
+        console.log({ response })
         let SucCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
@@ -3036,16 +3037,16 @@ const getVentasZonaSupervisorController = async (req, res) => {
 
 const clientesBloqueadosPorcentajeController = async (req, res) => {
     try {
-        const {sucursales, grupo}  = req.body;
+        const { sucursales, grupo } = req.body;
         let response
-        if(grupo){
+        if (grupo) {
             console.log('con grupo')
             response = await clientesZonaBloqueadosPorGrupo(sucursales.toString(), grupo);
-        }else{
+        } else {
             console.log('sin grupo');
             response = await clientesZonaBloqueadosPorcentaje(sucursales.toString());
         }
-        console.log({response})
+        console.log({ response })
         let SucCode = ''
         let ZoneCode = ''
         let totalBloqueadosBySucCode = {};
@@ -3059,21 +3060,21 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
                 const res1 = r
                 res1.Porcentaje = +r.Porcentaje
                 res1.hide = true
-                res1.hideZona= ZoneCode == r.ZoneCode
+                res1.hideZona = ZoneCode == r.ZoneCode
                 results.push(res1)
-                if(ZoneCode != r.ZoneCode){
+                if (ZoneCode != r.ZoneCode) {
                     ZoneCode = r.ZoneCode
                     totalBloqueadosBySucCode[r.SucCode] += +r.Bloqueados;
                     totalUniBySucCode[r.SucCode] += +r.Universal;
                 }
-            
+
 
                 if ((response.length - 1) == index) {
                     const res = {
                         SucName: `Total ${r.SucName}`,
                         Bloqueados: +totalBloqueadosBySucCode[r.SucCode],
                         Universal: +totalUniBySucCode[r.SucCode],
-                        Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] / +totalUniBySucCode[r.SucCode] ) ,
+                        Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] / +totalUniBySucCode[r.SucCode]),
                         isSubtotal: true,
                         hide: false,
                         hideZona: false
@@ -3100,7 +3101,7 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
                 const res1 = r
                 res1.Porcentaje = +r.Porcentaje
                 res1.hide = false
-                res1.hideZona= ZoneCode == r.ZoneCode
+                res1.hideZona = ZoneCode == r.ZoneCode
                 results.push(res1)
 
                 if ((response.length - 1) == index) {
@@ -3108,7 +3109,7 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
                         SucName: `Total ${r.SucName}`,
                         Universal: +totalUniBySucCode[r.SucCode],
                         Bloqueados: +totalBloqueadosBySucCode[r.SucCode],
-                        Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] /+totalUniBySucCode[r.SucCode]),
+                        Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] / +totalUniBySucCode[r.SucCode]),
                         isSubtotal: true,
                         hide: false,
                         hideZona: false
@@ -3116,18 +3117,18 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
                     results.push(res)
                 }
             }
-            if(ZoneCode != r.ZoneCode){
+            if (ZoneCode != r.ZoneCode) {
                 ZoneCode = r.ZoneCode;
                 totalBloqueados += +r.Bloqueados
                 totalUniversal += +r.Universal
             }
-            
+
         });
         const totales = {
             totalBloqueados, totalUniversal,
-            totalPrct: totalUniversal==0?0:totalBloqueados/totalUniversal
+            totalPrct: totalUniversal == 0 ? 0 : totalBloqueados / totalUniversal
         }
-        return res.json({results, totales});
+        return res.json({ results, totales });
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador clientesBloqueadosPorcentajeController'}` })
@@ -3136,13 +3137,13 @@ const clientesBloqueadosPorcentajeController = async (req, res) => {
 
 const ventasLineaSupervisorController = async (req, res) => {
     try {
-        const {sucursales, isMesAnterior} = req.body
-        console.log({sucursales, isMesAnterior})
+        const { sucursales, isMesAnterior } = req.body
+        console.log({ sucursales, isMesAnterior })
         let response = []
-        if(isMesAnterior==true || isMesAnterior=='true'){
+        if (isMesAnterior == true || isMesAnterior == 'true') {
             console.log('is mes anterior')
             response = await getVentasLineaSupervisorAnt(sucursales.toString());
-        }else{
+        } else {
             console.log('is mes actual')
             response = await getVentasLineaSupervisor(sucursales.toString());
         }
@@ -3256,11 +3257,11 @@ const ventasLineaSupervisorController = async (req, res) => {
 
 const ventasLineaSucursalSupervisorController = async (req, res) => {
     try {
-        const {sucursales, isMesAnterior} = req.body
-        console.log({sucursales, isMesAnterior})
+        const { sucursales, isMesAnterior } = req.body
+        console.log({ sucursales, isMesAnterior })
         let response = await getVentasLineaSucursalSupervisor(sucursales.toString(), isMesAnterior);
-        console.log({response})
-        // return res.json({response, response1})
+        // console.log({ response })
+        // return res.json({response,})
         let LineName = '';
         let totalSalesByLineName = {};
         let totalUniByLineName = {};
@@ -3360,12 +3361,12 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
 
 const ventasTipoSupervisorController = async (req, res) => {
     try {
-        const {sucursal, linea, isMesAnterior} = req.body;
+        const { sucursal, linea, isMesAnterior } = req.body;
         let response
-        if(isMesAnterior==true || isMesAnterior=='true'){
+        if (isMesAnterior == true || isMesAnterior == 'true') {
             console.log('is mes anterior')
             response = await getVentasTipoSupervisorAnt(sucursal, linea);
-        }else{
+        } else {
             console.log('is mes actual')
             response = await getVentasTipoSupervisor(sucursal, linea);
         }
@@ -3395,7 +3396,7 @@ const ventasTipoSupervisorController = async (req, res) => {
 
 const clientesVendedorBloqueadosPorcentajeController = async (req, res) => {
     try {
-        const {slpCode} = req.query;
+        const { slpCode } = req.query;
         const response = await clientesVendedorBloqueadosPorcentaje(slpCode)
         console.log({ response })
         let totalBloqueados = 0
@@ -3411,7 +3412,7 @@ const clientesVendedorBloqueadosPorcentajeController = async (req, res) => {
             totalUniversal,
             totalPrct: totalUniversal === 0 ? 0 : totalBloqueados / totalUniversal
         };
-        return res.json({response, totales})
+        return res.json({ response, totales })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en clientesVendedorBloqueadosPorcentajeController: ${error.message}` })
@@ -3423,8 +3424,8 @@ const excelClientesBloqueados = async (req, res) => {
     try {
         const { data, displayedColumns, grupo } = req.body;
 
-          console.log({data});
-          console.log({displayedColumns})
+        console.log({ data });
+        console.log({ displayedColumns })
         const fechaActual = new Date();
         const date = new Intl.DateTimeFormat('es-VE', {
             weekday: 'long',
@@ -3455,11 +3456,11 @@ const excelClientesBloqueados = async (req, res) => {
         worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;
         worksheet.mergeCells('A2:F2');
 
-      if(grupo){
-        worksheet.getCell('A3').value = `Grupo: ${grupo}`;
-        worksheet.mergeCells('A3:F3');
-      }
-        
+        if (grupo) {
+            worksheet.getCell('A3').value = `Grupo: ${grupo}`;
+            worksheet.mergeCells('A3:F3');
+        }
+
         // Estilizar cabecera
         const cellA = worksheet.getCell('A1');
         cellA.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -3487,9 +3488,9 @@ const excelClientesBloqueados = async (req, res) => {
                 displayedColumns.reduce((acc, column) => ({
                     ...acc,
                     [column]: row[column] ? (
-                        column=='Porcentaje'? row[column]==0?'0':+((parseFloat(row[column])*100).toFixed(2)) :
-                        (column=='Universal' || column=='Bloqueados') ? parseFloat(row[column]) : 
-                        row[column] )
+                        column == 'Porcentaje' ? row[column] == 0 ? '0' : +((parseFloat(row[column]) * 100).toFixed(2)) :
+                            (column == 'Universal' || column == 'Bloqueados') ? parseFloat(row[column]) :
+                                row[column])
                         : ''
                 }), {})
             )
@@ -3505,42 +3506,42 @@ const excelClientesBloqueados = async (req, res) => {
         });
 
         function mergeSameValues(startRowIndex, columnKeys) {
-        const ends=[]
-        let i = 0;
-        while (i < data.length) {
-            let j = i + 1;
-            while (
-            j < data.length &&
-            columnKeys.every(key => data[i][key] === data[j][key])
-            ) {
-            j++;
-            }
+            const ends = []
+            let i = 0;
+            while (i < data.length) {
+                let j = i + 1;
+                while (
+                    j < data.length &&
+                    columnKeys.every(key => data[i][key] === data[j][key])
+                ) {
+                    j++;
+                }
 
-            if (j - i > 1) {
-            const start = startRowIndex + i;
-            const end = startRowIndex + j - 1;
-            columnKeys.forEach(key => {
-                const col = worksheet.getColumn(key);
-                const cellIndex = col.number;
-                worksheet.mergeCells(start, cellIndex, end, cellIndex);
-                worksheet.getCell(start, cellIndex).alignment = {
-                vertical: 'middle',
-                horizontal: 'center'
-                };
-                // worksheet.getCell(end, cellIndex).border = 
-                
-            });
-            ends.push(end);
-            }else{
-                const end = startRowIndex + j - 1
-                ends.push(end);
+                if (j - i > 1) {
+                    const start = startRowIndex + i;
+                    const end = startRowIndex + j - 1;
+                    columnKeys.forEach(key => {
+                        const col = worksheet.getColumn(key);
+                        const cellIndex = col.number;
+                        worksheet.mergeCells(start, cellIndex, end, cellIndex);
+                        worksheet.getCell(start, cellIndex).alignment = {
+                            vertical: 'middle',
+                            horizontal: 'center'
+                        };
+                        // worksheet.getCell(end, cellIndex).border = 
+
+                    });
+                    ends.push(end);
+                } else {
+                    const end = startRowIndex + j - 1
+                    ends.push(end);
+                }
+                i = j;
             }
-            i = j;
+            return ends;
         }
-        return  ends;
-      }
-      const ends = mergeSameValues(5, ['ZoneName', 'Universal', 'Bloqueados', 'Porcentaje']);
-      console.log({ends})
+        const ends = mergeSameValues(5, ['ZoneName', 'Universal', 'Bloqueados', 'Porcentaje']);
+        console.log({ ends })
 
 
         worksheet.getRow(4).eachCell(cell => {
@@ -3567,32 +3568,54 @@ const excelClientesBloqueados = async (req, res) => {
             }
         })
 
-        ends.forEach( end => {
-        worksheet.getRow(end).eachCell(cell => {
-            cell.border = {
-                bottom: {style: 'thin'},
-                left: { style: 'thin' },
-                right: { style: 'thin' },
-            }
-        })
-      });
+        ends.forEach(end => {
+            worksheet.getRow(end).eachCell(cell => {
+                cell.border = {
+                    bottom: { style: 'thin' },
+                    left: { style: 'thin' },
+                    right: { style: 'thin' },
+                }
+            })
+        });
 
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
-  
-    //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones`,
-    //     '', 'cobranza/excel-reporte', process.env.PRD
-    //   );
-      await workbook.xlsx.write(res);
-      res.end();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
+
+        //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones`,
+        //     '', 'cobranza/excel-reporte', process.env.PRD
+        //   );
+        await workbook.xlsx.write(res);
+        res.end();
     } catch (error) {
-      console.error({ error });
-    //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel de devoluciones ${error}`,
-    //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
-    //   );
-      return res.status(500).json({ mensaje: `Error generando el Excel de clientes bloqueados ${error}` });
+        console.error({ error });
+        //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel de devoluciones ${error}`,
+        //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+        //   );
+        return res.status(500).json({ mensaje: `Error generando el Excel de clientes bloqueados ${error}` });
     }
-};
+}
+
+const ventasVendedoresByLineasSucursalController = async (req, res) => {
+    try {
+        const { year, month, sucCode, lineCode, listClientType } = req.body
+        let data = []
+        if (listClientType.length == 0) {
+            const response = await ventasVendedoresByLineasSucursal(year, month, sucCode, null, lineCode,)
+            // console.log({ response })
+            data = [...data, ...response]
+
+        } else {
+            for (const clientType of listClientType) {
+                const response = await ventasVendedoresByLineasSucursal(year, month, sucCode, clientType, lineCode)
+                data = [...data, ...response]
+            }
+        }
+        return res.json(data)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasVendedoresByLineasSucursalController ${error.message || 'No definido'}` });
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -3679,12 +3702,13 @@ module.exports = {
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
     getClientNameController, notificationSubscriptionController, sendNotificationController,
     getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
-    ventasPresupuestoSubLinea, ventasPresupuestoSubLineaAnterior, 
-    notificationUnsubscribeController, 
+    ventasPresupuestoSubLinea, ventasPresupuestoSubLineaAnterior,
+    notificationUnsubscribeController,
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
     ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVentasZonaSupervisorController,
     getVendedoresSolicitudDescByStatusSucursalController,
     vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController,
     ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController,
-    excelClientesBloqueados, ventasLineaSucursalSupervisorController
+    excelClientesBloqueados, ventasLineaSucursalSupervisorController,
+    ventasVendedoresByLineasSucursalController
 };

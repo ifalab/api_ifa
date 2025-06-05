@@ -305,7 +305,7 @@ const crearOrderController = async (req, res) => {
             const item = docLine[idxMoreThan]
             const message = `Existe un Descuento Mayor al 50%, para el articulo: ${item.ItemCode || 'No definido'}, cantidad: ${item.Quantity || 'No definido'}, precio: ${item.GrossPrice || 'No defindo'}, donde el total es de ${item.GrossTotal || 'No defindo'} `
             console.log({ idxMoreThan, item })
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Existe un Descuento Mayor al 50%, para el articulo: ${item.ItemCode || 'No definido'}, cantidad: ${item.Quantity || 'No definido'}, precio: ${item.GrossPrice || 'No defindo'}, donde el total es de ${item.GrossTotal || 'No defindo'} `, '', "pedido/crear-orden", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error Existe un Descuento Mayor al 50%, para el articulo: ${item.ItemCode || 'No definido'}, cantidad: ${item.Quantity || 'No definido'}, precio: ${item.GrossPrice || 'No defindo'}, donde el total es de ${item.GrossTotal || 'No defindo'} `, '', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ message, body })
         }
         // return res.json({ body, listDescuentos, isMoreThanFifty })
@@ -315,7 +315,7 @@ const crearOrderController = async (req, res) => {
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         console.log(JSON.stringify(ordenResponse, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        if (ordenResponse.status == 400) {
+        if (ordenResponse.status >= 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
         }
