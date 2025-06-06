@@ -6,7 +6,8 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos } = require('./hana.controller');
+const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -644,7 +645,7 @@ const beneficiarios = async(req, res) => {
         return res.status(200).json(result);
     } catch (error) {
         console.error({ error });
-        return res.status(500).json({ mensaje: `[beneficiarios] Error reservando id para el asiento. ${error}` });
+        return res.status(500).json({ mensaje: `[beneficiarios] Error obteniendo los beneficiarios. ${error}` });
     }
 }
 
@@ -832,18 +833,46 @@ const descontabilizarAsientoCC = async(req, res) => {
 
 const obtenerBalanceGeneral = async(req, res) => {
     try {
-        const data = await getBalanceGeneralCC();
-        
+        const rawData = await getBalanceGeneralCC();
+
+        // Mapeamos las propiedades con tildes a propiedades sin tildes
+        const data = rawData.map(item => ({
+            ...item,
+            Debito: item['Débito'],
+            Credito: item['Crédito'],
+        }));
+
+        const dataEstructurada = estructurarBalanceParaTree(data);
         return res.status(200).json({
             status: true,
-            mensaje: 'Asiento descontabilizado correctamente',
-            data: data
+            mensaje: 'Balance obtenido correctamente',
+            data: dataEstructurada
         });
     } catch (error) {
         console.error({ error });
         return res.status(500).json({
             status: false,
             mensaje: `[obtenerBalanceGeneral] Error al obtener el balance geenral CC: ${error.message}`,
+            data: []
+        });
+    }
+}
+
+const obtenerAsientoCompletos = async(req, res) => {
+    const {ini, fin} = req.query;
+    try {
+        const data =await getobtenerAsientoCompletos(ini, fin);
+        
+        return res.status(200).json({
+            status: true,
+            mensaje: 'Asientos Recuperados',
+            data: data
+        });
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[obtenerAsientoCompletos] Error al obtener los asientos CC: ${error.message}`,
             data: []
         });
     }
@@ -872,5 +901,6 @@ module.exports = {
     getAsientoContableCC,
     anularAsientoCC,
     descontabilizarAsientoCC,
-    obtenerBalanceGeneral
+    obtenerBalanceGeneral,
+    obtenerAsientoCompletos
 }
