@@ -237,6 +237,21 @@ const getBalanceGeneralCC = async() => {
     }
 }
 
+const getobtenerAsientoCompletos = async(ini, fin) => {
+    try {
+        console.log('getobtenerAsientoCompletos EXECUTE');
+         const query = `
+            SELECT * 
+            FROM LAB_IFA_COM.IFA_CC_JOURNAL 
+            WHERE "RefDate" BETWEEN '${ini}' AND '${fin}'
+        `;
+        console.log(query);
+        return await executeQueryWithConnection(query);
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en getobtenerAsientoCompletos: ${error.message}`);
+    }
+}
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -255,5 +270,6 @@ module.exports = {
     asientoContableCC,
     postAnularAsientoCC,
     postDescontabilizarAsientoCC,
-    getBalanceGeneralCC
+    getBalanceGeneralCC,
+    getobtenerAsientoCompletos
 };
