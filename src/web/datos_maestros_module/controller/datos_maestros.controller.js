@@ -12,12 +12,15 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getIdsDescuentoEspecial, getDescuentosEspecialesById, getVendedores, getZonas, getAllTipos,
     getZonasTiposPorVendedor, asignarZonasYTiposAVendedores, deleteZonasYTiposAVendedores,
     getDescuentosEspecialesLinea, deleteDescuentosEspecialesLinea,
-    articuloByItemCode, 
+    articuloByItemCode,
     updateListaPrecios,
     desactivePriceList,
     getIdDescuentosCortoCantidad,
     getDescuentosCantidadCorto,
-    setDescuentoOfertasPorCantidadCortoVencimiento} = require("./hana.controller")
+    setDescuentoOfertasPorCantidadCortoVencimiento,
+    lineaByCode, 
+    sucursalBySucCode,
+    tipoByGroupCode} = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 const { validateDataExcel } = require('./helpers');
@@ -203,6 +206,29 @@ const getSucursalesController = async (req, res) => {
     }
 }
 
+const sucursalBySucCodeController = async (req, res) => {
+    try {
+        const sucCode = req.query.sucCode
+        if(!sucCode || sucCode ==0){
+            return res.status(400).json({ mensaje: `el codigo de sucursal es obligatorio` })
+        }
+        const response = await sucursalBySucCode(sucCode)
+        if (response.status != 200) {
+            return res.status(400).json({ mensaje: `Hubo un error, ${response.message || 'No Definido'}` })
+        }
+        const data = response.data
+
+        if(data.length==0){
+            return res.status(400).json({ mensaje: `No se encontro la sucursal` })
+        }
+        const sucursal = data[0]
+        return res.json(sucursal)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador sucursalBySucCodeController: ${error.message || ''}` })
+    }
+}
+
 const getAreasPorSucursalController = async (req, res) => {
     try {
         const sucCode = req.query.code
@@ -361,6 +387,24 @@ const getAllLineasController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getAllLineasController: ${error.message || ''}` })
+    }
+}
+
+const lineasByLineCodeController = async (req, res) => {
+    try {
+        const lineCode = req.query.lineCode
+        if (!lineCode || lineCode == 0) {
+            return res.status(400).json({ mensaje: `El codigo de linea es obligatorio` })
+        }
+        const response = await lineaByCode(lineCode)
+        if(response.length == 0){
+            return res.status(400).json({ mensaje: `No se encontro la linea` })
+        }
+        const linea = response[0]
+        return res.json(linea)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador lineasByLineCodeController: ${error.message || ''}` })
     }
 }
 
@@ -614,6 +658,24 @@ const obtenerTiposController = async (req, res) => {
     }
 }
 
+const tipoByGroupCodeController = async (req, res) => {
+    try {
+        const groupCode = req.query.groupCode
+        if (!groupCode || groupCode == 0) {
+            return res.status(400).json({ mensaje: `El codigo de tipo de cliente es obligatorio` })
+        }
+        const response = await tipoByGroupCode(groupCode)
+        if(response.length == 0){
+            return res.status(400).json({ mensaje: `No se encontro el tipo de cliente` })
+        }
+        const tipo = response[0]
+        return res.json(tipo)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador obtenerTiposController. ${error.message || ''}` })
+    }
+}
+
 const obtenerDescuetosEspecialesController = async (req, res) => {
     try {
         const descuentos = await obtenerDescuetosEspeciales()
@@ -766,7 +828,7 @@ const deleteDescuentosEspecialesLineaController = async (req, res) => {
 
 const cargarPreciosExcelController = async (req, res) => {
     try {
-        const {comment} = req.body;
+        const { comment } = req.body;
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         // console.log(req.body);
         let listErrors = [];
@@ -779,7 +841,7 @@ const cargarPreciosExcelController = async (req, res) => {
                 file: req.archivo
             });
         }
-        console.log({comment});
+        console.log({ comment });
         const { path, originalname } = req.archivo;
         const filePath = path;
         const workbook = XLSX.readFile(filePath);
@@ -821,8 +883,8 @@ const cargarPreciosExcelController = async (req, res) => {
                     Precio,
                     error: `El artículo con código ${ItemCode} en la posición ${idx} está duplicado en el archivo.`
                 });
-            } else{
-                validate = validateDataExcel({ItemCode, ItemName, Precio, ListName, PriceList}, listErrors, idx);
+            } else {
+                validate = validateDataExcel({ ItemCode, ItemName, Precio, ListName, PriceList }, listErrors, idx);
 
                 const response = await articuloByItemCode(ItemCode);
                 // console.log(response);
@@ -835,12 +897,12 @@ const cargarPreciosExcelController = async (req, res) => {
                         Precio,
                         error: `El artículo con código ${ItemCode} en la posición ${idx} no existe o es incorrecto.`,
                     });
-                }else {
+                } else {
                     const dbItem = response.result[0];
-    
+
                     const dbItemName = dbItem.ItemName;
                     const excelItemName = ItemName;
-    
+
                     if (dbItemName !== excelItemName) {
                         listErrors.push({
                             PriceList,
@@ -850,7 +912,7 @@ const cargarPreciosExcelController = async (req, res) => {
                             Precio,
                             error: `El artículo con código ${ItemCode} en la posición ${idx} tiene un nombre incorrecto.`
                         });
-                    }else{
+                    } else {
                         if (dbItem.validFor !== "Y") {
                             listErrors.push({
                                 PriceList,
@@ -860,28 +922,28 @@ const cargarPreciosExcelController = async (req, res) => {
                                 Precio,
                                 error: `El artículo con código ${ItemCode} en la posición ${idx} no es válido.`
                             });
-                        }else{
-    
+                        } else {
+
                         }
-                    }   
+                    }
                 }
             }
-         
+
             if (validate.length > 0) {
-                validate.forEach(error => errorSet.add(error)); 
-            }        
-            ++idx   
+                validate.forEach(error => errorSet.add(error));
+            }
+            ++idx
         }
-        listErrors = Array.from(errorSet); 
+        listErrors = Array.from(errorSet);
 
         console.log(listErrors);
 
         if (listErrors.length > 0) {
-            
-            const ws = XLSX.utils.json_to_sheet(listErrors); 
-            const wb = XLSX.utils.book_new(); 
+
+            const ws = XLSX.utils.json_to_sheet(listErrors);
+            const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Errores');
-   
+
             const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
 
             fs.unlinkSync(filePath);
@@ -896,7 +958,7 @@ const cargarPreciosExcelController = async (req, res) => {
                 const resultDesactive = await desactivePriceList(jsonData[0].PriceList);
                 console.log(resultDesactive);
 
-                if(resultDesactive.status === 200){
+                if (resultDesactive.status === 200) {
                     result = await updateListaPrecios(jsonData, usuario.ID_SAP, comment);
                 }
 
@@ -966,4 +1028,7 @@ module.exports = {
     setDescuentoOfertasPorCortoVencimientoController,
     getIdDescuentosCantidadCortoController,
     getDescuentosCantidadCortoController,
+    lineasByLineCodeController,
+    sucursalBySucCodeController,
+    tipoByGroupCodeController,
 }

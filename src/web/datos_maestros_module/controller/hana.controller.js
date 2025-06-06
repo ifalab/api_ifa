@@ -166,6 +166,29 @@ const getSucursales = async () => {
     }
 }
 
+const sucursalBySucCode = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_sucursales where "SucCode" = ${sucCode}`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en sucursalBySucCode:', error.message);
+        return {
+            status: 400,
+            message: `Error en sucursalBySucCode: ${error.message || ''}`
+        }
+    }
+}
+
 const getAreasPorSucursal = async (sucCode) => {
     try {
         if (!connection) {
@@ -349,6 +372,25 @@ const getAllLineas = async () => {
         throw {
             status: 400,
             message: `Error en getAllLineas: ${error.message || ''}`
+        }
+    }
+}
+
+const lineaByCode = async (lineCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select * from LAB_IFA_PRD.ifa_dm_lineas where "LineItemCode" = ${lineCode}`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en lineaByCode:', error);
+        throw {
+            status: 400,
+            message: `Error en lineaByCode: ${error.message || ''}`
         }
     }
 }
@@ -693,6 +735,7 @@ const setDescuentoEspecialPorArticulo = async (row, cardCode, itemCode, cantMin,
         }
     }
 }
+
 const obtenerTipos = async () => {
     try {
         if (!connection) {
@@ -706,6 +749,22 @@ const obtenerTipos = async () => {
     } catch (error) {
         console.error('Error en obtenertipos:', error.message || '');
         return { message: `Error en obtenertipos: ${error.message || ''}` }
+    }
+}
+
+const tipoByGroupCode = async (groupCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select * from ${process.env.PRD}.ifa_dm_tipos where "GroupCode"=${groupCode}`;
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en tipoByGroupCode:', error.message || '');
+        return { message: `Error en tipoByGroupCode: ${error.message || ''}` }
     }
 }
 
@@ -943,7 +1002,7 @@ const articuloByItemCode = async (itemCode) => {
     }
 }
 
-const updateListaPrecios = async(data, user, comentario) => {
+const updateListaPrecios = async (data, user, comentario) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -953,7 +1012,7 @@ const updateListaPrecios = async(data, user, comentario) => {
 
             const query = `CALL ${process.env.PRD}."IFA_DM_AGREGAR_PRECIOS"(${PriceList}, '${ItemCode}', ${Precio}, ${user}, '${comentario}')`;
 
-            console.log({query})
+            console.log({ query })
             await executeQuery(query);
         }
 
@@ -971,7 +1030,7 @@ const updateListaPrecios = async(data, user, comentario) => {
     }
 }
 
-const desactivePriceList = async(priceList) => {
+const desactivePriceList = async (priceList) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -1039,4 +1098,7 @@ module.exports = {
     setDescuentoOfertasPorCortoVencimiento,
     getDescuentosCantidadCorto,
     setDescuentoOfertasPorCantidadCortoVencimiento,
+    lineaByCode,
+    sucursalBySucCode,
+    tipoByGroupCode,
 }

@@ -100,7 +100,8 @@ const {
     getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje, getVentasLineaSupervisor,
     getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo,
     getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt, getVentasLineaSucursalSupervisor,
-    ventasVendedoresByLineasSucursal
+    ventasVendedoresByLineasSucursal,
+    ventasZonasVendedoresByLineasSucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2968,7 +2969,7 @@ const getVentasZonaSupervisorController = async (req, res) => {
             console.log('is mes actual')
             response = await getVentasZonaSupervisor(sucursales.toString())
         }
-        console.log({ response })
+        // console.log({ response })
         let SucCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
@@ -3601,7 +3602,6 @@ const ventasVendedoresByLineasSucursalController = async (req, res) => {
         let data = []
         if (listClientType.length == 0) {
             const response = await ventasVendedoresByLineasSucursal(year, month, sucCode, null, lineCode,)
-            // console.log({ response })
             data = [...data, ...response]
 
         } else {
@@ -3610,10 +3610,48 @@ const ventasVendedoresByLineasSucursalController = async (req, res) => {
                 data = [...data, ...response]
             }
         }
+
+        data = data.map((item) => {
+            const Sales = Number(item.Sales)
+            const Quota = Number(item.Quota)
+            return {
+                ...item,
+                Cumplimiento: (Sales == 0 || Quota == 0) ? 0 : Sales / Quota
+            }
+        })
         return res.json(data)
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en ventasVendedoresByLineasSucursalController ${error.message || 'No definido'}` });
+    }
+}
+
+const ventasZonasVendedoresByLineasSucursalController = async (req, res) => {
+    try {
+        const { year, month, sucCode, lineCode, listClientType, splCode } = req.body
+        let data = []
+        if (listClientType.length == 0) {
+            const response = await ventasZonasVendedoresByLineasSucursal(year, month, sucCode, null, lineCode, splCode)
+            data = [...data, ...response]
+
+        } else {
+            for (const clientType of listClientType) {
+                const response = await ventasZonasVendedoresByLineasSucursal(year, month, sucCode, clientType, lineCode, splCode)
+                data = [...data, ...response]
+            }
+        }
+        data = data.map((item) => {
+            const Sales = Number(item.Sales)
+            const Quota = Number(item.Quota)
+            return {
+                ...item,
+                Cumplimiento: (Sales == 0 || Quota == 0) ? 0 : Sales / Quota
+            }
+        })
+        return res.json(data)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasZonasVendedoresByLineasSucursalController ${error.message || 'No definido'}` });
     }
 }
 
@@ -3710,5 +3748,6 @@ module.exports = {
     vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController,
     ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController,
     excelClientesBloqueados, ventasLineaSucursalSupervisorController,
-    ventasVendedoresByLineasSucursalController
+    ventasVendedoresByLineasSucursalController,
+    ventasZonasVendedoresByLineasSucursalController,
 };

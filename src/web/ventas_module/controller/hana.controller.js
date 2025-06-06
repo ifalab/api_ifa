@@ -2027,6 +2027,21 @@ const ventasVendedoresByLineasSucursal = async (year, month, sucCode, clientType
         }
     }
 }
+const ventasZonasVendedoresByLineasSucursal = async (year, month, sucCode, clientType, lineCode, slpCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_DATA.get_zone_sales_and_quotas_by_period_branch_division_line_seller(${year},${month},${sucCode},${clientType},${lineCode},${slpCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en ventasZonasVendedoresByLineasSucursal: ${error.message || ''}`
+        }
+    }
+}
 
 module.exports = {
     ventaPorSucursal,
@@ -2132,5 +2147,6 @@ module.exports = {
     getVentasLineaSupervisor, getVentasTipoSupervisor, getVentasTipoSupervisor,
     clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo, getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt,
     getVentasLineaSucursalSupervisor,
-    ventasVendedoresByLineasSucursal
+    ventasVendedoresByLineasSucursal,
+    ventasZonasVendedoresByLineasSucursal
 }
