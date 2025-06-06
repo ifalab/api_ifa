@@ -72,10 +72,10 @@ const findClienteController = async (req, res) => {
         const response = await findClientesByVendedor(name);
         let cliente;
         for (const item of response) {
-            if(item.CardCode == cardCode){
+            if (item.CardCode == cardCode) {
                 const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
                 const saldoDisponible = (+CreditLine) - (+AmountDue);
-                cliente= {
+                cliente = {
                     ...restCliente,
                     CreditLine,
                     AmountDue,
@@ -84,7 +84,7 @@ const findClienteController = async (req, res) => {
                 };
                 break;
             }
-            
+
         }
 
         return res.json(cliente);
@@ -279,6 +279,7 @@ const crearOrderController = async (req, res) => {
         body.Series = process.env.SAP_SERIES_ORDER
         let alprazolamContains = false
         let otherContains = false
+        let listDescuentos = []
         docLine.map((item) => {
             if (item.ItemCode == alprazolamCode) {
                 alprazolamContains = true
@@ -292,14 +293,29 @@ const crearOrderController = async (req, res) => {
             return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
         }
         console.log(JSON.stringify({ docLine, alprazolamContains, otherContains }, null, 2))
-        // return
+        listDescuentos = docLine.map((item) => {
+            const total = Number(item.GrossTotal)
+            const grossPriceByQuantity = (Number(item.GrossPrice) * Number(item.Quantity))
+            return (total / grossPriceByQuantity)
+        })
+        const isMoreThanFifty = listDescuentos.some((item) => item < 0.5)
+
+        if (isMoreThanFifty == true) {
+            const idxMoreThan = listDescuentos.findIndex((item) => item < 0.5)
+            const item = docLine[idxMoreThan]
+            const message = `Existe un Descuento Mayor al 50%, para el articulo: ${item.ItemCode || 'No definido'}, cantidad: ${item.Quantity || 'No definido'}, precio: ${item.GrossPrice || 'No defindo'}, donde el total es de ${item.GrossTotal || 'No defindo'} `
+            console.log({ idxMoreThan, item })
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error Existe un Descuento Mayor al 50%, para el articulo: ${item.ItemCode || 'No definido'}, cantidad: ${item.Quantity || 'No definido'}, precio: ${item.GrossPrice || 'No defindo'}, donde el total es de ${item.GrossTotal || 'No defindo'} `, '', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message, body })
+        }
+        // return res.json({ body, listDescuentos, isMoreThanFifty })
         console.log(JSON.stringify({ body }, null, 2))
         const ordenResponse = await postOrden(body)
 
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         console.log(JSON.stringify(ordenResponse, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        if (ordenResponse.status == 400) {
+        if (ordenResponse.status >= 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
         }
@@ -825,12 +841,12 @@ const pedidoLayoutController = async (req, res) => {
 
         //! Definir nombre del archivo
         const fileName = `nota_pedido_${data.DocNum}.pdf`;
-        
+
         //! Registrar en el log
         grabarLog(user.USERCODE, user.USERNAME, "Facturacion crear Nota Entrega",
             "Nota Creada con éxito", response.query, "facturacion/nota-entrega", process.env.PRD);
-            
-            //! Enviar el PDF como respuesta
+
+        //! Enviar el PDF como respuesta
         await browser.close();
         res.set({
             'Content-Type': 'application/pdf',

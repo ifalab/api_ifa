@@ -585,7 +585,7 @@ const stockDisponibleIfavetController = async (req, res) => {
             //     item.itemcode != '103-012-027' &&
             //     item.itemcode != '103-012-026' &&
             //     item.itemcode != '103-004-003') {
-                result.push(item)
+            result.push(item)
             // }
         })
         return res.json({ stock: result });
@@ -4155,7 +4155,7 @@ const facturacionCambioValoradoController = async (req, res) => {
             console.log({ dataProsin })
             if (dataProsin && dataProsin.estado != 200) {
                 grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Error de facturacionProsin ${dataProsin.mensaje || ''}`, 'facturacionProsin', 'inventario/facturacion-cambio', process.env.PRD)
-                return res.status(400).json({ mensaje: `Error de facturacionProsin ${dataProsin.mensaje || ''}`, dataProsin, dataToProsin, bodyFinalFactura, cuf,responseProsin })
+                return res.status(400).json({ mensaje: `Error de facturacionProsin ${dataProsin.mensaje || ''}`, dataProsin, dataToProsin, bodyFinalFactura, cuf, responseProsin })
             }
             const fecha = dataProsin.fecha
             const nroFactura = dataProsin.datos.factura
@@ -4869,16 +4869,23 @@ const solicitudesTrasladoController = async (req, res) => {
         const user = req.usuarioAutorizado
         const { ID_SAP } = user
         let listSolicitudes = []
-        console.log({ listSucCode, ID_SAP })
+        console.log({ listSucCode, ID_SAP, roleAll })
+        if (ID_SAP == null || ID_SAP == 0 || ID_SAP == '0') {
+            return res.status(400).json({ mensaje: `Usted No tiene ID SAP`, ID_SAP })
+        }
         if (listSucCode.length == 0) {
             return res.status(400).json({ mensaje: `Usted No tiene Sucursales asignadas` })
         }
         for (const sucCode of listSucCode) {
             let response = await solicitudesPendiente(sucCode)
-            if (!roleAll && ID_SAP!==null) {
+
+            if (!roleAll) {
                 response = response.filter((item) => item.UserCode == ID_SAP)
                 listSolicitudes = [...listSolicitudes, ...response]
+            } else {
+                listSolicitudes = [...listSolicitudes, ...response]
             }
+
         }
         if (listSolicitudes.length > 0) {
             listSolicitudes.sort((a, b) => new Date(b.CreateDate) - new Date(a.CreateDate));
@@ -4911,7 +4918,7 @@ const reporteDevolucionValoradosController = async (req, res) => {
     try {
         const { fechaIni, fechaFin, user } = req.body
         console.log({ fechaIni, fechaFin, user })
-        const response = await reporteDevolucionValorados(fechaIni, fechaFin, user )
+        const response = await reporteDevolucionValorados(fechaIni, fechaFin, user)
         console.log({ response })
         return res.json(response)
     } catch (error) {
@@ -4949,7 +4956,7 @@ const reporteDevolucionRefacturacionController = async (req, res) => {
     try {
         const { fechaIni, fechaFin, user } = req.body
         console.log({ fechaIni, fechaFin, user })
-        const response = await reporteDevolucionRefacturacion(fechaIni, fechaFin, user )
+        const response = await reporteDevolucionRefacturacion(fechaIni, fechaFin, user)
         // console.log({ response })
         return res.json(response)
     } catch (error) {
@@ -5709,7 +5716,7 @@ const excelReporte = async (req, res) => {
             width: 10
         }));
 
-        console.log({columns: worksheet.columns})
+        console.log({ columns: worksheet.columns })
 
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
@@ -5751,31 +5758,31 @@ const excelReporte = async (req, res) => {
                 displayedColumns.reduce((acc, column) => ({
                     ...acc,
                     [column]: row[column] ?
-                        (column.includes('Date') ? new Date(row[column]) : 
-                        (column.includes('Num') ? parseFloat(row[column]) : row[column]))
+                        (column.includes('Date') ? new Date(row[column]) :
+                            (column.includes('Num') ? parseFloat(row[column]) : row[column]))
                         : ''
                 }), {})
             )
         );
-        
+
         worksheet.columns.forEach(column => {
             const header = column.header.toString()
             let maxLength = header.length;
-            
+
             column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
-              if(rowNumber >4){
-                let cellValue = cell.value ? cell.value.toString() : '';
-                if(header.includes('Fecha') && cell.value instanceof Date){
-                    console.log({fecha: cell.value.toString()})
-                    const dateValue = new Date(cell.value.toString())
-                    cellValue = dateValue.toISOString().split('T')[0]
+                if (rowNumber > 4) {
+                    let cellValue = cell.value ? cell.value.toString() : '';
+                    if (header.includes('Fecha') && cell.value instanceof Date) {
+                        console.log({ fecha: cell.value.toString() })
+                        const dateValue = new Date(cell.value.toString())
+                        cellValue = dateValue.toISOString().split('T')[0]
+                    }
+                    maxLength = Math.max(maxLength, cellValue.length);
+                    cell.border = {
+                        left: { style: 'thin' },
+                        right: { style: 'thin' },
+                    };
                 }
-                maxLength = Math.max(maxLength, cellValue.length);
-                cell.border = {
-                    left: { style: 'thin' },
-                    right: { style: 'thin' },
-                };
-              }
             });
             column.width = maxLength + 3;
         });
@@ -5808,14 +5815,14 @@ const excelReporte = async (req, res) => {
         res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
 
         await workbook.xlsx.write(res);
-        grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Reporte Devolucion`, `Exito en el reporte de devoluciones`,
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Reporte Devolucion`, `Exito en el reporte de devoluciones`,
             '', 'inventario/excel-reporte', process.env.PRD
         );
         res.end();
     } catch (error) {
         console.error({ error });
-        grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Reporte Devolucion`, `Error generando el Excel del reporte de devoluciones ${error}`,
-        'catch de excelReporte', 'inventario/excel-reporte', process.env.PRD
+        grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Reporte Devolucion`, `Error generando el Excel del reporte de devoluciones ${error}`,
+            'catch de excelReporte', 'inventario/excel-reporte', process.env.PRD
         );
         return res.status(500).json({ mensaje: `Error generando el Excel de reporte de devolucion ${error}` });
     }

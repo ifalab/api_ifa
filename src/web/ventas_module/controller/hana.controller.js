@@ -1453,7 +1453,7 @@ const getClientName = async (cardCode) => {
 
 ///Solicitud Descuentos
 const agregarSolicitudDeDescuento = async (p_SlpCode, p_SlpName, p_ClientCode, p_ClientName,
-    p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin,  p_CreatedBy) => {
+    p_ItemCode, p_ItemName, p_CantMin, p_DescPrct, p_FechaIni, p_FechaFin, p_CreatedBy) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -1553,7 +1553,7 @@ const getSolicitudesDescuentoByStatus = async (status, slpCode) => {
         if (!connection) {
             await connectHANA()
         }
-            const query = `select *
+        const query = `select *
             from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO
             where  "Status" = ${status} and "SlpCode" = ${slpCode} 
             and "Deleted" = 0`
@@ -1592,7 +1592,7 @@ const actualizarSolicitudDescuento = async (id, p_FechaIni, p_FechaFin, p_CantMi
         if (!connection) {
             await connectHANA()
         }
-            const query = `call ${process.env.PRD}.IFA_CRM_EDITAR_SOLICITUD_DESCUENTO(
+        const query = `call ${process.env.PRD}.IFA_CRM_EDITAR_SOLICITUD_DESCUENTO(
                 ${id}, '${p_FechaIni}', '${p_FechaFin}', ${p_CantMin}, ${p_DescPrct}
             )`
         console.log({ query })
@@ -1610,7 +1610,7 @@ const deleteSolicitudDescuento = async (id) => {
         if (!connection) {
             await connectHANA()
         }
-            const query = `UPDATE ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
+        const query = `UPDATE ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
                 set "Deleted" = 1
                 where "Id"=${id};`
         console.log({ query })
@@ -1623,7 +1623,7 @@ const deleteSolicitudDescuento = async (id) => {
     }
 }
 
-const getVentasPrespuestosSubLinea = async() => {
+const getVentasPrespuestosSubLinea = async () => {
     try {
         if (!connection) {
             await connectHANA()
@@ -1640,7 +1640,7 @@ const getVentasPrespuestosSubLinea = async() => {
     }
 }
 
-const getVentasPrespuestosSubLineaAnterior = async() => {
+const getVentasPrespuestosSubLineaAnterior = async () => {
     try {
         if (!connection) {
             await connectHANA()
@@ -1726,7 +1726,7 @@ const getSubscriptions = async () => {
     }
 }
 
-const insertNotification = async (title, body, vendedor=-1, rol, created_at, usuario) => {
+const insertNotification = async (title, body, vendedor = -1, rol, created_at, usuario) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -1740,18 +1740,18 @@ const insertNotification = async (title, body, vendedor=-1, rol, created_at, usu
         }
     } catch (error) {
         return {
-            status:400,
+            status: 400,
             message: `Error en insertNotification: ${error.message || ''}`
         }
     }
 }
 
-const getNotifications = async (vendedor=-1, usuario) => {
+const getNotifications = async (vendedor = -1, usuario) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        let query = `call ${process.env.PRD}.GET_NOTIFICATIONS(${vendedor}, ${usuario})`     
+        let query = `call ${process.env.PRD}.GET_NOTIFICATIONS(${vendedor}, ${usuario})`
 
         return await executeQuery(query)
     } catch (error) {
@@ -1766,7 +1766,7 @@ const deleteNotification = async (id_notification, id_usuario) => {
         if (!connection) {
             await connectHANA()
         }
-        let query = `call ${process.env.PRD}.DELETE_NOTIFICATION(${id_notification},${id_usuario})`     
+        let query = `call ${process.env.PRD}.DELETE_NOTIFICATION(${id_notification},${id_usuario})`
         console.log(query)
         const result = await executeQuery(query)
         return result
@@ -1782,7 +1782,7 @@ const getVendedorByCode = async (code) => {
         if (!connection) {
             await connectHANA()
         }
-        let query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SlpCode"=${code}`     
+        let query = `select * from ${process.env.PRD}.ifa_dm_vendedores where "SlpCode"=${code}`
         console.log(query)
         const result = await executeQuery(query)
         return result
@@ -1793,7 +1793,7 @@ const getVendedorByCode = async (code) => {
     }
 }
 
-const getDescuentosDeVendedoresParaPedido = async (cliente, vendedor,fecha) => {
+const getDescuentosDeVendedoresParaPedido = async (cliente, vendedor, fecha) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -1802,7 +1802,7 @@ const getDescuentosDeVendedoresParaPedido = async (cliente, vendedor,fecha) => {
         from ${process.env.PRD}.IFA_CRM_SOLICITUD_DESCUENTO 
         where '${fecha}' between "FechaIni" and "FechaFin" 
         and "ClientCode"='${cliente}' and "SlpCode"=${vendedor}
-        and "Status"=2 and "Deleted"=0`     
+        and "Status"=2 and "Deleted"=0`
         console.log(query)
         const result = await executeQuery(query)
         return result
@@ -1930,7 +1930,7 @@ const getVentasLineaSucursalSupervisor = async (sucursales, isMesAnterior) => {
             await connectHANA();
         }
         let query
-        if(isMesAnterior==true || isMesAnterior=='true')
+        if (isMesAnterior == true || isMesAnterior == 'true')
             query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUC_SUPERVISOR_ANT where "SucCode" in (${sucursales})`;
         else
             query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUC_SUPERVISOR where "SucCode" in (${sucursales})`
@@ -1983,18 +1983,18 @@ const getVentasTipoSupervisorAnt = async (sucursal, linea) => {
 }
 /*
 "IFA_VEN_CLIENTES_BLOQUEADOS_GROUP" ( "SucCode",
-	 "SucName",
-	 "GroupCode",
-	 "GroupName",
-	 "ZoneCode",
-	 "ZoneName",
-	 "rowspanZona",
-	 "rowspan",
-	 "SlpCode",
-	 "SlpName",
-	 "Universal",
-	 "Bloqueados",
-	 "Porcentaje" 
+     "SucName",
+     "GroupCode",
+     "GroupName",
+     "ZoneCode",
+     "ZoneName",
+     "rowspanZona",
+     "rowspan",
+     "SlpCode",
+     "SlpName",
+     "Universal",
+     "Bloqueados",
+     "Porcentaje" 
 */
 const clientesZonaBloqueadosPorGrupo = async (sucursales, grupo) => {
     try {
@@ -2008,6 +2008,22 @@ const clientesZonaBloqueadosPorGrupo = async (sucursales, grupo) => {
     } catch (error) {
         throw {
             message: `Error en clientesZonaBloqueadosPorGrupo: ${error.message || ''}`
+        }
+    }
+}
+
+const ventasVendedoresByLineasSucursal = async (year, month, sucCode, clientType, lineCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call LAB_IFA_DATA.get_seller_sales_and_quotas_by_period_branch_division_line(${year},${month},${sucCode},${clientType},${lineCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en ventasVendedoresByLineasSucursal: ${error.message || ''}`
         }
     }
 }
@@ -2107,7 +2123,7 @@ module.exports = {
     getSubscriptions, CREATETABLE,
     getVentasPrespuestosSubLinea,
     getVentasPrespuestosSubLineaAnterior,
-    getSolicitudesDescuentoByVendedor, getNotifications, insertNotification, 
+    getSolicitudesDescuentoByVendedor, getNotifications, insertNotification,
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento,
     getVendedorByCode, getVendedorByCode, getDescuentosDeVendedoresParaPedido,
     ventasPorZonasVendedor2, getUbicacionClientesByVendedor, getVentasZonaSupervisor,
@@ -2115,5 +2131,6 @@ module.exports = {
     getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje,
     getVentasLineaSupervisor, getVentasTipoSupervisor, getVentasTipoSupervisor,
     clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo, getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt,
-    getVentasLineaSucursalSupervisor
+    getVentasLineaSucursalSupervisor,
+    ventasVendedoresByLineasSucursal
 }
