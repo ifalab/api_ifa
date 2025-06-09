@@ -101,13 +101,14 @@ const {
     getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo,
     getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt, getVentasLineaSucursalSupervisor,
     ventasVendedoresByLineasSucursal,
-    ventasZonasVendedoresByLineasSucursal
+    ventasZonasVendedoresByLineasSucursal,
+    reportePendienteCadenas
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { postInventoryTransferRequests } = require("./sld.controller");
 const { validarExcel } = require("../../../helpers/validacionesExcel");
-const { Console } = require("console");
+const { Console, group } = require("console");
 const { isatty } = require("tty");
 
 
@@ -3655,6 +3656,31 @@ const ventasZonasVendedoresByLineasSucursalController = async (req, res) => {
     }
 }
 
+const reportePendienteCadenasController = async (req, res) => {
+    try {
+        let tipo = req.query.tipo
+        let groupCode = req.query.groupCode
+        let cardCode = req.query.cardCode
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        const response = await reportePendienteCadenas(tipo, groupCode, cardCode)
+        if (response.length == 0) {
+            return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
+        }
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteCadenasController ${error.message || 'No definido'}` });
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -3754,4 +3780,5 @@ module.exports = {
     excelClientesBloqueados, ventasLineaSucursalSupervisorController,
     ventasVendedoresByLineasSucursalController,
     ventasZonasVendedoresByLineasSucursalController,
+    reportePendienteCadenasController,
 };

@@ -103,7 +103,8 @@ const {
     ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController,
     excelClientesBloqueados, ventasLineaSucursalSupervisorController,
     ventasVendedoresByLineasSucursalController,
-    ventasZonasVendedoresByLineasSucursalController
+    ventasZonasVendedoresByLineasSucursalController,
+    reportePendienteCadenasController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -230,5 +231,7 @@ router.post('/ventas-vendedores-by-succode-linecode', [validarToken, validarCamp
 router.post('/ventas-zonas-vendedores-by-succode-linecode', [validarToken, validarCampos], ventasZonasVendedoresByLineasSucursalController)
 
 router.post('/excel-clientes-blq', [validarToken, validarCampos], excelClientesBloqueados)
+
+router.get('/reporte-pendiente-cadenas', [validarToken, validarCampos], reportePendienteCadenasController)
 
 module.exports = router
