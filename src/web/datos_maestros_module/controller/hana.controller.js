@@ -62,6 +62,25 @@ const dmClientes = async () => {
     }
 }
 
+const dmSearchClientes = async (search) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes WHERE "CardCode" LIKE '%${search}%' or "CardName" LIKE '%${search}%' limit 50 `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en dmClientes:', error.message);
+        return {
+            status: 400,
+            message: `Error en dmClientes: ${error.message || ''}`
+        }
+    }
+}
 
 const dmClientesPorCardCode = async (cardCode) => {
     try {
@@ -1101,4 +1120,5 @@ module.exports = {
     lineaByCode,
     sucursalBySucCode,
     tipoByGroupCode,
+    dmSearchClientes,
 }

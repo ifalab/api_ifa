@@ -21,13 +21,16 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getDescuentosCantidadCortoController,
     lineasByLineCodeController,
     sucursalBySucCodeController,
-    tipoByGroupCodeController
+    tipoByGroupCodeController,
+    dmTodosClientesController,
+    dmSearchClientesController
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
 const router = Router()
 
 router.get('/clientes', [validarToken, validarCampos], dmClientesController)
+router.get('/search-cliente', [validarToken, validarCampos], dmSearchClientesController)
 router.get('/clientes-cardcode', [validarToken, validarCampos], dmClientesPorCardCodeController)
 router.patch('/update-cliente', [validarToken, validarCampos], dmUpdateClienteController)
 router.get('/tipo-documentos', [validarToken, validarCampos], dmTipoDocumentosController)
@@ -55,7 +58,6 @@ router.get('/articulos', [validarToken, validarCampos], getArticulosController)
 router.post('/find-cliente', [validarToken, validarCampos], findClienteController)
 router.get('/get-id-desc', [validarToken, validarCampos], getIdDescuentosCantidadController)
 router.get('/get-id-desc-corto', [validarToken, validarCampos], getIdDescuentosCantidadCortoController)
-// getDescuentosCantidadCortoController
 router.post('/get-desc-cant', [validarToken, validarCampos], getDescuentosCantidadController)
 router.post('/get-desc-cant-corto', [validarToken, validarCampos], getDescuentosCantidadCortoController)
 

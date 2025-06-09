@@ -2575,104 +2575,104 @@ const deleteSolicitudDescuentoController = async (req, res) => {
     }
 }
 
-const notificationSubscriptionController = async (req, res) => {
-    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-    try {
-        const subscription = JSON.stringify(req.body);
-        const response = await notificationSubscription(subscription)
-        console.log({ response })
-        return res.json(response)
-    } catch (error) {
-        console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Subscripcion Notificacion", `${error.message || 'Error en notificationSubscriptionController'}`, 'PUSH_SUBSCRIPTIONS',
-            "venta/notification-subscribe", process.env.PRD)
-        return res.status(500).json({ mensaje: `Error en notificationSubscriptionController: ${error.message}` })
-    }
-}
+// const notificationSubscriptionController = async (req, res) => {
+//     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+//     try {
+//         const subscription = JSON.stringify(req.body);
+//         const response = await notificationSubscription(subscription)
+//         console.log({ response })
+//         return res.json(response)
+//     } catch (error) {
+//         console.log({ error })
+//         grabarLog(user.USERCODE, user.USERNAME, "Subscripcion Notificacion", `${error.message || 'Error en notificationSubscriptionController'}`, 'PUSH_SUBSCRIPTIONS',
+//             "venta/notification-subscribe", process.env.PRD)
+//         return res.status(500).json({ mensaje: `Error en notificationSubscriptionController: ${error.message}` })
+//     }
+// }
 
-const notificationUnsubscribeController = async (req, res) => {
-    try {
-        const subscription = JSON.stringify(req.body);
-        const response = await notificationUnsubscribe(subscription)
-        console.log({ response })
-        return res.json(response)
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: `Error en notificationUnsubscribeController: ${error.message}` })
-    }
-}
+// const notificationUnsubscribeController = async (req, res) => {
+//     try {
+//         const subscription = JSON.stringify(req.body);
+//         const response = await notificationUnsubscribe(subscription)
+//         console.log({ response })
+//         return res.json(response)
+//     } catch (error) {
+//         console.log({ error })
+//         return res.status(500).json({ mensaje: `Error en notificationUnsubscribeController: ${error.message}` })
+//     }
+// }
 
-webpush.setVapidDetails(
-    'mailto:',
-    process.env.VAPID_KEY_PUBLIC,
-    process.env.VAPID_KEY_PRIVATE
-);
-const sendNotificationController = async (req, res) => {
-    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-    try {
-        const { title, body, vendedor, rol, excludeEndpoint, usuario } = req.body
-        console.log({ excludeEndpoint })
-        const date = new Date()
-        let dato = {
-            title: `${title}`,
-            body: `${body}`,
-            created_at: date,
-            vendedor: vendedor,
-        }
-        const rows = await getSubscriptions()
-        console.log({ rows })
+// webpush.setVapidDetails(
+//     'mailto:',
+//     process.env.VAPID_KEY_PUBLIC,
+//     process.env.VAPID_KEY_PRIVATE
+// );
+// const sendNotificationController = async (req, res) => {
+//     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+//     try {
+//         const { title, body, vendedor, rol, excludeEndpoint, usuario } = req.body
+//         console.log({ excludeEndpoint })
+//         const date = new Date()
+//         let dato = {
+//             title: `${title}`,
+//             body: `${body}`,
+//             created_at: date,
+//             vendedor: vendedor,
+//         }
+//         const rows = await getSubscriptions()
+//         console.log({ rows })
 
 
-        const responseInsert = await insertNotification(title, body, vendedor, rol, date.toISOString(), usuario)
-        console.log({ responseInsert })
-        //{ status: 200,
-        //  result: [ { V_ID_NOTIFICACION: 4 } ]
-        //}
-        if (responseInsert.status == 200)
-            dato.id = responseInsert.result[0].V_ID_NOTIFICACION
+//         const responseInsert = await insertNotification(title, body, vendedor, rol, date.toISOString(), usuario)
+//         console.log({ responseInsert })
+//         //{ status: 200,
+//         //  result: [ { V_ID_NOTIFICACION: 4 } ]
+//         //}
+//         if (responseInsert.status == 200)
+//             dato.id = responseInsert.result[0].V_ID_NOTIFICACION
 
-        rows.forEach(row => {
-            const sub = JSON.parse(row.Subscription);
-            if (sub.endpoint !== excludeEndpoint) {
-                webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
-            } else {
-                console.log('Excluded', sub.endpoint);
-            }
-        });
-        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `Exito al enviar la notificacion`, 'INSERTAR_NOTIFICACION',
-            "venta/send-notification", process.env.PRD)
-        return res.send(dato);
-    } catch (error) {
-        console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `${error.message || 'Error en sendNotificationController'}`, 'INSERTAR_NOTIFICACION',
-            "venta/send-notification", process.env.PRD)
-        return res.status(500).json({ mensaje: `Error en sendNotificationController: ${error.message}` })
-    }
-}
+//         rows.forEach(row => {
+//             const sub = JSON.parse(row.Subscription);
+//             if (sub.endpoint !== excludeEndpoint) {
+//                 webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
+//             } else {
+//                 console.log('Excluded', sub.endpoint);
+//             }
+//         });
+//         grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `Exito al enviar la notificacion`, 'INSERTAR_NOTIFICACION',
+//             "venta/send-notification", process.env.PRD)
+//         return res.send(dato);
+//     } catch (error) {
+//         console.log({ error })
+//         grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `${error.message || 'Error en sendNotificationController'}`, 'INSERTAR_NOTIFICACION',
+//             "venta/send-notification", process.env.PRD)
+//         return res.status(500).json({ mensaje: `Error en sendNotificationController: ${error.message}` })
+//     }
+// }
 
-const getNotificationController = async (req, res) => {
-    try {
-        const { vendedor, usuario } = req.body
+// const getNotificationController = async (req, res) => {
+//     try {
+//         const { vendedor, usuario } = req.body
 
-        const response = await getNotifications(vendedor, usuario)
-        return res.json(response);
-    } catch (error) {
-        console.error({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador getNotificationController: ${error.message || ''}` })
-    }
-}
+//         const response = await getNotifications(vendedor, usuario)
+//         return res.json(response);
+//     } catch (error) {
+//         console.error({ error })
+//         return res.status(500).json({ mensaje: `Error en el controlador getNotificationController: ${error.message || ''}` })
+//     }
+// }
 
-const deleteNotificationController = async (req, res) => {
-    try {
-        const { id_notification, id_usuario } = req.body
-        const response = await deleteNotification(id_notification, id_usuario)
-        console.log(response)
-        return res.json(response);
-    } catch (error) {
-        console.error({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador deleteNotificationController: ${error.message || ''}` })
-    }
-}
+// const deleteNotificationController = async (req, res) => {
+//     try {
+//         const { id_notification, id_usuario } = req.body
+//         const response = await deleteNotification(id_notification, id_usuario)
+//         console.log(response)
+//         return res.json(response);
+//     } catch (error) {
+//         console.error({ error })
+//         return res.status(500).json({ mensaje: `Error en el controlador deleteNotificationController: ${error.message || ''}` })
+//     }
+// }
 
 const ventasPresupuestoSubLinea = async (req, res) => {
     try {
@@ -3738,10 +3738,14 @@ module.exports = {
     getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
-    getClientNameController, notificationSubscriptionController, sendNotificationController,
-    getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
+    getClientNameController,
+    //  notificationSubscriptionController, 
+    // sendNotificationController,
+    getSolicitudesDescuentoByVendedorController,
+    // getNotificationController,
+    // deleteNotificationController,
     ventasPresupuestoSubLinea, ventasPresupuestoSubLineaAnterior,
-    notificationUnsubscribeController,
+    // notificationUnsubscribeController,
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
     ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVentasZonaSupervisorController,
     getVendedoresSolicitudDescByStatusSucursalController,
