@@ -1,12 +1,13 @@
 const path = require('path');
 const ejs = require('ejs');
+const xlsx = require('xlsx');
 const puppeteer = require('puppeteer');
 const { PDFDocument } = require('pdf-lib');
 const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana } = require('./hana.controller');
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const postInventoryEntriesController = async (req, res) => {
     try {
@@ -591,7 +592,8 @@ const getAsientoContableCCById = async (req, res) => {
                 Especialidad: current.Especialidad,
                 Clasificacion_Gastos: current.Clasificacion_Gastos,
                 Conceptos_Comerciales: current.Conceptos_Comerciales,
-                Cuenta_Contable: current.Cuenta_Contable
+                Cuenta_Contable: current.Cuenta_Contable,
+                Indicator: current.Indicator
             };
 
             if (acc[current.TransId]) {
@@ -878,6 +880,110 @@ const obtenerAsientoCompletos = async(req, res) => {
     }
 }
 
+const obtenerExcelAsientos = async (req, res) => {
+  const asientos = req.body;
+
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Asientos');
+
+    // Definir columnas
+    worksheet.columns = [
+      { header: 'TransId', key: 'TransId', width: 10 },
+      { header: 'TransType', key: 'TransType', width: 10 },
+      { header: 'RefDate', key: 'RefDate', width: 15 },
+      { header: 'DueDate', key: 'DueDate', width: 15 },
+      { header: 'Memo', key: 'Memo', width: 40 },
+      { header: 'Ref1', key: 'Ref1', width: 15 },
+      { header: 'Ref2', key: 'Ref2', width: 15 },
+      { header: 'Ref3', key: 'Ref3', width: 15 },
+      { header: 'Number', key: 'Number', width: 10 },
+      { header: 'Indicator', key: 'Indicator', width: 15 },
+      { header: 'UserSign', key: 'UserSign', width: 10 },
+      { header: 'Username', key: 'Username', width: 25 },
+      { header: 'Line_ID', key: 'Line_ID', width: 10 },
+      { header: 'DocFuenteCod', key: 'DocFuenteCod', width: 20 },
+      { header: 'Account', key: 'Account', width: 20 },
+      { header: 'AcctName', key: 'AcctName', width: 30 },
+      { header: 'Debit', key: 'Debit', width: 15 },
+      { header: 'Credit', key: 'Credit', width: 15 },
+      { header: 'LineMemo', key: 'LineMemo', width: 40 },
+      { header: 'MIEntry', key: 'MIEntry', width: 10 },
+      { header: 'ShortName', key: 'ShortName', width: 20 },
+      { header: 'CardName', key: 'CardName', width: 30 },
+      { header: 'ContraAct', key: 'ContraAct', width: 15 },
+      { header: 'Ref1Detail', key: 'Ref1Detail', width: 15 },
+      { header: 'Ref2Detail', key: 'Ref2Detail', width: 15 },
+      { header: 'Ref3Deatil', key: 'Ref3Deatil', width: 15 },
+      { header: 'U_Clasif_Gastos', key: 'U_Clasif_Gastos', width: 15 },
+      { header: 'SourceID', key: 'SourceID', width: 10 },
+      { header: 'Area', key: 'Area', width: 20 },
+      { header: 'Tipo_Cliente', key: 'Tipo_Cliente', width: 20 },
+      { header: 'Linea', key: 'Linea', width: 20 },
+      { header: 'Especialidad', key: 'Especialidad', width: 25 },
+      { header: 'Clasificacion_Gastos', key: 'Clasificacion_Gastos', width: 25 },
+      { header: 'Conceptos_Comerciales', key: 'Conceptos_Comerciales', width: 30 },
+      { header: 'Cuenta_Contable', key: 'Cuenta_Contable', width: 20 },
+    ];
+
+    // Agregar filas
+    asientos.forEach(item => {
+      worksheet.addRow(item);
+    });
+
+    // Establecer headers para descarga
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=Asientos.xlsx');
+
+    // Escribir el archivo en el stream de respuesta
+    await workbook.xlsx.write(res);
+    res.status(200).end();
+  } catch (error) {
+    console.error('Error al generar Excel:', error);
+    res.status(500).json({
+      status: false,
+      mensaje: 'Error al generar el Excel',
+      error: error.message,
+    });
+  }
+};
+
+const saveClasificacionGastos = async (req, res) => {
+    try {
+        if (!req.file) {
+        return res.status(400).json({ status: false, mensaje: 'No se recibió ningún archivo' });
+        }
+
+        const buffer = req.file.buffer;
+
+        // Leer el Excel con xlsx
+        const workbook = xlsx.read(buffer, { type: 'buffer' });
+        const hoja = workbook.Sheets[workbook.SheetNames[0]];
+        const datos = xlsx.utils.sheet_to_json(hoja);
+
+        console.log('Datos del Excel:', datos);
+
+        // Aquí puedes guardar `datos` en tu base de datos o procesarlos como necesites
+
+        for (const fila of datos) {
+            await saveClasificacionGastosHana(fila);
+        }
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Clasificación de gastos insertada correctamente',
+            total: datos.length
+        });
+
+    } catch (error) {
+        console.error('Error al guardar la clasificación de gastos:', error);
+        res.status(500).json({
+            status: 500,
+            mensaje: 'Error al guardar la clasificación de gastos',
+            error: error.message,
+        });
+    }
+}
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -902,5 +1008,7 @@ module.exports = {
     anularAsientoCC,
     descontabilizarAsientoCC,
     obtenerBalanceGeneral,
-    obtenerAsientoCompletos
+    obtenerAsientoCompletos,
+    obtenerExcelAsientos,
+    saveClasificacionGastos
 }

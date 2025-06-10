@@ -1,4 +1,4 @@
-export const estructurarBalanceParaTree = (dataPlano) => {
+const estructurarBalanceParaTree = (dataPlano) => {
   const mapNivel1 = new Map();
 
   for (const item of dataPlano) {
@@ -42,3 +42,7 @@ export const estructurarBalanceParaTree = (dataPlano) => {
 
   return Array.from(mapNivel1.values());
 };
+
+module.exports = {
+  estructurarBalanceParaTree
+}

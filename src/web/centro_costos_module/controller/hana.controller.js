@@ -244,6 +244,7 @@ const getobtenerAsientoCompletos = async(ini, fin) => {
             SELECT * 
             FROM LAB_IFA_COM.IFA_CC_JOURNAL 
             WHERE "RefDate" BETWEEN '${ini}' AND '${fin}'
+            AND "Account" LIKE '6%'
         `;
         console.log(query);
         return await executeQueryWithConnection(query);
@@ -252,6 +253,40 @@ const getobtenerAsientoCompletos = async(ini, fin) => {
         throw new Error(`Error en getobtenerAsientoCompletos: ${error.message}`);
     }
 }
+
+const saveClasificacionGastosHana = async (fila) => {
+  try {
+    const {
+      area,
+      tipo_cliente,
+      linea,
+      especialidad,
+      clasificacion_gastos,
+      conceptos_comerciales,
+      cuenta_contable
+    } = fila;
+
+    const query = `
+      CALL "LAB_IFA_COM"."IFA_CC_INSERT_CLASIFICACION_GASTO" (
+        '${area}', 
+        '${tipo_cliente}', 
+        '${linea}', 
+        '${especialidad}', 
+        '${clasificacion_gastos}', 
+        '${conceptos_comerciales}', 
+        '${cuenta_contable}'
+      );
+    `;
+
+    console.log('Ejecutando query saveClasificacionGastosHana:', query);
+    return await executeQueryWithConnection(query);
+
+  } catch (error) {
+    console.error('Error en saveClasificacionGastosHana:', error);
+    throw new Error(`Error en saveClasificacionGastosHana: ${error.message}`);
+  }
+};
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -271,5 +306,6 @@ module.exports = {
     postAnularAsientoCC,
     postDescontabilizarAsientoCC,
     getBalanceGeneralCC,
-    getobtenerAsientoCompletos
+    getobtenerAsientoCompletos,
+    saveClasificacionGastosHana
 };
