@@ -3658,9 +3658,18 @@ const ventasZonasVendedoresByLineasSucursalController = async (req, res) => {
 
 const reportePendienteCadenasController = async (req, res) => {
     try {
+        let fechaInicial = req.query.fechaInicial
+        let fechaFinal = req.query.fechaFinal
         let tipo = req.query.tipo
         let groupCode = req.query.groupCode
         let cardCode = req.query.cardCode
+        console.warn({
+            fechaInicial,
+            fechaFinal,
+            tipo,
+            groupCode,
+            cardCode,
+        })
         if (!tipo || tipo == '') {
             tipo = null
         }
@@ -3670,16 +3679,65 @@ const reportePendienteCadenasController = async (req, res) => {
         if (!cardCode || cardCode == '') {
             cardCode = null
         }
-        const response = await reportePendienteCadenas(tipo, groupCode, cardCode)
+        if (!fechaInicial || fechaInicial == '') {
+            fechaInicial = null
+        }
+        if (!fechaFinal || fechaFinal == '') {
+            fechaFinal = null
+        }
+        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode)
         if (response.length == 0) {
             return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
         }
+        let reporte = agruparPorYearMonth(response)
+        reporte.sort((a, b) => {
+            if (a.Year !== b.Year) {
+                return a.Year - b.Year; // Si los años son diferentes, ordena por año
+            }
+            
+            return a.Month - b.Month;
+        });
         return res.json(response)
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en reportePendienteCadenasController ${error.message || 'No definido'}` });
     }
 }
+
+function agruparPorYearMonth(data) {
+    const agrupado = data.reduce((acc, item) => {
+        const key = `${item.Year}-${item.Month}`;
+
+        if (!acc[key]) {
+            acc[key] = {
+                Year: item.Year,
+                Month: item.Month,
+                Total: 0, // Inicializar el total en 0
+                Sales: [] // Cambiar "Sale" por "Sales" para mejor claridad
+            };
+        }
+
+        // Convertir el total a número y sumarlo al total del mes
+        const itemTotal = parseFloat(item.Total) || 0;
+        acc[key].Total += itemTotal;
+
+        // Añadir el objeto sin Year y Month
+        acc[key].Sales.push({
+            CardCode: item.CardCode,
+            CardName: item.CardName,
+            Total: Number(item.Total)
+        });
+
+        return acc;
+    }, {});
+
+    // Convertir el objeto agrupado a un array y redondear los totales
+    return Object.values(agrupado).map(grupo => ({
+        ...grupo,
+        Total: parseFloat(grupo.Total.toFixed(2)) // Redondear a 2 decimales
+    }));
+}
+
 
 module.exports = {
     ventasPorSucursalController,
