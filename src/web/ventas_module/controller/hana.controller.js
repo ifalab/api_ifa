@@ -2043,6 +2043,41 @@ const ventasZonasVendedoresByLineasSucursal = async (year, month, sucCode, clien
     }
 }
 
+const reportePendienteCadenas = async (fechaInicial,fechaFinal,tipo, groupCode, cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramTipo = formatParam(tipo)
+        const paramGroupCode = formatParam(groupCode)
+        const paramCardCode = formatParam(cardCode)
+        const paramFechaInicial = formatParam(fechaInicial)
+        const paramFechaFinal = formatParam(fechaFinal)
+
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_ofertas_cadena_pendientes_agrupado(${paramFechaInicial},${paramFechaFinal},${paramTipo}, ${paramGroupCode}, ${paramCardCode})`
+
+        console.log({ query })
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reportePendienteCadenas: ${error.message || ''}`
+        }
+    }
+}
+
+const formatParam = (param) => {
+    if (param === null || param === undefined) {
+        return 'null'
+    }
+    if (typeof param === 'string') {
+        return `'${param}'`
+    }
+    return param
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2148,5 +2183,6 @@ module.exports = {
     clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo, getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt,
     getVentasLineaSucursalSupervisor,
     ventasVendedoresByLineasSucursal,
-    ventasZonasVendedoresByLineasSucursal
+    ventasZonasVendedoresByLineasSucursal,
+    reportePendienteCadenas,
 }

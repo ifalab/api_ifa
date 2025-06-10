@@ -20,7 +20,8 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     setDescuentoOfertasPorCantidadCortoVencimiento,
     lineaByCode, 
     sucursalBySucCode,
-    tipoByGroupCode} = require("./hana.controller")
+    tipoByGroupCode,
+    dmSearchClientes} = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 const { validateDataExcel } = require('./helpers');
@@ -44,23 +45,35 @@ const dmClientesController = async (req, res) => {
     }
 }
 
+const dmSearchClientesController = async (req, res) => {
+    try {
+        let search = req.query.search
+        if(search == undefined || search == null){
+            console.log({search})
+            return res.status(400).json({ mensaje: 'debe existir un parametro de busqueda' })
+        }
+        search = search.toUpperCase()
+        const listaDmClientes = await dmSearchClientes(search)
+        return res.json(listaDmClientes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en el controlador: ${error.message || ''}`
+        })
+    }
+}
+
 const dmClientesPorCardCodeController = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
         const cliente = await dmClientesPorCardCode(cardCode)
-        // const usuario = req.usuarioAutorizado
         console.log({ cliente })
         if (!cliente[0]) {
-            // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cliente por CardCode", `Error: No se encontro el cliente por el cardcode, se uso el cardcode: ${cardCode} `, ``, "datos-maestros/clientes-cardcode", process.env.PRD)
             return res.status(400).json({ mensaje: 'el cliente no existe' })
         }
-        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cliente por CardCode", `Busqueda del cliente por cardcode realizada con exito ${cardCode} `, ``, "datos-maestros/clientes-cardcode", process.env.PRD)
         return res.json({ ...cliente[0] })
-
     } catch (error) {
         console.log({ error })
-        // const usuario = req.usuarioAutorizado
-        // grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cliente por CardCode", `Error en el controlador. ${error.message || ''} `, ``, "datos-maestros/clientes-cardcode", process.env.PRD)
         return res.status(500).json({
             mensaje: 'error en el controlador'
         })
@@ -1031,4 +1044,5 @@ module.exports = {
     lineasByLineCodeController,
     sucursalBySucCodeController,
     tipoByGroupCodeController,
+    dmSearchClientesController,
 }
