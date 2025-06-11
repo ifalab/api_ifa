@@ -1,4 +1,4 @@
-const { executeQueryWithConnection } = require('../../utils/hana-util-connection');
+const { executeQueryWithConnection, executeQueryParamsWithConnection } = require('../../utils/hana-util-connection');
 
 const ObtenerLibroMayor = async (cuenta) => {
     try {
@@ -266,25 +266,124 @@ const saveClasificacionGastosHana = async (fila) => {
       cuenta_contable
     } = fila;
 
+    const idArea = await saveAreaCC(area);
+    const idTipo = await saveTipoClienteCC(tipo_cliente);
+    const idLinea = await saveLineaCC(linea);
+    const idEspecialidad = await saveEspecialidadCC(especialidad);
+    const idClasificacion = await saveClasificacionCC(clasificacion_gastos);
+    const idConcepto = await saveConceptosComCC(conceptos_comerciales);
+
+    console.log(idArea, idTipo, idLinea, idClasificacion, idConcepto, idEspecialidad);
+
     const query = `
-      CALL "LAB_IFA_COM"."IFA_CC_INSERT_CLASIFICACION_GASTO" (
-        '${area}', 
-        '${tipo_cliente}', 
-        '${linea}', 
-        '${especialidad}', 
-        '${clasificacion_gastos}', 
-        '${conceptos_comerciales}', 
-        '${cuenta_contable}'
+      CALL "LAB_IFA_COM"."IFA_CC_INSERT_CLASIFICACION_COMERCIAL" (
+        ?, ?, ?, ?, ?, ?, ?
       );
     `;
 
-    console.log('Ejecutando query saveClasificacionGastosHana:', query);
-    return await executeQueryWithConnection(query);
+    const params = [
+      idArea,
+      idTipo,
+      idLinea,
+      idEspecialidad,
+      idClasificacion,
+      idConcepto,
+      cuenta_contable
+    ];
+
+    console.log('Ejecutando query saveClasificacionGastosHana con parámetros:', params);
+
+    return await executeQueryParamsWithConnection(query, params);
 
   } catch (error) {
     console.error('Error en saveClasificacionGastosHana:', error);
     throw new Error(`Error en saveClasificacionGastosHana: ${error.message}`);
   }
+};
+
+
+const saveAreaCC = async (area) => {
+    try {
+        console.log(area)
+       const query = `CALL "LAB_IFA_COM"."INSERT_AREAS"(?);`;
+        const result = await executeQueryParamsWithConnection(query, [area]);
+        const areaCode = result[0]?.AreaAdminCode;
+
+        return areaCode;
+    } catch (error) {
+        console.error('Error en saveAreaCC:', error);
+        throw new Error(`Error en saveAreaCC: ${error.message}`);
+    }
+};
+
+const saveTipoClienteCC = async (tipo) => {
+    try {
+        console.log(tipo)
+       const query = `CALL "LAB_IFA_COM"."IFA_CC_INSERT_TIPOS"(?);`;
+        const result = await executeQueryParamsWithConnection(query, [tipo]);
+        const typeCode = result[0]?.TypeCode;
+
+        return typeCode;
+    } catch (error) {
+        console.error('Error en saveTipoClienteCC:', error);
+        throw new Error(`Error en saveTipoClienteCC: ${error.message}`);
+    }
+};
+
+const saveLineaCC = async (linea) => {
+    try {
+        console.log(linea)
+       const query = `CALL "LAB_IFA_COM"."IFA_CC_INSERT_LINEAS"(?);`;
+        const result = await executeQueryParamsWithConnection(query, [linea]);
+        const lineCode = result[0]?.LineCode;
+
+        return lineCode;
+    } catch (error) {
+        console.error('Error en saveLineaCC:', error);
+        throw new Error(`Error en saveLineaCC: ${error.message}`);
+    }
+};
+
+const saveClasificacionCC = async (clasificacion) => {
+    try {
+        console.log(clasificacion)
+       const query = `CALL "LAB_IFA_COM"."IFA_CC_INSERT_CLASIFICACIONES"(?);`;
+        const result = await executeQueryParamsWithConnection(query, [clasificacion]);
+        const classificationCode = result[0]?.ClassificationCode;
+
+        return classificationCode;
+    } catch (error) {
+        console.error('Error en saveClasificacionCC:', error);
+        throw new Error(`Error en saveClasificacionCC: ${error.message}`);
+    }
+};
+
+const saveConceptosComCC = async (conceptos) => {
+    try {
+        console.log(conceptos)
+        const query = `CALL "LAB_IFA_COM"."IFA_CC_INSERT_CONCEPTOS"(?);`;
+        const result = await executeQueryParamsWithConnection(query, [conceptos]);
+        const comlConceptCode = result[0]?.ComlConceptCode;
+
+        return comlConceptCode;
+    } catch (error) {
+        console.error('Error en saveClasificacionCC:', error);
+        throw new Error(`Error en saveClasificacionCC: ${error.message}`);
+    }
+};
+
+const saveEspecialidadCC = async (especialidad) => {
+    try {
+        console.log(especialidad)
+        const query = `CALL "LAB_IFA_COM"."IFA_CC_INSERT_ESPECIALIDADES"(?);`;
+        const result = await executeQueryParamsWithConnection(query, [especialidad]);
+        const specialtyCode = result[0]?.SpecialtyCode;
+
+        return specialtyCode;
+    } catch (error) {
+        console.error('Error en saveEspecialidadCC:', error);
+        throw new Error(`Error en saveEspecialidadCC: ${error.message}`);
+    }
 };
 
 module.exports = {
@@ -307,5 +406,11 @@ module.exports = {
     postDescontabilizarAsientoCC,
     getBalanceGeneralCC,
     getobtenerAsientoCompletos,
-    saveClasificacionGastosHana
+    saveClasificacionGastosHana,
+    saveAreaCC,
+    saveTipoClienteCC,
+    saveLineaCC,
+    saveClasificacionCC,
+    saveConceptosComCC,
+    saveEspecialidadCC
 };
