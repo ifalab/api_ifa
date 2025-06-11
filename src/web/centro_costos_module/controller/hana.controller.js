@@ -124,7 +124,7 @@ const getPlantillas = async (id) => {
 const getClasificacionGastos = async () => {
     try {
         console.log('getClasificacionGastos EXECUTE');
-        const query = `SELECT * FROM lab_ifa_lapp.clasificacion_gastos`;
+        const query = `SELECT * FROM lab_ifa_com.cost_clasification`;
         const result = await executeQueryWithConnection(query);
         return result;
     } catch (error) {
