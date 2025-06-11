@@ -7,7 +7,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, saveAreaCC, saveTipoClienteCC, saveLineaCC, saveClasificacionCC, saveConceptosComCC, saveEspecialidadCC } = require('./hana.controller');
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const postInventoryEntriesController = async (req, res) => {
     try {
@@ -966,7 +966,15 @@ const saveClasificacionGastos = async (req, res) => {
         // Aquí puedes guardar `datos` en tu base de datos o procesarlos como necesites
 
         for (const fila of datos) {
+            // const idArea = await saveAreaCC(fila.area);
+            // const idTipo = await saveTipoClienteCC(fila.tipo_cliente);
+            // const idLinea = await saveLineaCC(fila.linea);
+            // const idClasificacion = await saveClasificacionCC(fila.clasificacion_gastos);
+            // const idConceptos = await saveConceptosComCC(fila.conceptos_comerciales);
+            // const idEspecialidad = await saveEspecialidadCC(fila.especialidad);
+
             await saveClasificacionGastosHana(fila);
+            // console.log(idArea, idTipo, idLinea, idClasificacion, idConceptos, idEspecialidad);
         }
 
         res.status(200).json({
