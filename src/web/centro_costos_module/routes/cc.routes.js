@@ -1,8 +1,12 @@
 const { Router } = require('express')
-const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC, descontabilizarAsientoCC, obtenerBalanceGeneral, obtenerAsientoCompletos } = require('../controller/cc.controller')
+const multer = require('multer');
+const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC, descontabilizarAsientoCC, obtenerBalanceGeneral, obtenerAsientoCompletos, obtenerExcelAsientos, saveClasificacionGastos } = require('../controller/cc.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
+
+const storage = multer.memoryStorage(); // en memoria, no en disco
+const upload = multer({ storage });
 
 const router = Router()
 
@@ -34,5 +38,7 @@ router.post('/anular/cc', [validarToken, validarCampos], anularAsientoCC)
 router.patch('/asiento/descontabilizar', [validarToken, validarCampos], descontabilizarAsientoCC)
 router.get('/balance/general', [validarToken, validarCampos], obtenerBalanceGeneral)
 router.get('/asientos', [validarToken, validarCampos], obtenerAsientoCompletos)
+router.post('/asientos/excel', [validarToken, validarCampos], obtenerExcelAsientos)
+router.post('/clasificacion-gastos', [validarToken, validarCampos, upload.single('file')], saveClasificacionGastos)
 
 module.exports = router
