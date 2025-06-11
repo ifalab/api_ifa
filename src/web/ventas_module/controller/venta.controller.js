@@ -3689,14 +3689,14 @@ const reportePendienteCadenasController = async (req, res) => {
         if (response.length == 0) {
             return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
         }
-        let reporte = agruparPorYearMonth(response)
-        reporte.sort((a, b) => {
-            if (a.Year !== b.Year) {
-                return a.Year - b.Year; // Si los años son diferentes, ordena por año
-            }
+        // let reporte = agruparPorYearMonth(response)
+        // reporte.sort((a, b) => {
+        //     if (a.Year !== b.Year) {
+        //         return a.Year - b.Year; 
+        //     }
             
-            return a.Month - b.Month;
-        });
+        //     return a.Month - b.Month;
+        // });
         return res.json(response)
     } catch (error) {
         console.error({ error })

@@ -472,7 +472,7 @@ const cerrarCajaChicaController = async (req, res) => {
                 LineMemo: `${glosa}`,
                 Reference1: ``,
                 Reference2: '',
-                Reference3: `${nroDeposito}`,
+                AdditionalReference: `${nroDeposito}`,
             }
             JournalEntryLines.push(account)
         }

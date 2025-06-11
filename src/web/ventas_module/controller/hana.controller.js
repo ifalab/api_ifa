@@ -647,7 +647,7 @@ const obtenerOfertasVendedores = async (id_sap) => {
         if (!connection) {
             await connectHANA()
         }
-        const query = `select * from ${process.env.PRD}.ifa_ven_ofertas where "SlpCodeCli"='${id_sap}'`
+        const query = `select * from ${process.env.PRD}.ifa_ven_ofertas where "SlpCode"='${id_sap}'`
         const result = await executeQuery(query)
         return {
             status: 200,
