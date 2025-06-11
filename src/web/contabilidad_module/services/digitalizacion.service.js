@@ -1,5 +1,8 @@
 const axios = require('axios');
 const FormData = require('form-data'); // Ya incluido con axios
+const fs = require('fs');
+const path = require('path');
+
 
 // Configuración base para Axios
 const apiClient = axios.create({
@@ -160,7 +163,209 @@ const digitalizacionService = {
         } catch (error) {
             handleError(error, 'Error al procesar imagen de detalle');
         }
+    },
+
+    /**
+     * Actualiza la imagen de una cabecera existente
+     * @param {Number} id - ID de la cabecera a actualizar
+     * @param {Object} reqData - Datos de la solicitud con la nueva imagen
+     * @param {Boolean} deletePrevious - Si debe eliminarse la imagen anterior (true por defecto)
+     */
+    async updateCabeceraImage(id, reqData, deletePrevious = true) {
+        try {
+            console.log(`Actualizando imagen de cabecera ${id}:`, Object.keys(reqData));
+
+            // Verificar que tengamos un archivo válido
+            if (!reqData.file || !reqData.file.buffer) {
+                throw new Error('Archivo no válido o vacío');
+            }
+
+            // Crear un objeto FormData simplificado como un objeto normal
+            const formDataAsObject = {
+                delete_previous: deletePrevious.toString()
+            };
+
+            // Agregar campos opcionales si existen
+            if (reqData.quality !== undefined) {
+                formDataAsObject.quality = reqData.quality.toString();
+            }
+
+            if (reqData.output_format !== undefined) {
+                formDataAsObject.output_format = reqData.output_format;
+            }
+
+            if (reqData.target_size_kb !== undefined) {
+                formDataAsObject.target_size_kb = reqData.target_size_kb.toString();
+            }
+
+            if (reqData.grayscale !== undefined) {
+                formDataAsObject.grayscale = reqData.grayscale.toString();
+            }
+
+            // Método 1: Guardar temporalmente el archivo en el servidor
+            const tempFilePath = path.join(__dirname, `../../../temp_${Date.now()}_${reqData.file.originalname}`);
+            try {
+                fs.writeFileSync(tempFilePath, reqData.file.buffer);
+
+                // Crear un FormData real usando el archivo temporal
+                const form = new FormData();
+
+                // Agregar todos los campos al formulario
+                Object.keys(formDataAsObject).forEach(key => {
+                    form.append(key, formDataAsObject[key]);
+                });
+
+                // Agregar el archivo al formulario
+                form.append('file', fs.createReadStream(tempFilePath), {
+                    filename: reqData.file.originalname,
+                    contentType: reqData.file.mimetype
+                });
+
+                // Realizar la petición PUT a la API de Python
+                const response = await apiClient.put(`/update/cabecera/${id}`, form, {
+                    headers: {
+                        ...form.getHeaders()
+                    }
+                });
+
+                // Eliminar el archivo temporal después de usarlo
+                fs.unlinkSync(tempFilePath);
+
+                return {
+                    statusCode: response.status,
+                    data: response.data
+                };
+            } catch (error) {
+                // Si hay algún error, asegurarnos de eliminar el archivo temporal
+                if (fs.existsSync(tempFilePath)) {
+                    fs.unlinkSync(tempFilePath);
+                }
+                throw error;
+            }
+        } catch (error) {
+            handleError(error, `Error al actualizar imagen de cabecera ${id}`);
+        }
+    },
+
+    /**
+     * Actualiza la imagen de un detalle existente
+     * @param {Number} id - ID del detalle a actualizar
+     * @param {Object} reqData - Datos de la solicitud con la nueva imagen
+     * @param {Boolean} deletePrevious - Si debe eliminarse la imagen anterior (true por defecto)
+     */
+    async updateDetalleImage(id, reqData, deletePrevious = true) {
+        try {
+            console.log(`Actualizando imagen de detalle ${id}:`, Object.keys(reqData));
+
+            // Verificar que tengamos un archivo válido
+            if (!reqData.file || !reqData.file.buffer) {
+                throw new Error('Archivo no válido o vacío');
+            }
+
+            // Crear un objeto FormData simplificado como un objeto normal
+            const formDataAsObject = {
+                delete_previous: deletePrevious.toString()
+            };
+
+            // Agregar campos opcionales si existen
+            if (reqData.quality !== undefined) {
+                formDataAsObject.quality = reqData.quality.toString();
+            }
+
+            if (reqData.output_format !== undefined) {
+                formDataAsObject.output_format = reqData.output_format;
+            }
+
+            if (reqData.target_size_kb !== undefined) {
+                formDataAsObject.target_size_kb = reqData.target_size_kb.toString();
+            }
+
+            if (reqData.grayscale !== undefined) {
+                formDataAsObject.grayscale = reqData.grayscale.toString();
+            }
+
+            // Método 1: Guardar temporalmente el archivo en el servidor
+            const tempFilePath = path.join(__dirname, `../../../temp_${Date.now()}_${reqData.file.originalname}`);
+            try {
+                fs.writeFileSync(tempFilePath, reqData.file.buffer);
+
+                // Crear un FormData real usando el archivo temporal
+                const form = new FormData();
+
+                // Agregar todos los campos al formulario
+                Object.keys(formDataAsObject).forEach(key => {
+                    form.append(key, formDataAsObject[key]);
+                });
+
+                // Agregar el archivo al formulario
+                form.append('file', fs.createReadStream(tempFilePath), {
+                    filename: reqData.file.originalname,
+                    contentType: reqData.file.mimetype
+                });
+
+                // Realizar la petición PUT a la API de Python
+                const response = await apiClient.put(`/update/detalle/${id}`, form, {
+                    headers: {
+                        ...form.getHeaders()
+                    }
+                });
+
+                // Eliminar el archivo temporal después de usarlo
+                fs.unlinkSync(tempFilePath);
+
+                return {
+                    statusCode: response.status,
+                    data: response.data
+                };
+            } catch (error) {
+                // Si hay algún error, asegurarnos de eliminar el archivo temporal
+                if (fs.existsSync(tempFilePath)) {
+                    fs.unlinkSync(tempFilePath);
+                }
+                throw error;
+            }
+        } catch (error) {
+            handleError(error, `Error al actualizar imagen de detalle ${id}`);
+        }
+    },
+
+    /**
+     * Elimina la imagen de una cabecera (opcional si la API Python lo soporta directamente)
+     * @param {Number} id - ID de la cabecera cuya imagen se eliminará
+     */
+    async deleteCabeceraImage(id) {
+        try {
+            // Verificar primero si la API Python soporta esta operación
+            const response = await apiClient.delete(`/delete/cabecera/image/${id}`);
+
+            return {
+                statusCode: response.status,
+                data: response.data
+            };
+        } catch (error) {
+            handleError(error, `Error al eliminar imagen de cabecera ${id}`);
+        }
+    },
+
+    /**
+     * Elimina la imagen de un detalle (opcional si la API Python lo soporta directamente)
+     * @param {Number} id - ID del detalle cuya imagen se eliminará
+     */
+    async deleteDetalleImage(id) {
+        try {
+            // Verificar primero si la API Python soporta esta operación
+            const response = await apiClient.delete(`/delete/detalle/image/${id}`);
+
+            return {
+                statusCode: response.status,
+                data: response.data
+            };
+        } catch (error) {
+            handleError(error, `Error al eliminar imagen de detalle ${id}`);
+        }
     }
+
+
 };
 
 /**
