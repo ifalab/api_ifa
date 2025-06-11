@@ -18,19 +18,28 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     cargarPreciosExcelController,
     setDescuentoOfertasPorCortoVencimientoController,
     getIdDescuentosCantidadCortoController,
-    getDescuentosCantidadCortoController
+    getDescuentosCantidadCortoController,
+    lineasByLineCodeController,
+    sucursalBySucCodeController,
+    tipoByGroupCodeController,
+    dmTodosClientesController,
+    dmSearchClientesController
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
 const router = Router()
 
 router.get('/clientes', [validarToken, validarCampos], dmClientesController)
+router.get('/search-cliente', [validarToken, validarCampos], dmSearchClientesController)
 router.get('/clientes-cardcode', [validarToken, validarCampos], dmClientesPorCardCodeController)
 router.patch('/update-cliente', [validarToken, validarCampos], dmUpdateClienteController)
 router.get('/tipo-documentos', [validarToken, validarCampos], dmTipoDocumentosController)
 router.get('/precios-oficiales', [validarToken, validarCampos], getListaPreciosOficialesController)
 router.post('/set-precio-item', [validarToken, validarCampos], setPrecioOficialController)
+
 router.get('/sucursales', [validarToken, validarCampos], getSucursalesController)
+router.get('/sucursales-by-succode', [validarToken, validarCampos], sucursalBySucCodeController)
+
 router.get('/areas-por-sucursal', [validarToken, validarCampos], getAreasPorSucursalController)
 router.get('/zonas-por-area', [validarToken, validarCampos], getZonasPorAreaController)
 router.get('/precios-cadena-id', [validarToken, validarCampos], getListaPreciosByIdCadenasController)
@@ -38,7 +47,10 @@ router.post('/set-precio-cadena', [validarToken, validarCampos], setPrecioCadena
 router.get('/zonas-por-sucursal', [validarToken, validarCampos], getZonasPorSucursalController)
 router.patch('/actualizar-cliente', [validarToken, validarCampos], actualizarDatosClienteController)
 router.post('/descuento-linea', [validarToken, validarCampos], descuentoOfertasPorLineaController)
+
 router.get('/lineas', [validarToken, validarCampos], getAllLineasController)
+router.get('/lineas-by-linecode', [validarToken, validarCampos], lineasByLineCodeController)
+
 router.post('/descuento-cantidad', [validarToken, validarCampos], setDescuentoOfertasPorCantidadController)
 router.post('/descuento-corto-vencimiento', [validarToken, validarCampos], setDescuentoOfertasPorCortoVencimientoController)
 
@@ -46,7 +58,6 @@ router.get('/articulos', [validarToken, validarCampos], getArticulosController)
 router.post('/find-cliente', [validarToken, validarCampos], findClienteController)
 router.get('/get-id-desc', [validarToken, validarCampos], getIdDescuentosCantidadController)
 router.get('/get-id-desc-corto', [validarToken, validarCampos], getIdDescuentosCantidadCortoController)
-// getDescuentosCantidadCortoController
 router.post('/get-desc-cant', [validarToken, validarCampos], getDescuentosCantidadController)
 router.post('/get-desc-cant-corto', [validarToken, validarCampos], getDescuentosCantidadCortoController)
 
@@ -56,6 +67,7 @@ router.get('/get-desc-linea', [validarToken, validarCampos], getAllDescuentosLin
 router.post('/delete-desc-linea', [validarToken, validarCampos], deleteDescuentoLineaController)
 router.post('/desc-especial-articulo', [validarToken, validarCampos], setDescuentoEspecialPorArticuloController)
 router.get('/tipos', [validarToken, validarCampos], obtenerTiposController)
+router.get('/tipos-by-groupcode', [validarToken, validarCampos], tipoByGroupCodeController)
 router.get('/descuentos-especiales', [validarToken, validarCampos], obtenerDescuetosEspecialesController)
 router.get('/ids-especiales', [validarToken, validarCampos], getIdsDescuentoEspecialController)
 router.post('/especiales-by-id', [validarToken, validarCampos], getDescuentosEspecialesByIdController)

@@ -18,7 +18,8 @@ const { cobranzaGeneralController, cobranzaPorSucursalController, cobranzaNormal
     getEstadoCuentaClientePDFController,
     auditoriaSaldoDeudorController, getBajasFacturasController, findClienteController,
     excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController,
-    cobranzaDocNumPorDocEntryController
+    cobranzaDocNumPorDocEntryController,
+    realizarCobroMultiController
 } = require('../controller/cobranzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -59,6 +60,7 @@ router.get('/facturas-cliente-desp', [validarToken, validarCampos], cobranzaFact
 router.get('/cliente-instituciones', [validarToken, validarCampos], clientesInstitucionesSaldoDeudorController)
 router.get('/saldo-deudor-instituciones', [validarToken, validarCampos], saldoDeudorInstitucionesController)
 router.post('/realizar-cobro', [validarToken, validarCampos], realizarCobroController)
+router.post('/realizar-cobro-multi', [validarToken, validarCampos], realizarCobroMultiController)
 router.get('/comprobante', [validarToken, validarCampos], comprobanteController)
 router.get('/comprobante-pdf', [validarToken, validarCampos], comprobantePDFController)
 router.get('/resumen', [validarToken, validarCampos], resumenCobranzasController)

@@ -279,7 +279,7 @@ const verRendicionesEnRevision = async () => {
             await connectHANA();
         }
         console.log('verRendicionesEnRevision EXECUTE')
-        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '2' OR ESTADO = '3' OR ESTADO = '7'`
+        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '2' OR ESTADO = '7'`
         console.log({ query })
         const result = await executeQuery(query)
         return result

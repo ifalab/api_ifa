@@ -171,6 +171,7 @@
      <table>
       <thead>
         <tr>
+          <th>Agencia</th>
           <th>Cuenta</th>
           <th>Nombre Cuenta</th>
           <th>Código Asociado</th>
@@ -186,6 +187,7 @@
       <tbody>
         <% data.lines.forEach(function(line) { %>
           <tr>
+            <td><%= line.Indicator %></td>
             <td><%= line.Account %></td>
             <td style="width: 100px;"><%= line.AcctName %></td>
             <td><%= line.ShortName %></td>
@@ -204,6 +206,7 @@
       <tfoot>
         <tr>
           <td style="width: 55px;">Total</td>
+          <td style="width: 200px;"><hr style="opacity: 0;"></td>
           <td style="width: 200px;"><hr style="opacity: 0;"></td>
           <td style="width: 200px;"><hr style="opacity: 0;"></td>
           <td style="width: 200px;"><hr style="opacity: 0;"></td>
@@ -228,7 +231,7 @@
     </div>
     
     <div style="width: 100%;" class="div-signature"></div>
-    <h1>Libro de Compra</h1>
+    <!-- <h1>Libro de Compra</h1> -->
   </div>
 
 

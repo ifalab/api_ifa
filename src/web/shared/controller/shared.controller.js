@@ -1,4 +1,5 @@
 const { response } = require("express")
+const ExcelJS = require('exceljs');
 const { findClientesByVendedor,
     grabarLog,
     listaEncuesta,
@@ -181,10 +182,146 @@ const resultadosEncuestaController = async (req, res) => {
     }
 }
 
+const excelReporte = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const { data, displayedColumns, headerColumns, titulo } = req.body;
+        console.log('headerColumns', headerColumns);
+        const fechaActual = new Date();
+        const date = new Intl.DateTimeFormat('es-VE', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+        }).format(fechaActual);
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(titulo);
+
+        worksheet.columns = displayedColumns.map((column) => ({
+            header: headerColumns[column],
+            key: column,
+            width: 10
+        }));
+
+        console.log({columns: worksheet.columns})
+
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.getCell('A1').value = titulo;
+        worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;
+        const letra = String.fromCharCode('A'.charCodeAt(0) + (displayedColumns.length - 1));
+        console.log({ letra })
+        worksheet.mergeCells(`A1:${letra}1`);
+        worksheet.mergeCells(`A2:${letra}2`);
+
+        // Estilizar cabecera
+        const cellA = worksheet.getCell('A1');
+        cellA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        cellA.font = { bold: true, size: 14 };
+        cellA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        };
+
+        ['A2', 'A3'].forEach(cellAddress => {
+            const cell = worksheet.getCell(cellAddress);
+            cell.font = { bold: true, size: 11 };
+            cell.alignment = { vertical: 'middle', horizontal: 'start' };
+        });
+
+        data.map(row =>
+            worksheet.addRow(
+                displayedColumns.reduce((acc, column) => ({
+                    ...acc,
+                    [column]: row[column] ?
+                        (column.includes('Date') ? new Date(row[column]) : 
+                        (column.includes('Num') || column.includes('Total') ? parseFloat(row[column]) : row[column]))
+                        : ''
+                }), {})
+            )
+        );
+        
+        worksheet.columns.forEach(column => {
+            const header = column.header.toString()
+            let maxLength = header.length;
+            
+            column.eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+              if(rowNumber >3){
+                let cellValue = cell.value ? cell.value.toString() : '';
+                if((header.includes('Fecha') || header.includes('Date')) && cell.value instanceof Date){
+                    console.log({fecha: cell.value.toString()})
+                    const dateValue = new Date(cell.value.toString())
+                    cellValue = dateValue.toISOString().split('T')[0]
+                }
+                if(header.includes('CUM')){
+                    cell.numFmt = '0.00%'
+                    cellValue = (+cellValue).toFixed(2)+'%'
+                    console.log('porcentaje: ', cellValue);
+                }
+                maxLength = Math.max(maxLength, cellValue.length);
+                cell.border = {
+                    left: { style: 'thin' },
+                    right: { style: 'thin' },
+                };
+              }
+            });
+            column.width = maxLength + 3;
+        });
+
+        worksheet.getRow(4).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFFF' },
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };
+        });
+
+        worksheet.lastRow.eachCell(cell => {
+            cell.border = {
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+        })
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
+
+        await workbook.xlsx.write(res);
+        grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Reporte Devolucion`, `Exito en el reporte de devoluciones`,
+            '', 'inventario/excel-reporte', process.env.PRD
+        );
+        res.end();
+    } catch (error) {
+        console.error({ error });
+        grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Reporte Devolucion`, `Error generando el Excel del reporte de devoluciones ${error}`,
+        'catch de excelReporte', 'inventario/excel-reporte', process.env.PRD
+        );
+        return res.status(500).json({ mensaje: `Error generando el Excel de reporte de devolucion ${error}` });
+    }
+};
 
 module.exports = {
     findClientesByVendedorController,
     listaEncuestaController,
     crearEncuestaController,
-    resultadosEncuestaController
+    resultadosEncuestaController,
+    excelReporte
 }

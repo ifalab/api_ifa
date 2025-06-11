@@ -97,13 +97,19 @@ const {
     deleteNotification, notificationUnsubscribe, getVendedoresSolicitudDescuento, getVendedorByCode,
     getDescuentosDeVendedoresParaPedido, ventasPorZonasVendedor2, getUbicacionClientesByVendedor,
     getVentasZonaSupervisor, ventasPorZonasVendedorMesAnt2, getVendedoresSolicitudDescByStatusSucursal,
-    getVentasZonaAntSupervisor
+    getVentasZonaAntSupervisor, clientesZonaBloqueadosPorcentaje, getVentasLineaSupervisor,
+    getVentasTipoSupervisor, clientesVendedorBloqueadosPorcentaje, clientesZonaBloqueadosPorGrupo,
+    getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt, getVentasLineaSucursalSupervisor,
+    ventasVendedoresByLineasSucursal,
+    ventasZonasVendedoresByLineasSucursal,
+    reportePendienteCadenas
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { postInventoryTransferRequests } = require("./sld.controller");
 const { validarExcel } = require("../../../helpers/validacionesExcel");
-const { Console } = require("console");
+const { Console, group } = require("console");
+const { isatty } = require("tty");
 
 
 
@@ -605,7 +611,7 @@ const ventasPorSupervisorController = async (req, res) => {
     } catch (error) {
         console.log('error en ventasPorSupervisorController')
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error al procesar la solicitud', error })
+        return res.status(500).json({ mensaje: 'Error al procesar la solicitud', error: error.message })
     }
 }
 
@@ -1884,6 +1890,7 @@ const getYTDDelVendedorMontoController = async (req, res) => {
 }
 
 const ReporteOfertaPDFController = async (req, res) => {
+    let browser;
     try {
         const id = req.query.id
 
@@ -1928,7 +1935,7 @@ const ReporteOfertaPDFController = async (req, res) => {
         });
 
 
-        const browser = await puppeteer.launch();
+        browser = await puppeteer.launch();
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
@@ -1937,11 +1944,11 @@ const ReporteOfertaPDFController = async (req, res) => {
             printBackground: true
         });
 
-        await browser.close();
         console.log('PDF Buffer Size:', pdfBuffer.length);
 
         const fileName = `${data.CardName}_${new Date()}.pdf`.replace(' ', '').trim()
 
+        await browser.close();
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,
@@ -1952,6 +1959,15 @@ const ReporteOfertaPDFController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message}` })
+    }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
     }
 }
 
@@ -2157,7 +2173,7 @@ const vendedorPorSucCodeController = async (req, res) => {
 const vendedorPorListSucCodeController = async (req, res) => {
     try {
         const { listSuc } = req.body
-        console.log({listSuc})
+        console.log({ listSuc })
         let responseData = []
 
         for (const element of listSuc) {
@@ -2480,13 +2496,13 @@ const getVendedoresSolicitudDescByStatusController = async (req, res) => {
 
 const getVendedoresSolicitudDescByStatusSucursalController = async (req, res) => {
     try {
-        const {status, sucursal} = req.query
+        const { status, sucursal } = req.query
         let response
-        if(sucursal==0)
-            response =  await getVendedoresSolicitudDescByStatus(status)
+        if (sucursal == 0)
+            response = await getVendedoresSolicitudDescByStatus(status)
         else
             response = await getVendedoresSolicitudDescByStatusSucursal(status, sucursal)
-        console.log({response})
+        console.log({ response })
         return res.json(
             response
         )
@@ -2560,104 +2576,104 @@ const deleteSolicitudDescuentoController = async (req, res) => {
     }
 }
 
-const notificationSubscriptionController = async (req, res) => {
-    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-    try {
-        const subscription = JSON.stringify(req.body);
-        const response = await notificationSubscription(subscription)
-        console.log({ response })
-        return res.json(response)
-    } catch (error) {
-        console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Subscripcion Notificacion", `${error.message || 'Error en notificationSubscriptionController'}`, 'PUSH_SUBSCRIPTIONS',
-            "venta/notification-subscribe", process.env.PRD)
-        return res.status(500).json({ mensaje: `Error en notificationSubscriptionController: ${error.message}` })
-    }
-}
+// const notificationSubscriptionController = async (req, res) => {
+//     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+//     try {
+//         const subscription = JSON.stringify(req.body);
+//         const response = await notificationSubscription(subscription)
+//         console.log({ response })
+//         return res.json(response)
+//     } catch (error) {
+//         console.log({ error })
+//         grabarLog(user.USERCODE, user.USERNAME, "Subscripcion Notificacion", `${error.message || 'Error en notificationSubscriptionController'}`, 'PUSH_SUBSCRIPTIONS',
+//             "venta/notification-subscribe", process.env.PRD)
+//         return res.status(500).json({ mensaje: `Error en notificationSubscriptionController: ${error.message}` })
+//     }
+// }
 
-const notificationUnsubscribeController = async (req, res) => {
-    try {
-        const subscription = JSON.stringify(req.body);
-        const response = await notificationUnsubscribe(subscription)
-        console.log({ response })
-        return res.json(response)
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: `Error en notificationUnsubscribeController: ${error.message}` })
-    }
-}
+// const notificationUnsubscribeController = async (req, res) => {
+//     try {
+//         const subscription = JSON.stringify(req.body);
+//         const response = await notificationUnsubscribe(subscription)
+//         console.log({ response })
+//         return res.json(response)
+//     } catch (error) {
+//         console.log({ error })
+//         return res.status(500).json({ mensaje: `Error en notificationUnsubscribeController: ${error.message}` })
+//     }
+// }
 
-webpush.setVapidDetails(
-    'mailto:',
-    process.env.VAPID_KEY_PUBLIC,
-    process.env.VAPID_KEY_PRIVATE
-);
-const sendNotificationController = async (req, res) => {
-    let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-    try {
-        const { title, body, vendedor, rol, excludeEndpoint, usuario } = req.body
-        console.log({ excludeEndpoint })
-        const date = new Date()
-        let dato = {
-            title: `${title}`,
-            body: `${body}`,
-            created_at: date,
-            vendedor: vendedor,
-        }
-        const rows = await getSubscriptions()
-        console.log({ rows })
+// webpush.setVapidDetails(
+//     'mailto:',
+//     process.env.VAPID_KEY_PUBLIC,
+//     process.env.VAPID_KEY_PRIVATE
+// );
+// const sendNotificationController = async (req, res) => {
+//     let user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+//     try {
+//         const { title, body, vendedor, rol, excludeEndpoint, usuario } = req.body
+//         console.log({ excludeEndpoint })
+//         const date = new Date()
+//         let dato = {
+//             title: `${title}`,
+//             body: `${body}`,
+//             created_at: date,
+//             vendedor: vendedor,
+//         }
+//         const rows = await getSubscriptions()
+//         console.log({ rows })
 
 
-        const responseInsert = await insertNotification(title, body, vendedor, rol, date.toISOString(), usuario)
-        console.log({ responseInsert })
-        //{ status: 200,
-        //  result: [ { V_ID_NOTIFICACION: 4 } ]
-        //}
-        if (responseInsert.status == 200)
-            dato.id = responseInsert.result[0].V_ID_NOTIFICACION
+//         const responseInsert = await insertNotification(title, body, vendedor, rol, date.toISOString(), usuario)
+//         console.log({ responseInsert })
+//         //{ status: 200,
+//         //  result: [ { V_ID_NOTIFICACION: 4 } ]
+//         //}
+//         if (responseInsert.status == 200)
+//             dato.id = responseInsert.result[0].V_ID_NOTIFICACION
 
-        rows.forEach(row => {
-            const sub = JSON.parse(row.Subscription);
-            if (sub.endpoint !== excludeEndpoint) {
-                webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
-            } else {
-                console.log('Excluded', sub.endpoint);
-            }
-        });
-        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `Exito al enviar la notificacion`, 'INSERTAR_NOTIFICACION',
-            "venta/send-notification", process.env.PRD)
-        return res.send(dato);
-    } catch (error) {
-        console.log({ error })
-        grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `${error.message || 'Error en sendNotificationController'}`, 'INSERTAR_NOTIFICACION',
-            "venta/send-notification", process.env.PRD)
-        return res.status(500).json({ mensaje: `Error en sendNotificationController: ${error.message}` })
-    }
-}
+//         rows.forEach(row => {
+//             const sub = JSON.parse(row.Subscription);
+//             if (sub.endpoint !== excludeEndpoint) {
+//                 webpush.sendNotification(sub, JSON.stringify(dato)).catch(err => console.error('Push error:', err));
+//             } else {
+//                 console.log('Excluded', sub.endpoint);
+//             }
+//         });
+//         grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `Exito al enviar la notificacion`, 'INSERTAR_NOTIFICACION',
+//             "venta/send-notification", process.env.PRD)
+//         return res.send(dato);
+//     } catch (error) {
+//         console.log({ error })
+//         grabarLog(user.USERCODE, user.USERNAME, "Enviar Notificacion", `${error.message || 'Error en sendNotificationController'}`, 'INSERTAR_NOTIFICACION',
+//             "venta/send-notification", process.env.PRD)
+//         return res.status(500).json({ mensaje: `Error en sendNotificationController: ${error.message}` })
+//     }
+// }
 
-const getNotificationController = async (req, res) => {
-    try {
-        const { vendedor, usuario } = req.body
+// const getNotificationController = async (req, res) => {
+//     try {
+//         const { vendedor, usuario } = req.body
 
-        const response = await getNotifications(vendedor, usuario)
-        return res.json(response);
-    } catch (error) {
-        console.error({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador getNotificationController: ${error.message || ''}` })
-    }
-}
+//         const response = await getNotifications(vendedor, usuario)
+//         return res.json(response);
+//     } catch (error) {
+//         console.error({ error })
+//         return res.status(500).json({ mensaje: `Error en el controlador getNotificationController: ${error.message || ''}` })
+//     }
+// }
 
-const deleteNotificationController = async (req, res) => {
-    try {
-        const { id_notification, id_usuario } = req.body
-        const response = await deleteNotification(id_notification, id_usuario)
-        console.log(response)
-        return res.json(response);
-    } catch (error) {
-        console.error({ error })
-        return res.status(500).json({ mensaje: `Error en el controlador deleteNotificationController: ${error.message || ''}` })
-    }
-}
+// const deleteNotificationController = async (req, res) => {
+//     try {
+//         const { id_notification, id_usuario } = req.body
+//         const response = await deleteNotification(id_notification, id_usuario)
+//         console.log(response)
+//         return res.json(response);
+//     } catch (error) {
+//         console.error({ error })
+//         return res.status(500).json({ mensaje: `Error en el controlador deleteNotificationController: ${error.message || ''}` })
+//     }
+// }
 
 const ventasPresupuestoSubLinea = async (req, res) => {
     try {
@@ -2834,7 +2850,7 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
         ////
         const { cliente, vendedor } = req.body;
         const fecha = new Date()
-        const response =  await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
+        const response = await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
         console.log(response)
         return res.json(response);
     } catch (error) {
@@ -2846,6 +2862,7 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
 const ventasPorZonasVendedor2Controller = async (req, res) => {
     try {
         const { usercode, isAnt } = req.body;
+        console.log({ usercode, isAnt })
         let response
         if (isAnt == true) {
             console.log('isAnt')
@@ -2943,23 +2960,17 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
 
 const getVentasZonaSupervisorController = async (req, res) => {
     try {
-        const {sucursales, isMesAnterior} = req.body
-        console.log({sucursales, isMesAnterior})
+        const { sucursales, isMesAnterior } = req.body
+        console.log({ sucursales, isMesAnterior })
         let response = []
-        for(const sucursal of sucursales){
-            let response1
-            if(isMesAnterior==true || isMesAnterior=='true'){
-                console.log('is mes anterior')
-                response1 = await getVentasZonaAntSupervisor(sucursal??0)
-            }else{
-                console.log('is mes actual')
-                response1 = await getVentasZonaSupervisor(sucursal??0)
-            }
-            console.log({response1})
-            response = [...response, ...response1]
+        if (isMesAnterior == true || isMesAnterior == 'true') {
+            console.log('is mes anterior')
+            response = await getVentasZonaAntSupervisor(sucursales.toString())
+        } else {
+            console.log('is mes actual')
+            response = await getVentasZonaSupervisor(sucursales.toString())
         }
-        response.sort((a, b) => a.SucCode - b.SucCode);
-        console.log({response})
+        // console.log({ response })
         let SucCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
@@ -3025,6 +3036,708 @@ const getVentasZonaSupervisorController = async (req, res) => {
         return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador getVentasZonaSupervisorController'}` })
     }
 }
+
+const clientesBloqueadosPorcentajeController = async (req, res) => {
+    try {
+        const { sucursales, grupo } = req.body;
+        let response
+        if (grupo) {
+            console.log('con grupo')
+            response = await clientesZonaBloqueadosPorGrupo(sucursales.toString(), grupo);
+        } else {
+            console.log('sin grupo');
+            response = await clientesZonaBloqueadosPorcentaje(sucursales.toString());
+        }
+        console.log({ response })
+        let SucCode = ''
+        let ZoneCode = ''
+        let totalBloqueadosBySucCode = {};
+        let totalUniBySucCode = {};
+        let totalBloqueados = 0
+        let totalUniversal = 0
+
+        const results = []
+        response.forEach((r, index) => {
+            if (r.SucCode == SucCode) {
+                const res1 = r
+                res1.Porcentaje = +r.Porcentaje
+                res1.hide = true
+                res1.hideZona = ZoneCode == r.ZoneCode
+                results.push(res1)
+                if (ZoneCode != r.ZoneCode) {
+                    ZoneCode = r.ZoneCode
+                    totalBloqueadosBySucCode[r.SucCode] += +r.Bloqueados;
+                    totalUniBySucCode[r.SucCode] += +r.Universal;
+                }
+
+
+                if ((response.length - 1) == index) {
+                    const res = {
+                        SucName: `Total ${r.SucName}`,
+                        Bloqueados: +totalBloqueadosBySucCode[r.SucCode],
+                        Universal: +totalUniBySucCode[r.SucCode],
+                        Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] / +totalUniBySucCode[r.SucCode]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideZona: false
+                    }
+                    results.push(res)
+                }
+            } else {
+                SucCode = r.SucCode;
+                totalBloqueadosBySucCode[r.SucCode] = +r.Bloqueados;
+                totalUniBySucCode[r.SucCode] = +r.Universal;
+
+                if (index > 0) {
+                    const res = {
+                        SucName: `Total ${response[index - 1].SucName}`,
+                        Universal: +totalUniBySucCode[response[index - 1].SucCode],
+                        Bloqueados: +totalBloqueadosBySucCode[response[index - 1].SucCode],
+                        Porcentaje: (+totalBloqueadosBySucCode[response[index - 1].SucCode] / +totalUniBySucCode[response[index - 1].SucCode]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideZona: false
+                    }
+                    results.push(res)
+                }
+                const res1 = r
+                res1.Porcentaje = +r.Porcentaje
+                res1.hide = false
+                res1.hideZona = ZoneCode == r.ZoneCode
+                results.push(res1)
+
+                if ((response.length - 1) == index) {
+                    const res = {
+                        SucName: `Total ${r.SucName}`,
+                        Universal: +totalUniBySucCode[r.SucCode],
+                        Bloqueados: +totalBloqueadosBySucCode[r.SucCode],
+                        Porcentaje: (+totalBloqueadosBySucCode[r.SucCode] / +totalUniBySucCode[r.SucCode]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideZona: false
+                    }
+                    results.push(res)
+                }
+            }
+            if (ZoneCode != r.ZoneCode) {
+                ZoneCode = r.ZoneCode;
+                totalBloqueados += +r.Bloqueados
+                totalUniversal += +r.Universal
+            }
+
+        });
+        const totales = {
+            totalBloqueados, totalUniversal,
+            totalPrct: totalUniversal == 0 ? 0 : totalBloqueados / totalUniversal
+        }
+        return res.json({ results, totales });
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador clientesBloqueadosPorcentajeController'}` })
+    }
+}
+
+const ventasLineaSupervisorController = async (req, res) => {
+    try {
+        const { sucursales, isMesAnterior } = req.body
+        console.log({ sucursales, isMesAnterior })
+        let response = []
+        if (isMesAnterior == true || isMesAnterior == 'true') {
+            console.log('is mes anterior')
+            response = await getVentasLineaSupervisorAnt(sucursales.toString());
+        } else {
+            console.log('is mes actual')
+            response = await getVentasLineaSupervisor(sucursales.toString());
+        }
+        console.log({ response });
+
+        let SucCode = null;
+        let LineName = '';
+        let totalSalesBySucCode = {};
+        let totalUniBySucCode = {};
+        let totalSales = 0;
+        let totalQuota = 0;
+
+        const results = [];
+
+        response.forEach((r, index) => {
+            const currentSuc = r.SucCode;
+            const currentLine = r.LineName;
+
+            // Inicializar acumuladores si no existen
+            if (!totalSalesBySucCode[currentSuc]) totalSalesBySucCode[currentSuc] = 0;
+            if (!totalUniBySucCode[currentSuc]) totalUniBySucCode[currentSuc] = 0;
+
+            if (currentSuc === SucCode) {
+                // MISMA SUCURSAL
+                const res1 = { ...r };
+                res1.cumplimiento = +r.cumplimiento;
+                res1.hide = true;
+                res1.hideLine = LineName === currentLine;
+                results.push(res1);
+
+                totalSalesBySucCode[currentSuc] += +r.Sales;
+                totalUniBySucCode[currentSuc] += +r.Quota;
+
+                // Último elemento
+                if (index === response.length - 1) {
+                    results.push({
+                        SucName: `Total ${r.SucName}`,
+                        Sales: +totalSalesBySucCode[currentSuc],
+                        Quota: +totalUniBySucCode[currentSuc],
+                        cumplimiento: totalUniBySucCode[currentSuc] === 0 ? 0 : (+totalSalesBySucCode[currentSuc] / +totalUniBySucCode[currentSuc]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideLine: false
+                    });
+                }
+            } else {
+                // NUEVA SUCURSAL
+
+                // Agregar subtotal anterior si no es el primer elemento
+                if (index > 0) {
+                    const prevSuc = response[index - 1].SucCode;
+                    const prevName = response[index - 1].SucName;
+
+                    results.push({
+                        SucName: `Total ${prevName}`,
+                        Quota: +totalUniBySucCode[prevSuc],
+                        Sales: +totalSalesBySucCode[prevSuc],
+                        cumplimiento: totalUniBySucCode[prevSuc] === 0 ? 0 : (+totalSalesBySucCode[prevSuc] / +totalUniBySucCode[prevSuc]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideLine: false
+                    });
+                }
+
+                const res1 = { ...r };
+                res1.cumplimiento = +r.cumplimiento;
+                res1.hide = false;
+                res1.hideLine = LineName === currentLine;
+                results.push(res1);
+
+                // Reiniciar acumuladores para nueva sucursal
+                totalSalesBySucCode[currentSuc] = +r.Sales;
+                totalUniBySucCode[currentSuc] = +r.Quota;
+
+                // Si es el último
+                if (index === response.length - 1) {
+                    results.push({
+                        SucName: `Total ${r.SucName}`,
+                        Quota: +totalUniBySucCode[currentSuc],
+                        Sales: +totalSalesBySucCode[currentSuc],
+                        cumplimiento: totalUniBySucCode[currentSuc] === 0 ? 0 : (+totalSalesBySucCode[currentSuc] / +totalUniBySucCode[currentSuc]),
+                        isSubtotal: true,
+                        hide: false,
+                        hideLine: false
+                    });
+                }
+            }
+
+            // Actualizar totales generales
+            totalSales += +r.Sales;
+            totalQuota += +r.Quota;
+
+            // Actualizar estado actual
+            SucCode = currentSuc;
+            LineName = currentLine;
+        });
+
+        const totales = {
+            totalSales,
+            totalQuota,
+            totalPrct: totalQuota === 0 ? 0 : totalSales / totalQuota
+        };
+
+        return res.json({ results, totales });
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador ventasLineaSupervisorController'}` })
+    }
+}
+
+const ventasLineaSucursalSupervisorController = async (req, res) => {
+    try {
+        const { sucursales, isMesAnterior } = req.body
+        console.log({ sucursales, isMesAnterior })
+        let response = await getVentasLineaSucursalSupervisor(sucursales.toString(), isMesAnterior);
+        // console.log({ response })
+        // return res.json({response,})
+        let LineName = '';
+        let totalSalesByLineName = {};
+        let totalUniByLineName = {};
+        let totalSales = 0;
+        let totalQuota = 0;
+
+        const results = [];
+
+        response.forEach((r, index) => {
+            const currentLine = r.LineName;
+
+            // Inicializar acumuladores si no existen
+            if (!totalSalesByLineName[currentLine]) totalSalesByLineName[currentLine] = 0;
+            if (!totalUniByLineName[currentLine]) totalUniByLineName[currentLine] = 0;
+
+            if (currentLine === LineName) {
+                // MISMA SUCURSAL
+                const res1 = { ...r };
+                res1.cumplimiento = +r.cumplimiento;
+                res1.hide = true;
+                results.push(res1);
+
+                totalSalesByLineName[currentLine] += +r.Sales;
+                totalUniByLineName[currentLine] += +r.Quota;
+
+                // Último elemento
+                if (index === response.length - 1) {
+                    results.push({
+                        LineName: `Total ${r.LineName}`,
+                        Sales: +totalSalesByLineName[currentLine],
+                        Quota: +totalUniByLineName[currentLine],
+                        cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
+                        isSubtotal: true,
+                        hide: false
+                    });
+                }
+            } else {
+                // NUEVA SUCURSAL
+
+                // Agregar subtotal anterior si no es el primer elemento
+                if (index > 0) {
+                    const prevName = response[index - 1].LineName;
+
+                    results.push({
+                        LineName: `Total ${prevName}`,
+                        Quota: +totalUniByLineName[prevName],
+                        Sales: +totalSalesByLineName[prevName],
+                        cumplimiento: totalUniByLineName[prevName] === 0 ? 0 : (+totalSalesByLineName[prevName] / +totalUniByLineName[prevName]),
+                        isSubtotal: true,
+                        hide: false
+                    });
+                }
+
+                const res1 = { ...r };
+                res1.cumplimiento = +r.cumplimiento;
+                res1.hide = false;
+                results.push(res1);
+
+                // Reiniciar acumuladores para nueva sucursal
+                totalSalesByLineName[currentLine] = +r.Sales;
+                totalUniByLineName[currentLine] = +r.Quota;
+
+                // Si es el último
+                if (index === response.length - 1) {
+                    results.push({
+                        LineName: `Total ${r.LineName}`,
+                        Quota: +totalUniByLineName[currentLine],
+                        Sales: +totalSalesByLineName[currentLine],
+                        cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
+                        isSubtotal: true,
+                        hide: false
+                    });
+                }
+            }
+
+            // Actualizar totales generales
+            totalSales += +r.Sales;
+            totalQuota += +r.Quota;
+
+            // Actualizar estado actual
+            LineName = currentLine;
+        });
+
+        const totales = {
+            totalSales,
+            totalQuota,
+            totalPrct: totalQuota === 0 ? 0 : totalSales / totalQuota
+        };
+
+        return res.json({ results, totales });
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador ventasLineaSucursalSupervisorController'}` })
+    }
+}
+
+const ventasTipoSupervisorController = async (req, res) => {
+    try {
+        const { sucursal, linea, isMesAnterior } = req.body;
+        let response
+        if (isMesAnterior == true || isMesAnterior == 'true') {
+            console.log('is mes anterior')
+            response = await getVentasTipoSupervisorAnt(sucursal, linea);
+        } else {
+            console.log('is mes actual')
+            response = await getVentasTipoSupervisor(sucursal, linea);
+        }
+        console.log({ response });
+
+        let totalSales = 0;
+        let totalQuota = 0;
+
+        response.map((r) => {
+            totalSales += +r.Sales;
+            totalQuota += +r.Quota;
+        });
+
+        const totales = {
+            totalSales,
+            totalQuota,
+            totalPrct: totalQuota === 0 ? 0 : totalSales / totalQuota
+        };
+
+        return res.json({ response, totales });
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `${error.message || 'Error en el controlador ventasTipoSupervisorController'}` })
+    }
+}
+
+const clientesVendedorBloqueadosPorcentajeController = async (req, res) => {
+    try {
+        const { slpCode } = req.query;
+        const response = await clientesVendedorBloqueadosPorcentaje(slpCode)
+        console.log({ response })
+        let totalBloqueados = 0
+        let totalUniversal = 0
+
+        response.map((r) => {
+            totalBloqueados += +r.Bloqueados
+            totalUniversal += +r.Universal
+        });
+
+        const totales = {
+            totalBloqueados,
+            totalUniversal,
+            totalPrct: totalUniversal === 0 ? 0 : totalBloqueados / totalUniversal
+        };
+        return res.json({ response, totales })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en clientesVendedorBloqueadosPorcentajeController: ${error.message}` })
+    }
+}
+
+const excelClientesBloqueados = async (req, res) => {
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+    try {
+        const { data, displayedColumns, grupo } = req.body;
+
+        console.log({ data });
+        console.log({ displayedColumns })
+        const fechaActual = new Date();
+        const date = new Intl.DateTimeFormat('es-VE', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+        }).format(fechaActual);
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Devoluciones');
+
+        worksheet.columns = [
+            { header: 'Sucursal', key: 'SucName', width: 20 },
+            { header: 'Vendedor', key: 'SlpName', width: 40 },
+            { header: 'Zona', key: 'ZoneName', width: 25 },
+            { header: 'Universal', key: 'Universal', width: 15 },
+            { header: 'Bloqueados', key: 'Bloqueados', width: 15 },
+            { header: 'Porcentaje', key: 'Porcentaje', width: 12 }
+        ];
+
+        // Insertar filas antes del encabezado
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+
+        worksheet.getCell('A1').value = `Clientes Bloqueados por Zona`;
+        worksheet.mergeCells('A1:F1');
+        worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;
+        worksheet.mergeCells('A2:F2');
+
+        if (grupo) {
+            worksheet.getCell('A3').value = `Grupo: ${grupo}`;
+            worksheet.mergeCells('A3:F3');
+        }
+
+        // Estilizar cabecera
+        const cellA = worksheet.getCell('A1');
+        cellA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellA.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        cellA.font = { bold: true, size: 14 };
+        cellA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        };
+
+        ['A2', 'A3'].forEach(cellAddress => {
+            const cell = worksheet.getCell(cellAddress);
+            cell.font = { bold: true, size: 11 };
+            cell.alignment = { vertical: 'middle', horizontal: 'start' };
+        });
+
+        const rowRefs = data.map(row =>
+            worksheet.addRow(
+                displayedColumns.reduce((acc, column) => ({
+                    ...acc,
+                    [column]: row[column] ? (
+                        column == 'Porcentaje' ? row[column] == 0 ? '0' : +((parseFloat(row[column]) * 100).toFixed(2)) :
+                            (column == 'Universal' || column == 'Bloqueados') ? parseFloat(row[column]) :
+                                row[column])
+                        : ''
+                }), {})
+            )
+        );
+        // Apply formatting per row
+        rowRefs.forEach(row => {
+            row.eachCell(cell => {
+                cell.border = {
+                    left: { style: 'thin' },
+                    right: { style: 'thin' },
+                };
+            });
+        });
+
+        function mergeSameValues(startRowIndex, columnKeys) {
+            const ends = []
+            let i = 0;
+            while (i < data.length) {
+                let j = i + 1;
+                while (
+                    j < data.length &&
+                    columnKeys.every(key => data[i][key] === data[j][key])
+                ) {
+                    j++;
+                }
+
+                if (j - i > 1) {
+                    const start = startRowIndex + i;
+                    const end = startRowIndex + j - 1;
+                    columnKeys.forEach(key => {
+                        const col = worksheet.getColumn(key);
+                        const cellIndex = col.number;
+                        worksheet.mergeCells(start, cellIndex, end, cellIndex);
+                        worksheet.getCell(start, cellIndex).alignment = {
+                            vertical: 'middle',
+                            horizontal: 'center'
+                        };
+                        // worksheet.getCell(end, cellIndex).border = 
+
+                    });
+                    ends.push(end);
+                } else {
+                    const end = startRowIndex + j - 1
+                    ends.push(end);
+                }
+                i = j;
+            }
+            return ends;
+        }
+        const ends = mergeSameValues(5, ['ZoneName', 'Universal', 'Bloqueados', 'Porcentaje']);
+        console.log({ ends })
+
+
+        worksheet.getRow(4).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFFF' },
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };
+        });
+
+        worksheet.lastRow.eachCell(cell => {
+            cell.border = {
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+        })
+
+        ends.forEach(end => {
+            worksheet.getRow(end).eachCell(cell => {
+                cell.border = {
+                    bottom: { style: 'thin' },
+                    left: { style: 'thin' },
+                    right: { style: 'thin' },
+                }
+            })
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
+
+        //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones`,
+        //     '', 'cobranza/excel-reporte', process.env.PRD
+        //   );
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error({ error });
+        //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel de devoluciones ${error}`,
+        //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+        //   );
+        return res.status(500).json({ mensaje: `Error generando el Excel de clientes bloqueados ${error}` });
+    }
+}
+
+const ventasVendedoresByLineasSucursalController = async (req, res) => {
+    try {
+        const { year, month, sucCode, lineCode, listClientType } = req.body
+        let data = []
+        if (listClientType.length == 0) {
+            const response = await ventasVendedoresByLineasSucursal(year, month, sucCode, null, lineCode,)
+            data = [...data, ...response]
+
+        } else {
+            for (const clientType of listClientType) {
+                const response = await ventasVendedoresByLineasSucursal(year, month, sucCode, clientType, lineCode)
+                data = [...data, ...response]
+            }
+        }
+
+        data = data.map((item) => {
+            const Sales = Number(item.Sales)
+            const Quota = Number(item.Quota)
+            return {
+                ...item,
+                Cumplimiento: (Sales == 0 || Quota == 0) ? 0 : Sales / Quota
+            }
+        })
+        return res.json(data)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasVendedoresByLineasSucursalController ${error.message || 'No definido'}` });
+    }
+}
+
+const ventasZonasVendedoresByLineasSucursalController = async (req, res) => {
+    try {
+        const { year, month, sucCode, lineCode, listClientType, splCode } = req.body
+        let data = []
+        if (listClientType.length == 0) {
+            const response = await ventasZonasVendedoresByLineasSucursal(year, month, sucCode, null, lineCode, splCode)
+            data = [...data, ...response]
+
+        } else {
+            for (const clientType of listClientType) {
+                const response = await ventasZonasVendedoresByLineasSucursal(year, month, sucCode, clientType, lineCode, splCode)
+                data = [...data, ...response]
+            }
+        }
+        data = data.map((item) => {
+            const Sales = Number(item.Sales)
+            const Quota = Number(item.Quota)
+            return {
+                ...item,
+                Cumplimiento: (Sales == 0 || Quota == 0) ? 0 : Sales / Quota
+            }
+        })
+        return res.json(data)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasZonasVendedoresByLineasSucursalController ${error.message || 'No definido'}` });
+    }
+}
+
+const reportePendienteCadenasController = async (req, res) => {
+    try {
+        let fechaInicial = req.query.fechaInicial
+        let fechaFinal = req.query.fechaFinal
+        let tipo = req.query.tipo
+        let groupCode = req.query.groupCode
+        let cardCode = req.query.cardCode
+        console.warn({
+            fechaInicial,
+            fechaFinal,
+            tipo,
+            groupCode,
+            cardCode,
+        })
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!fechaInicial || fechaInicial == '') {
+            fechaInicial = null
+        }
+        if (!fechaFinal || fechaFinal == '') {
+            fechaFinal = null
+        }
+        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode)
+        if (response.length == 0) {
+            return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
+        }
+        // let reporte = agruparPorYearMonth(response)
+        // reporte.sort((a, b) => {
+        //     if (a.Year !== b.Year) {
+        //         return a.Year - b.Year; 
+        //     }
+            
+        //     return a.Month - b.Month;
+        // });
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteCadenasController ${error.message || 'No definido'}` });
+    }
+}
+
+function agruparPorYearMonth(data) {
+    const agrupado = data.reduce((acc, item) => {
+        const key = `${item.Year}-${item.Month}`;
+
+        if (!acc[key]) {
+            acc[key] = {
+                Year: item.Year,
+                Month: item.Month,
+                Total: 0, // Inicializar el total en 0
+                Sales: [] // Cambiar "Sale" por "Sales" para mejor claridad
+            };
+        }
+
+        // Convertir el total a número y sumarlo al total del mes
+        const itemTotal = parseFloat(item.Total) || 0;
+        acc[key].Total += itemTotal;
+
+        // Añadir el objeto sin Year y Month
+        acc[key].Sales.push({
+            CardCode: item.CardCode,
+            CardName: item.CardName,
+            Total: Number(item.Total)
+        });
+
+        return acc;
+    }, {});
+
+    // Convertir el objeto agrupado a un array y redondear los totales
+    return Object.values(agrupado).map(grupo => ({
+        ...grupo,
+        Total: parseFloat(grupo.Total.toFixed(2)) // Redondear a 2 decimales
+    }));
+}
+
 
 module.exports = {
     ventasPorSucursalController,
@@ -3109,12 +3822,21 @@ module.exports = {
     getVendedoresSolicitudDescByStatusController, getSolicitudesDescuentoByStatusController,
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
-    getClientNameController, notificationSubscriptionController, sendNotificationController,
-    getSolicitudesDescuentoByVendedorController, getNotificationController, deleteNotificationController,
-    ventasPresupuestoSubLinea, ventasPresupuestoSubLineaAnterior, 
-    notificationUnsubscribeController, 
+    getClientNameController,
+    //  notificationSubscriptionController, 
+    // sendNotificationController,
+    getSolicitudesDescuentoByVendedorController,
+    // getNotificationController,
+    // deleteNotificationController,
+    ventasPresupuestoSubLinea, ventasPresupuestoSubLineaAnterior,
+    // notificationUnsubscribeController,
     getVendedoresSolicitudDescuentoController, getVendedorByCodeController, getDescuentosDelVendedorParaPedidoController,
     ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController, getVentasZonaSupervisorController,
     getVendedoresSolicitudDescByStatusSucursalController,
-    vendedorPorListSucCodeController,
+    vendedorPorListSucCodeController, clientesBloqueadosPorcentajeController,
+    ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController,
+    excelClientesBloqueados, ventasLineaSucursalSupervisorController,
+    ventasVendedoresByLineasSucursalController,
+    ventasZonasVendedoresByLineasSucursalController,
+    reportePendienteCadenasController,
 };

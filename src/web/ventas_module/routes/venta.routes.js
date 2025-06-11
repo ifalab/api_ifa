@@ -67,7 +67,9 @@ const {
     getYTDDelVendedorController, getYTDDelVendedorMontoController, getYTDMontoByVendedorController,
     createCampaignController,
     ReporteOfertaPDFController,
-    getCoberturaController, clientesNoVentaController, clientesNoVentaPorVendedorController,
+    getCoberturaController,
+    clientesNoVentaController,
+    clientesNoVentaPorVendedorController,
     getVendedoresThatHasClientsController,
     facturasMoraByClientController,
     clientesMoraController,
@@ -85,12 +87,24 @@ const {
     actualizarSolicitudDescuentoController, actualizarVariosStatusSolicitudDescuentoController,
     actualizarSolicitudesDescuentoController, deleteSolicitudDescuentoController,
     getClientNameController,
-    notificationSubscriptionController, notificationUnsubscribeController,
-    sendNotificationController, getSolicitudesDescuentoByVendedorController, getNotificationController, 
-    deleteNotificationController, getVendedoresSolicitudDescuentoController, getVendedorByCodeController,
-    getDescuentosDelVendedorParaPedidoController, ventasPorZonasVendedor2Controller, getUbicacionClientesByVendedorController,
+    // notificationSubscriptionController,
+    // notificationUnsubscribeController,
+    // sendNotificationController,
+    getSolicitudesDescuentoByVendedorController,
+    // getNotificationController,
+    // deleteNotificationController,
+    getVendedoresSolicitudDescuentoController,
+    getVendedorByCodeController,
+    getDescuentosDelVendedorParaPedidoController,
+    ventasPorZonasVendedor2Controller,
+    getUbicacionClientesByVendedorController,
     getVentasZonaSupervisorController,
-    vendedorPorListSucCodeController, getVendedoresSolicitudDescByStatusSucursalController, 
+    vendedorPorListSucCodeController, getVendedoresSolicitudDescByStatusSucursalController, clientesBloqueadosPorcentajeController,
+    ventasLineaSupervisorController, ventasTipoSupervisorController, clientesVendedorBloqueadosPorcentajeController,
+    excelClientesBloqueados, ventasLineaSucursalSupervisorController,
+    ventasVendedoresByLineasSucursalController,
+    ventasZonasVendedoresByLineasSucursalController,
+    reportePendienteCadenasController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -163,7 +177,7 @@ router.get('/all-campaign-filter', [validarToken, validarCampos], allCampaignFil
 router.get('/all-campaign', [validarToken, validarCampos], allCampaignController)
 router.get('/one-campaign', [validarToken, validarCampos], campaignByIdController)
 router.get('/all-agencies', [validarToken, validarCampos], allAgenciesController)
-router.post('/create-campaign', [validarToken,    validarCampos,    upload.single('archivo'),], createCampaignController)
+router.post('/create-campaign', [validarToken, validarCampos, upload.single('archivo'),], createCampaignController)
 router.post('/ytd', [validarToken, validarCampos], getYTDByVendedorController)
 router.post('/ytd-vendedor', [validarToken, validarCampos,], getYTDDelVendedorController)
 router.post('/ytd-vendedor-monto', [validarToken, validarCampos], getYTDDelVendedorMontoController)
@@ -194,16 +208,30 @@ router.get('/delete-solicitud-desc', [validarToken, validarCampos], deleteSolici
 router.get('/solicitudes-desc-vendedor', [validarToken, validarCampos], getSolicitudesDescuentoByVendedorController)
 router.post('/descuento-vendedor-pedido', [validarToken, validarCampos], getDescuentosDelVendedorParaPedidoController)//
 
-router.post('/notification-subscribe', [validarToken, validarCampos], notificationSubscriptionController)
-router.post('/notification-unsubscribe', [validarToken, validarCampos], notificationUnsubscribeController)
-router.post('/send-notification', [validarToken, validarCampos], sendNotificationController)
-router.post('/get-notifications', [validarToken, validarCampos], getNotificationController)
-router.post('/delete-notification', [validarToken, validarCampos], deleteNotificationController)
+// router.post('/notification-subscribe', [validarToken, validarCampos], notificationSubscriptionController)
+// router.post('/notification-unsubscribe', [validarToken, validarCampos], notificationUnsubscribeController)
+// router.post('/send-notification', [validarToken, validarCampos], sendNotificationController)
+// router.post('/get-notifications', [validarToken, validarCampos], getNotificationController)
+// router.post('/delete-notification', [validarToken, validarCampos], deleteNotificationController)
+
 router.get('/presupuesto/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLinea)
 router.get('/presupuesto/anterior/sublinea', [validarToken, validarCampos], ventasPresupuestoSubLineaAnterior)
 
 router.post('/ventas-zona2', [validarToken, validarCampos], ventasPorZonasVendedor2Controller)
 router.get('/ubicacion-clientes-vendedor', [validarToken, validarCampos], getUbicacionClientesByVendedorController)
 router.post('/get-ventas-supervisor', [validarToken, validarCampos], getVentasZonaSupervisorController)
+
+router.post('/clientes-bloqueados-prct', [validarToken, validarCampos], clientesBloqueadosPorcentajeController)
+
+router.post('/ventas-lineas-supervisor', [validarToken, validarCampos], ventasLineaSupervisorController)
+router.post('/ventas-lineas-sucursal-sup', [validarToken, validarCampos], ventasLineaSucursalSupervisorController)
+router.post('/ventas-tipos-supervisor', [validarToken, validarCampos], ventasTipoSupervisorController)
+router.get('/clientes-vendedor-bloq', [validarToken, validarCampos], clientesVendedorBloqueadosPorcentajeController)
+router.post('/ventas-vendedores-by-succode-linecode', [validarToken, validarCampos], ventasVendedoresByLineasSucursalController)
+router.post('/ventas-zonas-vendedores-by-succode-linecode', [validarToken, validarCampos], ventasZonasVendedoresByLineasSucursalController)
+
+router.post('/excel-clientes-blq', [validarToken, validarCampos], excelClientesBloqueados)
+
+router.get('/reporte-pendiente-cadenas', [validarToken, validarCampos], reportePendienteCadenasController)
 
 module.exports = router

@@ -72,10 +72,10 @@ const findClienteController = async (req, res) => {
         const response = await findClientesByVendedor(name);
         let cliente;
         for (const item of response) {
-            if(item.CardCode == cardCode){
+            if (item.CardCode == cardCode) {
                 const { HvMora, CreditLine, AmountDue, ...restCliente } = item;
                 const saldoDisponible = (+CreditLine) - (+AmountDue);
-                cliente= {
+                cliente = {
                     ...restCliente,
                     CreditLine,
                     AmountDue,
@@ -84,7 +84,7 @@ const findClienteController = async (req, res) => {
                 };
                 break;
             }
-            
+
         }
 
         return res.json(cliente);
@@ -279,6 +279,7 @@ const crearOrderController = async (req, res) => {
         body.Series = process.env.SAP_SERIES_ORDER
         let alprazolamContains = false
         let otherContains = false
+        let listDescuentos = []
         docLine.map((item) => {
             if (item.ItemCode == alprazolamCode) {
                 alprazolamContains = true
@@ -292,14 +293,29 @@ const crearOrderController = async (req, res) => {
             return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
         }
         console.log(JSON.stringify({ docLine, alprazolamContains, otherContains }, null, 2))
-        // return
+        listDescuentos = docLine.map((item) => {
+            const total = Number(item.GrossTotal)
+            const grossPriceByQuantity = (Number(item.GrossPrice) * Number(item.Quantity))
+            return (total / grossPriceByQuantity)
+        })
+        const isMoreThanFifty = listDescuentos.some((item) => item < 0.5)
+
+        if (isMoreThanFifty == true) {
+            const idxMoreThan = listDescuentos.findIndex((item) => item < 0.5)
+            const item = docLine[idxMoreThan]
+            const message = `Existe un Descuento Mayor al 50%, para el articulo: ${item.ItemCode || 'No definido'}, cantidad: ${item.Quantity || 'No definido'}, precio: ${item.GrossPrice || 'No defindo'}, donde el total es de ${item.GrossTotal || 'No defindo'} `
+            console.log({ idxMoreThan, item })
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error Existe un Descuento Mayor al 50%, para el articulo: ${item.ItemCode || 'No definido'}, cantidad: ${item.Quantity || 'No definido'}, precio: ${item.GrossPrice || 'No defindo'}, donde el total es de ${item.GrossTotal || 'No defindo'} `, '', "pedido/crear-orden", process.env.PRD)
+            return res.status(400).json({ message, body })
+        }
+        // return res.json({ body, listDescuentos, isMoreThanFifty })
         console.log(JSON.stringify({ body }, null, 2))
         const ordenResponse = await postOrden(body)
 
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         console.log(JSON.stringify(ordenResponse, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        if (ordenResponse.status == 400) {
+        if (ordenResponse.status >= 400) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
             return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
         }
@@ -597,13 +613,13 @@ const crearOrderCadenaController = async (req, res) => {
 
         totalOrden = Number(totalOrden.toFixed(2))
 
-        if (totalOrden !== ordenBody.DocTotal) {
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
-            return res.status(400).json({
-                mensaje: `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`,
-                detalle, DocumentLines, ordenBody
-            })
-        }
+        // if (totalOrden !== ordenBody.DocTotal) {
+        //     grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
+        //     return res.status(400).json({
+        //         mensaje: `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`,
+        //         detalle, DocumentLines, ordenBody
+        //     })
+        // }
         ordenBody.DocTotal = totalOrden
         // return res.json({ detalle, DocumentLines, ordenBody })
         const ordenResponse = await postOrden(ordenBody)
@@ -709,6 +725,7 @@ const pedidosPorVendedorAnuladosController = async (req, res) => {
 }
 
 const pedidoLayoutController = async (req, res) => {
+    let browser;
     try {
         const delivery = req.query.delivery;
         console.log({ delivery })
@@ -813,7 +830,7 @@ const pedidoLayoutController = async (req, res) => {
         //     stream.pipe(res);
         // });
 
-        const browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
+        browser = await puppeteer.launch({ headless: 'new' }); // Modo headless
         const page = await browser.newPage();
 
         await page.setContent(htmlContent, { waitUntil: 'load' });
@@ -821,7 +838,6 @@ const pedidoLayoutController = async (req, res) => {
             format: 'A4',
             printBackground: true
         });
-        await browser.close();
 
         //! Definir nombre del archivo
         const fileName = `nota_pedido_${data.DocNum}.pdf`;
@@ -831,6 +847,7 @@ const pedidoLayoutController = async (req, res) => {
             "Nota Creada con éxito", response.query, "facturacion/nota-entrega", process.env.PRD);
 
         //! Enviar el PDF como respuesta
+        await browser.close();
         res.set({
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,
@@ -849,6 +866,15 @@ const pedidoLayoutController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Ventas Pedidos layout", mensaje, query, "pedido/pedido-layout", process.env.PRD)
 
         return res.status(500).json({ mensaje })
+    }
+    finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador:", err.message);
+            }
+        }
     }
 }
 

@@ -661,7 +661,11 @@ const sendToSapController = async (req, res) => {
         let listResHana = []
         let errores = []
         const code = user.USERCODE || 'no definido'
+        const idSap = user.ID_SAP || 0
 
+        if (idSap == 0) {
+            return res.status(400).json({ mensaje: 'No puede hacer operaciones sin ID SAP' });
+        }
         console.log(JSON.stringify({
             codEmp,
             estado,
@@ -713,6 +717,7 @@ const sendToSapController = async (req, res) => {
         await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Send to Sap ejecutado`, "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
         const { statusCode, data } = await sapService.sendRendiciones({
             usd,
+            idSap,
             codEmp,
             estado,
             idRendicion,

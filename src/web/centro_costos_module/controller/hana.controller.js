@@ -18,13 +18,14 @@ const ObtenerLibroMayor = async (cuenta) => {
 };
 
 const ObtenerLibroMayorFiltrado = async (body) => {
+    console.log(body);
     try {
         const {
             cuenta,
             fechaInicio,
             fechaFin,
             socioNombre,
-            indicador = '',
+            agencia = '',
             docFuente = '',
             dim1 = 0,
             dim2 = 0,
@@ -44,7 +45,7 @@ const ObtenerLibroMayorFiltrado = async (body) => {
             '${fechaInicio || '1900-01-01'}',
             '${fechaFin || '9999-12-31'}',
             '${socioNombre || ''}',
-            '${indicador}',
+            '${agencia}',
             '${docFuente}',
             ${dim1},
             ${dim2},
@@ -161,6 +162,131 @@ const getBeneficiarios = async () => {
         throw new Error(`Error en getBeneficiarios, ${error}`);
     }
 }
+
+const getAsientosSAP = async (codigo) => {
+    try {
+        console.log(codigo);
+        const query = `SELECT * FROM LAB_IFA_PRD."IFA_CON_ASIENTOS" WHERE "TransId" = ${codigo};`;
+        console.log(query);
+        const result = await executeQueryWithConnection(query);
+        return result || []; // Devuelve [] si es null/undefined
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en getAsientosSAP, ${error}`);
+    }
+};
+
+const ejecutarInsertSAP = async (codigo) => {
+    try {
+        const query = `
+            CALL LAB_IFA_COM.IFA_CC_INSERTAR_ASIENTO_SAP(${codigo});
+        `;
+        const result = await executeQueryWithConnection(query);
+        return result || []; // Devuelve [] si es null/undefined
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en ejecutarInsertSAP, ${error}`);
+    }
+};
+
+const updateAsientoContabilizado = async (TransId, Memo, Ref3) => {
+    try {
+        const query = `CALL "LAB_IFA_COM".ifa_cc_actualizar_asiento_memo_ref3(${TransId}, '${Memo}', ${Ref3})`;
+        const result = await executeQueryWithConnection(query);
+        return result || [];
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en updateAsientoContabilizado: ${error.message}`);
+    }
+};
+
+const asientoContableCC = async (id) => {
+  console.log('asientosContablesCC EXECUTE');
+  const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_JOURNAL WHERE "TransId" = ${id}`;
+  return await executeQueryWithConnection(query);
+};
+
+const postAnularAsientoCC = async(id) => {
+    console.log('postAnularAsientoCC EXECUTE');
+    const query = `CALL LAB_IFA_COM.IFA_CC_ANULAR_ASIENTO(${id})`;
+    return await executeQueryWithConnection(query);
+}
+
+const postDescontabilizarAsientoCC = async(id) => {
+    try {
+        console.log('postDescontabilizarAsientoCC EXECUTE');
+        const query = `CALL LAB_IFA_COM.IFA_CC_DESCONTABILIZAR_ASIENTO_CONTABLE(${id})`;
+        console.log(query);
+        return await executeQueryWithConnection(query);
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en postDescontabilizarAsientoCC: ${error.message}`);
+    }
+}
+
+
+const getBalanceGeneralCC = async() => {
+    try {
+        console.log('getBalanceGeneralCC EXECUTE');
+        const query = `SELECT * FROM LAB_IFA_COM.FIN_BALANCE_SHEET`;
+        console.log(query);
+        return await executeQueryWithConnection(query);
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en getBalanceGeneralCC: ${error.message}`);
+    }
+}
+
+const getobtenerAsientoCompletos = async(ini, fin) => {
+    try {
+        console.log('getobtenerAsientoCompletos EXECUTE');
+         const query = `
+            SELECT * 
+            FROM LAB_IFA_COM.IFA_CC_JOURNAL 
+            WHERE "RefDate" BETWEEN '${ini}' AND '${fin}'
+            AND "Account" LIKE '6%'
+        `;
+        console.log(query);
+        return await executeQueryWithConnection(query);
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en getobtenerAsientoCompletos: ${error.message}`);
+    }
+}
+
+const saveClasificacionGastosHana = async (fila) => {
+  try {
+    const {
+      area,
+      tipo_cliente,
+      linea,
+      especialidad,
+      clasificacion_gastos,
+      conceptos_comerciales,
+      cuenta_contable
+    } = fila;
+
+    const query = `
+      CALL "LAB_IFA_COM"."IFA_CC_INSERT_CLASIFICACION_GASTO" (
+        '${area}', 
+        '${tipo_cliente}', 
+        '${linea}', 
+        '${especialidad}', 
+        '${clasificacion_gastos}', 
+        '${conceptos_comerciales}', 
+        '${cuenta_contable}'
+      );
+    `;
+
+    console.log('Ejecutando query saveClasificacionGastosHana:', query);
+    return await executeQueryWithConnection(query);
+
+  } catch (error) {
+    console.error('Error en saveClasificacionGastosHana:', error);
+    throw new Error(`Error en saveClasificacionGastosHana: ${error.message}`);
+  }
+};
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -172,5 +298,14 @@ module.exports = {
     asientosContablesCCById,
     getIdReserva,
     getBeneficiarios,
-    ObtenerLibroMayorFiltrado
+    ObtenerLibroMayorFiltrado,
+    getAsientosSAP,
+    ejecutarInsertSAP,
+    updateAsientoContabilizado,
+    asientoContableCC,
+    postAnularAsientoCC,
+    postDescontabilizarAsientoCC,
+    getBalanceGeneralCC,
+    getobtenerAsientoCompletos,
+    saveClasificacionGastosHana
 };

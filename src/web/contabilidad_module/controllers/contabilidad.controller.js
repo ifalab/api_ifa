@@ -264,13 +264,14 @@ const createAsientoContableController = async (req, res) => {
             let JournalEntryLines = []
             rendiciones.map((item) => {
                 const newValueRend = +item.Amount / usd
+                console.log({ newValueRend })
                 let firstAccount = {
                     AccountCode: `${cuenta}`,
                     ShortName: `${codEmp}`,
                     Credit: 0,
                     Debit: +item.Amount,
                     CreditSys: 0,
-                    DebitSys: parseFloat(newValueRend.toFixed(2)),
+                    DebitSys: Math.round(newValueRend * 100) / 100,
                     ContraAccount: `${banckAccount}`,
                     LineMemo: `${glosa}`,
                     Reference1: `${reference}`,
@@ -292,7 +293,7 @@ const createAsientoContableController = async (req, res) => {
                 ShortName: `${banckAccount}`,
                 Credit: +monto,
                 Debit: 0,
-                CreditSys: parseFloat(newValue.toFixed(2)),
+                CreditSys: Math.round(newValue * 100) / 100,
                 DebitSys: 0,
                 ContraAccount: ``,
                 LineMemo: glosa,
@@ -300,26 +301,30 @@ const createAsientoContableController = async (req, res) => {
                 Reference2: ``,
             }
 
-            if (voucher || voucher !== '') {
+            if (voucher && voucher !== '' && voucher !== '0' && voucher !== 0) {
                 contraAccount.AdditionalReference = voucher
             } else {
-                if (cheque || cheque !== '') {
+                if (cheque && cheque !== '' && cheque !== '0' && cheque !== 0) {
                     contraAccount.AdditionalReference = cheque
                 }
             }
 
             JournalEntryLines.push(contraAccount)
 
-            const sumaDebitsSys = JournalEntryLines.reduce((sum, line) => sum + line.DebitSys, 0);
-            const sumaCreditsSys = JournalEntryLines.reduce((sum, line) => sum + line.CreditSys, 0);
-            const diferenciaSys = parseFloat((sumaDebitsSys - sumaCreditsSys).toFixed(2));
-            if (Math.abs(diferenciaSys) > 0) {
-                let ultimaLinea = JournalEntryLines[JournalEntryLines.length - 2];
-                // if (diferenciaSys > 0) {
-                // ultimaLinea.CreditSys += diferenciaSys;
-                // } else {
-                ultimaLinea.DebitSys += Math.abs(diferenciaSys);
-                // }
+            // Calcular diferencia entre Débito y Crédito en moneda del sistema
+            const sumaDebitsSys = JournalEntryLines.reduce((sum, line) => sum + Number(line.DebitSys), 0);
+            const sumaCreditsSys = JournalEntryLines.reduce((sum, line) => sum + Number(line.CreditSys), 0);
+
+            // Redondear diferencia a 2 decimales
+            const diferenciaSys = +(sumaDebitsSys - sumaCreditsSys).toFixed(2);
+
+            // Si hay diferencia, ajustamos una línea
+            if (Math.abs(diferenciaSys) >= 0.01) {
+                // Buscar la primera línea de débito (o la más adecuada)
+                const lineaAjuste = JournalEntryLines.find(line => line.DebitSys > 0);
+                if (lineaAjuste) {
+                    lineaAjuste.DebitSys = +(lineaAjuste.DebitSys - diferenciaSys).toFixed(2);
+                }
             }
             data = {
                 U_UserCode: idSap,
@@ -335,6 +340,7 @@ const createAsientoContableController = async (req, res) => {
             console.log({ ...data })
 
         }
+        // return res.json({ data })
         const response = await asientoContable({
             ...data
         })
@@ -395,7 +401,7 @@ const findAllAccountController = async (req, res) => {
 
 const cerrarCajaChicaController = async (req, res) => {
     try {
-        const { id, glosa, montoBank, dataBankAccount,nroDeposito } = req.body
+        const { id, glosa, montoBank, dataBankAccount, nroDeposito } = req.body
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ id, glosa })
         const data = await dataCierreCaja(id)
@@ -466,7 +472,7 @@ const cerrarCajaChicaController = async (req, res) => {
                 LineMemo: `${glosa}`,
                 Reference1: ``,
                 Reference2: '',
-                Reference3: `${nroDeposito}`,
+                AdditionalReference: `${nroDeposito}`,
             }
             JournalEntryLines.push(account)
         }
@@ -518,7 +524,7 @@ const cerrarCajaChicaController = async (req, res) => {
         }
         // return res.json({ postJournalEntry, dataAccount, dataBankAccount, dataRendiciones, totalDebe, totalHaber })
         console.log('data asiento cierre:')
-        console.log({postJournalEntry})
+        console.log({ postJournalEntry })
         const response = await asientoContable({
             ...postJournalEntry
         })
@@ -653,7 +659,7 @@ const createAsientoContableCCController = async (req, res) => {
         })
         const { message, statusCode, id } = comResponse
         console.log(message, statusCode, id);
-        return res.json({message, statusCode, id})
+        return res.json({ message, statusCode, id })
     } catch (error) {
         console.log(JSON.stringify(error.message, null, 2));
 
@@ -705,7 +711,8 @@ const getAsientosContablesCC = async (req, res) => {
                 Especialidad: current.Especialidad,
                 Clasificacion_Gastos: current.Clasificacion_Gastos,
                 Conceptos_Comerciales: current.Conceptos_Comerciales,
-                Cuenta_Contable: current.Cuenta_Contable
+                Cuenta_Contable: current.Cuenta_Contable,
+                Indicator: current.Indicator
             };
 
             if (acc[current.TransId]) {
