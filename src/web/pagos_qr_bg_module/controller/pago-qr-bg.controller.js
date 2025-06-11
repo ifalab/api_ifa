@@ -4,6 +4,8 @@
  */
 
 const pagoQrService = require('../services/pago-qr-bg');
+const { grabarLog } = require("../../shared/controller/hana.controller")
+
 
 /**
  * Valida que una fecha esté en formato ddmmyyyy
@@ -43,9 +45,11 @@ const autenticarBancoController = async (req, res) => {
 
         // Validar campos requeridos
         if (!userName || !password) {
+            const mensaje = 'Parámetros de entrada insuficientes';
+            await grabarLog('SYSTEM', userName || 'anonymous', "Pagos QR - Autenticación", mensaje, '', "/pago-qr-bg/test/login", process.env.PRD);
             return res.status(400).json({
                 result: 'COD001',
-                message: 'Parámetros de entrada insuficientes'
+                message: mensaje
             });
         }
 
@@ -53,22 +57,27 @@ const autenticarBancoController = async (req, res) => {
         const resultado = await pagoQrService.autenticarBanco(userName, password);
 
         if (!resultado.result) {
+            const mensaje = resultado.message || 'Credenciales inválidas';
+            await grabarLog('SYSTEM', userName, "Pagos QR - Autenticación", mensaje, '', "/pago-qr-bg/test/login", process.env.PRD);
             return res.status(401).json({
                 result: 'COD001',
-                message: resultado.message || 'Credenciales inválidas'
+                message: mensaje
             });
         }
 
+        await grabarLog('SYSTEM', userName, "Pagos QR - Autenticación", 'Autenticación exitosa', '', "/pago-qr-bg/test/login", process.env.PRD);
         return res.status(200).json({
-            result: 'OCD000',
+            result: 'COD000',
             message: 'Autenticación exitosa',
             token: resultado.token
         });
     } catch (error) {
         console.error('Error en autenticarBancoController:', error);
+        const mensaje = 'Problemas de procesamiento, vuelva a intentar';
+        await grabarLog('SYSTEM', req.body?.userName || 'anonymous', "Pagos QR - Autenticación", `Error: ${error.message}`, '', "/pago-qr-bg/test/login", process.env.PRD);
         return res.status(500).json({
             result: 'COD003',
-            message: 'Problemas de procesamiento, vuelva a intentar'
+            message: mensaje
         });
     }
 };
@@ -80,12 +89,16 @@ const autenticarBancoController = async (req, res) => {
 const registrarPagoController = async (req, res) => {
     try {
         const { qrId, transactionId, payDate } = req.body;
+        const username = req.user?.USERNAME || 'system';
+        const userCode = req.user?.USERCODE || 'SYSTEM';
 
         // Validar campos requeridos
         if (!qrId || !transactionId || !payDate) {
+            const mensaje = 'Parámetros de entrada insuficientes';
+            await grabarLog(userCode, username, "Pagos QR - Registro Pago", mensaje, '', "/pago-qr-bg/test/payments", process.env.PRD);
             return res.status(400).json({
                 result: 'COD001',
-                message: 'Parámetros de entrada insuficientes'
+                message: mensaje
             });
         }
 
@@ -94,9 +107,11 @@ const registrarPagoController = async (req, res) => {
 
         // Validar formato de fecha (ddmmyyyy)
         if (!validarFecha(payDate)) {
+            const mensaje = 'El formato de fecha es incorrecto (ddmmyyyy)';
+            await grabarLog(userCode, username, "Pagos QR - Registro Pago", mensaje, '', "/pago-qr-bg/test/payments", process.env.PRD);
             return res.status(400).json({
                 result: 'COD002',
-                message: 'El formato de fecha es incorrecto (ddmmyyyy)'
+                message: mensaje
             });
         }
 
@@ -104,24 +119,32 @@ const registrarPagoController = async (req, res) => {
         const resultado = await pagoQrService.registrarPago(qrId, transactionId, payDate);
 
         if (!resultado.result) {
+            const mensaje = resultado.message || 'Error al registrar el pago';
+            await grabarLog(userCode, username, "Pagos QR - Registro Pago", mensaje, '', "/pago-qr-bg/test/payments", process.env.PRD);
             return res.status(500).json({
                 result: 'COD003',
-                message: resultado.message || 'Error al registrar el pago'
+                message: mensaje
             });
         }
 
+        await grabarLog(userCode, username, "Pagos QR - Registro Pago", 'Pago registrado correctamente', '', "/pago-qr-bg/test/payments", process.env.PRD);
         return res.status(200).json({
             result: 'COD000',
             message: 'Pago registrado correctamente'
         });
     } catch (error) {
         console.error('Error en registrarPagoController:', error);
+        const mensaje = 'Problemas de procesamiento, vuelva a intentar';
+        const username = req.user?.USERNAME || 'system';
+        const userCode = req.user?.USERCODE || 'SYSTEM';
+        await grabarLog(userCode, username, "Pagos QR - Registro Pago", `Error: ${error.message}`, '', "/pago-qr-bg/test/payments", process.env.PRD);
         return res.status(500).json({
             result: 'COD003',
-            message: 'Problemas de procesamiento, vuelva a intentar'
+            message: mensaje
         });
     }
 };
+
 
 /**
  * Controlador para consultar el estado de una orden
@@ -130,20 +153,26 @@ const registrarPagoController = async (req, res) => {
 const consultarEstadoOrdenController = async (req, res) => {
     try {
         const { qrId } = req.body;
+        const username = req.user?.USERNAME || 'system';
+        const userCode = req.user?.USERCODE || 'SYSTEM';
 
         if (!qrId) {
+            const mensaje = 'Parámetros de entrada insuficientes';
+            await grabarLog(userCode, username, "Pagos QR - Consulta Estado", mensaje, '', "/pago-qr-bg/test/estado-orden", process.env.PRD);
             return res.status(400).json({
                 result: 'COD001',
-                message: 'Parámetros de entrada insuficientes'
+                message: mensaje
             });
         }
 
         const resultado = await pagoQrService.consultarEstadoOrden(qrId);
 
         if (!resultado.result) {
+            const mensaje = resultado.message || 'Error al consultar el estado';
+            await grabarLog(userCode, username, "Pagos QR - Consulta Estado", mensaje, '', "/pago-qr-bg/test/estado-orden", process.env.PRD);
             return res.status(400).json({
                 result: 'COD003',
-                message: resultado.message || 'Error al consultar el estado'
+                message: mensaje
             });
         }
 
@@ -159,15 +188,21 @@ const consultarEstadoOrdenController = async (req, res) => {
             respuesta.notificaciones = resultado.notificaciones;
         }
 
+        await grabarLog(userCode, username, "Pagos QR - Consulta Estado", 'Consulta exitosa', '', "/pago-qr-bg/test/estado-orden", process.env.PRD);
         return res.status(200).json(respuesta);
     } catch (error) {
         console.error('Error en consultarEstadoOrdenController:', error);
+        const mensaje = 'Problemas de procesamiento, vuelva a intentar';
+        const username = req.user?.USERNAME || 'system';
+        const userCode = req.user?.USERCODE || 'SYSTEM';
+        await grabarLog(userCode, username, "Pagos QR - Consulta Estado", `Error: ${error.message}`, '', "/pago-qr-bg/test/estado-orden", process.env.PRD);
         return res.status(500).json({
             result: 'COD003',
-            message: 'Problemas de procesamiento, vuelva a intentar'
+            message: mensaje
         });
     }
 };
+
 
 /**
  * Controlador para listar todas las notificaciones de pago
@@ -175,15 +210,21 @@ const consultarEstadoOrdenController = async (req, res) => {
  */
 const listarNotificacionesPagoController = async (req, res) => {
     try {
+        const username = req.user?.USERNAME || 'system';
+        const userCode = req.user?.USERCODE || 'SYSTEM';
+
         const resultado = await pagoQrService.listarNotificacionesPago();
 
         if (!resultado.result) {
+            const mensaje = resultado.message || 'Error al listar notificaciones';
+            await grabarLog(userCode, username, "Pagos QR - Listar Notificaciones", mensaje, '', "/pago-qr-bg/test/notificaciones", process.env.PRD);
             return res.status(500).json({
                 result: 'COD003',
-                message: resultado.message || 'Error al listar notificaciones'
+                message: mensaje
             });
         }
 
+        await grabarLog(userCode, username, "Pagos QR - Listar Notificaciones", 'Consulta exitosa', '', "/pago-qr-bg/test/notificaciones", process.env.PRD);
         return res.status(200).json({
             result: 'COD000',
             message: 'Consulta exitosa',
@@ -191,12 +232,17 @@ const listarNotificacionesPagoController = async (req, res) => {
         });
     } catch (error) {
         console.error('Error en listarNotificacionesPagoController:', error);
+        const mensaje = 'Problemas de procesamiento, vuelva a intentar';
+        const username = req.user?.USERNAME || 'system';
+        const userCode = req.user?.USERCODE || 'SYSTEM';
+        await grabarLog(userCode, username, "Pagos QR - Listar Notificaciones", `Error: ${error.message}`, '', "/pago-qr-bg/test/notificaciones", process.env.PRD);
         return res.status(500).json({
             result: 'COD003',
-            message: 'Problemas de procesamiento, vuelva a intentar'
+            message: mensaje
         });
     }
 };
+
 
 module.exports = {
     autenticarBancoController,

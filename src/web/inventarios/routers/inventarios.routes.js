@@ -43,7 +43,9 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     detalleTrasladoController,
     selectionBatchPlazoController,
     procesoAbastecimientoController,
-    datosRecepcionTrasladoController, excelDevolucion, cancelarCambioMalEstadoController
+    datosRecepcionTrasladoController, excelDevolucion, cancelarCambioMalEstadoController,
+    entregasRealizadasCabeceraController,
+    entregasRealizadasDetalleController
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -124,4 +126,8 @@ router.get('/detalle-traslado', [validarToken, validarCampos], detalleTrasladoCo
 router.get('/selection-batch-plazo', [validarToken, validarCampos], selectionBatchPlazoController)
 router.get('/proceso-abastecimiento', [validarToken, validarCampos], procesoAbastecimientoController)
 router.get('/datos-recepcion-traslado', [validarToken, validarCampos], datosRecepcionTrasladoController)
+
+router.get('/entregas-realizadas', [validarToken, validarCampos], entregasRealizadasCabeceraController)
+router.get('/entregas-realizadas-detalles', [validarToken, validarCampos], entregasRealizadasDetalleController)
+
 module.exports = router

@@ -957,7 +957,7 @@ const auditoriaSaldoDeudor = async (cardCode, date) => {
     }
 }
 
-const obtenerBajasFacturas = async (fechaIni, fechaFin, cardCode='', factura='') => {
+const obtenerBajasFacturas = async (fechaIni, fechaFin, cardCode = '', factura = '') => {
     try {
         if (!connection) {
             await connectHANA();
@@ -1032,6 +1032,20 @@ const cobranzaPorZonaNoUser = async (sucursal, isAnt) => {
     }
 }
 
+const getCobranzaDocNumPorDocEntry = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call "${process.env.PRD}"."IFA_LAPP_COB_COBRANZA_DOCNUM_POR_DOCENTRY"(${docEntry})`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getComprobantesBajasByUser: ${error.message || ''}`)
+    }
+}
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -1090,5 +1104,6 @@ module.exports = {
     getComprobantesBajasByUser,
     auditoriaSaldoDeudor,
     obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor,
-    cobranzaPorZonaNoUser
+    cobranzaPorZonaNoUser,
+    getCobranzaDocNumPorDocEntry
 }
