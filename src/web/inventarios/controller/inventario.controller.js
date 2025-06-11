@@ -4944,7 +4944,7 @@ const searchClienteController = async (req, res) => {
 const reporteDevolucionCambiosController = async (req, res) => {
     try {
         const { fechaIni, fechaFin } = req.body
-        console.log({ fechaIni, fechaFin })
+        console.log({ fechaIni,  fechaFin })
         const response = await reporteDevolucionCambios(fechaIni, fechaFin)
         // console.log({ response })
         return res.json(response)
