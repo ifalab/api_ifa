@@ -3,7 +3,7 @@ const FormData = require('form-data'); // Ya incluido con axios
 
 // Configuración base para Axios
 const apiClient = axios.create({
-    baseURL: 'http://172.16.11.112:8000', // URL de tu API Python
+    baseURL: process.env.API_DIGITALZIACION_PY, // URL de tu API Python
     timeout: 30000 // 30 segundos para operaciones con imágenes
 });
 

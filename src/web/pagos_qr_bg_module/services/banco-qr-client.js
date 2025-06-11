@@ -5,6 +5,10 @@
 
 const axios = require('axios');
 const dotenv = require('dotenv');
+const {
+    registrarPagoBgMoludo,
+    actualizarPagoBgMoludo
+} = require('../controller/hana.controller');
 
 // Cargar variables de entorno
 dotenv.config();
@@ -33,6 +37,7 @@ const autenticarConBanco = async () => {
         const authUrl = `${config.baseUrl}/service/v1/qrcode/access`;
         console.log('[BANCO-QR] URL de autenticación:', authUrl);
 
+
         const response = await axios({
             method: 'post',
             url: authUrl,
@@ -46,12 +51,16 @@ const autenticarConBanco = async () => {
             }
         });
 
-        // console.log('[BANCO-QR] Respuesta de autenticación:', response.data);
 
-        // if (response.data.result === 'COD000') {
-        //     authToken = response.data.token;
-        //     console.log('[BANCO-QR] Token recibido y almacenado');
-        // }
+
+        if (response.data.result === 'COD000') {
+            authToken = response.data.token;
+            console.log('[BANCO-QR] Token recibido y almacenado');
+        } else {
+            console.warn('[BANCO-QR] No se recibió token en la respuesta');
+        }
+
+        // console.log(">>>>>>>>>>>>>>>>>>>>>", response)
 
         return response.data;
     } catch (error) {
@@ -64,6 +73,7 @@ const autenticarConBanco = async () => {
     }
 };
 
+
 /**
  * Generar orden de cobro QR (Punto 3 del documento)
  * @param {Object} ordenData - Datos de la orden de cobro
@@ -71,12 +81,36 @@ const autenticarConBanco = async () => {
  */
 const generarOrdenQR = async (ordenData) => {
     try {
-        if (!authToken) {
-            console.log('[BANCO-QR] No hay token, autenticando primero...');
-            await autenticarConBanco();
+        // Verificar si se recibe token en los parámetros
+        let tokenAutorizacion = null;
+
+        // Primero intentar obtener token de los parámetros
+        if (ordenData.token) {
+            tokenAutorizacion = ordenData.token;
+            console.log('[BANCO-QR] Usando token recibido en parámetros');
+        }
+        // Después intentar obtener de authHeader
+        else if (ordenData.authHeader && ordenData.authHeader.startsWith('Bearer ')) {
+            tokenAutorizacion = ordenData.authHeader.substring(7);
+            console.log('[BANCO-QR] Usando token extraído del authHeader');
+        }
+        // Finalmente usar el token almacenado
+        else if (authToken) {
+            tokenAutorizacion = authToken;
+            console.log('[BANCO-QR] Usando token almacenado en cliente');
+        }
+        // Si no hay token, intentar autenticar
+        else {
+            console.log('[BANCO-QR] No hay token disponible, autenticando primero...');
+            const authResult = await autenticarConBanco();
+            if (authResult.result === 'COD000' && authResult.token) {
+                tokenAutorizacion = authResult.token;
+            } else {
+                throw new Error('No se pudo obtener token de autenticación');
+            }
         }
 
-        console.log('[BANCO-QR] Generando orden de cobro QR...');
+        console.log('[BANCO-QR] Generando orden de cobro QR');
 
         // URL completa para generar QR
         const qrUrl = `${config.baseUrl}/service/v1/qrcode/collections`;
@@ -103,13 +137,11 @@ const generarOrdenQR = async (ordenData) => {
             data: datosOrden,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${tokenAutorizacion}`
             }
         });
 
-        // console.log('[BANCO-QR] Respuesta de generación QR:', response.data);
-
-        // // Guardar imagen QR si está disponible
+        // // Guardar imagen QR si está disponible y se solicita
         // if (response.data.qrImage && ordenData.guardarImagenQR) {
         //     guardarImagenQR(response.data.qrImage, ordenData.rutaGuardar || './qr-pago.png');
         // }
@@ -127,13 +159,23 @@ const generarOrdenQR = async (ordenData) => {
 /**
  * Anular orden de cobro QR (Punto 4 del documento)
  * @param {string} qrId - Identificador del QR
+ * @param {string} [token] - Token de autorización opcional
  * @returns {Promise<Object>} Resultado de la anulación
  */
-const anularOrdenQR = async (qrId) => {
+const anularOrdenQR = async (qrId, token = null) => {
     try {
-        if (!authToken) {
-            console.log('[BANCO-QR] No hay token, autenticando primero...');
-            await autenticarConBanco();
+        // Usar el token proporcionado o el almacenado
+        let tokenAutorizacion = token || authToken;
+
+        // Si no hay token, intentar autenticar
+        if (!tokenAutorizacion) {
+            console.log('[BANCO-QR] No hay token disponible, autenticando primero...');
+            const authResult = await autenticarConBanco();
+            if (authResult.result === 'COD000' && authResult.token) {
+                tokenAutorizacion = authResult.token;
+            } else {
+                throw new Error('No se pudo obtener token de autenticación');
+            }
         }
 
         console.log(`[BANCO-QR] Anulando orden de cobro QR: ${qrId}`);
@@ -152,11 +194,10 @@ const anularOrdenQR = async (qrId) => {
             },
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${tokenAutorizacion}`
             }
         });
 
-        // console.log('[BANCO-QR] Respuesta de anulación:', response.data);
         return response.data;
     } catch (error) {
         console.error('[BANCO-QR] Error al anular QR:', error.message);
@@ -171,13 +212,23 @@ const anularOrdenQR = async (qrId) => {
  * Listar órdenes de cobro/pago diario (Punto 5 del documento)
  * @param {string} fechaInicio - Fecha inicial en formato ddmmyyyy
  * @param {string} fechaFin - Fecha final en formato ddmmyyyy
+ * @param {string} [token] - Token de autorización opcional
  * @returns {Promise<Object>} Lista de órdenes
  */
-const listarOrdenesQR = async (fechaInicio, fechaFin) => {
+const listarOrdenesQR = async (fechaInicio, fechaFin, token = null) => {
     try {
-        if (!authToken) {
-            console.log('[BANCO-QR] No hay token, autenticando primero...');
-            await autenticarConBanco();
+        // Usar el token proporcionado o el almacenado
+        let tokenAutorizacion = token || authToken;
+
+        // Si no hay token, intentar autenticar
+        if (!tokenAutorizacion) {
+            console.log('[BANCO-QR] No hay token disponible, autenticando primero...');
+            const authResult = await autenticarConBanco();
+            if (authResult.result === 'COD000' && authResult.token) {
+                tokenAutorizacion = authResult.token;
+            } else {
+                throw new Error('No se pudo obtener token de autenticación');
+            }
         }
 
         console.log(`[BANCO-QR] Listando órdenes de cobro/pago: ${fechaInicio} - ${fechaFin}`);
@@ -197,11 +248,11 @@ const listarOrdenesQR = async (fechaInicio, fechaFin) => {
             },
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${tokenAutorizacion}`
             }
         });
 
-        // console.log('[BANCO-QR] Respuesta de listado de órdenes:', response.data);
+        // console.log(">>>>>>>>>>>>>>>>>>", response);
         return response.data;
     } catch (error) {
         console.error('[BANCO-QR] Error al listar órdenes:', error.message);
@@ -215,13 +266,23 @@ const listarOrdenesQR = async (fechaInicio, fechaFin) => {
 /**
  * Consultar estado de una orden QR (Punto 6 del documento)
  * @param {string} qrId - Identificador del QR
+ * @param {string} [token] - Token de autorización opcional
  * @returns {Promise<Object>} Estado de la orden
  */
-const consultarEstadoQR = async (qrId) => {
+const consultarEstadoQR = async (qrId, token = null) => {
     try {
-        if (!authToken) {
-            console.log('[BANCO-QR] No hay token, autenticando primero...');
-            await autenticarConBanco();
+        // Usar el token proporcionado o el almacenado
+        let tokenAutorizacion = token || authToken;
+
+        // Si no hay token, intentar autenticar
+        if (!tokenAutorizacion) {
+            console.log('[BANCO-QR] No hay token disponible, autenticando primero...');
+            const authResult = await autenticarConBanco();
+            if (authResult.result === 'COD000' && authResult.token) {
+                tokenAutorizacion = authResult.token;
+            } else {
+                throw new Error('No se pudo obtener token de autenticación');
+            }
         }
 
         console.log(`[BANCO-QR] Consultando estado del QR: ${qrId}`);
@@ -240,11 +301,9 @@ const consultarEstadoQR = async (qrId) => {
             },
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${tokenAutorizacion}`
             }
         });
-
-        // console.log('[BANCO-QR] Respuesta de consulta de estado:', response.data);
 
         // Interpretar estado según documentación
         let estadoTexto = 'Desconocido';
@@ -307,11 +366,39 @@ const getToken = () => {
     return authToken;
 };
 
+
+const registrarPagoMoludo = async (qrId, idSap, idUser, nombreModulo, isPaid) => {
+    try {
+        await registrarPagoBgMoludo(qrId, idSap, idUser, nombreModulo, isPaid || 1);
+    } catch (error) {
+        console.error('[BANCO-QR] Error al generar QR:', error.message);
+        if (error.response) {
+            console.error('[BANCO-QR] Detalles del error:', error.response.data);
+        }
+        throw error;
+    }
+};
+
+
+const actualizarPagoModulo = async (qrId, transaccionId, payDate, isPaid) => {
+    try {
+        await actualizarPagoBgMoludo(qrId, transaccionId, payDate, isPaid || 2);
+    } catch (error) {
+        console.error('[BANCO-QR] Error al generar QR:', error.message);
+        if (error.response) {
+            console.error('[BANCO-QR] Detalles del error:', error.response.data);
+        }
+        throw error;
+    }
+}
+
 module.exports = {
     autenticarConBanco,
     generarOrdenQR,
     anularOrdenQR,
     listarOrdenesQR,
     consultarEstadoQR,
-    getToken
+    getToken,
+    registrarPagoMoludo,
+    actualizarPagoModulo
 };

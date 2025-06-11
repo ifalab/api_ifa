@@ -19,7 +19,8 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getClientes,
     getEstadoCuentaCliente,
     auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor,
-    cobranzaPorZonaNoUser
+    cobranzaPorZonaNoUser,
+    getCobranzaDocNumPorDocEntry
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -988,6 +989,174 @@ const realizarCobroController = async (req, res) => {
     }
 }
 
+const realizarCobroMultiController = async (req, res) => {
+    try {
+        // Verificar si el body es un array
+        const paymentsArray = Array.isArray(req.body) ? req.body : [req.body];
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+
+        console.log({ usuario, paymentsCount: paymentsArray.length, paymentsArray });
+        // const { VisitID, CardName, ...body } = req.body
+        // console.log({ body })
+        // console.log("?????????????????????????????????", paymentsArray)
+
+        // Array para almacenar resultados de todas las transacciones
+        const results = [];
+        let allSuccess = true;
+
+        // Procesar cada pago en el array
+        for (const paymentData of paymentsArray) {
+            const { VisitID, CardName, ...body } = paymentData;
+            let CashSum = body.CashSum;
+            const CashAccount = body.CashAccount;
+            let TransferSum = body.TransferSum;
+            const TransferAccount = body.TransferAccount;
+            const PaymentInvoices = body.PaymentInvoices;
+            let total = 0;
+
+            // Validar PaymentInvoices
+            if (!PaymentInvoices) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", 'Error: el PaymentInvoices es obligatorio', `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
+
+                results.push({
+                    success: false,
+                    message: 'el PaymentInvoices es obligatorio',
+                    body: body
+                });
+
+                allSuccess = false;
+                continue; // Saltar a la siguiente iteración
+            }
+
+            // Calcular total
+            PaymentInvoices.map((item) => {
+                const sum = item.SumApplied;
+                total += +sum;
+            });
+
+            console.log({ total });
+            total = Number(total.toFixed(2));
+
+            // Validar transferencia
+            if (TransferAccount || TransferAccount != null) {
+                TransferSum = Number(TransferSum.toFixed(2));
+                body.TransferSum = Number(TransferSum.toFixed(2));
+                if (TransferSum !== total) {
+                    const errorMsg = `el total es diferente al TransferSum, total: ${total || 'no definido'} , TransferSum: ${TransferSum || 'no definido'}`;
+
+                    grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", errorMsg, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
+
+                    results.push({
+                        success: false,
+                        message: errorMsg,
+                        body: body
+                    });
+
+                    allSuccess = false;
+                    continue; // Saltar a la siguiente iteración
+                }
+            }
+
+            // Validar efectivo
+            if (CashAccount || CashAccount != null) {
+                CashSum = Number(CashSum.toFixed(2));
+                body.CashSum = Number(CashSum.toFixed(2));
+                if (CashSum !== total) {
+                    const errorMsg = `el total es diferente al CashSum, total: ${total || 'no definido'} , CashSum: ${CashSum || 'no definido'}`;
+
+                    grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", errorMsg, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
+
+                    results.push({
+                        success: false,
+                        message: errorMsg,
+                        body: body
+                    });
+
+                    allSuccess = false;
+                    continue; // Saltar a la siguiente iteración
+                }
+            }
+
+            // Procesar el pago con SAP
+            body.DocDate = null;
+            console.log({ body });
+
+            const responseSap = await postIncommingPayments(body);
+
+            if (responseSap.status !== 200) {
+                let mensaje = `Error del SAP`;
+                if (responseSap.errorMessage && responseSap.errorMessage.value) {
+                    mensaje = `Error del SAP ${responseSap.errorMessage.value || ''}`;
+                }
+
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
+
+                results.push({
+                    success: false,
+                    message: mensaje,
+                    body: body,
+                    sapResponse: responseSap
+                });
+
+                allSuccess = false;
+                continue; // Saltar a la siguiente iteración
+            }
+
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", "Cobranza realizada con éxito", `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
+
+            // Procesar visita si es necesario
+            if (VisitID) {
+                const responseAniadirVisita = await aniadirDetalleVisita(
+                    VisitID, body.CardCode, CardName, 'Cobranza',
+                    body.JournalRemarks, 0, total, body.U_OSLP_ID
+                );
+
+                console.log({ responseAniadirVisita });
+
+                if (responseAniadirVisita.message) {
+                    grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `¡Error al añadir Visita a la Cobranza!. ${responseAniadirVisita.message}`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD);
+                } else {
+                    grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", `Éxito al añadir Visita a la Cobranza.`, 'IFA_CRM_AGREGAR_VISIT_DETAIL', "cobranza/realizar-cobro", process.env.PRD);
+                }
+            }
+
+            // Agregar resultado exitoso
+            results.push({
+                success: true,
+                orderNumber: responseSap.DocNum || responseSap.DocEntry,
+                sapResponse: responseSap,
+                body: body
+            });
+        }
+
+        // Responder con todos los resultados
+        if (allSuccess) {
+            return res.json({
+                success: true,
+                message: "Todas las cobranzas fueron realizadas con éxito",
+                results: results
+            });
+        } else {
+            // Si alguna falló, devolver código 207 (Multi-Status)
+            return res.status(207).json({
+                success: false,
+                message: "Algunas cobranzas fallaron",
+                results: results
+            });
+        }
+
+    } catch (error) {
+        console.log({ error });
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+        console.log({ usuario });
+        let mensaje = `Error en el controlador realizarCobroController ${error.message || ''}`;
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, ``, "cobranza/realizar-cobro", process.env.PRD);
+
+        return res.status(500).json({ mensaje });
+    }
+};
+
+
 const comprobanteController = async (req, res) => {
     try {
         const id = req.query.id
@@ -1447,7 +1616,7 @@ const clientesPorSucursalController = async (req, res) => {
 
 const clientesPorDespachadorController = async (req, res) => {
     try {
-        const idSap = req.query.idSap
+        const idSap = req.query.idSap;
         console.log({ idSap })
         const clientesDespachador = await clientesPorDespachador(idSap)
         console.log({ clientesDespachador })
@@ -1776,6 +1945,7 @@ const getCuentasBancoParaBajaCobranzaController = async (req, res) => {
 const darDeBajaController = async (req, res) => {
     try {
         const { body } = req.body
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", body)
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const responsePostIncomming = await postIncommingPayments(body)
         if (responsePostIncomming.status == 400) {
@@ -2185,7 +2355,9 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
                     </div>
                 </div>`,
         });
-        // await browser.close();
+
+
+        await browser.close();
 
         // 3. Respondemos con el PDF
         res.set({
@@ -2545,6 +2717,27 @@ const cobranzasPorZonasNoUserController = async (req = request, res = response) 
     }
 }
 
+
+const cobranzaDocNumPorDocEntryController = async (req = request, res = response) => {
+    const { docEntry } = req.query;
+    try {
+        const response = await getCobranzaDocNumPorDocEntry(docEntry);
+        console.log({ response })
+
+        return res.status(200).json({
+            DocNum: response[0].DocNum,
+            mensaje: "Documento de cobranza por DocEntry"
+        });
+    } catch (err) {
+        console.log('error en cobranzaDocNumPorDocEntryController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en cobranzaDocNumPorDocEntryController'}` })
+    }
+}
+
+
+
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -2605,6 +2798,7 @@ module.exports = {
     getEstadoCuentaClientePDFController,
     auditoriaSaldoDeudorController,
     getBajasFacturasController, findClienteController,
-    excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController
-
+    excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController,
+    cobranzaDocNumPorDocEntryController,
+    realizarCobroMultiController
 }

@@ -957,7 +957,7 @@ const analisisVentas = async (CardCode, DimensionCCode, starDate, endDate) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM LAB_IFA_DATA.ANALISIS_DE_VENTAS WHERE "CardCode" = '${CardCode}' AND "DimensionCCode" = ${DimensionCCode} AND "Date" BETWEEN '${starDate}' AND '${endDate}'`;
+        const query = `SELECT * FROM LAB_IFA_DATA.kds_sales_analysis WHERE "CardCode" = '${CardCode}' AND "DimensionCCode" = ${DimensionCCode} AND "Date" BETWEEN '${starDate}' AND '${endDate}'`;
         // const query = `SELECT * FROM LAB_IFA_DATA.ANALISIS_DE_VENTAS LIMIT 15`;
         return await executeQuery(query);
     } catch (err) {

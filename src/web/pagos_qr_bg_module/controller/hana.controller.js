@@ -169,9 +169,115 @@ const findPagoQrByIds = async (qrId, transactionId) => {
 };
 
 
+
+/*********************************************************************************************
+ ************************ "LAB_IFA_LAPP"."IFA_PAGO_QR_BG_MODULO" *****************************
+ *********************************************************************************************
+*/
+
+/**
+ * Busca notificaciones de pago por QR_ID y TRANSACTION_ID
+ */
+const findQrModuloByIds = async (qrId) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const checkQuery = `
+            SELECT COUNT(*) as TOTAL 
+            FROM "LAB_IFA_LAPP"."IFA_PAGO_QR_BG_MODULO" 
+            WHERE QR_ID = ?
+        `;
+        return await executeQuery(checkQuery, [qrId]);
+    } catch (error) {
+        console.error("[PAGO-QR-MODULO] Error en findQrModuloByIds:", error);
+        throw error; // Relanzar el error para manejarlo en la función llamadora
+    }
+};
+
+
+
+const registrarPagoBgMoludo = async (qrId, idSap, idUser, nombreModulo, isPaid) => {
+    try {
+
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const checkResult = await findQrModuloByIds(qrId);
+
+        if (checkResult && checkResult[0] && checkResult[0].TOTAL > 0) {
+            throw Error('Pago de QR ya registrado de modulo');
+        }
+
+        const insertQuery = `
+            INSERT INTO "LAB_IFA_LAPP"."IFA_PAGO_QR_BG_MODULO" 
+            (QR_ID, ID_SAP, ID_USER, NOMBRE_MODULO, IS_PAID) 
+            VALUES (?, ?, ?, ?, ?)
+        `;
+
+        await executeQuery(insertQuery, [qrId, idSap, idUser, nombreModulo, isPaid]);
+
+        return {
+            result: true,
+            message: 'Pago de QR registrado correctamente en el módulo'
+        };
+    } catch (error) {
+        console.error("[PAGO-QR-MODULO] Error en registrarPagoBgMoludo: ", error);
+        return {
+            result: false,
+            message: `Error al registrar el pago: ${error.message}`
+        };
+    }
+};
+
+
+const actualizarPagoBgMoludo = async (qrId, transaccionId, payDate, isPaid) => {
+    try {
+
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const checkResult = await findQrModuloByIds(qrId);
+
+        if (checkResult && checkResult[0] && checkResult[0].TOTAL < 0) {
+            throw Error('Pago de QR no se puede actualizar porque no existe');
+        }
+
+        const insertQuery = `
+            UPDATE "LAB_IFA_LAPP"."IFA_PAGO_QR_BG_MODULO" 
+            SET TRANSACTION_ID = ?, PAY_DATE = ADD_SECONDS(
+                TO_TIMESTAMP(?, 'YYYY-MM-DD'),
+                SECONDS_BETWEEN('00:00:00', CURRENT_TIME)
+            ), IS_PAID = ?
+            WHERE QR_ID = ? 
+        `;
+
+        await executeQuery(insertQuery, [transaccionId, payDate, isPaid, qrId]);
+
+        return {
+            result: true,
+            message: 'Pago de QR registrado correctamente en el módulo'
+        };
+    } catch (error) {
+        console.error("[PAGO-QR-MODULO] Error en registrarPagoBgMoludo: ", error);
+        return {
+            result: false,
+            message: `Error al registrar el pago: ${error.message}`
+        };
+    }
+};
+
+
+
 module.exports = {
     registrarNotificacionPago,
     consultarNotificacionesPorQRId,
     listarNotificacionesPago,
-    findPagoQrByIds
+    findPagoQrByIds,
+    findQrModuloByIds,
+    registrarPagoBgMoludo,
+    actualizarPagoBgMoludo
 };

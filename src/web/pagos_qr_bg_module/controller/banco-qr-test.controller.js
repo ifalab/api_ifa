@@ -11,14 +11,19 @@ const bancoQrClient = require('../services/banco-qr-client');
  */
 const testAutenticarController = async (req, res) => {
     try {
-        //sexo
         const resultado = await bancoQrClient.autenticarConBanco();
+
+        if (!resultado || !resultado.result || !resultado.token) {
+            return res.status(500).json({
+                result: 'COD003',
+                message: 'Error al autenticar con el banco: respuesta inválida'
+            });
+        }
 
         return res.status(200).json({
             result: resultado.result,
             message: resultado.message,
             token: resultado.token
-            // token: resultado.token ? resultado.token.substring(0, 20) + '...' : null
         });
     } catch (error) {
         console.error('Error en testAutenticarController:', error);
@@ -32,14 +37,20 @@ const testAutenticarController = async (req, res) => {
 /**
  * Generar una orden de cobro QR
  * POST: /test/generar-qr
- */
-/**
- * Generar una orden de cobro QR
- * POST: /test/generar-qr
  * Soporta formato=json o formato=imagen en query params
  */
 const testGenerarQRController = async (req, res) => {
     try {
+        // El token ya fue verificado por el middleware
+        const token = req.bancoToken;
+
+        if (!token) {
+            return res.status(401).json({
+                result: 'COD001',
+                message: 'Token de autenticación requerido'
+            });
+        }
+
         const { monto, moneda, referencia, glosa, fechaExpiracion, usoUnico } = req.body;
         const formato = req.query.formato || 'json'; // Formato por defecto: JSON
 
@@ -58,7 +69,8 @@ const testGenerarQRController = async (req, res) => {
             glosa,
             fechaExpiracion,
             usoUnico: usoUnico !== undefined ? parseInt(usoUnico) : 1,
-            guardarImagenQR: true
+            guardarImagenQR: formato.toLowerCase() === 'imagen',
+            token: token // Pasar el token extraído, no el header completo
         };
 
         const resultado = await bancoQrClient.generarOrdenQR(datosOrden);
@@ -91,6 +103,9 @@ const testGenerarQRController = async (req, res) => {
  */
 const testAnularQRController = async (req, res) => {
     try {
+        // El token ya fue verificado por el middleware
+        const token = req.bancoToken;
+
         const { qrId } = req.body;
 
         if (!qrId) {
@@ -100,7 +115,7 @@ const testAnularQRController = async (req, res) => {
             });
         }
 
-        const resultado = await bancoQrClient.anularOrdenQR(qrId);
+        const resultado = await bancoQrClient.anularOrdenQR(qrId, token);
 
         return res.status(200).json(resultado);
     } catch (error) {
@@ -118,6 +133,9 @@ const testAnularQRController = async (req, res) => {
  */
 const testListarOrdenesController = async (req, res) => {
     try {
+        // El token ya fue verificado por el middleware
+        const token = req.bancoToken;
+
         let { fechaInicio, fechaFin } = req.body;
 
         // Si no se proporcionan fechas, usar el día actual
@@ -130,7 +148,7 @@ const testListarOrdenesController = async (req, res) => {
             fechaInicio = fechaFin = `${dia}${mes}${anio}`;
         }
 
-        const resultado = await bancoQrClient.listarOrdenesQR(fechaInicio, fechaFin);
+        const resultado = await bancoQrClient.listarOrdenesQR(fechaInicio, fechaFin, token);
 
         return res.status(200).json(resultado);
     } catch (error) {
@@ -148,16 +166,12 @@ const testListarOrdenesController = async (req, res) => {
  */
 const testConsultarEstadoController = async (req, res) => {
     try {
+        // El token ya fue verificado por el middleware
+        const token = req.bancoToken;
+
         const { qrId } = req.body;
 
-        if (!qrId) {
-            return res.status(400).json({
-                result: 'COD001',
-                message: 'El identificador del QR es requerido'
-            });
-        }
-
-        const resultado = await bancoQrClient.consultarEstadoQR(qrId);
+        const resultado = await bancoQrClient.consultarEstadoQR(qrId, token);
 
         return res.status(200).json(resultado);
     } catch (error) {
@@ -169,10 +183,57 @@ const testConsultarEstadoController = async (req, res) => {
     }
 };
 
+
+
+const testRegistrarPagoModuloController = async (req, res) => {
+    try {
+        const { qrId, idSap, idUser, nombreModulo, isPaid } = req.body;
+        console.log('testRegistrarPagoController - Datos >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>:', req.body);
+
+        if (!qrId || !idSap || !idUser || !nombreModulo) {
+            return res.status(400).json({
+                mensaje: 'Todos los campos son requeridos'
+            });
+        }
+        await bancoQrClient.registrarPagoMoludo(qrId, idSap, idUser, nombreModulo, isPaid);
+        return res.status(200).json({
+            mensaje: 'Pago registrado correctamente',
+        });
+    } catch (error) {
+        console.error('Error en testRegistrarPagoModuloController:', error);
+        return res.status(500).json({
+            message: 'Error al registrar pago: ' + error.message
+        });
+    }
+};
+
+const testActualizarPagoModuloController = async (req, res) => {
+    try {
+        const { qrId, transactionId, payDate, isPaid } = req.body;
+        if (!qrId || transactionId || payDate || !isPaid) {
+            return res.status(400).json({
+                mensaje: 'Todos los campos son requeridos'
+            });
+        }
+        await bancoQrClient.actualizarPagoModulo(qrId, transactionId, payDate, isPaid);
+        return res.status(200).json({
+            mensaje: 'Pago actualizado correctamente',
+        });
+    } catch (error) {
+        console.error('Error en testActualizarPagoModuloController:', error);
+        return res.status(500).json({
+            mensaje: 'Error al actualizar el  pago: ' + error.message
+        });
+    }
+};
+
 module.exports = {
     testAutenticarController,
     testGenerarQRController,
     testAnularQRController,
     testListarOrdenesController,
-    testConsultarEstadoController
+    testConsultarEstadoController,
+
+    testRegistrarPagoModuloController,
+    testActualizarPagoModuloController
 };

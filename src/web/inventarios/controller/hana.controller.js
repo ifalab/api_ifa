@@ -757,7 +757,7 @@ const reporteDevolucionCambios = async (fechaIni, fechaFin, user) => {
         }
         let query
         if (!fechaIni && !fechaFin)
-            query = `select * from ${process.env.PRD}.ifa_dev_cambios where "UserID"=${user}`;
+            query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
         else
             query = `select * from ${process.env.PRD}.ifa_dev_cambios where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
@@ -778,7 +778,7 @@ const reporteDevolucionRefacturacion = async (fechaIni, fechaFin, user) => {
         }
         let query
         if (!fechaIni && !fechaFin)
-            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user}`;
+            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
         else
             query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user} and "DocDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
@@ -980,6 +980,47 @@ const datosRecepcionTraslado = async (docEntry) => {
     }
 }
 
+const entregasClienteDespachadorCabecera = async (cardCode, skip, limit, search, fecha) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        let fechaPass = null;
+        if (fecha && fecha !== 'undefined' && fecha !== null) {
+            fechaPass = `'${fecha}'`;
+        }
+
+        const query = `call ${process.env.PRD}.IFA_LAPP_ENTREGAS_POR_CLIENTE_CABECERA('${cardCode}', ${skip}, ${limit}, '${search}',  ${fechaPass})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en entregasClienteDespachador:', error.message);
+        throw {
+            message: `Error al procesar entregasClienteDespachador: ${error.message || ''}`
+        }
+    }
+}
+
+const entregasClienteDespachadorDetalle = async (docEntry, skip, limit, search) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFA_LAPP_ENTREGAS_POR_CLIENTE_DETALLE(${docEntry}, ${skip}, ${limit}, '${search}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en entregasClienteDespachadorDetalle:', error.message);
+        throw {
+            message: `Error al procesar entregasClienteDespachadorDetalle: ${error.message || ''}`
+        }
+    }
+}
+
+
 const updateOpenqtyTrasladoSolicitud = async (idTralado, LineTralado, itemcode, idSolicitud, LineSolicitud) => {
     try {
         if (!connection) {
@@ -1047,4 +1088,6 @@ module.exports = {
     procesoAbastecimiento,
     datosRecepcionTraslado,
     updateOpenqtyTrasladoSolicitud,
+    entregasClienteDespachadorCabecera,
+    entregasClienteDespachadorDetalle
 }

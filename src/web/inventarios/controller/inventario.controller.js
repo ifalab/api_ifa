@@ -35,7 +35,10 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     selectionBatchPlazo, getReconciliationIdByCN,
     procesoAbastecimiento,
     datosRecepcionTraslado,
-    updateOpenqtyTrasladoSolicitud } = require("./hana.controller")
+    updateOpenqtyTrasladoSolicitud,
+    entregasClienteDespachadorCabecera,
+    entregasClienteDespachadorDetalle
+} = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice } = require("./sld.controller")
@@ -4878,7 +4881,6 @@ const solicitudesTrasladoController = async (req, res) => {
         }
         for (const sucCode of listSucCode) {
             let response = await solicitudesPendiente(sucCode)
-
             if (!roleAll) {
                 response = response.filter((item) => item.UserCode == ID_SAP)
                 listSolicitudes = [...listSolicitudes, ...response]
@@ -4916,9 +4918,9 @@ const detalleSolicitudTrasladoController = async (req, res) => {
 
 const reporteDevolucionValoradosController = async (req, res) => {
     try {
-        const { fechaIni, fechaFin, user } = req.body
-        console.log({ fechaIni, fechaFin, user })
-        const response = await reporteDevolucionValorados(fechaIni, fechaFin, user)
+        const { fechaIni, fechaFin } = req.body
+        console.log({ fechaIni, fechaFin })
+        const response = await reporteDevolucionValorados(fechaIni, fechaFin)
         console.log({ response })
         return res.json(response)
     } catch (error) {
@@ -4941,9 +4943,9 @@ const searchClienteController = async (req, res) => {
 
 const reporteDevolucionCambiosController = async (req, res) => {
     try {
-        const { fechaIni, fechaFin, user } = req.body
-        console.log({ fechaIni, fechaFin, user })
-        const response = await reporteDevolucionCambios(fechaIni, fechaFin, user)
+        const { fechaIni, fechaFin } = req.body
+        console.log({ fechaIni, fechaFin })
+        const response = await reporteDevolucionCambios(fechaIni, fechaFin)
         // console.log({ response })
         return res.json(response)
     } catch (error) {
@@ -5586,8 +5588,8 @@ const excelDevolucion = async (req, res) => {
             { header: 'Clase', key: 'TransClass', width: 12 },
             { header: 'No. Devolucion', key: 'DocNum', width: 15 },
             { header: 'Cod Cliente', key: 'CardCode', width: 14 },
-            { header: 'Cliente', key: 'CardName', width: 50 },
-            { header: 'Comentario', key: 'Comments', width: 60 },
+            { header: 'Cliente', key: 'CardName', width: 40 },
+            { header: 'Comentario', key: 'Comments', width: 50 },
             { header: 'Fecha', key: 'DocDate', width: 13 },
             { header: 'Total', key: 'DocTotal', width: 13 }
         ];
@@ -5678,19 +5680,80 @@ const excelDevolucion = async (req, res) => {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
 
-        grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Devolucion`, `Exito generando el Excel de devoluciones`,
-            '', 'inventario/excel-devolucion', process.env.PRD
-        );
         await workbook.xlsx.write(res);
         res.end();
     } catch (error) {
         console.error({ error });
-        grabarLog(user.USERCODE, user.USERNAME, `Inventario Excel Devolucion`, `Error generando el Excel de devoluciones ${error}`,
-            'catch de excelReporte', 'inventario/excel-devolucion', process.env.PRD
-        );
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        //   grabarLog(user.USERCODE, user.USERNAME,`Inventario Excel Devolucion`, `Error generando el Excel del reporte cuenta ${error}`,
+        //     'catch de excelReporte', 'cobranza/excel-reporte', process.env.PRD
+        //   );
         return res.status(500).json({ mensaje: `Error generando el Excel de devoluciones ${error}` });
     }
 };
+
+
+const entregasRealizadasCabeceraController = async (req, res) => {
+    try {
+        const { cardCode, page = 1, limit = 10, search = '', fecha = null } = req.query;
+        const skip = (page - 1) * limit;
+        console.log({ cardCode, skip, limit, search, fecha })
+        const entregas = await entregasClienteDespachadorCabecera(cardCode, skip, limit, search, fecha);
+
+        const total = entregas.length > 0 ? entregas[0].TotalCount : 0;
+        const totalPages = Math.ceil(total / limit);
+
+        return res.json({
+            entregas,
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages,
+            }
+        })
+    } catch (error) {
+        console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje = `Error en el controlador entregasRealizadasCabeceraController: ${error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Entregas Entregas realizadass", mensaje, ``, "inventario/entregas-realizadas", process.env.PRD)
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+const entregasRealizadasDetalleController = async (req, res) => {
+    try {
+        const { docEntry, page = 1, limit = 10, search = '' } = req.query;
+        const skip = (page - 1) * limit;
+        console.log({ docEntry, skip, limit, search })
+        const entregas_detalles = await entregasClienteDespachadorDetalle(docEntry, skip, limit, search);
+
+        const total = entregas_detalles.length > 0 ? entregas_detalles[0].TotalCount : 0;
+        const totalPages = Math.ceil(total / limit);
+
+        return res.json({
+            entregas_detalles,
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages,
+            }
+        })
+    } catch (error) {
+        console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const mensaje = `Error en el controlador entregasRealizadasDetalleController: ${error.message || ''}`
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Entregas Entregas realizadas Detalle", mensaje, ``, "inventario/entregas-realizadas-detalles", process.env.PRD)
+        return res.status(500).json({
+            mensaje
+        })
+    }
+}
+
+
 
 
 const excelReporte = async (req, res) => {
@@ -5893,5 +5956,5 @@ module.exports = {
     selectionBatchPlazoController,
     procesoAbastecimientoController,
     datosRecepcionTrasladoController, cancelarCambioMalEstadoController,
-    excelReporte, excelDevolucion
+    excelReporte, excelDevolucion, entregasRealizadasCabeceraController, entregasRealizadasDetalleController
 }
