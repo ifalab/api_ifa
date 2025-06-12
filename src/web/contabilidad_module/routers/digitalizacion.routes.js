@@ -7,7 +7,11 @@ const {
     getCabeceraImageController,
     getDetalleImageController,
     compressCabeceraController,
-    compressDetalleController
+    compressDetalleController,
+    updateCabeceraImageController,
+    updateDetalleImageController,
+    deleteCabeceraImageController,
+    deleteDetalleImageController
 } = require('../controllers/digitalizacion.controller');
 
 const router = Router();
@@ -28,5 +32,27 @@ router.post('/compress-detalle-transaccion',
     [validarToken, processMultipartSingleFile, validarCampos],
     compressDetalleController
 );
+
+router.put('/update/cabecera/:id',
+    [validarToken, processMultipartSingleFile, validarCampos],
+    updateCabeceraImageController
+);
+
+router.put('/update/detalle/:id',
+    [validarToken, processMultipartSingleFile, validarCampos],
+    updateDetalleImageController
+);
+
+// Rutas para eliminar imágenes
+router.delete('/delete/cabecera/image/:id',
+    [validarToken, validarCampos],
+    deleteCabeceraImageController
+);
+
+router.delete('/delete/detalle/image/:id',
+    [validarToken, validarCampos],
+    deleteDetalleImageController
+);
+
 
 module.exports = router;
