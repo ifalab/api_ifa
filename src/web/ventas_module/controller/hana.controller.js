@@ -2043,7 +2043,7 @@ const ventasZonasVendedoresByLineasSucursal = async (year, month, sucCode, clien
     }
 }
 
-const reportePendienteCadenas = async (fechaInicial,fechaFinal,tipo, groupCode, cardCode) => {
+const reportePendienteCadenas = async (fechaInicial,fechaFinal,tipo, groupCode, cardCode,headerParent) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2053,8 +2053,15 @@ const reportePendienteCadenas = async (fechaInicial,fechaFinal,tipo, groupCode, 
         const paramCardCode = formatParam(cardCode)
         const paramFechaInicial = formatParam(fechaInicial)
         const paramFechaFinal = formatParam(fechaFinal)
+        const paramHeaderParent = formatParam(headerParent)
 
-        const query = `call ${process.env.PRD}.ifa_lapp_obtener_ofertas_cadena_pendientes_agrupado(${paramFechaInicial},${paramFechaFinal},${paramTipo}, ${paramGroupCode}, ${paramCardCode})`
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_ofertas_cadena_pendientes_agrupado(
+        fecha1 => ${paramFechaInicial},
+        fecha2 => ${paramFechaFinal},
+        tipo =>${paramTipo},
+        groupcode => ${paramGroupCode},
+        cardcode =>  ${paramCardCode},
+        padre =>${paramHeaderParent})`
 
         console.log({ query })
 

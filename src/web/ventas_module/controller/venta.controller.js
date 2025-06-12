@@ -3663,6 +3663,7 @@ const reportePendienteCadenasController = async (req, res) => {
         let tipo = req.query.tipo
         let groupCode = req.query.groupCode
         let cardCode = req.query.cardCode
+        let headerParent = req.query.headerParent
         console.warn({
             fechaInicial,
             fechaFinal,
@@ -3685,19 +3686,44 @@ const reportePendienteCadenasController = async (req, res) => {
         if (!fechaFinal || fechaFinal == '') {
             fechaFinal = null
         }
-        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode)
+        if (!headerParent || headerParent == '') {
+            headerParent = null
+        }
+        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
         if (response.length == 0) {
             return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
         }
-        // let reporte = agruparPorYearMonth(response)
-        // reporte.sort((a, b) => {
-        //     if (a.Year !== b.Year) {
-        //         return a.Year - b.Year; 
-        //     }
-            
-        //     return a.Month - b.Month;
-        // });
-        return res.json(response)
+
+        const headers = [...new Set(response.map(item => {
+            return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+        }))].sort(); 
+
+        const grouped = {};
+        for (const item of response) {
+            const key = item.CardCode;
+            const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+
+            if (!grouped[key]) {
+                grouped[key] = {
+                    CardCode: item.CardCode,
+                    CardName: item.CardName,
+                };
+
+                headers.forEach(header => {
+                    grouped[key][header] = { Quantity: null, Total: null };
+                });
+            }
+
+            grouped[key][monthKey] = {
+                Quantity: parseFloat(item.Quantity),
+                Total: parseFloat(item.Total)
+            };
+        }
+
+        const data = Object.values(grouped)
+
+        return res.json({ headers, data })
+
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en reportePendienteCadenasController ${error.message || 'No definido'}` });
