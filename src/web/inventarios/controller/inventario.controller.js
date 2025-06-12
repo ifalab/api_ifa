@@ -37,7 +37,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     datosRecepcionTraslado,
     updateOpenqtyTrasladoSolicitud,
     entregasClienteDespachadorCabecera,
-    entregasClienteDespachadorDetalle
+    entregasClienteDespachadorDetalle,
+    todasSolicitudesPendiente
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -4899,6 +4900,19 @@ const solicitudesTrasladoController = async (req, res) => {
     }
 }
 
+const todasSolicitudesTrasladoController = async (req, res) => {
+    try {
+        let listSolicitudes = await todasSolicitudesPendiente()
+        if(listSolicitudes.length>0){
+            listSolicitudes.sort((a,b)=>a.SucCode - b.SucCode)
+        }
+        return res.json(listSolicitudes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en todasSolicitudesTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
 const detalleSolicitudTrasladoController = async (req, res) => {
     try {
         const docEntry = req.query.docEntry
@@ -4944,7 +4958,7 @@ const searchClienteController = async (req, res) => {
 const reporteDevolucionCambiosController = async (req, res) => {
     try {
         const { fechaIni, fechaFin } = req.body
-        console.log({ fechaIni,  fechaFin })
+        console.log({ fechaIni, fechaFin })
         const response = await reporteDevolucionCambios(fechaIni, fechaFin)
         // console.log({ response })
         return res.json(response)
@@ -5956,5 +5970,9 @@ module.exports = {
     selectionBatchPlazoController,
     procesoAbastecimientoController,
     datosRecepcionTrasladoController, cancelarCambioMalEstadoController,
-    excelReporte, excelDevolucion, entregasRealizadasCabeceraController, entregasRealizadasDetalleController
+    excelReporte,
+    excelDevolucion,
+    entregasRealizadasCabeceraController,
+    entregasRealizadasDetalleController,
+    todasSolicitudesTrasladoController
 }

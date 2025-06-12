@@ -712,6 +712,23 @@ const solicitudesPendiente = async (sucCode) => {
     }
 }
 
+const todasSolicitudesPendiente = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_todos_traslados_solicitud_pendientes`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en todasSolicitudesPendiente:', error.message);
+        throw {
+            message: `Error al procesar todasSolicitudesPendiente: ${error.message || ''}`
+        }
+    }
+}
+
 const detalleSolicitudPendiente = async (docEntry) => {
     try {
         if (!connection) {
@@ -1096,5 +1113,6 @@ module.exports = {
     datosRecepcionTraslado,
     updateOpenqtyTrasladoSolicitud,
     entregasClienteDespachadorCabecera,
-    entregasClienteDespachadorDetalle
+    entregasClienteDespachadorDetalle,
+    todasSolicitudesPendiente
 }
