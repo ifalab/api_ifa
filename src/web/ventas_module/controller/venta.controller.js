@@ -2679,7 +2679,8 @@ const ventasPresupuestoSubLinea = async (req, res) => {
     try {
         let response = await getVentasPrespuestosSubLinea();
         const resultado = [];
-        console.log(response);
+        // console.log(response);
+        // return res.status(200).json(response);
 
         for (const item of response) {
             const {
@@ -2718,22 +2719,30 @@ const ventasPresupuestoSubLinea = async (req, res) => {
             }
 
             // Nivel C1 dentro de B
-            let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
+            let grupoC = grupoB.data.find(c => c.DimensionCCode === DimensionCCode);
             if (!grupoC) {
                 grupoC = {
                     DimensionC,
                     DimensionCCode,
-                    DimensionC1Code,
-                    DimensionC1,
-                    Sales: 0,
-                    Quota: 0
+                    children: []
                 };
                 grupoB.data.push(grupoC);
             }
 
-            // Sumar valores
-            grupoC.Sales += parseFloat(Sales);
-            grupoC.Quota += parseFloat(Quota);
+            // Nivel C1 dentro de C
+            let grupoC1 = grupoC.children.find(c1 => c1.DimensionC1Code === DimensionC1Code);
+            if (!grupoC1) {
+                grupoC1 = {
+                    DimensionC1,
+                    DimensionC1Code,
+                    Sales: 0,
+                    Quota: 0
+                };
+                grupoC.children.push(grupoC1);
+            }
+
+            grupoC1.Sales += parseFloat(Sales);
+            grupoC1.Quota += parseFloat(Quota);
         }
         return res.status(200).json(resultado);
     } catch (error) {
