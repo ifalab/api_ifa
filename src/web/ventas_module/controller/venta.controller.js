@@ -102,7 +102,9 @@ const {
     getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt, getVentasLineaSucursalSupervisor,
     ventasVendedoresByLineasSucursal,
     ventasZonasVendedoresByLineasSucursal,
-    reportePendienteCadenas
+    reportePendienteCadenas,
+    clientesCadenasParent,
+    searchClientesCadenasParent
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3665,6 +3667,31 @@ const ventasZonasVendedoresByLineasSucursalController = async (req, res) => {
     }
 }
 
+const clientesCadenasParentController = async (req, res) => {
+    try {
+        const data = await clientesCadenasParent()
+        return res.json(data)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en clientesCadenasParentController ${error.message || 'No definido'}` });
+    }
+}
+
+const searchClientesCadenasParentController = async (req, res) => {
+    try {
+        let parametro = req.query.parametro
+        if (!parametro) {
+            return res.json({ mensaje: 'Debe existir un parametro de busqueda' })
+        }
+        parametro = parametro.toString().toUpperCase()
+        const data = await searchClientesCadenasParent(parametro)
+        return res.json(data)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en searchClientesCadenasParentController ${error.message || 'No definido'}` });
+    }
+}
+
 const reportePendienteCadenasController = async (req, res) => {
     try {
         let fechaInicial = req.query.fechaInicial
@@ -3699,13 +3726,13 @@ const reportePendienteCadenasController = async (req, res) => {
             headerParent = null
         }
         const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
-        if (response.length == 0) {
-            return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
-        }
+        // if (response.length == 0) {
+        //     return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
+        // }
 
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
-        }))].sort(); 
+        }))].sort();
 
         const grouped = {};
         for (const item of response) {
@@ -3874,4 +3901,6 @@ module.exports = {
     ventasVendedoresByLineasSucursalController,
     ventasZonasVendedoresByLineasSucursalController,
     reportePendienteCadenasController,
+    clientesCadenasParentController,
+    searchClientesCadenasParentController,
 };

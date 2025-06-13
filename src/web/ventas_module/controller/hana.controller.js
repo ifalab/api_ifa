@@ -2043,6 +2043,38 @@ const ventasZonasVendedoresByLineasSucursal = async (year, month, sucCode, clien
     }
 }
 
+const clientesCadenasParent = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_MD_CUSTOMER_PARENT`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesCadenasParent: ${error.message || ''}`
+        }
+    }
+}
+
+const searchClientesCadenasParent = async (parametro) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_MD_CUSTOMER_PARENT WHERE "CustomerParentName" LIKE '%${parametro}%'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesCadenasParent: ${error.message || ''}`
+        }
+    }
+}
+
 const reportePendienteCadenas = async (fechaInicial,fechaFinal,tipo, groupCode, cardCode,headerParent) => {
     try {
         if (!connection) {
@@ -2192,4 +2224,6 @@ module.exports = {
     ventasVendedoresByLineasSucursal,
     ventasZonasVendedoresByLineasSucursal,
     reportePendienteCadenas,
+    clientesCadenasParent,
+    searchClientesCadenasParent
 }
