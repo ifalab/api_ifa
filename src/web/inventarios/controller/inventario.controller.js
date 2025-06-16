@@ -5488,7 +5488,7 @@ const procesoAbastecimientoController = async (req, res) => {
                 Fulfilled: Number(item.Fulfilled) / 100
             }
         })
-        console.log(JSON.stringify({ response }, null, 2))
+        // console.log(JSON.stringify({ response }, null, 2))
         response = response.sort((a, b) => new Date(b.SolicitudDateTime) - new Date(a.SolicitudDateTime))
         let result = []
         for (const element of listSucCode) {
