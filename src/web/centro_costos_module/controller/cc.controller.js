@@ -992,6 +992,93 @@ const saveClasificacionGastos = async (req, res) => {
         });
     }
 }
+const cargarExcelMasivo = async (req, res) => {
+    try {
+        const buffer = req.file.buffer;
+        const workbook = xlsx.read(buffer, { type: 'buffer' });
+        const hoja = workbook.Sheets[workbook.SheetNames[0]];
+        const filas = xlsx.utils.sheet_to_json(hoja);
+
+        // Obtener fechas y glosa desde el cuerpo del request
+        const { fechaContabilizacion, fechaCreacion, glosa } = req.body;
+
+        console.log(fechaContabilizacion, fechaCreacion, glosa)
+        // Validación opcional de fechas (si deseas)
+        if (!fechaContabilizacion || !fechaCreacion || !glosa) {
+            return res.status(400).json({
+                status: false,
+                mensaje: 'Se requiere fechaInicio, fechaFin y glosa en el cuerpo de la solicitud.',
+            });
+        }
+
+        // Mapear columnas del Excel a la estructura del backend Nest
+        const detalles = filas.map((fila) => ({
+            U_DocFuenteCod: fila['Documento_Fuente'] ?? '',
+            AccountName: fila['Cuenta_Nombre'] ?? '',
+            AccountCode: String(fila['Cuenta'] ?? ''),
+            ShortName: fila['Codigo_Socio'] ?? '',
+            CardName: fila['Socio'] ?? '',
+            Credit: parseFloat(fila['Credito']) || 0,
+            Debit: parseFloat(fila['Debito']) || 0,
+            LineMemo: fila['Glosa'] ?? '',
+            Ref1: fila['Referencia_1'] ?? '',
+            Ref2: fila['Referencia_2'] ?? '',
+            Ref3: fila['Referencia_3'] ?? '',
+            U_BenefCode: fila['Codigo_Beneficiario'] ?? '',
+            SourceID: parseInt(fila['Id_Concepto_Comercial']) || 0,
+            U_Area: fila['Area'] ?? '',
+            U_Tipo: fila['Tipo'] ?? '',
+            U_Linea: fila['Linea'] ?? '',
+            U_Especialidad: fila['Especialidad'] ?? '',
+            U_Clasif_Gastos: fila['Clasificacion_Gastos'] ?? '',
+            U_ConcepComercial: fila['Conceptos_Comerciales'] ?? '',
+        }));
+
+        console.log('Detalles:', detalles);
+
+        const fechaContabilizacionISO = fixToISODate(fechaContabilizacion);
+        const fechaCreacionISO = fixToISODate(fechaCreacion);
+
+        // Enviar también fechas y glosa al servicio
+        const result = await sapService.cargarExcelCC({
+        detalles,
+        fechaContabilizacion: fechaContabilizacionISO,
+        fechaCreacion: fechaCreacionISO,
+        glosa
+        });
+
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Excel cargado correctamente',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error al cargar el excel masivo:', error);
+        res.status(500).json({
+            status: 500,
+            mensaje: 'Error al cargar el excel masivo',
+            error: error.message,
+        });
+    }
+};
+
+function fixToISODate(dateStr) {
+  if (!dateStr) return null;
+  
+  // Asumiendo que dateStr viene como '2025-5-21' o similar
+  const parts = dateStr.split('-'); // ['2025', '5', '21']
+  if(parts.length !== 3) return null;
+
+  const year = parts[0];
+  // Asegurarse de que mes y día tengan 2 dígitos:
+  const month = parts[1].padStart(2, '0');
+  const day = parts[2].padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -1018,5 +1105,6 @@ module.exports = {
     obtenerBalanceGeneral,
     obtenerAsientoCompletos,
     obtenerExcelAsientos,
-    saveClasificacionGastos
+    saveClasificacionGastos,
+    cargarExcelMasivo
 }
