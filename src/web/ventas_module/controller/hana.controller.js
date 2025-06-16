@@ -2043,7 +2043,39 @@ const ventasZonasVendedoresByLineasSucursal = async (year, month, sucCode, clien
     }
 }
 
-const reportePendienteCadenas = async (fechaInicial,fechaFinal,tipo, groupCode, cardCode) => {
+const clientesCadenasParent = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_MD_CUSTOMER_PARENT`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesCadenasParent: ${error.message || ''}`
+        }
+    }
+}
+
+const searchClientesCadenasParent = async (parametro) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_MD_CUSTOMER_PARENT WHERE "CustomerParentName" LIKE '%${parametro}%'`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientesCadenasParent: ${error.message || ''}`
+        }
+    }
+}
+
+const reportePendienteCadenas = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2053,8 +2085,15 @@ const reportePendienteCadenas = async (fechaInicial,fechaFinal,tipo, groupCode, 
         const paramCardCode = formatParam(cardCode)
         const paramFechaInicial = formatParam(fechaInicial)
         const paramFechaFinal = formatParam(fechaFinal)
+        const paramHeaderParent = formatParam(headerParent)
 
-        const query = `call ${process.env.PRD}.ifa_lapp_obtener_ofertas_cadena_pendientes_agrupado(${paramFechaInicial},${paramFechaFinal},${paramTipo}, ${paramGroupCode}, ${paramCardCode})`
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_ofertas_cadena_pendientes_agrupado(
+        fecha1 => ${paramFechaInicial},
+        fecha2 => ${paramFechaFinal},
+        tipo =>${paramTipo},
+        groupcode => ${paramGroupCode},
+        cardcode =>  ${paramCardCode},
+        padre =>${paramHeaderParent})`
 
         console.log({ query })
 
@@ -2078,6 +2117,26 @@ const formatParam = (param) => {
     return param
 }
 
+const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramStartDate = formatParam(startDate)
+        const paramTipo = formatParam(tipoPendiente)
+        const paramCardCode = formatParam(cardCode)
+        const paramEndDate = formatParam(endDate)
+        const query = `call ${process.env.PRD}.ifasp_ven_get_pending_detail_to_sale_by_cardcode(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_cardcode => ${paramCardCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en ventasPendientes: ${error.message || ''}`
+        }
+    }
+}
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2185,4 +2244,7 @@ module.exports = {
     ventasVendedoresByLineasSucursal,
     ventasZonasVendedoresByLineasSucursal,
     reportePendienteCadenas,
+    clientesCadenasParent,
+    searchClientesCadenasParent,
+    ventasPendientes,
 }

@@ -102,7 +102,10 @@ const {
     getVentasLineaSupervisorAnt, getVentasTipoSupervisorAnt, getVentasLineaSucursalSupervisor,
     ventasVendedoresByLineasSucursal,
     ventasZonasVendedoresByLineasSucursal,
-    reportePendienteCadenas
+    reportePendienteCadenas,
+    clientesCadenasParent,
+    searchClientesCadenasParent,
+    ventasPendientes
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3665,6 +3668,31 @@ const ventasZonasVendedoresByLineasSucursalController = async (req, res) => {
     }
 }
 
+const clientesCadenasParentController = async (req, res) => {
+    try {
+        const data = await clientesCadenasParent()
+        return res.json(data)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en clientesCadenasParentController ${error.message || 'No definido'}` });
+    }
+}
+
+const searchClientesCadenasParentController = async (req, res) => {
+    try {
+        let parametro = req.query.parametro
+        if (!parametro) {
+            return res.json({ mensaje: 'Debe existir un parametro de busqueda' })
+        }
+        parametro = parametro.toString().toUpperCase()
+        const data = await searchClientesCadenasParent(parametro)
+        return res.json(data)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en searchClientesCadenasParentController ${error.message || 'No definido'}` });
+    }
+}
+
 const reportePendienteCadenasController = async (req, res) => {
     try {
         let fechaInicial = req.query.fechaInicial
@@ -3672,6 +3700,7 @@ const reportePendienteCadenasController = async (req, res) => {
         let tipo = req.query.tipo
         let groupCode = req.query.groupCode
         let cardCode = req.query.cardCode
+        let headerParent = req.query.headerParent
         console.warn({
             fechaInicial,
             fechaFinal,
@@ -3694,19 +3723,44 @@ const reportePendienteCadenasController = async (req, res) => {
         if (!fechaFinal || fechaFinal == '') {
             fechaFinal = null
         }
-        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode)
-        if (response.length == 0) {
-            return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
+        if (!headerParent || headerParent == '') {
+            headerParent = null
         }
-        // let reporte = agruparPorYearMonth(response)
-        // reporte.sort((a, b) => {
-        //     if (a.Year !== b.Year) {
-        //         return a.Year - b.Year; 
-        //     }
-            
-        //     return a.Month - b.Month;
-        // });
-        return res.json(response)
+        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
+        // if (response.length == 0) {
+        //     return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
+        // }
+
+        const headers = [...new Set(response.map(item => {
+            return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+        }))].sort();
+
+        const grouped = {};
+        for (const item of response) {
+            const key = item.CardCode;
+            const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+
+            if (!grouped[key]) {
+                grouped[key] = {
+                    CardCode: item.CardCode,
+                    CardName: item.CardName,
+                };
+
+                headers.forEach(header => {
+                    grouped[key][header] = { Quantity: null, Total: null };
+                });
+            }
+
+            grouped[key][monthKey] = {
+                Quantity: parseFloat(item.Quantity),
+                Total: parseFloat(item.Total)
+            };
+        }
+
+        const data = Object.values(grouped)
+
+        return res.json({ headers, data })
+
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en reportePendienteCadenasController ${error.message || 'No definido'}` });
@@ -3747,6 +3801,35 @@ function agruparPorYearMonth(data) {
     }));
 }
 
+const ventasPendienteController = async (req, res) => {
+    try {
+        let startDate = req.query.startDate
+        let endDate = req.query.endDate
+        let tipo = req.query.tipo
+        let cardCode = req.query.cardCode
+
+
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!startDate || startDate == '') {
+            startDate = null
+        }
+        if (!endDate || endDate == '') {
+            endDate = null
+        }
+
+        const data = await ventasPendientes(startDate, endDate, tipo, cardCode)
+        return res.json(data)
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPendienteController ${error.message || 'No definido'}` });
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -3848,4 +3931,7 @@ module.exports = {
     ventasVendedoresByLineasSucursalController,
     ventasZonasVendedoresByLineasSucursalController,
     reportePendienteCadenasController,
+    clientesCadenasParentController,
+    searchClientesCadenasParentController,
+    ventasPendienteController,
 };
