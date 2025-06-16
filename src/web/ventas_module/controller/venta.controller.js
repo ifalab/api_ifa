@@ -104,7 +104,8 @@ const {
     ventasZonasVendedoresByLineasSucursal,
     reportePendienteCadenas,
     clientesCadenasParent,
-    searchClientesCadenasParent
+    searchClientesCadenasParent,
+    ventasPendientes
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3800,6 +3801,35 @@ function agruparPorYearMonth(data) {
     }));
 }
 
+const ventasPendienteController = async (req, res) => {
+    try {
+        let startDate = req.query.startDate
+        let endDate = req.query.endDate
+        let tipo = req.query.tipo
+        let cardCode = req.query.cardCode
+
+
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!startDate || startDate == '') {
+            startDate = null
+        }
+        if (!endDate || endDate == '') {
+            endDate = null
+        }
+
+        const data = await ventasPendientes(startDate, endDate, tipo, cardCode)
+        return res.json(data)
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPendienteController ${error.message || 'No definido'}` });
+    }
+}
 
 module.exports = {
     ventasPorSucursalController,
@@ -3903,4 +3933,5 @@ module.exports = {
     reportePendienteCadenasController,
     clientesCadenasParentController,
     searchClientesCadenasParentController,
+    ventasPendienteController,
 };

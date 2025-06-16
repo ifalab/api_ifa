@@ -2075,7 +2075,7 @@ const searchClientesCadenasParent = async (parametro) => {
     }
 }
 
-const reportePendienteCadenas = async (fechaInicial,fechaFinal,tipo, groupCode, cardCode,headerParent) => {
+const reportePendienteCadenas = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2117,6 +2117,26 @@ const formatParam = (param) => {
     return param
 }
 
+const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramStartDate = formatParam(startDate)
+        const paramTipo = formatParam(tipoPendiente)
+        const paramCardCode = formatParam(cardCode)
+        const paramEndDate = formatParam(endDate)
+        const query = `call ${process.env.PRD}.ifasp_ven_get_pending_detail_to_sale_by_cardcode(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_cardcode => ${paramCardCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en ventasPendientes: ${error.message || ''}`
+        }
+    }
+}
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2225,5 +2245,6 @@ module.exports = {
     ventasZonasVendedoresByLineasSucursal,
     reportePendienteCadenas,
     clientesCadenasParent,
-    searchClientesCadenasParent
+    searchClientesCadenasParent,
+    ventasPendientes,
 }
