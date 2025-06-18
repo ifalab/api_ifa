@@ -2117,7 +2117,7 @@ const formatParam = (param) => {
     return param
 }
 
-const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
+const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode,itemCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2126,7 +2126,8 @@ const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
         const paramTipo = formatParam(tipoPendiente)
         const paramCardCode = formatParam(cardCode)
         const paramEndDate = formatParam(endDate)
-        const query = `call ${process.env.PRD}.ifasp_sal_get_pending_detail_to_sale_by_cardcode(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_cardcode => ${paramCardCode})`
+        const paramitemCode = formatParam(itemCode)
+        const query = `call ${process.env.PRD}.ifasp_sal_get_pending_detail_to_sale_by_cardcode(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_cardcode => ${paramCardCode},i_itemcode => ${paramitemCode})`
         console.log({ query })
         const result = await executeQuery(query)
         return result

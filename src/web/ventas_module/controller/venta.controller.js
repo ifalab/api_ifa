@@ -3804,6 +3804,7 @@ const ventasPendienteController = async (req, res) => {
         let endDate = req.query.endDate
         let tipo = req.query.tipo
         let cardCode = req.query.cardCode
+        let itemCode = req.query.itemCode
 
 
         if (!tipo || tipo == '') {
@@ -3819,7 +3820,11 @@ const ventasPendienteController = async (req, res) => {
             endDate = null
         }
 
-        const data = await ventasPendientes(startDate, endDate, tipo, cardCode)
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+
+        const data = await ventasPendientes(startDate, endDate, tipo, cardCode,itemCode)
         return res.json(data)
 
     } catch (error) {
