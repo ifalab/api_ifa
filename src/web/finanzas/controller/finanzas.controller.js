@@ -1059,18 +1059,25 @@ const reporteArticulosPendientesController = async (req, res) => {
 
 const reporteMargenComercialController = async (req, res) => {
   try {
-    const year = Number(req.query.year);
-    const month = Number(req.query.month);
+    const { startDate, endDate } = req.query;
 
-    if (isNaN(year) || isNaN(month)) {
-      return res.status(400).json({ mensaje: 'Los parámetros "year" y "month" deben ser números válidos.' });
+    console.log(startDate, endDate)
+    if (!startDate || !endDate) {
+      return res.status(400).json({ mensaje: 'Los parámetros "startDate" y "endDate" son requeridos.' });
     }
 
-    if (month < 1 || month > 12) {
-      return res.status(400).json({ mensaje: 'El parámetro "month" debe estar entre 1 y 12.' });
+    const start = parseDateFromYYYYMMDD(req.query.startDate);
+    const end = parseDateFromYYYYMMDD(req.query.endDate);
+
+    console.log(start, end)
+    if (!start || !end) {
+      return res.status(400).json({
+        mensaje: 'Las fechas deben tener un formato válido de 8 dígitos (ej: 20250101)'
+      });
     }
 
-    const response = await reporteMargenComercial(year, month);
+
+    const response = await reporteMargenComercial(start, end);
 
     // Agrupación por SucCode y SucName
     const groupedData = response.reduce((acc, item) => {
@@ -1087,7 +1094,6 @@ const reporteMargenComercialController = async (req, res) => {
         };
       }
 
-      // Sumar valores
       acc[key].TotalSales = Number((acc[key].TotalSales + parseFloat(item.TotalSales)).toFixed(2));
       acc[key].TotalCostComercial = Number((acc[key].TotalCostComercial + parseFloat(item.TotalCostComercial)).toFixed(2));
       acc[key].ComercialProfit = Number((acc[key].ComercialProfit + parseFloat(item.ComercialProfit)).toFixed(2));
@@ -1107,9 +1113,23 @@ const reporteMargenComercialController = async (req, res) => {
     return res.json(Object.values(groupedData));
   } catch (error) {
     console.error({ error });
-    return res.status(500).json({ mensaje: `Error en el controlador reporteMargenComercialController, ${error.message || 'error desconocido'}` });
+    return res.status(500).json({
+      mensaje: `Error en el controlador reporteMargenComercialController, ${error.message || 'error desconocido'}`
+    });
   }
 };
+
+const parseDateFromYYYYMMDD = (str) => {
+  if (!/^\d{8}$/.test(str)) return null;
+
+  const year = parseInt(str.slice(0, 4), 10);
+  const month = parseInt(str.slice(4, 6), 10) - 1; // Mes en Date empieza desde 0
+  const day = parseInt(str.slice(6, 8), 10);
+
+  const date = new Date(year, month, day);
+  return isNaN(date.getTime()) ? null : date;
+};
+
 
 module.exports = {
   parteDiaroController,
