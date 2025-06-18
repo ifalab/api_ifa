@@ -5,7 +5,7 @@
  * @param {Array} data - Arreglo plano de datos con campos como DivisionName, SucCode, TotalSales, etc.
  * @returns {Record<string, Array>} Objeto agrupado por DivisionName y una clave 'GENERAL' que contiene el resumen completo.
  */
-export function agruparPorDivisionYSucursal(data) {
+const agruparPorDivisionYSucursal = (data) => {
   const divisionGroups = {};
   const generalGroup = {};
 
@@ -103,4 +103,9 @@ export function agruparPorDivisionYSucursal(data) {
   });
 
   return resultadoFinal;
+}
+
+
+module.exports = {
+  agruparPorDivisionYSucursal,
 }
