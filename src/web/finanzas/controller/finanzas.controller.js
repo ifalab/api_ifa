@@ -1,3 +1,4 @@
+const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 
@@ -1078,39 +1079,9 @@ const reporteMargenComercialController = async (req, res) => {
 
 
     const response = await reporteMargenComercial(start, end);
+    const resultadoFinal = agruparPorDivisionYSucursal(response);
+    return res.json(resultadoFinal);
 
-    // Agrupación por SucCode y SucName
-    const groupedData = response.reduce((acc, item) => {
-      const key = item.SucCode;
-      if (!acc[key]) {
-        acc[key] = {
-          SucCode: item.SucCode,
-          SucName: item.SucName,
-          TotalSales: 0,
-          TotalCostComercial: 0,
-          ComercialProfit: 0,
-          CommercialMarginPercent: 0,
-          data: []
-        };
-      }
-
-      acc[key].TotalSales = Number((acc[key].TotalSales + parseFloat(item.TotalSales)).toFixed(2));
-      acc[key].TotalCostComercial = Number((acc[key].TotalCostComercial + parseFloat(item.TotalCostComercial)).toFixed(2));
-      acc[key].ComercialProfit = Number((acc[key].ComercialProfit + parseFloat(item.ComercialProfit)).toFixed(2));
-
-      acc[key].data.push({ ...item, SucCode: undefined, SucName: undefined });
-
-      return acc;
-    }, {});
-
-    // Promediar CommercialMarginPercent
-    Object.values(groupedData).forEach(group => {
-      group.CommercialMarginPercent = Number((
-        group.data.reduce((sum, item) => sum + parseFloat(item.CommercialMarginPercent), 0) / group.data.length
-      ).toFixed(2));
-    });
-
-    return res.json(Object.values(groupedData));
   } catch (error) {
     console.error({ error });
     return res.status(500).json({
