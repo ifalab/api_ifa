@@ -108,7 +108,8 @@ const {
     clientesCadenasParentController,
     searchClientesCadenasParentController,
     ventasPendienteController,
-    reportePendienteByItemController
+    reportePendienteByItemController,
+    ventasPendienteByItemController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -243,5 +244,7 @@ router.get('/search-clientes-cadenas-parent', [validarToken, validarCampos], sea
 router.get('/reporte-pendiente-by-item', [validarToken, validarCampos], reportePendienteByItemController)
 
 router.get('/detalle-reporte-pendiente', [validarToken, validarCampos], ventasPendienteController)
+router.get('/detalle-reporte-pendiente-by-item', [validarToken, validarCampos], ventasPendienteByItemController)
+// ventasPendienteByItemController
 
 module.exports = router

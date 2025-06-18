@@ -106,7 +106,8 @@ const {
     clientesCadenasParent,
     searchClientesCadenasParent,
     ventasPendientes,
-    reportePendienteByItem
+    reportePendienteByItem,
+    ventasPendientesByItem
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3804,6 +3805,7 @@ const ventasPendienteController = async (req, res) => {
         let endDate = req.query.endDate
         let tipo = req.query.tipo
         let cardCode = req.query.cardCode
+        let groupCode = req.query.groupCode
         let itemCode = req.query.itemCode
 
 
@@ -3824,7 +3826,11 @@ const ventasPendienteController = async (req, res) => {
             itemCode = null
         }
 
-        const data = await ventasPendientes(startDate, endDate, tipo, cardCode,itemCode)
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+
+        const data = await ventasPendientes(startDate, endDate, tipo, cardCode,itemCode,groupCode)
         return res.json(data)
 
     } catch (error) {
@@ -3833,6 +3839,44 @@ const ventasPendienteController = async (req, res) => {
     }
 }
 
+const ventasPendienteByItemController = async (req, res) => {
+    try {
+        let startDate = req.query.startDate
+        let endDate = req.query.endDate
+        let tipo = req.query.tipo
+        let cardCode = req.query.cardCode
+        let itemCode = req.query.itemCode
+        let groupCode = req.query.groupCode
+
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!startDate || startDate == '') {
+            startDate = null
+        }
+        if (!endDate || endDate == '') {
+            endDate = null
+        }
+
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+
+        const data = await ventasPendientesByItem(startDate, endDate, tipo, cardCode,itemCode,groupCode)
+        return res.json(data)
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPendienteByItemController ${error.message || 'No definido'}` });
+    }
+}
 const reportePendienteByItemController = async (req, res) => {
     try {
         let fechaInicial = req.query.fechaInicial
@@ -4012,4 +4056,5 @@ module.exports = {
     searchClientesCadenasParentController,
     ventasPendienteController,
     reportePendienteByItemController,
+    ventasPendienteByItemController,
 };

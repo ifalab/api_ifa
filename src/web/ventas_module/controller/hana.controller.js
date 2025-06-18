@@ -2117,7 +2117,7 @@ const formatParam = (param) => {
     return param
 }
 
-const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode,itemCode) => {
+const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode,itemCode,groupCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2127,6 +2127,7 @@ const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode,itemCod
         const paramCardCode = formatParam(cardCode)
         const paramEndDate = formatParam(endDate)
         const paramitemCode = formatParam(itemCode)
+        const paramitemGroup = formatParam(groupCode)
         const query = `call ${process.env.PRD}.ifasp_sal_get_pending_detail_to_sale_by_cardcode(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_cardcode => ${paramCardCode},i_itemcode => ${paramitemCode})`
         console.log({ query })
         const result = await executeQuery(query)
@@ -2135,6 +2136,29 @@ const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode,itemCod
         console.log({ error })
         throw {
             message: `Error en ventasPendientes: ${error.message || ''}`
+        }
+    }
+}
+
+const ventasPendientesByItem = async (startDate,endDate,tipoPendiente,cardCode,itemCode,groupCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramStartDate = formatParam(startDate)
+        const paramTipo = formatParam(tipoPendiente)
+        const paramCardCode = formatParam(cardCode)
+        const paramEndDate = formatParam(endDate)
+        const paramitemCode = formatParam(itemCode)
+        const paramGroup = formatParam(groupCode)
+        const query = `call ${process.env.PRD}.ifasp_sal_calculate_pending_detail_to_sale_by_customer_or_item(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_groupcode =>${paramGroup},i_cardcode => ${paramCardCode},i_itemcode => ${paramitemCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en ventasPendientesByItem: ${error.message || ''}`
         }
     }
 }
@@ -2284,4 +2308,5 @@ module.exports = {
     searchClientesCadenasParent,
     ventasPendientes,
     reportePendienteByItem,
+    ventasPendientesByItem,
 }
