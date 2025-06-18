@@ -11,7 +11,9 @@ const {
     updateCabeceraImageController,
     updateDetalleImageController,
     deleteCabeceraImageController,
-    deleteDetalleImageController
+    deleteDetalleImageController,
+    getDeliveryDigitalizedController,
+    excelEntregasDigitalizadas
 } = require('../controllers/digitalizacion.controller');
 
 const router = Router();
@@ -52,6 +54,17 @@ router.delete('/delete/cabecera/image/:id',
 router.delete('/delete/detalle/image/:id',
     [validarToken, validarCampos],
     deleteDetalleImageController
+);
+
+
+router.get('/reporte/entregas-realizadas',
+    [validarToken, validarCampos],
+    getDeliveryDigitalizedController
+);
+
+router.post('/reporte/excel-entregas', 
+    [validarToken, validarCampos], 
+    excelEntregasDigitalizadas
 );
 
 

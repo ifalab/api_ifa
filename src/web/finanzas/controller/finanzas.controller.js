@@ -1,4 +1,5 @@
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes } = require("./hana.controller")
+const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
@@ -1057,6 +1058,49 @@ const reporteArticulosPendientesController = async (req, res) => {
   }
 }
 
+const reporteMargenComercialController = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    console.log(startDate, endDate)
+    if (!startDate || !endDate) {
+      return res.status(400).json({ mensaje: 'Los parámetros "startDate" y "endDate" son requeridos.' });
+    }
+
+    const start = parseDateFromYYYYMMDD(req.query.startDate);
+    const end = parseDateFromYYYYMMDD(req.query.endDate);
+
+    console.log(start, end)
+    if (!start || !end) {
+      return res.status(400).json({
+        mensaje: 'Las fechas deben tener un formato válido de 8 dígitos (ej: 20250101)'
+      });
+    }
+
+
+    const response = await reporteMargenComercial(start, end);
+    const resultadoFinal = agruparPorDivisionYSucursal(response);
+    return res.json(resultadoFinal);
+
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      mensaje: `Error en el controlador reporteMargenComercialController, ${error.message || 'error desconocido'}`
+    });
+  }
+};
+
+const parseDateFromYYYYMMDD = (str) => {
+  if (!/^\d{8}$/.test(str)) return null;
+
+  const year = parseInt(str.slice(0, 4), 10);
+  const month = parseInt(str.slice(4, 6), 10) - 1; // Mes en Date empieza desde 0
+  const day = parseInt(str.slice(6, 8), 10);
+
+  const date = new Date(year, month, day);
+  return isNaN(date.getTime()) ? null : date;
+};
+
 
 module.exports = {
   parteDiaroController,
@@ -1075,5 +1119,6 @@ module.exports = {
   findAllSimpleGastosController,
   findXAgenciaSimpleGastosController,
   gastosGestionAgenciaController,
-  reporteArticulosPendientesController
+  reporteArticulosPendientesController,
+  reporteMargenComercialController
 }
