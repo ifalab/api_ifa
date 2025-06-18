@@ -1,5 +1,10 @@
 const digitalizacionService = require('../services/digitalizacion.service');
 const { grabarLog } = require("../../shared/controller/hana.controller");
+const {
+reporteEntregaDigitalizacion
+} = require('../controllers/hana.controller');
+
+const ExcelJS = require('exceljs');
 
 /**
  * Busca imágenes según criterios proporcionados
@@ -46,9 +51,7 @@ const getCabeceraImageController = async (req, res) => {
                 message: 'ID de cabecera inválido'
             });
         }
-
         const result = await digitalizacionService.getCabeceraImage(id);
-
         // Enviar la imagen como respuesta
         res.set('Content-Type', result.contentType || 'image/jpeg');
         res.status(200).send(result.data);
@@ -60,6 +63,7 @@ const getCabeceraImageController = async (req, res) => {
         });
     }
 };
+
 
 /**
  * Obtiene y muestra una imagen de detalle
@@ -544,6 +548,251 @@ const deleteDetalleImageController = async (req, res) => {
 };
 
 
+const getDeliveryDigitalizedController = async (req, res) => {
+    try {
+        // Obtener parámetros de la consulta
+        const { startDate, endDate, search ,  page = 1, limit = 10} = req.query;
+        const skip = (page - 1) * limit;
+        
+        // Formatear fechas
+        // Por defecto usar la fecha de hoy si no se proporcionan fechas
+        const now = new Date();
+        
+        let actualStartDate = null;
+        let actualEndDate = null;
+        
+        // Si las fechas son vacías, null o undefined, usar valores por defecto
+        if (startDate && startDate.trim() !== '') {
+            actualStartDate = startDate;
+        } else {
+            // Inicio del día actual
+            const startOfDay = new Date(now);
+            startOfDay.setHours(0, 0, 0, 0);
+            actualStartDate = startOfDay.toISOString().slice(0, 19).replace('T', ' ');
+        }
+        
+        if (endDate && endDate.trim() !== '') {
+            actualEndDate = endDate;
+        } else {
+            // Final del día actual
+            const endOfDay = new Date(now);
+            endOfDay.setHours(23, 59, 59, 999);
+            actualEndDate = endOfDay.toISOString().slice(0, 19).replace('T', ' ');
+        }
+        
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+
+        // Procesar la solicitud
+        const result = await reporteEntregaDigitalizacion(
+            actualStartDate,
+            actualEndDate,
+            search || '',
+            skip,
+            limit
+        );
+
+        // Registrar la operación exitosa en el log
+        grabarLog(
+            usuario.USERCODE, 
+            usuario.USERNAME, 
+            "Digitalización - Reporte Entregas", 
+            `Reporte de entregas digitalizadas generado exitosamente`, 
+            JSON.stringify({
+                startDate: actualStartDate,
+                endDate: actualEndDate,
+                search,
+                skip,
+                limit
+            }),
+            "digitalizacion/reporte/entregas", 
+            process.env.PRD || 'DEV'
+        );
+
+        const total = result.length > 0 ? result[0].TotalCount : 0;
+        const totalPages = Math.ceil(total / limit);
+
+        // Devolver respuesta
+        return res.status(200).json({
+            reporte: result,
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+                totalPages,
+            }
+        });
+    } catch (error) {
+        console.error('Error en getDeliveryDigitalizedController:', error);
+
+        // Registrar el error en el log
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+        const mensaje = `Error al generar reporte de entregas digitalizadas: ${error.message || ''}`;
+        
+        grabarLog(
+            usuario.USERCODE, 
+            usuario.USERNAME, 
+            "Digitalización - Reporte Entregas", 
+            mensaje, 
+            JSON.stringify({
+                startDate: req.query.startDate,
+                endDate: req.query.endDate,
+                search: req.query.search,
+                skip: req.query.skip,
+                limit: req.query.limit
+            }),
+            "digitalizacion/reporte/entregas", 
+            process.env.PRD || 'DEV'
+        );
+
+        return res.status(500).json({
+            error: true,
+            mensaje: mensaje
+        });
+    }
+};
+
+const excelEntregasDigitalizadas = async (req, res) => {
+    try {
+        const { data, fechaInicio, fechaFin } = req.body;
+        
+        // Obtener fecha actual formateada
+        const fechaActual = new Date();
+        const date = new Intl.DateTimeFormat('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(fechaActual);
+
+        // Crear workbook y worksheet
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Entregas Digitalizadas');
+
+        // Definir columnas
+        worksheet.columns = [
+            { header: 'Código Sucursal', key: 'SucCode', width: 15 },
+            { header: 'Sucursal', key: 'SucName', width: 20 },
+            { header: 'Zona', key: 'ZoneName', width: 15 },
+            { header: 'Nro. Asiento', key: 'TransId', width: 12 },
+            { header: 'Fecha Documento', key: 'DocDate', width: 18 },
+            { header: 'Número Doc.', key: 'DocNum', width: 12 },
+            { header: 'Código Cliente', key: 'CardCode', width: 15 },
+            { header: 'Nombre Cliente', key: 'CardName', width: 30 },
+            { header: 'Total', key: 'DocTotal', width: 15 },
+            { header: 'Despachador', key: 'DeliveryName', width: 25 },
+            { header: 'Fecha Digitalización', key: 'CreateDate', width: 20 }
+        ];
+
+        // Insertar filas de cabecera
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        worksheet.insertRow(1, []);
+        
+        // Agregar contenido a las filas de cabecera
+        worksheet.getCell('A1').value = 'REPORTE DE ENTREGAS DIGITALIZADAS';
+        worksheet.getCell('A2').value = `Período: ${fechaInicio} - ${fechaFin}`;
+        worksheet.getCell('A3').value = `Fecha de impresión: ${date}`;
+        
+        // Fusionar celdas para cabecera
+        worksheet.mergeCells('A1:K1');
+        worksheet.mergeCells('A2:K2');
+        worksheet.mergeCells('A3:K3');
+
+        // Estilizar cabecera
+        const headerRow = worksheet.getRow(1);
+        headerRow.height = 30;
+        headerRow.getCell(1).font = { bold: true, size: 16, color: { argb: '004D76' } };
+        headerRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+        
+        worksheet.getRow(2).getCell(1).font = { bold: true, size: 12 };
+        worksheet.getRow(2).getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+        
+        worksheet.getRow(3).getCell(1).font = { bold: true, size: 12 };
+        worksheet.getRow(3).getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Estilizar encabezados de columnas
+        const columnsRow = worksheet.getRow(4);
+        columnsRow.height = 20;
+        columnsRow.eachCell((cell) => {
+            cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'BA005C' } // Color corporativo IFA
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+
+        // Agregar datos
+        data.forEach(item => {
+            // Formatear fechas y valores numéricos
+            const rowData = {
+                ...item,
+                DocDate: item.DocDate ? new Date(item.DocDate) : null,
+                CreateDate: item.CreateDate ? new Date(item.CreateDate) : null,
+                DocTotal: item.DocTotal ? parseFloat(item.DocTotal) : 0
+            };
+            
+            const row = worksheet.addRow(rowData);
+            
+            // Formato para números
+            row.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
+            
+            // Agregar bordes a cada celda
+            row.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    left: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                
+                // Alineación específica por tipo de celda
+                if (typeof cell.value === 'number') {
+                    cell.alignment = { horizontal: 'right' };
+                } else if (cell.value instanceof Date) {
+                    cell.alignment = { horizontal: 'center' };
+                }
+            });
+        });
+
+        // Configuración de respuesta
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=entregas_digitalizadas.xlsx');
+
+        // Generar y enviar el Excel
+        await workbook.xlsx.write(res);
+        res.end();
+        
+    } catch (error) {
+        console.error('Error generando Excel:', error);
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+        
+        // Registrar el error en el log
+        grabarLog(
+            user.USERCODE, 
+            user.USERNAME, 
+            'Reporte de Entregas Digitalizadas', 
+            `Error generando el Excel: ${error}`,
+            'catch de excelEntregasDigitalizadas', 
+            'digitalizacion/excel-entregas', 
+            process.env.PRD
+        );
+        
+        return res.status(500).json({ 
+            mensaje: `Error al generar el Excel: ${error.message || 'Error desconocido'}` 
+        });
+    }
+};
+
+
 module.exports = {
     searchImagesController,
     getCabeceraImageController,
@@ -553,5 +802,7 @@ module.exports = {
     updateCabeceraImageController,
     updateDetalleImageController,
     deleteCabeceraImageController,
-    deleteDetalleImageController
+    deleteDetalleImageController,
+    getDeliveryDigitalizedController,
+    excelEntregasDigitalizadas
 };
