@@ -2137,6 +2137,41 @@ const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
         }
     }
 }
+
+const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent,itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramTipo = formatParam(tipo)
+        const paramGroupCode = formatParam(groupCode)
+        const paramCardCode = formatParam(cardCode)
+        const paramFechaInicial = formatParam(fechaInicial)
+        const paramFechaFinal = formatParam(fechaFinal)
+        const paramHeaderParent = formatParam(headerParent)
+        const paramitemCode = formatParam(itemCode)
+
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
+         i_date_from => ${paramFechaInicial},
+         i_date_to => ${paramFechaFinal},
+         i_document_type =>${paramTipo},
+        i_group_code => ${paramGroupCode},
+        i_card_code =>  ${paramCardCode},
+        i_parent_name =>${paramHeaderParent},
+        i_item_code =>  ${paramitemCode})`
+
+        console.log({ query })
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reportePendienteByItem: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2247,4 +2282,5 @@ module.exports = {
     clientesCadenasParent,
     searchClientesCadenasParent,
     ventasPendientes,
+    reportePendienteByItem,
 }

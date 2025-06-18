@@ -124,6 +124,7 @@ router.get('/cancelar-devolucion', [validarToken, validarCampos], cancelarDevolu
 router.post('/get-devoluciones', [validarToken, validarCampos], getDevolucionesParaCancelarController)
 router.post('/get-entregas', [validarToken, validarCampos], getEntregasParaCancelarController)
 router.get('/cancelar-entrega', [validarToken, validarCampos], cancelarEntregaController)
+
 router.post('/crear-traslado', [validarToken, validarCampos], crearTrasladoController)
 router.get('/detalle-traslado', [validarToken, validarCampos], detalleTrasladoController)
 router.get('/selection-batch-plazo', [validarToken, validarCampos], selectionBatchPlazoController)

@@ -534,6 +534,42 @@ const getArticulos = async (lineCode) => {
     }
 }
 
+const searchArticulos = async (search) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" LIKE '%${search}%' OR "ItemName" LIKE '%${search}%' LIMIT 50`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en searchArticulos:', error);
+        throw {
+            status: 400,
+            message: `Error en searchArticulos: ${error.message || ''}`
+        }
+    }
+}
+
+const findAllArticulos = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos limit 50`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en findAllArticulos:', error);
+        throw {
+            status: 400,
+            message: `Error en findAllArticulos: ${error.message || ''}`
+        }
+    }
+}
+
 const findCliente = async (buscar) => {
     try {
         if (!connection) {
@@ -1121,4 +1157,5 @@ module.exports = {
     sucursalBySucCode,
     tipoByGroupCode,
     dmSearchClientes,
+    findAllArticulos,searchArticulos,
 }
