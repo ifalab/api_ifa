@@ -59,7 +59,7 @@ app.use('/v1/movil-v2/sync', require('./movil-v2/sincronizacion/routes/sync.rout
 app.use('/v1/movil-v2/pedidos', require('./movil-v2/pedidos/routes/pedidos.routes'));
 //!------------------------------------------------------------------------------------------
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
+//
 app.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`)
 });
