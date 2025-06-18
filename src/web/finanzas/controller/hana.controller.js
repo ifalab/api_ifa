@@ -1,4 +1,5 @@
 const hana = require('@sap/hana-client');
+const { executeQueryWithConnection, executeQueryParamsWithConnection } = require('../../utils/hana-util-connection');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -244,6 +245,38 @@ const reporteArticuloPendientes = async (startDate,endDate) => {
     }
 }
 
+const reporteMargenComercial = async (startDate, endDate) => {
+  try {
+    const query = `
+      CALL "LAB_IFA_DATA"."IFASP_SAL_CALCULATE_COMERCIAL_SALES_MARGINS"(
+        i_ini_date => ?, 
+        i_fin_date => ?, 
+        o_result => ?
+      );
+    `;
+
+    // Asegúrate de pasar las fechas en formato 'yyyyMMdd'
+    const start = formatDate(startDate); // Ej: '20250101'
+    const end = formatDate(endDate);     // Ej: '20250531'
+
+    const result = await executeQueryParamsWithConnection(query, [start, end]);
+
+    return result;
+  } catch (error) {
+    console.error('Error en reporteMargenComercial:', error);
+    throw new Error(`Error en reporteMargenComercial: ${error.message}`);
+  }
+};
+
+// Función utilitaria para convertir Date o string a 'yyyyMMdd'
+function formatDate(date) {
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = `${d.getMonth() + 1}`.padStart(2, '0');
+  const dd = `${d.getDate()}`.padStart(2, '0');
+  return `${yyyy}${mm}${dd}`;
+}
+
 module.exports = {
     parteDiario,
     abastecimiento,
@@ -257,4 +290,5 @@ module.exports = {
     abastecimientoPorFechaAnual,
     abastecimientoPorFecha_24_meses,
     reporteArticuloPendientes,
+    reporteMargenComercial,
 }

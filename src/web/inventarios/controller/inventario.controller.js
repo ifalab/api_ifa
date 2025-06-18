@@ -37,7 +37,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     datosRecepcionTraslado,
     updateOpenqtyTrasladoSolicitud,
     entregasClienteDespachadorCabecera,
-    entregasClienteDespachadorDetalle
+    entregasClienteDespachadorDetalle,
+    todasSolicitudesPendiente
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -3645,7 +3646,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
             bodyReturn.Series = 352
             console.log(JSON.stringify({ bodyReturn }, null, 2))
             allBodies[DocEntry] = { bodyReturn }
-
+            //! 1ERO RETURN 
             const responceReturn = await postReturn(bodyReturn)
             console.log({ responceReturn })
 
@@ -3681,6 +3682,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
             }
             const docEntryDev = responceReturn.orderNumber
             //---------------Credit notes
+            //! 2ERO DETALLE DE LA DEVOLUCION
             const devolucionDetalle = await obtenerDevolucionDetalle(docEntryDev)
 
             const cabeceraCN = []
@@ -3746,7 +3748,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
                 DocumentAdditionalExpenses
             }
             allBodies[DocEntry] = { bodyReturn, bodyCreditNotes }
-
+            //! 3ERO CREDIT NOTES
             const responseCreditNote = await postCreditNotes(bodyCreditNotes)
             allResponseCreditNote.push(responseCreditNote)
             if (responseCreditNote.status > 299) {
@@ -4269,6 +4271,7 @@ const facturacionCambioValoradoController = async (req, res) => {
         ]
 
         let numInternalRec = 0
+        //* revisar problema:
         for (const creditNote of allResponseCreditNote) {
             let ReconcileAmountCN = +totalesFactura[numInternalRec]
             if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
@@ -4899,6 +4902,19 @@ const solicitudesTrasladoController = async (req, res) => {
     }
 }
 
+const todasSolicitudesTrasladoController = async (req, res) => {
+    try {
+        let listSolicitudes = await todasSolicitudesPendiente()
+        if (listSolicitudes.length > 0) {
+            listSolicitudes.sort((a, b) => a.SucCode - b.SucCode)
+        }
+        return res.json(listSolicitudes)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en todasSolicitudesTrasladoController : ${error.message || 'No definido'}` })
+    }
+}
+
 const detalleSolicitudTrasladoController = async (req, res) => {
     try {
         const docEntry = req.query.docEntry
@@ -5474,7 +5490,7 @@ const procesoAbastecimientoController = async (req, res) => {
                 Fulfilled: Number(item.Fulfilled) / 100
             }
         })
-        console.log(JSON.stringify({ response }, null, 2))
+        // console.log(JSON.stringify({ response }, null, 2))
         response = response.sort((a, b) => new Date(b.SolicitudDateTime) - new Date(a.SolicitudDateTime))
         let result = []
         for (const element of listSucCode) {
@@ -5956,5 +5972,9 @@ module.exports = {
     selectionBatchPlazoController,
     procesoAbastecimientoController,
     datosRecepcionTrasladoController, cancelarCambioMalEstadoController,
-    excelReporte, excelDevolucion, entregasRealizadasCabeceraController, entregasRealizadasDetalleController
+    excelReporte,
+    excelDevolucion,
+    entregasRealizadasCabeceraController,
+    entregasRealizadasDetalleController,
+    todasSolicitudesTrasladoController
 }

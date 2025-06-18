@@ -1266,11 +1266,14 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
         console.log(JSON.stringify(ordenBody, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         // return res.json({ detalle, DocumentLines, ordenBody })
+        const total = ordenBody.DocumentLines.reduce((acc,item)=>{
+            return acc + item.GrossTotal
+        },0)
         const ordenResponse = await postOrden(ordenBody)
         console.log(ordenResponse)
         if (ordenResponse.status == 400) {
             grabarLog(user.USERCODE, user.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+            return res.status(400).json({ mensaje: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` ,ordenBody,body,total,totalRend:Number(total.toFixed(2))})
         }
         console.log({ user })
         grabarLog(user.USERCODE, user.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)

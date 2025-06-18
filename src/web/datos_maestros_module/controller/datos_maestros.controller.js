@@ -67,7 +67,7 @@ const dmClientesPorCardCodeController = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
         const cliente = await dmClientesPorCardCode(cardCode)
-        console.log({ cliente })
+        // console.log({ cliente })
         if (!cliente[0]) {
             return res.status(400).json({ mensaje: 'el cliente no existe' })
         }

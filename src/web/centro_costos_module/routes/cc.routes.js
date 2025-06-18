@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const multer = require('multer');
-const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC, descontabilizarAsientoCC, obtenerBalanceGeneral, obtenerAsientoCompletos, obtenerExcelAsientos, saveClasificacionGastos } = require('../controller/cc.controller')
+const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC, descontabilizarAsientoCC, obtenerBalanceGeneral, obtenerAsientoCompletos, obtenerExcelAsientos, saveClasificacionGastos, cargarExcelMasivo } = require('../controller/cc.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -40,5 +40,7 @@ router.get('/balance/general', [validarToken, validarCampos], obtenerBalanceGene
 router.get('/asientos', [validarToken, validarCampos], obtenerAsientoCompletos)
 router.post('/asientos/excel', [validarToken, validarCampos], obtenerExcelAsientos)
 router.post('/clasificacion-gastos', [validarToken, validarCampos, upload.single('file')], saveClasificacionGastos)
+
+router.post('/cargar-excel-masivo', [validarToken, validarCampos, upload.single('file')], cargarExcelMasivo)
 
 module.exports = router

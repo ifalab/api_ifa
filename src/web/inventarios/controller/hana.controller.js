@@ -712,6 +712,23 @@ const solicitudesPendiente = async (sucCode) => {
     }
 }
 
+const todasSolicitudesPendiente = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_lapp_obtener_todos_traslados_solicitud_pendientes`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en todasSolicitudesPendiente:', error.message);
+        throw {
+            message: `Error al procesar todasSolicitudesPendiente: ${error.message || ''}`
+        }
+    }
+}
+
 const detalleSolicitudPendiente = async (docEntry) => {
     try {
         if (!connection) {
@@ -735,10 +752,14 @@ const reporteDevolucionValorados = async (fechaIni, fechaFin, user) => {
             await connectHANA();
         }
         let query
-        if (!fechaIni && !fechaFin)
-            query = `select * from ${process.env.PRD}.ifa_dev_valorados where "UserID"=${user}`;
-        else
-            query = `select * from ${process.env.PRD}.ifa_dev_valorados where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
+        if (!fechaIni && !fechaFin){
+            // query = `select * from ${process.env.PRD}.ifa_dev_valorados where "UserID"=${user}`;
+        query = `select * from ${process.env.PRD}.ifa_dev_valorados `;
+        }else{
+            // query = `select * from ${process.env.PRD}.ifa_dev_valorados where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
+            query = `select * from ${process.env.PRD}.ifa_dev_valorados where "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
+        }
+            
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -756,10 +777,12 @@ const reporteDevolucionCambios = async (fechaIni, fechaFin, user) => {
             await connectHANA();
         }
         let query
-        if (!fechaIni && !fechaFin)
+        if (!fechaIni && !fechaFin){
             query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
-        else
-            query = `select * from ${process.env.PRD}.ifa_dev_cambios where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
+        }else{
+            query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
+            // query = `select * from ${process.env.PRD}.ifa_dev_cambios where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
+        }
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -780,7 +803,8 @@ const reporteDevolucionRefacturacion = async (fechaIni, fechaFin, user) => {
         if (!fechaIni && !fechaFin)
             query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
         else
-            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user} and "DocDate" between '${fechaIni}' and '${fechaFin}'`;
+            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
+            // query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user} and "DocDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -1089,5 +1113,6 @@ module.exports = {
     datosRecepcionTraslado,
     updateOpenqtyTrasladoSolicitud,
     entregasClienteDespachadorCabecera,
-    entregasClienteDespachadorDetalle
+    entregasClienteDespachadorDetalle,
+    todasSolicitudesPendiente
 }
