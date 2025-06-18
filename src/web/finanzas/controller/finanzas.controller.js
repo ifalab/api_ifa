@@ -1,4 +1,4 @@
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
@@ -1057,6 +1057,59 @@ const reporteArticulosPendientesController = async (req, res) => {
   }
 }
 
+const reporteMargenComercialController = async (req, res) => {
+  try {
+    const year = Number(req.query.year);
+    const month = Number(req.query.month);
+
+    if (isNaN(year) || isNaN(month)) {
+      return res.status(400).json({ mensaje: 'Los parámetros "year" y "month" deben ser números válidos.' });
+    }
+
+    if (month < 1 || month > 12) {
+      return res.status(400).json({ mensaje: 'El parámetro "month" debe estar entre 1 y 12.' });
+    }
+
+    const response = await reporteMargenComercial(year, month);
+
+    // Agrupación por SucCode y SucName
+    const groupedData = response.reduce((acc, item) => {
+      const key = item.SucCode;
+      if (!acc[key]) {
+        acc[key] = {
+          SucCode: item.SucCode,
+          SucName: item.SucName,
+          TotalSales: 0,
+          TotalCostComercial: 0,
+          ComercialProfit: 0,
+          CommercialMarginPercent: 0,
+          data: []
+        };
+      }
+
+      // Sumar valores
+      acc[key].TotalSales = Number((acc[key].TotalSales + parseFloat(item.TotalSales)).toFixed(2));
+      acc[key].TotalCostComercial = Number((acc[key].TotalCostComercial + parseFloat(item.TotalCostComercial)).toFixed(2));
+      acc[key].ComercialProfit = Number((acc[key].ComercialProfit + parseFloat(item.ComercialProfit)).toFixed(2));
+
+      acc[key].data.push({ ...item, SucCode: undefined, SucName: undefined });
+
+      return acc;
+    }, {});
+
+    // Promediar CommercialMarginPercent
+    Object.values(groupedData).forEach(group => {
+      group.CommercialMarginPercent = Number((
+        group.data.reduce((sum, item) => sum + parseFloat(item.CommercialMarginPercent), 0) / group.data.length
+      ).toFixed(2));
+    });
+
+    return res.json(Object.values(groupedData));
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({ mensaje: `Error en el controlador reporteMargenComercialController, ${error.message || 'error desconocido'}` });
+  }
+};
 
 module.exports = {
   parteDiaroController,
@@ -1075,5 +1128,6 @@ module.exports = {
   findAllSimpleGastosController,
   findXAgenciaSimpleGastosController,
   gastosGestionAgenciaController,
-  reporteArticulosPendientesController
+  reporteArticulosPendientesController,
+  reporteMargenComercialController
 }

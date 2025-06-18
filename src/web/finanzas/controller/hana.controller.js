@@ -1,4 +1,5 @@
 const hana = require('@sap/hana-client');
+const { executeQueryWithConnection, executeQueryParamsWithConnection } = require('../../utils/hana-util-connection');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -244,6 +245,21 @@ const reporteArticuloPendientes = async (startDate,endDate) => {
     }
 }
 
+const reporteMargenComercial = async (year, month) => {
+  try {
+    const query = `CALL "LAB_IFA_DATA"."IFASP_SAL_CALCULATE_COMERCIAL_SALES_MARGINS"(?, ?, ?);`;
+
+    // Ejecutamos la query con los parámetros year, month y una tabla de salida (generalmente nula para que la client tool la reciba)
+    const result = await executeQueryParamsWithConnection(query, [year, month]);
+
+    return result; // Este result puede ser un arreglo con los datos retornados por la tabla de resultados
+  } catch (error) {
+    console.error('Error en reporteMargenComercial:', error);
+    throw new Error(`Error en reporteMargenComercial: ${error.message}`);
+  }
+};
+
+
 module.exports = {
     parteDiario,
     abastecimiento,
@@ -257,4 +273,5 @@ module.exports = {
     abastecimientoPorFechaAnual,
     abastecimientoPorFecha_24_meses,
     reporteArticuloPendientes,
+    reporteMargenComercial,
 }
