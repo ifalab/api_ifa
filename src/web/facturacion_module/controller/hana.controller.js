@@ -190,6 +190,37 @@ const facturaPedidoDB = async (whsCode) => {
         return { message: `Error al procesar la solicitud facturaPedidoDB: ${error.message || ''}` }
     }
 }
+const facturaPedidoTodos = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifa_lapp_ven_obtener_todos_pedidos()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en facturaInfo:', error.message);
+        return { message: `Error al procesar la solicitud facturaPedidoTodos: ${error.message || ''}` }
+    }
+}
+
+const actualizarEstadoPedido = async (docNum,estado) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `update ${process.env.PRD}.ordr set "U_B_State" = '${estado}' where "DocNum" = ${docNum}`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en actualizarEstadoPedido:', error.message);
+        return { message: `Error al procesar actualizarEstadoPedido: ${error.message || ''}` }
+    }
+}
 
 const pedidosFacturados = async (SucCode, fecha) => {
     try {
@@ -620,4 +651,6 @@ module.exports = {
     getClienteByCardCode,
     getOrdersById,
     setOrderState,
+    facturaPedidoTodos,
+    actualizarEstadoPedido,
 }

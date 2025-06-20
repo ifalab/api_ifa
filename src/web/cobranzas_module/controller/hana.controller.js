@@ -999,6 +999,7 @@ const cobranzaPorZonaSupervisor = async (sucursal) => {
             await connectHANA()
         }
         const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_SUPERVISOR"(${sucursal})`
+        console.log({query})
         return await executeQuery(query)
     } catch (error) {
         console.error(error)

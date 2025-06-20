@@ -30,7 +30,9 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     obtenerDetallePedidoAnulado,
     reabrirLineas,
     getOrdersById,
-    setOrderState } = require("./hana.controller")
+    setOrderState,
+    facturaPedidoTodos,
+    actualizarEstadoPedido } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations, } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -236,19 +238,25 @@ const facturacionController = async (req, res) => {
                             Quantity: Number(batch.Quantity).toFixed(6),
                             ItemCode: batch.ItemCode
                         }
-                        const newBatchFromQuotation = {
-                            BaseLineNumber: LineNum,
-                            BatchNumber: U_BatchNum,
-                            Quantity: Quantity * UnitsOfMeasurment,
-                            ItemCode: batch.ItemCode
-                        }
-                        return (U_BatchNum == null) ? newBatch : newBatchFromQuotation
+                        return newBatch
                     })
 
                     const data = {
                         BaseLine: LineNum,
                         BaseType: 17,
                         BaseEntry: id,
+                    }
+
+                    let newBatchFromQuotationList = []
+
+                    if (U_BatchNum !== null) {
+                        const newBatchFromQuotation = {
+                            BaseLineNumber: LineNum,
+                            BatchNumber: U_BatchNum,
+                            Quantity: Quantity * UnitsOfMeasurment,
+                            ItemCode: ItemCode
+                        }
+                        newBatchFromQuotationList.push(newBatchFromQuotation)
                     }
 
                     newLine = {
@@ -258,9 +266,10 @@ const facturacionController = async (req, res) => {
                         Quantity: new_quantity / UnitsOfMeasurment,
                         LineNum,
                         ...restLine,
-                        BatchNumbers: batchNumbers
-                    };
-                    newLine = { ...newLine };
+                        BatchNumbers: (U_BatchNum == null) ? newBatchFromQuotationList : batchNumbers
+                    }
+
+                    newLine = { ...newLine }
                     newDocumentLines.push(newLine)
                 }
 
@@ -828,6 +837,38 @@ const facturacionStatusListController = async (req, res) => {
         return res.json({ data })
     } catch (error) {
         console.log('error en facturacionStatusController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const facturacionAllStatusListController = async (req, res) => {
+    try {
+
+        const response = await facturaPedidoTodos()
+        return res.json(response)
+    } catch (error) {
+        console.log('error en facturacionAllStatusListController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const actualizarEstadoPedidoController = async (req, res) => {
+    try {
+        const docNum = req.query.docNum
+        let estado = req.query.estado
+        if (!docNum || docNum == '') {
+            return res.status(400).json({ mensaje: 'Debe existir un Doc Num en la peticion (Nro SAP)' })
+        }
+
+        if (!estado) {
+            estado = ''
+        }
+        const response = await actualizarEstadoPedido(docNum, estado)
+        return res.json(response)
+    } catch (error) {
+        console.log('error en actualizarEstadoPedidoController')
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
@@ -4189,5 +4230,7 @@ module.exports = {
     getIncoterm,
     facturarExportacionController,
     getClienteByCardCodeController,
-    setStatusFacturaController
+    setStatusFacturaController,
+    facturacionAllStatusListController,
+    actualizarEstadoPedidoController
 }

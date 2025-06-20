@@ -1108,12 +1108,22 @@ const detalleOfertaCadenaPendController = async (req, res) => {
         const { data } = response
         data.forEach((row) => {
             const subtotal = row.subTotal
+            const {BatchNum } = row
             row.Quantity = Number(row.Quantity)
             row.PendQuantity = Number(row.PendQuantity)
             row.Stock = Number(row.Stock)
             row.subTotal = Number(subtotal)
             row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
             row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
+            if(BatchNum && BatchNum!==''){
+                row.BatchDataSelect = {
+                    BatchNum,
+                    ExpDate:row.ExpDate || null,
+                    NumInSale:Number(row.NumPerMsr) || null,
+                }
+                row.BatchDataSelectBatchNum = BatchNum
+                row.BatchDataSelectBatcExpDate = row.ExpDate
+            }
         })
         return res.json(data)
     } catch (error) {

@@ -150,6 +150,7 @@ router.get('/oferta-descripcion-articulo', [validarToken, validarCampos], descri
 router.get('/lista-ofertas', [validarToken, validarCampos], listaOfertasController)
 router.get('/detalle-oferta-cadena', [validarToken, validarCampos], detalleOfertaCadenaController)
 router.get('/detalle-oferta-cadena-pend', [validarToken, validarCampos], detalleOfertaCadenaPendController)
+
 router.get('/oferta-unidad-medida', [validarToken, validarCampos], unidadMedidaController)
 router.get('/lista-articulo-cadenas', [validarToken, validarCampos], listaArticuloCadenasController)
 router.post('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
