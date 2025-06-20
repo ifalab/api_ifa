@@ -25,13 +25,19 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     pedidosExportacionController,
     facturarExportacionController,
     getClienteByCardCodeController,
-    setStatusFacturaController
+    setStatusFacturaController,
+    facturacionAllStatusListController,
+    actualizarEstadoPedidoController
 } = require('../controller/facturacion.controller')
 const router = Router()
 
 router.post('/facturar', [validarToken, validarCampos], facturacionController)
 router.get('/facturacion-pedido', [validarToken, validarCampos], facturacionStatusController)
 router.post('/facturacion-pedido-list', [validarToken, validarCampos], facturacionStatusListController)
+
+router.get('/facturacion-all-pedido-list', [validarToken, validarCampos], facturacionAllStatusListController)
+router.patch('/actualizar-estado-pedido', [validarToken, validarCampos], actualizarEstadoPedidoController)
+
 router.get('/nota-entrega', [validarToken, validarCampos], noteEntregaController)
 router.get('/obtener-cuf', [validarToken, validarCampos], obtenerCuf)
 router.post('/obtener-entregas-factura', [validarToken, validarCampos], obtenerEntregasPorFacturaController)

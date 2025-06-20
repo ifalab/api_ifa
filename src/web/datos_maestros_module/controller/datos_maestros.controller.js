@@ -21,7 +21,9 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     lineaByCode, 
     sucursalBySucCode,
     tipoByGroupCode,
-    dmSearchClientes} = require("./hana.controller")
+    dmSearchClientes,
+    findAllArticulos,
+    searchArticulos} = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
 const { validateDataExcel } = require('./helpers');
@@ -429,6 +431,29 @@ const getArticulosController = async (req, res) => {
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador getArticulosController: ${error.message || ''}` })
+    }
+}
+
+const searchArticulosController = async (req, res) => {
+    try {
+        let search = req.query.search
+        search = search.toUpperCase()
+        const response = await searchArticulos(search)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador searchArticulosController: ${error.message || ''}` })
+    }
+}
+
+const findAllArticulosController = async (req, res) => {
+    try {
+        
+        const response = await findAllArticulos()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador findAllArticulosController: ${error.message || ''}` })
     }
 }
 
@@ -1045,4 +1070,6 @@ module.exports = {
     sucursalBySucCodeController,
     tipoByGroupCodeController,
     dmSearchClientesController,
+    findAllArticulosController,
+    searchArticulosController,
 }

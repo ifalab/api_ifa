@@ -106,6 +106,8 @@ const {
     clientesCadenasParent,
     searchClientesCadenasParent,
     ventasPendientes,
+    reportePendienteByItem,
+    ventasPendientesByItem,
     findBlockedClientsByZoneOrSuc,
     findBlockedClients,
     findBlockedClientsByZoneAndSuc,
@@ -1110,12 +1112,22 @@ const detalleOfertaCadenaPendController = async (req, res) => {
         const { data } = response
         data.forEach((row) => {
             const subtotal = row.subTotal
+            const {BatchNum } = row
             row.Quantity = Number(row.Quantity)
             row.PendQuantity = Number(row.PendQuantity)
             row.Stock = Number(row.Stock)
             row.subTotal = Number(subtotal)
             row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
             row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
+            if(BatchNum && BatchNum!==''){
+                row.BatchDataSelect = {
+                    BatchNum,
+                    ExpDate:row.ExpDate || null,
+                    NumInSale:Number(row.NumPerMsr) || null,
+                }
+                row.BatchDataSelectBatchNum = BatchNum
+                row.BatchDataSelectBatcExpDate = row.ExpDate
+            }
         })
         return res.json(data)
     } catch (error) {
@@ -3731,10 +3743,6 @@ const reportePendienteCadenasController = async (req, res) => {
             headerParent = null
         }
         const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
-        // if (response.length == 0) {
-        //     return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
-        // }
-
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
         }))].sort();
@@ -3811,6 +3819,8 @@ const ventasPendienteController = async (req, res) => {
         let endDate = req.query.endDate
         let tipo = req.query.tipo
         let cardCode = req.query.cardCode
+        let groupCode = req.query.groupCode
+        let itemCode = req.query.itemCode
 
 
         if (!tipo || tipo == '') {
@@ -3826,7 +3836,15 @@ const ventasPendienteController = async (req, res) => {
             endDate = null
         }
 
-        const data = await ventasPendientes(startDate, endDate, tipo, cardCode)
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+
+        const data = await ventasPendientes(startDate, endDate, tipo, cardCode,itemCode,groupCode)
         return res.json(data)
 
     } catch (error) {
@@ -4059,6 +4077,119 @@ const clientesVendedorBloqueadosExcelController = async (req, res) => {
 
 
 
+const ventasPendienteByItemController = async (req, res) => {
+    try {
+        let startDate = req.query.startDate
+        let endDate = req.query.endDate
+        let tipo = req.query.tipo
+        let cardCode = req.query.cardCode
+        let itemCode = req.query.itemCode
+        let groupCode = req.query.groupCode
+
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!startDate || startDate == '') {
+            startDate = null
+        }
+        if (!endDate || endDate == '') {
+            endDate = null
+        }
+
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+
+        const data = await ventasPendientesByItem(startDate, endDate, tipo, cardCode,itemCode,groupCode)
+        return res.json(data)
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPendienteByItemController ${error.message || 'No definido'}` });
+    }
+}
+const reportePendienteByItemController = async (req, res) => {
+    try {
+        let fechaInicial = req.query.fechaInicial
+        let fechaFinal = req.query.fechaFinal
+        let tipo = req.query.tipo
+        let groupCode = req.query.groupCode
+        let cardCode = req.query.cardCode
+        let headerParent = req.query.headerParent
+        let itemCode = req.query.itemCode
+        console.warn({
+            fechaInicial,
+            fechaFinal,
+            tipo,
+            groupCode,
+            cardCode,
+        })
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!fechaInicial || fechaInicial == '') {
+            fechaInicial = null
+        }
+        if (!fechaFinal || fechaFinal == '') {
+            fechaFinal = null
+        }
+        if (!headerParent || headerParent == '') {
+            headerParent = null
+        }
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+        const response = await reportePendienteByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent,itemCode)
+        // return res.json({ response })
+        const headers = [...new Set(response.map(item => {
+            return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+        }))].sort();
+
+        const grouped = {};
+        for (const item of response) {
+            const key = item.CardCode;
+            const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+
+            if (!grouped[key]) {
+                grouped[key] = {
+                    CardCode: item.CardCode,
+                    CardName: item.CardName,
+                };
+
+                headers.forEach(header => {
+                    grouped[key][header] = { Quantity: null, Total: null };
+                });
+            }
+
+            grouped[key][monthKey] = {
+                Quantity: parseFloat(item.PendingQuantity),
+                Total: parseFloat(item.PendingAmount)
+            };
+        }
+
+        const data = Object.values(grouped)
+
+        return res.json({ headers, data })
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteByItemController ${error.message || 'No definido'}` });
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -4165,5 +4296,7 @@ module.exports = {
     searchBlockedClients,
     searchBlockedClientsByZoneSucAndGroup,
     clientesVendedorBloqueadosController,
-    clientesVendedorBloqueadosExcelController
+    clientesVendedorBloqueadosExcelController,
+    reportePendienteByItemController,
+    ventasPendienteByItemController,
 };

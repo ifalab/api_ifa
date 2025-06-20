@@ -466,15 +466,19 @@ const crearOrderCadenaController = async (req, res) => {
             return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
 
         }
-        console.log("body de llegada: =====================================");
-        console.log(JSON.stringify({ body }, null, 2))
-        // return
+        // console.log("body de llegada: =====================================");
+        // console.log(JSON.stringify({ body }, null, 2))
+        // return res.json({ body })
         const DocumentLines = []
         let grossTotal = 0
         docLine.map((item) => {
             if (item.BaseLine == -2) {
-                const { BaseLine, GrossTotal, BaseEntry, BaseType, ...rest } = item
-                DocumentLines.push({ ...rest, LineNum: null, Currency: 'BS' })
+                const { BaseLine, GrossTotal, BaseEntry, BaseType,BatchSelect, ...rest } = item
+                const data = { ...rest, LineNum: null, Currency: 'BS' }
+                if(BatchSelect){
+                    data.U_BatchNum = BatchSelect.BatchNum
+                }
+                DocumentLines.push(data)
                 grossTotal += GrossTotal
             }
         })
@@ -512,7 +516,6 @@ const crearOrderCadenaController = async (req, res) => {
             // return res.json({ok: '200'})
         }
 
-        // await new Promise(resolve => setTimeout(resolve, 1000));
         const {
             Series,
             CardCode,
@@ -569,7 +572,9 @@ const crearOrderCadenaController = async (req, res) => {
                 ItemCode,
                 GrossPrice,
                 WhsCode,
+                BatchSelect,
             } = item
+
             let data = detalle.data.find((item2) => item2.ItemCode == ItemCode)
             console.log({ data })
             let baseLine = data.LineNum
@@ -577,7 +582,7 @@ const crearOrderCadenaController = async (req, res) => {
             const prcMax = Number(GrossPrice)
             const subTot = Number(GrossTotal)
             const descLin = (prcMax * qty) - subTot
-            DocumentLinesToBody.push({
+            const line = {
                 LineNum: idx,
                 ItemCode,
                 Currency: 'BS',
@@ -592,16 +597,20 @@ const crearOrderCadenaController = async (req, res) => {
                 BaseLine: baseLine,
                 BaseEntry: docEntry,
                 BaseType: 23,
-            })
+            }
+            if (BatchSelect) {
+                line.U_BatchNum = BatchSelect.BatchNum
+            }
+            DocumentLinesToBody.push(line)
             idx++
         })
 
         ordenBody.DocumentLines = DocumentLinesToBody
 
         // return res.json({ ordenBody, detalle })
-        console.log("body de post orden: =====================================");
-        console.log(JSON.stringify(ordenBody, null, 2))
-        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
+        // console.log("body de post orden: =====================================");
+        // console.log(JSON.stringify(ordenBody, null, 2))
+        // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         let totalOrden = 0
         ordenBody.DocumentLines.map((item) => {
             const { GrossTotal } = item
@@ -1266,14 +1275,14 @@ const pedidoOfertaInstitucionesController = async (req, res) => {
         console.log(JSON.stringify(ordenBody, null, 2))
         console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         // return res.json({ detalle, DocumentLines, ordenBody })
-        const total = ordenBody.DocumentLines.reduce((acc,item)=>{
+        const total = ordenBody.DocumentLines.reduce((acc, item) => {
             return acc + item.GrossTotal
-        },0)
+        }, 0)
         const ordenResponse = await postOrden(ordenBody)
         console.log(ordenResponse)
         if (ordenResponse.status == 400) {
             grabarLog(user.USERCODE, user.USERNAME, "Pedido crear orden", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` ,ordenBody,body,total,totalRend:Number(total.toFixed(2))})
+            return res.status(400).json({ mensaje: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, ordenBody, body, total, totalRend: Number(total.toFixed(2)) })
         }
         console.log({ user })
         grabarLog(user.USERCODE, user.USERNAME, "Pedido crear orden", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden", process.env.PRD)
