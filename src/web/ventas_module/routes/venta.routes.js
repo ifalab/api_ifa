@@ -107,7 +107,11 @@ const {
     reportePendienteCadenasController,
     clientesCadenasParentController,
     searchClientesCadenasParentController,
-    ventasPendienteController
+    ventasPendienteController,
+    searchBlockedClients,
+    searchBlockedClientsByZoneSucAndGroup,
+    clientesVendedorBloqueadosController,
+    clientesVendedorBloqueadosExcelController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -240,5 +244,9 @@ router.get('/clientes-cadenas-parent', [validarToken, validarCampos], clientesCa
 router.get('/search-clientes-cadenas-parent', [validarToken, validarCampos], searchClientesCadenasParentController)
 
 router.get('/detalle-reporte-pendiente', [validarToken, validarCampos], ventasPendienteController)
+router.get('/search-blocked-clients', [validarToken, validarCampos], searchBlockedClients)
+router.get('/search-blocked-clients/:suc/:zone/:group', [validarToken, validarCampos], searchBlockedClientsByZoneSucAndGroup)
+router.get('/clientes-vendedor-bloqueados/:slpCode/:groupCode', [validarToken, validarCampos], clientesVendedorBloqueadosController)
+router.post('/clientes-vendedor-bloqueados/excel', [validarToken, validarCampos], clientesVendedorBloqueadosExcelController)
 
 module.exports = router

@@ -1,4 +1,5 @@
 const hana = require('@sap/hana-client');
+const { executeQueryParamsWithConnection } = require('../../utils/hana-util-connection');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -2137,6 +2138,89 @@ const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
         }
     }
 }
+
+const findBlockedClientsByZoneOrSuc = async (SucCode, ZoneCode) => {
+  try {
+    const query = `
+      CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_CUSTOMERS_BY_BRANCH_OR_ZONE(?, ?)
+    `;
+
+    const result = await executeQueryParamsWithConnection(query, [SucCode, ZoneCode]);
+    return result;
+  } catch (error) {
+    console.log({ error });
+    throw {
+      message: `Error en findBlockedClientsByZoneOrSuc: ${error.message || ''}`
+    };
+  }
+};
+
+const findBlockedClients = async (tipoCliente) => {
+  try {
+    const query = `CALL LAB_IFA_PRD.IFASP_MD_GET_BLOCKED_OVERDUE_CLIENTS_BY_BRANCH_ZONE(${tipoCliente})`;
+
+    console.log(query);
+    const result = await executeQueryParamsWithConnection(query);
+    return result;
+  } catch (error) {
+    console.log({ error });
+    throw {
+      message: `Error en findBlockedClients: ${error.message || ''}`
+    };
+  }
+};
+
+const findBlockedClientsByZoneAndSuc = async (suc, zone, group) => {
+  try {
+    const query = `
+      CALL LAB_IFA_PRD.IFASP_MD_GET_BLOCKED_OVERDUE_DETAIL_CLIENTS_BY_BRANCH_ZONE(
+        i_succode => ?,
+        i_zonecode => ?,
+        i_divcode => ?
+      )
+    `;
+
+    console.log('Query:', query, 'Params:', [suc, zone, group]);
+
+    // Pasa los parámetros como arreglo (o como lo acepte tu función)
+    const result = await executeQueryParamsWithConnection(query, [suc, zone, group]);
+    return result;
+  } catch (error) {
+    console.log({ error });
+    throw {
+      message: `Error en findBlockedClients: ${error.message || ''}`
+    };
+  }
+};
+
+const clientesVendedorBloqueados = async (groupCode, slpCodes) => {
+  try {
+    if (!connection) {
+      await connectHANA();
+    }
+
+    let allResults = [];
+
+    for (const code of slpCodes) {
+      const query = `CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_OVERDUE_CLIENTS_BY_BRANCH_ZONE_BY_SELLER(${groupCode}, ${code})`;
+      console.log({ query });
+      const result = await executeQuery(query);
+      
+      // Asegúrate que result sea array, si no, lo conviertes
+      if (Array.isArray(result)) {
+        allResults = allResults.concat(result);
+      }
+    }
+
+    return allResults;
+  } catch (error) {
+    throw {
+      message: `Error en clientesVendedorBloqueados: ${error.message || ''}`
+    };
+  }
+};
+
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2247,4 +2331,8 @@ module.exports = {
     clientesCadenasParent,
     searchClientesCadenasParent,
     ventasPendientes,
+    findBlockedClientsByZoneOrSuc,
+    findBlockedClients,
+    findBlockedClientsByZoneAndSuc,
+    clientesVendedorBloqueados
 }
