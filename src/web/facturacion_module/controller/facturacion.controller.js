@@ -30,7 +30,9 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     obtenerDetallePedidoAnulado,
     reabrirLineas,
     getOrdersById,
-    setOrderState } = require("./hana.controller")
+    setOrderState,
+    facturaPedidoTodos,
+    actualizarEstadoPedido } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations, } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -96,7 +98,7 @@ const facturacionController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado E - Error , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "/facturacion/facturar", process.env.PRD)
             return res.status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado E - Error', })
         }
-        // return {id}
+        // return res.json({ id })
         if (!id || id == '') {
             const setOrderResponse = await setOrderState(id, '') // pendiente 
             if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
@@ -135,13 +137,14 @@ const facturacionController = async (req, res) => {
             return res.status(400).json({ mensaje: 'Existe más de una entrega' })
         }
         else if (solicitud.result.length == 1) {
-            //return res.json({solicitud})
+            // return res.json({solicitud})
             deliveryData = solicitud.result[0].DocEntry
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se consulto obtenerEntregaDetalle,  deliveryData: ${deliveryData || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE( ${deliveryData || ''})`, process.env.PRD)
             deliveryBody = await obtenerEntregaDetalle(deliveryData)
             console.log('1 solicitud tiene mas de uno')
-            // console.log({ solicitud, deliveryData })
+            console.log({ solicitud, deliveryData })
+            // return res.json({ solicitud, deliveryData})
             if (deliveryBody.message) {
                 const setOrderResponse = await setOrderState(id, '') // pendiente 
                 if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
@@ -154,7 +157,7 @@ const facturacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: `${deliveryBody.message || ''}` })
             }
         }
-
+        // return res.json({ deliveryBody}) 
         if (!deliveryBody) {
 
             // const { data } = await facturacionById(id)
@@ -207,7 +210,7 @@ const facturacionController = async (req, res) => {
                 let newLine = {}
                 const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment,
                     LineNum, BaseLine: base1, BaseType: base2,
-                    BaseEntry: base3, LineStatus, ...restLine } = line;
+                    BaseEntry: base3, LineStatus, U_BatchNum, ...restLine } = line;
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
                 console.log({ batch: batchData })
                 if (batchData.message) {
@@ -228,17 +231,40 @@ const facturacionController = async (req, res) => {
                         new_quantity += Number(item.Quantity).toFixed(6)
                     })
 
-                    batchNumbers = batchData.map(batch => ({
-                        BaseLineNumber: LineNum,
-                        BatchNumber: batch.BatchNum,
-                        Quantity: Number(batch.Quantity).toFixed(6),
-                        ItemCode: batch.ItemCode
-                    }))
+                    batchNumbers = batchData.map(batch => {
+                        // const newBatchFromQuotation = {
+                        //     BaseLineNumber: LineNum,
+                        //     BatchNumber: U_BatchNum,
+                        //     Quantity: Quantity * UnitsOfMeasurment,
+                        //     ItemCode: ItemCode
+                        // }
+
+                        const newBatch = {
+                            BaseLineNumber: LineNum,
+                            BatchNumber: batch.BatchNum,
+                            Quantity: Number(batch.Quantity).toFixed(6),
+                            ItemCode: batch.ItemCode
+                        }
+                        // return (U_BatchNum == null) ? newBatchFromQuotation : newBatch
+                        return newBatch
+                    })
 
                     const data = {
                         BaseLine: LineNum,
                         BaseType: 17,
                         BaseEntry: id,
+                    }
+
+                    let newBatchFromQuotationList = []
+
+                    if (U_BatchNum !== null) {
+                        const newBatchFromQuotation = {
+                            BaseLineNumber: LineNum,
+                            BatchNumber: U_BatchNum,
+                            Quantity: Quantity * UnitsOfMeasurment,
+                            ItemCode: ItemCode
+                        }
+                        newBatchFromQuotationList.push(newBatchFromQuotation)
                     }
 
                     newLine = {
@@ -248,9 +274,11 @@ const facturacionController = async (req, res) => {
                         Quantity: new_quantity / UnitsOfMeasurment,
                         LineNum,
                         ...restLine,
-                        BatchNumbers: batchNumbers
-                    };
-                    newLine = { ...newLine };
+                        // BatchNumbers: batchNumbers
+                        BatchNumbers: (U_BatchNum == null) ? batchNumbers : newBatchFromQuotationList
+                    }
+
+                    newLine = { ...newLine }
                     newDocumentLines.push(newLine)
                 }
 
@@ -283,7 +311,7 @@ const facturacionController = async (req, res) => {
             }
 
             finalDataEntrega = finalData
-            // return res.json({ ...finalDataEntrega })
+            // return res.json({ data, finalDataEntrega })
             console.log('FINAL ENTREGA------------------------------------------------------------')
             console.log({ finalDataEntrega })
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
@@ -516,7 +544,7 @@ const facturacionController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-            const setOrderResponse = await setOrderState(id, 'R') // pendiente 
+            const setOrderResponse = await setOrderState(id, '') // pendiente 
             if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
@@ -712,7 +740,7 @@ const facturacionController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-            const setOrderResponse = await setOrderState(id, 'R') // pendiente 
+            const setOrderResponse = await setOrderState(id, '') // pendiente 
             if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
@@ -818,6 +846,38 @@ const facturacionStatusListController = async (req, res) => {
         return res.json({ data })
     } catch (error) {
         console.log('error en facturacionStatusController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const facturacionAllStatusListController = async (req, res) => {
+    try {
+
+        const response = await facturaPedidoTodos()
+        return res.json(response)
+    } catch (error) {
+        console.log('error en facturacionAllStatusListController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const actualizarEstadoPedidoController = async (req, res) => {
+    try {
+        const docNum = req.query.docNum
+        let estado = req.query.estado
+        if (!docNum || docNum == '') {
+            return res.status(400).json({ mensaje: 'Debe existir un Doc Num en la peticion (Nro SAP)' })
+        }
+
+        if (!estado) {
+            estado = ''
+        }
+        const response = await actualizarEstadoPedido(docNum, estado)
+        return res.json(response)
+    } catch (error) {
+        console.log('error en actualizarEstadoPedidoController')
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
@@ -4179,5 +4239,7 @@ module.exports = {
     getIncoterm,
     facturarExportacionController,
     getClienteByCardCodeController,
-    setStatusFacturaController
+    setStatusFacturaController,
+    facturacionAllStatusListController,
+    actualizarEstadoPedidoController
 }

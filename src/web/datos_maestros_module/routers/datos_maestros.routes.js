@@ -23,7 +23,9 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     sucursalBySucCodeController,
     tipoByGroupCodeController,
     dmTodosClientesController,
-    dmSearchClientesController
+    dmSearchClientesController,
+    findAllArticulosController,
+    searchArticulosController
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
@@ -55,6 +57,9 @@ router.post('/descuento-cantidad', [validarToken, validarCampos], setDescuentoOf
 router.post('/descuento-corto-vencimiento', [validarToken, validarCampos], setDescuentoOfertasPorCortoVencimientoController)
 
 router.get('/articulos', [validarToken, validarCampos], getArticulosController)
+router.get('/search-articulos', [validarToken, validarCampos], searchArticulosController)
+
+router.get('/find-all-articulos', [validarToken, validarCampos], findAllArticulosController)
 router.post('/find-cliente', [validarToken, validarCampos], findClienteController)
 router.get('/get-id-desc', [validarToken, validarCampos], getIdDescuentosCantidadController)
 router.get('/get-id-desc-corto', [validarToken, validarCampos], getIdDescuentosCantidadCortoController)

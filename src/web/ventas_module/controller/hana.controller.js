@@ -1,4 +1,5 @@
 const hana = require('@sap/hana-client');
+const { executeQueryParamsWithConnection } = require('../../utils/hana-util-connection');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -2117,7 +2118,7 @@ const formatParam = (param) => {
     return param
 }
 
-const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
+const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode,itemCode,groupCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2126,7 +2127,9 @@ const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
         const paramTipo = formatParam(tipoPendiente)
         const paramCardCode = formatParam(cardCode)
         const paramEndDate = formatParam(endDate)
-        const query = `call ${process.env.PRD}.ifasp_sal_get_pending_detail_to_sale_by_cardcode(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_cardcode => ${paramCardCode})`
+        const paramitemCode = formatParam(itemCode)
+        const paramitemGroup = formatParam(groupCode)
+        const query = `call ${process.env.PRD}.ifasp_sal_get_pending_detail_to_sale_by_cardcode(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_cardcode => ${paramCardCode},i_itemcode => ${paramitemCode})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -2137,6 +2140,147 @@ const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode) => {
         }
     }
 }
+
+const findBlockedClientsByZoneOrSuc = async (SucCode, ZoneCode) => {
+  try {
+    const query = `
+      CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_CUSTOMERS_BY_BRANCH_OR_ZONE(?, ?)
+    `;
+
+    const result = await executeQueryParamsWithConnection(query, [SucCode, ZoneCode]);
+    return result;
+  } catch (error) {
+    console.log({ error });
+    throw {
+      message: `Error en findBlockedClientsByZoneOrSuc: ${error.message || ''}`
+    };
+  }
+};
+
+const findBlockedClients = async (tipoCliente) => {
+  try {
+    const query = `CALL LAB_IFA_PRD.IFASP_MD_GET_BLOCKED_OVERDUE_CLIENTS_BY_BRANCH_ZONE(${tipoCliente})`;
+
+    console.log(query);
+    const result = await executeQueryParamsWithConnection(query);
+    return result;
+  } catch (error) {
+    console.log({ error });
+    throw {
+      message: `Error en findBlockedClients: ${error.message || ''}`
+    };
+  }
+};
+
+const findBlockedClientsByZoneAndSuc = async (suc, zone, group) => {
+  try {
+    const query = `
+      CALL LAB_IFA_PRD.IFASP_MD_GET_BLOCKED_OVERDUE_DETAIL_CLIENTS_BY_BRANCH_ZONE(
+        i_succode => ?,
+        i_zonecode => ?,
+        i_divcode => ?
+      )
+    `;
+
+    console.log('Query:', query, 'Params:', [suc, zone, group]);
+
+    // Pasa los parámetros como arreglo (o como lo acepte tu función)
+    const result = await executeQueryParamsWithConnection(query, [suc, zone, group]);
+    return result;
+  } catch (error) {
+    console.log({ error });
+    throw {
+      message: `Error en findBlockedClients: ${error.message || ''}`
+    };
+  }
+};
+
+const clientesVendedorBloqueados = async (groupCode, slpCodes) => {
+  try {
+    if (!connection) {
+      await connectHANA();
+    }
+
+    let allResults = [];
+
+    for (const code of slpCodes) {
+      const query = `CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_OVERDUE_CLIENTS_BY_BRANCH_ZONE_BY_SELLER(${groupCode}, ${code})`;
+      console.log({ query });
+      const result = await executeQuery(query);
+      
+      // Asegúrate que result sea array, si no, lo conviertes
+      if (Array.isArray(result)) {
+        allResults = allResults.concat(result);
+      }
+    }
+
+    return allResults;
+  } catch (error) {
+    throw {
+      message: `Error en clientesVendedorBloqueados: ${error.message || ''}`
+    };
+  }
+};
+
+
+
+const ventasPendientesByItem = async (startDate,endDate,tipoPendiente,cardCode,itemCode,groupCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramStartDate = formatParam(startDate)
+        const paramTipo = formatParam(tipoPendiente)
+        const paramCardCode = formatParam(cardCode)
+        const paramEndDate = formatParam(endDate)
+        const paramitemCode = formatParam(itemCode)
+        const paramGroup = formatParam(groupCode)
+        const query = `call ${process.env.PRD}.ifasp_sal_calculate_pending_detail_to_sale_by_customer_or_item(i_date1 => ${paramStartDate},i_date2 => ${paramEndDate},i_tipo => ${paramTipo},i_groupcode =>${paramGroup},i_cardcode => ${paramCardCode},i_itemcode => ${paramitemCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw {
+            message: `Error en ventasPendientesByItem: ${error.message || ''}`
+        }
+    }
+}
+
+const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent,itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramTipo = formatParam(tipo)
+        const paramGroupCode = formatParam(groupCode)
+        const paramCardCode = formatParam(cardCode)
+        const paramFechaInicial = formatParam(fechaInicial)
+        const paramFechaFinal = formatParam(fechaFinal)
+        const paramHeaderParent = formatParam(headerParent)
+        const paramitemCode = formatParam(itemCode)
+
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
+         i_date_from => ${paramFechaInicial},
+         i_date_to => ${paramFechaFinal},
+         i_document_type =>${paramTipo},
+        i_group_code => ${paramGroupCode},
+        i_card_code =>  ${paramCardCode},
+        i_parent_name =>${paramHeaderParent},
+        i_item_code =>  ${paramitemCode})`
+
+        console.log({ query })
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reportePendienteByItem: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2247,4 +2391,10 @@ module.exports = {
     clientesCadenasParent,
     searchClientesCadenasParent,
     ventasPendientes,
+    findBlockedClientsByZoneOrSuc,
+    findBlockedClients,
+    findBlockedClientsByZoneAndSuc,
+    clientesVendedorBloqueados,
+    reportePendienteByItem,
+    ventasPendientesByItem,
 }

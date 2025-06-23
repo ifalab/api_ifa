@@ -107,7 +107,13 @@ const {
     reportePendienteCadenasController,
     clientesCadenasParentController,
     searchClientesCadenasParentController,
-    ventasPendienteController
+    ventasPendienteController,
+    reportePendienteByItemController,
+    ventasPendienteByItemController,
+    searchBlockedClients,
+    searchBlockedClientsByZoneSucAndGroup,
+    clientesVendedorBloqueadosController,
+    clientesVendedorBloqueadosExcelController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -148,6 +154,7 @@ router.get('/oferta-descripcion-articulo', [validarToken, validarCampos], descri
 router.get('/lista-ofertas', [validarToken, validarCampos], listaOfertasController)
 router.get('/detalle-oferta-cadena', [validarToken, validarCampos], detalleOfertaCadenaController)
 router.get('/detalle-oferta-cadena-pend', [validarToken, validarCampos], detalleOfertaCadenaPendController)
+
 router.get('/oferta-unidad-medida', [validarToken, validarCampos], unidadMedidaController)
 router.get('/lista-articulo-cadenas', [validarToken, validarCampos], listaArticuloCadenasController)
 router.post('/clientes-instituciones', [validarToken, validarCampos], clientesInstitucionesController)
@@ -239,6 +246,14 @@ router.get('/reporte-pendiente-cadenas', [validarToken, validarCampos], reporteP
 router.get('/clientes-cadenas-parent', [validarToken, validarCampos], clientesCadenasParentController)
 router.get('/search-clientes-cadenas-parent', [validarToken, validarCampos], searchClientesCadenasParentController)
 
+router.get('/reporte-pendiente-by-item', [validarToken, validarCampos], reportePendienteByItemController)
+
 router.get('/detalle-reporte-pendiente', [validarToken, validarCampos], ventasPendienteController)
+router.get('/search-blocked-clients', [validarToken, validarCampos], searchBlockedClients)
+router.get('/search-blocked-clients/:suc/:zone/:group', [validarToken, validarCampos], searchBlockedClientsByZoneSucAndGroup)
+router.get('/clientes-vendedor-bloqueados/:slpCode/:groupCode', [validarToken, validarCampos], clientesVendedorBloqueadosController)
+router.post('/clientes-vendedor-bloqueados/excel', [validarToken, validarCampos], clientesVendedorBloqueadosExcelController)
+router.get('/detalle-reporte-pendiente-by-item', [validarToken, validarCampos], ventasPendienteByItemController)
+// ventasPendienteByItemController
 
 module.exports = router

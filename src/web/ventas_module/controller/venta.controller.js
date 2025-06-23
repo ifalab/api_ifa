@@ -105,7 +105,13 @@ const {
     reportePendienteCadenas,
     clientesCadenasParent,
     searchClientesCadenasParent,
-    ventasPendientes
+    ventasPendientes,
+    reportePendienteByItem,
+    ventasPendientesByItem,
+    findBlockedClientsByZoneOrSuc,
+    findBlockedClients,
+    findBlockedClientsByZoneAndSuc,
+    clientesVendedorBloqueados
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -113,8 +119,8 @@ const { postInventoryTransferRequests } = require("./sld.controller");
 const { validarExcel } = require("../../../helpers/validacionesExcel");
 const { Console, group } = require("console");
 const { isatty } = require("tty");
-
-
+const { groupBySucursal } = require("../utils/formatBlockedClients");
+const { groupBySucursalYVendedor } = require("../utils/groupBySuc&Seller");
 
 const ventasPorSucursalController = async (req, res) => {
     try {
@@ -1106,12 +1112,22 @@ const detalleOfertaCadenaPendController = async (req, res) => {
         const { data } = response
         data.forEach((row) => {
             const subtotal = row.subTotal
+            const {BatchNum } = row
             row.Quantity = Number(row.Quantity)
             row.PendQuantity = Number(row.PendQuantity)
             row.Stock = Number(row.Stock)
             row.subTotal = Number(subtotal)
             row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
             row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
+            if(BatchNum && BatchNum!==''){
+                row.BatchDataSelect = {
+                    BatchNum,
+                    ExpDate:row.ExpDate || null,
+                    NumInSale:Number(row.NumPerMsr) || null,
+                }
+                row.BatchDataSelectBatchNum = BatchNum
+                row.BatchDataSelectBatcExpDate = row.ExpDate
+            }
         })
         return res.json(data)
     } catch (error) {
@@ -3727,10 +3743,6 @@ const reportePendienteCadenasController = async (req, res) => {
             headerParent = null
         }
         const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
-        // if (response.length == 0) {
-        //     return res.status(400).json({ mensaje: `No se encontraron datos.`, response });
-        // }
-
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
         }))].sort();
@@ -3807,6 +3819,8 @@ const ventasPendienteController = async (req, res) => {
         let endDate = req.query.endDate
         let tipo = req.query.tipo
         let cardCode = req.query.cardCode
+        let groupCode = req.query.groupCode
+        let itemCode = req.query.itemCode
 
 
         if (!tipo || tipo == '') {
@@ -3822,12 +3836,357 @@ const ventasPendienteController = async (req, res) => {
             endDate = null
         }
 
-        const data = await ventasPendientes(startDate, endDate, tipo, cardCode)
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+
+        const data = await ventasPendientes(startDate, endDate, tipo, cardCode,itemCode,groupCode)
         return res.json(data)
 
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en ventasPendienteController ${error.message || 'No definido'}` });
+    }
+}
+
+const searchBlockedClients = async (req, res) => {
+  try {
+    const tipoCliente = Number(req.query.tipoCliente);
+
+    // Opcional: validar si es un número válido
+    if (isNaN(tipoCliente)) {
+      return res.status(400).json({
+        mensaje: 'El parámetro tipoCliente debe ser un número válido.',
+      });
+    }
+
+    const resultado = await findBlockedClients(tipoCliente);
+    const agrupado = groupBySucursal(resultado);
+
+    return res.json(agrupado);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
+    });
+  }
+};
+
+const searchBlockedClientsByZoneSucAndGroup = async (req, res) => {
+  try {
+    const suc = Number(req.params.suc);
+    const zone = Number(req.params.zone);
+    const group = Number(req.params.group);
+
+    if (isNaN(suc) || isNaN(zone) || isNaN(group)) {
+      return res.status(400).json({
+        mensaje: 'Los parámetros suc, zone y group deben ser números válidos.',
+      });
+    }
+
+    // Asumo que findBlockedClients ahora recibe estos parámetros:
+    const resultado = await findBlockedClientsByZoneAndSuc(suc, zone, group);
+
+    return res.json(resultado);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
+    });
+  }
+};
+
+const clientesVendedorBloqueadosController = async (req, res) => {
+  try {
+    const slpCodeRaw = req.params.slpCode; // Ej: "14 - 21"
+    const groupCode = Number(req.params.groupCode);
+
+    if (!slpCodeRaw || isNaN(groupCode)) {
+      return res.status(400).json({ mensaje: 'Parámetros inválidos.' });
+    }
+
+    const slpCodes = slpCodeRaw
+      .split('-')
+      .map(code => Number(code.trim()))
+      .filter(code => !isNaN(code));
+
+    if (slpCodes.length === 0) {
+      return res.status(400).json({ mensaje: 'Código(s) de vendedor inválido(s).' });
+    }
+
+    const response = await clientesVendedorBloqueados(groupCode, slpCodes);
+
+    // Agrupar por sucursal y luego vendedor
+    const agrupado = groupBySucursalYVendedor(response);
+
+    return res.json(agrupado);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      mensaje: `Error en clientesVendedorBloqueadosController: ${error.message || 'No definido'}`
+    });
+  }
+}
+
+
+const clientesVendedorBloqueadosExcelController = async (req, res) => {
+    try {
+        const clientes = req.body;
+
+        if (!Array.isArray(clientes) || clientes.length === 0) {
+        return res.status(400).json({ mensaje: 'No se proporcionaron datos válidos.' });
+        }
+
+        // Crear libro y hoja
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Clientes Bloqueados');
+
+        // Definir columnas
+        worksheet.columns = [
+        { header: 'Sucursal Código', key: 'SucCode', width: 15 },
+        { header: 'Sucursal Nombre', key: 'SucName', width: 20 },
+        { header: 'Zona Código', key: 'ZoneCode', width: 15 },
+        { header: 'Zona Nombre', key: 'ZoneName', width: 20 },
+        { header: 'Grupo Código', key: 'GroupCode', width: 15 },
+        { header: 'Grupo Nombre', key: 'GroupName', width: 20 },
+        { header: 'Código Cliente', key: 'CardCode', width: 20 },
+        { header: 'Nombre Cliente', key: 'CardName', width: 25 },
+        { header: 'Facturas Vencidas', key: 'OverdueInvoicesCount', width: 20 },
+        { header: 'Monto Vencido', key: 'TotalOverdueAmount', width: 20 },
+        ];
+
+        // Agregar filas
+        clientes.forEach(cliente => {
+        worksheet.addRow(cliente);
+        });
+
+        // Formato de cabecera
+        worksheet.getRow(1).font = { bold: true };
+
+        // Generar el buffer del Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+
+        // Enviar como archivo
+        res.setHeader('Content-Disposition', 'attachment; filename=clientes_bloqueados.xlsx');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.end(buffer);
+    } catch (error) {
+        console.error('Error al generar Excel:', error);
+        res.status(500).json({ mensaje: 'Error al generar Excel.' });
+    }
+}
+
+// const searchBlockedClients = async (req, res) => {
+//   try {
+//     let { SucCode, ZoneCode } = req.query;
+
+//     // Normalizamos
+//     SucCode = isNaN(Number(SucCode)) ? null : Number(SucCode);
+//     ZoneCode = isNaN(Number(ZoneCode)) ? null : Number(ZoneCode);
+
+//     console.log('Buscando clientes bloqueados con:', { SucCode, ZoneCode });
+
+//     const resultado = await findBlockedClientsByZoneOrSuc(SucCode, ZoneCode);
+//     console.log(resultado);
+
+//     if (SucCode === null && ZoneCode !== null) {
+//         const zonasMap = new Map();
+
+//         for (const item of resultado) {
+//             const key = `${item.ZoneCode}-${item.ZoneName}`;
+
+//             if (!zonasMap.has(key)) {
+//             zonasMap.set(key, {
+//                 ZoneCode: item.ZoneCode,
+//                 ZoneName: item.ZoneName,
+//                 clientes: [],
+//             });
+//             }
+
+//             zonasMap.get(key).clientes.push({
+//                 CardCode: item.CardCode,
+//                 CardName: item.CardName,
+//                 validFor: item.validFor,
+//             });
+//         }
+
+//         const zonasArray = Array.from(zonasMap.values());
+
+//         if (zonasArray.length === 0) {
+//         // No hay datos, responde vacío o con algún mensaje
+//         return res.json({ ZoneCode: null, ZoneName: null, data: [] });
+//         }
+
+//         const zona = zonasArray[0];
+
+//         const response = {
+//         ZoneCode: zona.ZoneCode,
+//         ZoneName: zona.ZoneName,
+//         data: zona.clientes,
+//         };
+
+//         return res.json(response);
+//     }
+
+//     if (SucCode !== null) {
+//         // Agrupamos por Sucursal
+//         const sucursalAgrupada = {
+//             SucCode: resultado[0]?.SucCode ?? SucCode,
+//             SucName: resultado[0]?.SucName ?? '',
+//             data: [],
+//         };
+
+//         const zonasMap = new Map();
+
+//         for (const item of resultado) {
+//             const key = `${item.ZoneCode}-${item.ZoneName}`;
+
+//             if (!zonasMap.has(key)) {
+//                 zonasMap.set(key, {
+//                     ZoneCode: item.ZoneCode,
+//                     ZoneName: item.ZoneName,
+//                     clientes: [],
+//                 });
+//             }
+
+//             zonasMap.get(key).clientes.push({
+//                 CardCode: item.CardCode,
+//                 CardName: item.CardName,
+//                 validFor: item.validFor,
+//             });
+//         }
+
+//         sucursalAgrupada.data = Array.from(zonasMap.values());
+
+//         return res.json(sucursalAgrupada);
+//     }
+
+//     return res.json(resultado);
+//   } catch (error) {
+//     console.error({ error });
+//     return res.status(500).json({
+//       mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
+//     });
+//   }
+// };
+
+
+
+
+const ventasPendienteByItemController = async (req, res) => {
+    try {
+        let startDate = req.query.startDate
+        let endDate = req.query.endDate
+        let tipo = req.query.tipo
+        let cardCode = req.query.cardCode
+        let itemCode = req.query.itemCode
+        let groupCode = req.query.groupCode
+
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!startDate || startDate == '') {
+            startDate = null
+        }
+        if (!endDate || endDate == '') {
+            endDate = null
+        }
+
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+
+        const data = await ventasPendientesByItem(startDate, endDate, tipo, cardCode,itemCode,groupCode)
+        return res.json(data)
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en ventasPendienteByItemController ${error.message || 'No definido'}` });
+    }
+}
+const reportePendienteByItemController = async (req, res) => {
+    try {
+        let fechaInicial = req.query.fechaInicial
+        let fechaFinal = req.query.fechaFinal
+        let tipo = req.query.tipo
+        let groupCode = req.query.groupCode
+        let cardCode = req.query.cardCode
+        let headerParent = req.query.headerParent
+        let itemCode = req.query.itemCode
+        console.warn({
+            fechaInicial,
+            fechaFinal,
+            tipo,
+            groupCode,
+            cardCode,
+        })
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!fechaInicial || fechaInicial == '') {
+            fechaInicial = null
+        }
+        if (!fechaFinal || fechaFinal == '') {
+            fechaFinal = null
+        }
+        if (!headerParent || headerParent == '') {
+            headerParent = null
+        }
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+        const response = await reportePendienteByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent,itemCode)
+        // return res.json({ response })
+        const headers = [...new Set(response.map(item => {
+            return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+        }))].sort();
+
+        const grouped = {};
+        for (const item of response) {
+            const key = item.CardCode;
+            const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+
+            if (!grouped[key]) {
+                grouped[key] = {
+                    CardCode: item.CardCode,
+                    CardName: item.CardName,
+                };
+
+                headers.forEach(header => {
+                    grouped[key][header] = { Quantity: null, Total: null };
+                });
+            }
+
+            grouped[key][monthKey] = {
+                Quantity: parseFloat(item.PendingQuantity),
+                Total: parseFloat(item.PendingAmount)
+            };
+        }
+
+        const data = Object.values(grouped)
+
+        return res.json({ headers, data })
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteByItemController ${error.message || 'No definido'}` });
     }
 }
 
@@ -3934,4 +4293,10 @@ module.exports = {
     clientesCadenasParentController,
     searchClientesCadenasParentController,
     ventasPendienteController,
+    searchBlockedClients,
+    searchBlockedClientsByZoneSucAndGroup,
+    clientesVendedorBloqueadosController,
+    clientesVendedorBloqueadosExcelController,
+    reportePendienteByItemController,
+    ventasPendienteByItemController,
 };
