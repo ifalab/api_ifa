@@ -2223,6 +2223,25 @@ const clientesVendedorBloqueados = async (groupCode, slpCodes) => {
 };
 
 
+const clientesBloqueadoByGroup = async (groupCode) => {
+  try {
+    if (!connection) {
+      await connectHANA();
+    }
+
+    const safeGroupCode = groupCode !== null && groupCode !== undefined ? parseInt(groupCode) : 'NULL';
+    const query = `CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_OVERDUE_DETAIL_CLIENTS_BY_GROUP_CODE(${safeGroupCode})`;
+    console.log({ query });
+
+    const result = await executeQuery(query);
+
+    return Array.isArray(result) && Array.isArray(result[0]) ? result[0] : result;
+
+  } catch (error) {
+    throw new Error(`Error en clientesBloqueadoByGroup: ${error.message || 'Error no definido'}`);
+  }
+};
+
 
 const ventasPendientesByItem = async (startDate,endDate,tipoPendiente,cardCode,itemCode,groupCode) => {
     try {
@@ -2397,4 +2416,5 @@ module.exports = {
     clientesVendedorBloqueados,
     reportePendienteByItem,
     ventasPendientesByItem,
+    clientesBloqueadoByGroup,
 }

@@ -111,7 +111,8 @@ const {
     findBlockedClientsByZoneOrSuc,
     findBlockedClients,
     findBlockedClientsByZoneAndSuc,
-    clientesVendedorBloqueados
+    clientesVendedorBloqueados,
+    clientesBloqueadoByGroup
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3453,9 +3454,12 @@ const excelClientesBloqueados = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const { data, displayedColumns, grupo } = req.body;
+        const bloqueados = await clientesBloqueadoByGroup(grupo);
+        console.log(grupo);
 
         console.log({ data });
         console.log({ displayedColumns })
+        console.log({bloqueados});
         const fechaActual = new Date();
         const date = new Intl.DateTimeFormat('es-VE', {
             weekday: 'long',
@@ -3473,22 +3477,46 @@ const excelClientesBloqueados = async (req, res) => {
             { header: 'Zona', key: 'ZoneName', width: 25 },
             { header: 'Universal', key: 'Universal', width: 15 },
             { header: 'Bloqueados', key: 'Bloqueados', width: 15 },
+            { header: 'Monto Deuda', key: 'Deuda', width: 15 },
             { header: 'Porcentaje', key: 'Porcentaje', width: 12 }
         ];
 
+        const morososSheet = workbook.addWorksheet('Clientes Morosos');
+
+       morososSheet.columns = [
+            { header: 'Sucursal', key: 'SucName', width: 20 },
+            { header: 'Zona', key: 'ZoneName', width: 25 },
+            { header: 'Grupo', key: 'GroupName', width: 20 },
+            { header: 'Vendedor', key: 'SlpNames', width: 35 },
+            { header: 'Cliente', key: 'CardName', width: 40 },
+            { header: 'Facturas Vencidas', key: 'OverdueInvoicesCount', width: 20 },
+            { header: 'Monto Deuda', key: 'TotalOverdueAmount', width: 18 }
+        ];
         // Insertar filas antes del encabezado
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
 
         worksheet.getCell('A1').value = `Clientes Bloqueados por Zona`;
-        worksheet.mergeCells('A1:F1');
+        worksheet.mergeCells('A1:G1');
         worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;
-        worksheet.mergeCells('A2:F2');
+        worksheet.mergeCells('A2:G2');
+
+        morososSheet.insertRow(1, []);
+        morososSheet.insertRow(1, []);
+        morososSheet.insertRow(1, []);
+
+        morososSheet.getCell('A1').value = `Clientes Bloqueados por Zona`;
+        morososSheet.mergeCells('A1:G1');
+        morososSheet.getCell('A2').value = `Fecha de Impresión: ${date}`;
+        morososSheet.mergeCells('A2:G2');
 
         if (grupo) {
             worksheet.getCell('A3').value = `Grupo: ${grupo}`;
-            worksheet.mergeCells('A3:F3');
+            worksheet.mergeCells('A3:G3');
+
+            morososSheet.getCell('A3').value = `Grupo: ${grupo}`;
+            morososSheet.mergeCells('A3:G3');
         }
 
         // Estilizar cabecera
@@ -3513,18 +3541,101 @@ const excelClientesBloqueados = async (req, res) => {
             cell.alignment = { vertical: 'middle', horizontal: 'start' };
         });
 
-        const rowRefs = data.map(row =>
-            worksheet.addRow(
-                displayedColumns.reduce((acc, column) => ({
-                    ...acc,
-                    [column]: row[column] ? (
-                        column == 'Porcentaje' ? row[column] == 0 ? '0' : +((parseFloat(row[column]) * 100).toFixed(2)) :
-                            (column == 'Universal' || column == 'Bloqueados') ? parseFloat(row[column]) :
-                                row[column])
-                        : ''
-                }), {})
-            )
-        );
+        const cellMorosoA = morososSheet.getCell('A1');
+        cellMorosoA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellMorosoA.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        cellMorosoA.font = { bold: true, size: 14 };
+        cellMorosoA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        };
+
+        ['A2', 'A3'].forEach(cellAddress => {
+            const cell = morososSheet.getCell(cellAddress);
+            cell.font = { bold: true, size: 11 };
+            cell.alignment = { vertical: 'middle', horizontal: 'start' };
+        });
+
+        // Agregar los datos
+       bloqueados.forEach(cliente => {
+            morososSheet.addRow({
+                SucName: cliente.SucName,
+                ZoneName: cliente.ZoneName,
+                GroupName: cliente.GroupName,
+                SlpNames: cliente.SlpNames || 'Vendedor no asignado',
+                CardName: cliente.CardName,
+                OverdueInvoicesCount: cliente.OverdueInvoicesCount,
+                TotalOverdueAmount: parseFloat(cliente.TotalOverdueAmount)
+            });
+        });
+
+
+        // Estilizar cabecera
+        morososSheet.getRow(4).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFFF' },
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };
+        });
+
+        let currentRowIndex = 5;
+        const rowRefs = [];
+
+        const startRowMorosos = 4;
+        mergeCellsByColumn(morososSheet, startRowMorosos + 1, 'SucName', bloqueados);
+        mergeCellsByColumn(morososSheet, startRowMorosos + 1, 'ZoneName', bloqueados);
+        mergeCellsByColumn(morososSheet, startRowMorosos + 1, 'SlpNames', bloqueados);
+
+        data.forEach(sucursal => {
+            const rows = sucursal.data;
+
+            if (Array.isArray(rows) && rows.length > 0) {
+                const startRow = currentRowIndex;
+                const endRow = currentRowIndex + rows.length - 1;
+
+                rows.forEach(item => {
+                    const rowData = {
+                        SucName: sucursal.SucName,
+                        SlpName: item.SlpName,
+                        ZoneName: item.ZoneName,
+                        Universal: item.TotalClients,
+                        Bloqueados: item.OverdueClientsCount,
+                        Deuda: parseFloat(item.TotalOverdueAmount),
+                        Porcentaje: item.Percent == 0 ? '0' : +((parseFloat(item.Percent) * 100).toFixed(2)),
+                    };
+                    const addedRow = worksheet.addRow(rowData);
+                    rowRefs.push(addedRow);
+                    currentRowIndex++;
+                });
+
+                // Fusionar la columna 'Sucursal' para esta sucursal
+                if (rows.length >= 1) {
+                    const sucCol = worksheet.getColumn('SucName');
+                    const cellIndex = sucCol.number;
+
+                    worksheet.mergeCells(startRow, cellIndex, endRow, cellIndex);
+                    worksheet.getCell(startRow, cellIndex).alignment = {
+                        vertical: 'middle',
+                        horizontal: 'center',
+                    };
+                }
+            }
+        });
         // Apply formatting per row
         rowRefs.forEach(row => {
             row.eachCell(cell => {
@@ -3535,44 +3646,7 @@ const excelClientesBloqueados = async (req, res) => {
             });
         });
 
-        function mergeSameValues(startRowIndex, columnKeys) {
-            const ends = []
-            let i = 0;
-            while (i < data.length) {
-                let j = i + 1;
-                while (
-                    j < data.length &&
-                    columnKeys.every(key => data[i][key] === data[j][key])
-                ) {
-                    j++;
-                }
-
-                if (j - i > 1) {
-                    const start = startRowIndex + i;
-                    const end = startRowIndex + j - 1;
-                    columnKeys.forEach(key => {
-                        const col = worksheet.getColumn(key);
-                        const cellIndex = col.number;
-                        worksheet.mergeCells(start, cellIndex, end, cellIndex);
-                        worksheet.getCell(start, cellIndex).alignment = {
-                            vertical: 'middle',
-                            horizontal: 'center'
-                        };
-                        // worksheet.getCell(end, cellIndex).border = 
-
-                    });
-                    ends.push(end);
-                } else {
-                    const end = startRowIndex + j - 1
-                    ends.push(end);
-                }
-                i = j;
-            }
-            return ends;
-        }
-        const ends = mergeSameValues(5, ['ZoneName', 'Universal', 'Bloqueados', 'Porcentaje']);
-        console.log({ ends })
-
+        morososSheet.getColumn('TotalOverdueAmount').numFmt = '[$Bs.]#,##0.00';
 
         worksheet.getRow(4).eachCell(cell => {
             cell.font = { bold: true };
@@ -3598,16 +3672,6 @@ const excelClientesBloqueados = async (req, res) => {
             }
         })
 
-        ends.forEach(end => {
-            worksheet.getRow(end).eachCell(cell => {
-                cell.border = {
-                    bottom: { style: 'thin' },
-                    left: { style: 'thin' },
-                    right: { style: 'thin' },
-                }
-            })
-        });
-
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
 
@@ -3623,6 +3687,40 @@ const excelClientesBloqueados = async (req, res) => {
         //   );
         return res.status(500).json({ mensaje: `Error generando el Excel de clientes bloqueados ${error}` });
     }
+}
+
+function mergeCellsByColumn(worksheet, startRowIndex, columnKey, data) {
+    let i = 0;
+    const ends = [];
+
+    while (i < data.length) {
+        let j = i + 1;
+
+        while (
+            j < data.length &&
+            data[i][columnKey] === data[j][columnKey]
+        ) {
+            j++;
+        }
+
+        const span = j - i;
+        if (span > 1) {
+            const colIndex = worksheet.getColumn(columnKey).number;
+            const start = startRowIndex + i;
+            const end = startRowIndex + j - 1;
+
+            worksheet.mergeCells(start, colIndex, end, colIndex);
+            worksheet.getCell(start, colIndex).alignment = {
+                vertical: 'middle',
+                horizontal: 'center'
+            };
+        }
+
+        ends.push(startRowIndex + j - 1);
+        i = j;
+    }
+
+    return ends;
 }
 
 const ventasVendedoresByLineasSucursalController = async (req, res) => {
@@ -3947,26 +4045,49 @@ const clientesVendedorBloqueadosExcelController = async (req, res) => {
 
         // Definir columnas
         worksheet.columns = [
-        { header: 'Sucursal Código', key: 'SucCode', width: 15 },
-        { header: 'Sucursal Nombre', key: 'SucName', width: 20 },
-        { header: 'Zona Código', key: 'ZoneCode', width: 15 },
-        { header: 'Zona Nombre', key: 'ZoneName', width: 20 },
-        { header: 'Grupo Código', key: 'GroupCode', width: 15 },
-        { header: 'Grupo Nombre', key: 'GroupName', width: 20 },
-        { header: 'Código Cliente', key: 'CardCode', width: 20 },
-        { header: 'Nombre Cliente', key: 'CardName', width: 25 },
-        { header: 'Facturas Vencidas', key: 'OverdueInvoicesCount', width: 20 },
-        { header: 'Monto Vencido', key: 'TotalOverdueAmount', width: 20 },
+            { header: 'Sucursal Código', key: 'SucCode', width: 15 },
+            { header: 'Sucursal Nombre', key: 'SucName', width: 20 },
+            { header: 'Zona Código', key: 'ZoneCode', width: 15 },
+            { header: 'Zona Nombre', key: 'ZoneName', width: 20 },
+            { header: 'Grupo Código', key: 'GroupCode', width: 15 },
+            { header: 'Grupo Nombre', key: 'GroupName', width: 20 },
+            { header: 'Vendedor', key: 'SlpNames', width: 25 },
+            { header: 'Código Cliente', key: 'CardCode', width: 20 },
+            { header: 'Nombre Cliente', key: 'CardName', width: 25 },
+            { header: 'Facturas Vencidas', key: 'OverdueInvoicesCount', width: 20 },
+            { header: 'Monto Vencido', key: 'TotalOverdueAmount', width: 20 },
         ];
 
         // Agregar filas
         clientes.forEach(cliente => {
-        worksheet.addRow(cliente);
+            worksheet.addRow({
+                ...cliente,
+                TotalOverdueAmount: Number(cliente.TotalOverdueAmount), // 👈 Conversión explícita
+            });
         });
+
 
         // Formato de cabecera
         worksheet.getRow(1).font = { bold: true };
 
+        const startRowIndex = 2;
+
+        // Ordenar clientes por las columnas que vas a mergear
+        clientes.sort((a, b) => {
+        return (
+            a.SucCode - b.SucCode ||
+            a.ZoneCode - b.ZoneCode ||
+            a.GroupCode - b.GroupCode // si también quisieras esto
+        );
+        });
+        
+        // Hacer merge por las columnas deseadas
+        mergeCellsByColumn(worksheet, startRowIndex, 'SucCode', clientes);
+        mergeCellsByColumn(worksheet, startRowIndex, 'SucName', clientes);
+        mergeCellsByColumn(worksheet, startRowIndex, 'ZoneCode', clientes);
+        mergeCellsByColumn(worksheet, startRowIndex, 'ZoneName', clientes);
+        
+        worksheet.getColumn('TotalOverdueAmount').numFmt = '[$Bs.]#,##0.00';
         // Generar el buffer del Excel
         const buffer = await workbook.xlsx.writeBuffer();
 
@@ -4189,6 +4310,26 @@ const reportePendienteByItemController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en reportePendienteByItemController ${error.message || 'No definido'}` });
     }
 }
+
+// const searchBlockedClientsByGroup = async (groupCode, res) => {
+//     try {
+//         const data = await clientesBloqueadoByGroup(groupCode);
+
+//         if (!Array.isArray(data)) {
+//             throw new Error('Formato inesperado de datos devueltos por HANA');
+//         }
+
+//         return res.status(200).json({ ok: true, data });
+
+//     } catch (error) {
+//         console.error('searchBlockedClientsByGroup error:', error);
+//         return res.status(500).json({
+//             ok: false,
+//             mensaje: `Error en searchBlockedClientsByGroup: ${error.message || 'No definido'}`
+//         });
+//     }
+// }
+
 
 module.exports = {
     ventasPorSucursalController,
