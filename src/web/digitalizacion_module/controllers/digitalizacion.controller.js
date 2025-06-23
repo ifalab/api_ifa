@@ -551,8 +551,8 @@ const deleteDetalleImageController = async (req, res) => {
 const getDeliveryDigitalizedController = async (req, res) => {
     try {
         // Obtener parámetros de la consulta
-        const { startDate, endDate, search ,  page = 1, limit = 10} = req.query;
-        const skip = (page - 1) * limit;
+        const { startDate, endDate, search ,  page = 1, limit = 10, sucCode } = req.query;
+        const skip = parseInt(page, 10) * parseInt(limit, 10);
         
         // Formatear fechas
         // Por defecto usar la fecha de hoy si no se proporcionan fechas
@@ -588,7 +588,8 @@ const getDeliveryDigitalizedController = async (req, res) => {
             actualEndDate,
             search || '',
             skip,
-            limit
+            limit,
+            sucCode 
         );
 
         // Registrar la operación exitosa en el log
