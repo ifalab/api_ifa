@@ -551,8 +551,8 @@ const deleteDetalleImageController = async (req, res) => {
 const getDeliveryDigitalizedController = async (req, res) => {
     try {
         // Obtener parámetros de la consulta
-        const { startDate, endDate, search ,  page = 1, limit = 10} = req.query;
-        const skip = (page - 1) * limit;
+        const { startDate, endDate, search ,  page = 1, limit = 10, sucCode } = req.query;
+        const skip = parseInt(page - 1) * parseInt(limit);
         
         // Formatear fechas
         // Por defecto usar la fecha de hoy si no se proporcionan fechas
@@ -588,7 +588,8 @@ const getDeliveryDigitalizedController = async (req, res) => {
             actualEndDate,
             search || '',
             skip,
-            limit
+            limit,
+            sucCode 
         );
 
         // Registrar la operación exitosa en el log
@@ -654,7 +655,7 @@ const getDeliveryDigitalizedController = async (req, res) => {
 const excelEntregasDigitalizadas = async (req, res) => {
     try {
         const { data, fechaInicio, fechaFin } = req.body;
-        
+                
         // Obtener fecha actual formateada
         const fechaActual = new Date();
         const date = new Intl.DateTimeFormat('es-ES', {
@@ -671,7 +672,7 @@ const excelEntregasDigitalizadas = async (req, res) => {
 
         // Definir columnas
         worksheet.columns = [
-            { header: 'Código Sucursal', key: 'SucCode', width: 15 },
+            // { header: 'Código Sucursal', key: 'SucCode', width: 15 },
             { header: 'Sucursal', key: 'SucName', width: 20 },
             { header: 'Zona', key: 'ZoneName', width: 15 },
             { header: 'Nro. Asiento', key: 'TransId', width: 12 },
@@ -680,8 +681,8 @@ const excelEntregasDigitalizadas = async (req, res) => {
             { header: 'Código Cliente', key: 'CardCode', width: 15 },
             { header: 'Nombre Cliente', key: 'CardName', width: 30 },
             { header: 'Total', key: 'DocTotal', width: 15 },
-            { header: 'Despachador', key: 'DeliveryName', width: 25 },
-            { header: 'Fecha Digitalización', key: 'CreateDate', width: 20 }
+            // { header: 'Despachador', key: 'DeliveryName', width: 25 },
+            // { header: 'Fecha Digitalización', key: 'CreateDate', width: 20 }
         ];
 
         // Insertar filas de cabecera
@@ -695,9 +696,9 @@ const excelEntregasDigitalizadas = async (req, res) => {
         worksheet.getCell('A3').value = `Fecha de impresión: ${date}`;
         
         // Fusionar celdas para cabecera
-        worksheet.mergeCells('A1:K1');
-        worksheet.mergeCells('A2:K2');
-        worksheet.mergeCells('A3:K3');
+        worksheet.mergeCells('A1:H1');
+        worksheet.mergeCells('A2:H2');
+        worksheet.mergeCells('A3:H3');
 
         // Estilizar cabecera
         const headerRow = worksheet.getRow(1);
@@ -761,6 +762,27 @@ const excelEntregasDigitalizadas = async (req, res) => {
                     cell.alignment = { horizontal: 'center' };
                 }
             });
+        });
+
+        const totalGeneral = data.reduce((acc, item) => acc + (parseFloat(item.DocTotal) || 0), 0)
+        const totalRow = worksheet.addRow([
+        '', '', '', '', '', '', 'TOTAL GENERAL:', totalGeneral
+        ]);
+        totalRow.eachCell((cell, colNumber) => {
+            cell.font = { bold: true };
+            cell.border = {
+                top: { style: 'double' },
+                bottom: { style: 'double' },
+                left: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            if (colNumber === 9) { // Columna 'DocTotal'
+                cell.numFmt = '"Bs" #,##0.00';
+                cell.alignment = { horizontal: 'right' };
+            }
+            if (colNumber === 8) { // Label
+                cell.alignment = { horizontal: 'right' };
+            }
         });
 
         // Configuración de respuesta
