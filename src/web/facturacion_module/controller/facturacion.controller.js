@@ -556,7 +556,7 @@ const facturacionController = async (req, res) => {
             return res.json({ ...response, cuf, setOrderResponse })
 
         } else {
-            //? si no existe el cuf:
+            //! si no existe el cuf:
             endTime = Date.now()
             let dataToProsin = {}
             const { direccion, ...restBodyFinalFactura } = bodyFinalFactura
@@ -740,7 +740,7 @@ const facturacionController = async (req, res) => {
                 cuf
             }
             console.log({ response })
-            const setOrderResponse = await setOrderState(id, '') // pendiente 
+            const setOrderResponse = await setOrderState(id, 'R') //Procesado
             if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
                 endTime = Date.now();
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
@@ -749,7 +749,6 @@ const facturacionController = async (req, res) => {
             endTime = Date.now()
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", "Factura creada con exito", `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
             return res.json({ ...response, cuf, setOrderResponse })
-
         }
 
     } catch (error) {
