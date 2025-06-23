@@ -232,13 +232,21 @@ const facturacionController = async (req, res) => {
                     })
 
                     batchNumbers = batchData.map(batch => {
+                        // const newBatchFromQuotation = {
+                        //     BaseLineNumber: LineNum,
+                        //     BatchNumber: U_BatchNum,
+                        //     Quantity: Quantity * UnitsOfMeasurment,
+                        //     ItemCode: ItemCode
+                        // }
+
                         const newBatch = {
                             BaseLineNumber: LineNum,
                             BatchNumber: batch.BatchNum,
                             Quantity: Number(batch.Quantity).toFixed(6),
                             ItemCode: batch.ItemCode
                         }
-                        return newBatch
+                        // return (U_BatchNum == null) ? newBatchFromQuotation : newBatch
+                        return (U_BatchNum == null) ? newBatchFromQuotation : newBatch
                     })
 
                     const data = {
@@ -266,7 +274,8 @@ const facturacionController = async (req, res) => {
                         Quantity: new_quantity / UnitsOfMeasurment,
                         LineNum,
                         ...restLine,
-                        BatchNumbers: (U_BatchNum == null) ? newBatchFromQuotationList : batchNumbers
+                        // BatchNumbers: batchNumbers
+                        BatchNumbers: (U_BatchNum == null) ? batchNumbers : newBatchFromQuotationList
                     }
 
                     newLine = { ...newLine }
