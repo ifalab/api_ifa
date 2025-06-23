@@ -246,7 +246,7 @@ const facturacionController = async (req, res) => {
                             ItemCode: batch.ItemCode
                         }
                         // return (U_BatchNum == null) ? newBatchFromQuotation : newBatch
-                        return (U_BatchNum == null) ? newBatchFromQuotation : newBatch
+                        return newBatch
                     })
 
                     const data = {
