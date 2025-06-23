@@ -109,7 +109,11 @@ const {
     searchClientesCadenasParentController,
     ventasPendienteController,
     reportePendienteByItemController,
-    ventasPendienteByItemController
+    ventasPendienteByItemController,
+    searchBlockedClients,
+    searchBlockedClientsByZoneSucAndGroup,
+    clientesVendedorBloqueadosController,
+    clientesVendedorBloqueadosExcelController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -245,6 +249,10 @@ router.get('/search-clientes-cadenas-parent', [validarToken, validarCampos], sea
 router.get('/reporte-pendiente-by-item', [validarToken, validarCampos], reportePendienteByItemController)
 
 router.get('/detalle-reporte-pendiente', [validarToken, validarCampos], ventasPendienteController)
+router.get('/search-blocked-clients', [validarToken, validarCampos], searchBlockedClients)
+router.get('/search-blocked-clients/:suc/:zone/:group', [validarToken, validarCampos], searchBlockedClientsByZoneSucAndGroup)
+router.get('/clientes-vendedor-bloqueados/:slpCode/:groupCode', [validarToken, validarCampos], clientesVendedorBloqueadosController)
+router.post('/clientes-vendedor-bloqueados/excel', [validarToken, validarCampos], clientesVendedorBloqueadosExcelController)
 router.get('/detalle-reporte-pendiente-by-item', [validarToken, validarCampos], ventasPendienteByItemController)
 // ventasPendienteByItemController
 
