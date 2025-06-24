@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController, reporteMargenComercialController } = require('../controller/finanzas.controller')
+const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController, reporteMargenComercialController, getCommercialMarginByProducts } = require('../controller/finanzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -23,4 +23,5 @@ router.get('/find-gastos-gestion-agencia', [validarToken, validarCampos], gastos
 router.get('/reporte-articulos-pendientes', [validarToken, validarCampos], reporteArticulosPendientesController)
 
 router.get('/margen-comercial', [validarToken, validarCampos], reporteMargenComercialController)
+router.get('/margen-comercial-articulos', [validarToken, validarCampos], getCommercialMarginByProducts)
 module.exports = router
