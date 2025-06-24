@@ -32,7 +32,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     getOrdersById,
     setOrderState,
     facturaPedidoTodos,
-    actualizarEstadoPedido } = require("./hana.controller")
+    actualizarEstadoPedido,
+    stockByItemCodeBatchNumWhsCode } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations, } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -51,6 +52,7 @@ const facturacionController = async (req, res) => {
     let idData = ''
     const startTime = Date.now();
     try {
+        let closeOrder = false
         let endTime = Date.now();
         const { id } = req.body
         const user = req.usuarioAutorizado
@@ -279,6 +281,11 @@ const facturacionController = async (req, res) => {
                     }
 
                     newLine = { ...newLine }
+                    //!!!========================================================================================================================================================
+                    // const responseBatch = await stockByItemCodeBatchNumWhsCode(ItemCode, U_BatchNum, WarehouseCode)
+                    console.log('RESPONSE BATCH=========================================================')
+                    // console.log({responseBatch})
+
                     newDocumentLines.push(newLine)
                 }
 

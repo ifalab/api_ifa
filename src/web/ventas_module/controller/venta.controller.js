@@ -1120,15 +1120,15 @@ const detalleOfertaCadenaPendController = async (req, res) => {
             row.subTotal = Number(subtotal)
             row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
             row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
-            if(BatchNum && BatchNum!==''){
-                row.BatchDataSelect = {
-                    BatchNum,
-                    ExpDate:row.ExpDate || null,
-                    NumInSale:Number(row.NumPerMsr) || null,
-                }
-                row.BatchDataSelectBatchNum = BatchNum
-                row.BatchDataSelectBatcExpDate = row.ExpDate
-            }
+            // if(BatchNum && BatchNum!==''){
+            //     row.BatchDataSelect = {
+            //         BatchNum,
+            //         ExpDate:row.ExpDate || null,
+            //         NumInSale:Number(row.NumPerMsr) || null,
+            //     }
+            //     row.BatchDataSelectBatchNum = BatchNum
+            //     row.BatchDataSelectBatcExpDate = row.ExpDate
+            // }
         })
         return res.json(data)
     } catch (error) {

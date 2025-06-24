@@ -5262,6 +5262,42 @@ const crearTrasladoController = async (req, res) => {
             StockTransferLines
         }, null, 2))
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+
+        if (isReception == true) {
+
+            const bodyData = {
+                isReception,
+                BaseEntry,
+                DocEntry,
+                Comments,
+                JournalMemo,
+                FromWarehouse,
+                U_TIPO_TRASLADO,
+                U_GroupCode,
+                ToWarehouse,
+                U_UserCode,
+                SalesPersonCode,
+                DueDate,
+                CardName,
+                CardCode,
+                U_FECHA_FACT,
+                U_Autorizacion,
+                U_B_destplace,
+                StockTransferLines
+            }
+
+            const filePath = path.join(__dirname, 'logs', `traslado_${DocEntry || 0}_${DueDate}.json`);
+            fs.mkdir(path.join(__dirname, 'logs'), { recursive: true }, (err) => {
+                if (err) console.error('Error creando el directorio logs:', err);
+                else {
+                    fs.writeFile(filePath, JSON.stringify(bodyData, null, 2), (err) => {
+                        if (err) console.error('Error guardando el archivo JSON:', err);
+                        else console.log(`Body guardado en ${filePath}`);
+                    });
+                }
+            });
+        }
+        
         for (let data of StockTransferLines) {
             const { U_BatchNum, LineNum, Quantity, ItemCode, FromWarehouseCode, NumPerMsr, ...rest } = data
             if (isReception) {
