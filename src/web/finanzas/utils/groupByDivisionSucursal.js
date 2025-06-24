@@ -7,11 +7,18 @@
  */
 const agruparPorDivisionYSucursal = (data) => {
   const divisionGroups = {};
+  const divisionMetadata = {}; 
   const generalGroup = {};
 
   for (const item of data) {
     const divisionName = item.DivisionName || 'SIN_DIVISION';
+    const divisionCode = item.DivisionCode || null;
     const sucKey = item.SucCode;
+
+    // Inicializar agrupación por división
+    if (!divisionMetadata[divisionName]) {
+      divisionMetadata[divisionName] = divisionCode;
+    }
 
     // Inicializar agrupación por división
     if (!divisionGroups[divisionName]) {
@@ -75,8 +82,23 @@ const agruparPorDivisionYSucursal = (data) => {
   // Calcular márgenes y formatear resultado final
   const resultadoFinal = {};
 
+  // for (const division in divisionGroups) {
+  //   resultadoFinal[division] = Object.values(divisionGroups[division]).map(suc => {
+  //     const utilidad = suc.ComercialProfit;
+  //     const totalVentas = suc.TotalSales;
+
+  //     suc.TotalSales = Number(totalVentas.toFixed(2));
+  //     suc.TotalCostComercial = Number(suc.TotalCostComercial.toFixed(2));
+  //     suc.ComercialProfit = Number(utilidad.toFixed(2));
+  //     suc.CommercialMarginPercent = Number(((utilidad / totalVentas) * 100).toFixed(2));
+
+  //     return suc;
+  //   });
+  // }
+
   for (const division in divisionGroups) {
-    resultadoFinal[division] = Object.values(divisionGroups[division]).map(suc => {
+    const divisionCode = divisionMetadata[division] ?? null;
+    const sucursales = Object.values(divisionGroups[division]).map(suc => {
       const utilidad = suc.ComercialProfit;
       const totalVentas = suc.TotalSales;
 
@@ -87,10 +109,15 @@ const agruparPorDivisionYSucursal = (data) => {
 
       return suc;
     });
+
+    resultadoFinal[division] = [
+      { DivisionName: division, DivisionCode: divisionCode },
+      ...sucursales
+    ];
   }
 
   // Calcular también para el grupo general
-  resultadoFinal['GENERAL'] = Object.values(generalGroup).map(suc => {
+  const generalSucursales = Object.values(generalGroup).map(suc => {
     const utilidad = suc.ComercialProfit;
     const totalVentas = suc.TotalSales;
 
@@ -102,6 +129,10 @@ const agruparPorDivisionYSucursal = (data) => {
     return suc;
   });
 
+  resultadoFinal['GENERAL'] = [
+    { DivisionName: null, DivisionCode: null },
+    ...generalSucursales
+  ];
   return resultadoFinal;
 }
 
