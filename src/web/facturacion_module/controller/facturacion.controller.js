@@ -318,7 +318,7 @@ const facturacionController = async (req, res) => {
             }
 
             finalDataEntrega = finalData
-            return res.json({ data, finalDataEntrega })
+            // return res.json({ data, finalDataEntrega })
             console.log('FINAL ENTREGA------------------------------------------------------------')
             console.log({ finalDataEntrega })
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
