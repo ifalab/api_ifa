@@ -59,6 +59,23 @@ const lotesArticuloAlmacenCantidad = async (articulo, almacen, lote) => {
     }
 }
 
+const stockByItemCodeBatchNumWhsCode = async (itemCode, batchNum, whsCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.ifasp_lapp_sal_get_stock_by_batch_and_warehouse('${itemCode}','${batchNum}','${whsCode}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en stockByItemCodeBatchNumWhsCode:', error.message);
+        return { message: `Error en stockByItemCodeBatchNumWhsCode: ${error.message || ''}` }
+    }
+}
+
 const obtenerEntregaDetalle = async (id) => {
     try {
         if (!connection) {
@@ -653,4 +670,5 @@ module.exports = {
     setOrderState,
     facturaPedidoTodos,
     actualizarEstadoPedido,
+    stockByItemCodeBatchNumWhsCode,
 }
