@@ -2300,6 +2300,23 @@ const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode,
     }
 }
 
+const clientExpiryPolicy = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramCardCode = formatParam(cardCode)
+        const query = `call ${process.env.PRD}.IFASP_CRM_READ_CLIENTS_EXPIRY_POLICY(${paramCardCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2417,4 +2434,5 @@ module.exports = {
     reportePendienteByItem,
     ventasPendientesByItem,
     clientesBloqueadoByGroup,
+    clientExpiryPolicy,
 }

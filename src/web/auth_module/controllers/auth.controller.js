@@ -9,7 +9,8 @@ const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveU
     addUsuarioDimensionSublinea,
     dimensionSublineaByUser,
     rollBackDimensionSublineaByUser,
-    findAllSubLines
+    findAllSubLines,
+    happyBirthday
 } = require("./hana.controller")
 const { postSalesPersons, patchSalesPersons } = require("./sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1071,6 +1072,19 @@ const updateUserCodeController = async (req, res) => {
     }
 }
 
+const happyBirthdayController = async (req, res) => {
+    try {
+        const user = req.usuarioAutorizado
+        const username = user.USERNAME || 'No definido'
+        const response = await happyBirthday(username, 'Felicidades Gino!')
+        return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({
+            mensaje: `Error en updatePasswordController: ${error.message || ''}`
+        })
+    }
+}
 
 
 
@@ -1116,4 +1130,5 @@ module.exports = {
     findAllDimensionSublineasByUserController,
     updatePasswordController,
     updateUserCodeController,
+    happyBirthdayController,
 }
