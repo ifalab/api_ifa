@@ -1,5 +1,5 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
@@ -1091,16 +1091,45 @@ const reporteMargenComercialController = async (req, res) => {
 };
 
 const parseDateFromYYYYMMDD = (str) => {
+  console.log(str);
   if (!/^\d{8}$/.test(str)) return null;
 
   const year = parseInt(str.slice(0, 4), 10);
-  const month = parseInt(str.slice(4, 6), 10) - 1; // Mes en Date empieza desde 0
+  const month = parseInt(str.slice(4, 6), 10) - 1;
   const day = parseInt(str.slice(6, 8), 10);
 
   const date = new Date(year, month, day);
   return isNaN(date.getTime()) ? null : date;
 };
 
+const getCommercialMarginByProducts = async (req, res) => {
+  try {
+    const { startDate, endDate, lineCode, succode, divcode } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        mensaje: 'Los parámetros startDate y endDate son obligatorios en formato YYYYMMDD'
+      });
+    }
+
+    const start = parseDateFromYYYYMMDD(startDate);
+    const end = parseDateFromYYYYMMDD(endDate);
+
+    // Convertir los parámetros opcionales a número o null
+    const parsedLineCode = lineCode !== undefined ? Number(lineCode) : null;
+    const parsedSuccode  = succode  !== undefined ? Number(succode)  : null;
+    const parsedDivcode  = divcode  !== undefined ? Number(divcode)  : null;
+
+    const result = await CommercialMarginByProducts(start, end, parsedSuccode, parsedDivcode, parsedLineCode);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      mensaje: `Error en el controlador getCommercialMarginByProducts, ${error.message || 'error desconocido'}`
+    });
+  }
+} 
 
 module.exports = {
   parteDiaroController,
@@ -1120,5 +1149,6 @@ module.exports = {
   findXAgenciaSimpleGastosController,
   gastosGestionAgenciaController,
   reporteArticulosPendientesController,
-  reporteMargenComercialController
+  reporteMargenComercialController,
+  getCommercialMarginByProducts,
 }

@@ -608,7 +608,7 @@ const getAsientoContableCCById = async (req, res) => {
                     Ref2: current.Ref2,
                     Ref3: current.Ref3,
                     Number: current.Number,
-                    Indicator: current.Indicator,
+                    Indicator: current.IndicatorCabecera,
                     UserSign: current.UserSign,
                     lines: [lineData]
                 };

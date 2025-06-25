@@ -258,7 +258,6 @@ const reporteMargenComercial = async (startDate, endDate) => {
     // Asegúrate de pasar las fechas en formato 'yyyyMMdd'
     const start = formatDate(startDate); // Ej: '20250101'
     const end = formatDate(endDate);     // Ej: '20250531'
-
     const result = await executeQueryParamsWithConnection(query, [start, end]);
 
     return result;
@@ -277,6 +276,38 @@ function formatDate(date) {
   return `${yyyy}${mm}${dd}`;
 }
 
+const CommercialMarginByProducts = async (startDate, endDate, succode, divcode, lineCode) => {
+  try {
+    const query = `
+      CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ITEMS_COMERCIAL_MARGINS_BY_ITEMCODE (
+        i_ini_date      => ?,     -- Fecha inicial
+        i_fin_date      => ?,     -- Fecha final
+        i_succode       => ?,     -- Código de sucursal (NULL para todos)
+        i_divisioncode  => ?,     -- Código de división (NULL para todos)
+        i_lineitemcode  => ?,     -- Código de línea (NULL para todos)
+        o_result        => ?
+      );
+    `;
+    const start = formatDate(startDate)
+    const end = formatDate(endDate)
+    console.log({start, end, succode, divcode, lineCode})
+    const result = await executeQueryParamsWithConnection(query, [
+      start,
+      end,
+      succode,
+      divcode,
+      lineCode
+    ]);
+
+    return result;
+  } catch (error) {
+    console.error('Error en reporteMargenComercial:', error);
+    throw new Error(`Error en reporteMargenComercial: ${error.message}`);
+  }
+};
+
+
+
 module.exports = {
     parteDiario,
     abastecimiento,
@@ -291,4 +322,5 @@ module.exports = {
     abastecimientoPorFecha_24_meses,
     reporteArticuloPendientes,
     reporteMargenComercial,
+    CommercialMarginByProducts,
 }

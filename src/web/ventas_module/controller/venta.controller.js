@@ -111,7 +111,9 @@ const {
     findBlockedClientsByZoneOrSuc,
     findBlockedClients,
     findBlockedClientsByZoneAndSuc,
-    clientesVendedorBloqueados
+    clientesVendedorBloqueados,
+    clientesBloqueadoByGroup,
+    clientExpiryPolicy
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1112,18 +1114,18 @@ const detalleOfertaCadenaPendController = async (req, res) => {
         const { data } = response
         data.forEach((row) => {
             const subtotal = row.subTotal
-            const {BatchNum } = row
+            const { BatchNum } = row
             row.Quantity = Number(row.Quantity)
             row.PendQuantity = Number(row.PendQuantity)
             row.Stock = Number(row.Stock)
             row.subTotal = Number(subtotal)
             row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
             row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
-            if(BatchNum && BatchNum!==''){
+            if (BatchNum && BatchNum !== '') {
                 row.BatchDataSelect = {
                     BatchNum,
-                    ExpDate:row.ExpDate || null,
-                    NumInSale:Number(row.NumPerMsr) || null,
+                    ExpDate: row.ExpDate || null,
+                    NumInSale: Number(row.NumPerMsr) || null,
                 }
                 row.BatchDataSelectBatchNum = BatchNum
                 row.BatchDataSelectBatcExpDate = row.ExpDate
@@ -2891,21 +2893,27 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
     try {
         const { usercode, isAnt } = req.body;
         console.log({ usercode, isAnt })
+
+        const dateNow = new Date();
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
+
+        // console.log("end point ----------------- ventasPorZonasVendedor2Controller")
         let response
         if (isAnt == true) {
             console.log('isAnt')
-            response = await ventasPorZonasVendedorMesAnt2(usercode)
+            response = await ventasPorZonasVendedor2(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, usercode)
         } else {
-            response = await ventasPorZonasVendedor2(usercode)
+            response = await ventasPorZonasVendedor2(dateNow.getFullYear(), dateNow.getMonth() + 1, usercode)
         }
-        console.log(response)
+        // console.log(response)
 
         let LineItemCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
         // let grandTotalQuota = 0;
         // let grandTotalSales = 0;
-        console.log('length', response.length)
+        // console.log('length', response.length)
 
         const results = []
         response.forEach((r, index) => {
@@ -2950,7 +2958,7 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
                 res1.hide = false
                 results.push(res1)
 
-                console.log('index', index)
+                // console.log('index', index)
                 if ((response.length - 1) == index) {
                     const res = {
                         LineItemCode: `Total ${r.LineItemCode}`,
@@ -2966,7 +2974,7 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
             // grandTotalQuota += +r.Quota;
             // grandTotalSales += +r.Sales;
         });
-        console.log({ results })
+        // console.log({ results })
         return res.json(results);
     } catch (error) {
         console.error({ error })
@@ -2989,14 +2997,21 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
 const getVentasZonaSupervisorController = async (req, res) => {
     try {
         const { sucursales, isMesAnterior } = req.body
-        console.log({ sucursales, isMesAnterior })
+        // console.log({ sucursales, isMesAnterior })
+        const user = req.usuarioAutorizado
+        const supCode = user.ID_VENDEDOR_SAP || 0
+        const dateNow = new Date()
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1)
+        console.log({ month: dateNow.getMonth() })
+        console.log({ monthAnterior: dateMesAnterior.getMonth() })
         let response = []
         if (isMesAnterior == true || isMesAnterior == 'true') {
             console.log('is mes anterior')
-            response = await getVentasZonaAntSupervisor(sucursales.toString())
+            response = await getVentasZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, supCode)
         } else {
             console.log('is mes actual')
-            response = await getVentasZonaSupervisor(sucursales.toString())
+            response = await getVentasZonaSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, supCode)
         }
         // console.log({ response })
         let SucCode = ''
@@ -3289,10 +3304,21 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
     try {
         const { sucursales, isMesAnterior } = req.body
         console.log({ sucursales, isMesAnterior })
-        let response = await getVentasLineaSucursalSupervisor(sucursales.toString(), isMesAnterior);
+        console.log('Ventas por lineas')
+        const user = req.usuarioAutorizado
+        const supCode = user.ID_VENDEDOR_SAP || 0
+        const dateNow = new Date();
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
+        let response = {}
+        if (isMesAnterior == true) {
+            response = await getVentasLineaSucursalSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, supCode);
+        } else {
+            response = await getVentasLineaSucursalSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, supCode);
+        }
         // console.log({ response })
         // return res.json({response,})
-        let LineName = '';
+        let LineItemName = '';
         let totalSalesByLineName = {};
         let totalUniByLineName = {};
         let totalSales = 0;
@@ -3301,13 +3327,13 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
         const results = [];
 
         response.forEach((r, index) => {
-            const currentLine = r.LineName;
+            const currentLine = r.LineItemName;
 
             // Inicializar acumuladores si no existen
             if (!totalSalesByLineName[currentLine]) totalSalesByLineName[currentLine] = 0;
             if (!totalUniByLineName[currentLine]) totalUniByLineName[currentLine] = 0;
 
-            if (currentLine === LineName) {
+            if (currentLine === LineItemName) {
                 // MISMA SUCURSAL
                 const res1 = { ...r };
                 res1.cumplimiento = +r.cumplimiento;
@@ -3320,7 +3346,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
                 // Último elemento
                 if (index === response.length - 1) {
                     results.push({
-                        LineName: `Total ${r.LineName}`,
+                        LineItemName: `Total ${r.LineItemName}`,
                         Sales: +totalSalesByLineName[currentLine],
                         Quota: +totalUniByLineName[currentLine],
                         cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
@@ -3333,10 +3359,10 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
 
                 // Agregar subtotal anterior si no es el primer elemento
                 if (index > 0) {
-                    const prevName = response[index - 1].LineName;
+                    const prevName = response[index - 1].LineItemName;
 
                     results.push({
-                        LineName: `Total ${prevName}`,
+                        LineItemName: `Total ${prevName}`,
                         Quota: +totalUniByLineName[prevName],
                         Sales: +totalSalesByLineName[prevName],
                         cumplimiento: totalUniByLineName[prevName] === 0 ? 0 : (+totalSalesByLineName[prevName] / +totalUniByLineName[prevName]),
@@ -3357,7 +3383,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
                 // Si es el último
                 if (index === response.length - 1) {
                     results.push({
-                        LineName: `Total ${r.LineName}`,
+                        LineItemName: `Total ${r.LineItemName}`,
                         Quota: +totalUniByLineName[currentLine],
                         Sales: +totalSalesByLineName[currentLine],
                         cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
@@ -3372,7 +3398,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
             totalQuota += +r.Quota;
 
             // Actualizar estado actual
-            LineName = currentLine;
+            LineItemName = currentLine;
         });
 
         const totales = {
@@ -3453,9 +3479,12 @@ const excelClientesBloqueados = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
         const { data, displayedColumns, grupo } = req.body;
+        const bloqueados = await clientesBloqueadoByGroup(grupo);
+        console.log(grupo);
 
         console.log({ data });
         console.log({ displayedColumns })
+        console.log({ bloqueados });
         const fechaActual = new Date();
         const date = new Intl.DateTimeFormat('es-VE', {
             weekday: 'long',
@@ -3473,22 +3502,46 @@ const excelClientesBloqueados = async (req, res) => {
             { header: 'Zona', key: 'ZoneName', width: 25 },
             { header: 'Universal', key: 'Universal', width: 15 },
             { header: 'Bloqueados', key: 'Bloqueados', width: 15 },
+            { header: 'Monto Deuda', key: 'Deuda', width: 15 },
             { header: 'Porcentaje', key: 'Porcentaje', width: 12 }
         ];
 
+        const morososSheet = workbook.addWorksheet('Clientes Morosos');
+
+        morososSheet.columns = [
+            { header: 'Sucursal', key: 'SucName', width: 20 },
+            { header: 'Zona', key: 'ZoneName', width: 25 },
+            { header: 'Grupo', key: 'GroupName', width: 20 },
+            { header: 'Vendedor', key: 'SlpNames', width: 35 },
+            { header: 'Cliente', key: 'CardName', width: 40 },
+            { header: 'Facturas Vencidas', key: 'OverdueInvoicesCount', width: 20 },
+            { header: 'Monto Deuda', key: 'TotalOverdueAmount', width: 18 }
+        ];
         // Insertar filas antes del encabezado
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
 
         worksheet.getCell('A1').value = `Clientes Bloqueados por Zona`;
-        worksheet.mergeCells('A1:F1');
+        worksheet.mergeCells('A1:G1');
         worksheet.getCell('A2').value = `Fecha de Impresión: ${date}`;
-        worksheet.mergeCells('A2:F2');
+        worksheet.mergeCells('A2:G2');
+
+        morososSheet.insertRow(1, []);
+        morososSheet.insertRow(1, []);
+        morososSheet.insertRow(1, []);
+
+        morososSheet.getCell('A1').value = `Clientes Bloqueados por Zona`;
+        morososSheet.mergeCells('A1:G1');
+        morososSheet.getCell('A2').value = `Fecha de Impresión: ${date}`;
+        morososSheet.mergeCells('A2:G2');
 
         if (grupo) {
             worksheet.getCell('A3').value = `Grupo: ${grupo}`;
-            worksheet.mergeCells('A3:F3');
+            worksheet.mergeCells('A3:G3');
+
+            morososSheet.getCell('A3').value = `Grupo: ${grupo}`;
+            morososSheet.mergeCells('A3:G3');
         }
 
         // Estilizar cabecera
@@ -3513,18 +3566,101 @@ const excelClientesBloqueados = async (req, res) => {
             cell.alignment = { vertical: 'middle', horizontal: 'start' };
         });
 
-        const rowRefs = data.map(row =>
-            worksheet.addRow(
-                displayedColumns.reduce((acc, column) => ({
-                    ...acc,
-                    [column]: row[column] ? (
-                        column == 'Porcentaje' ? row[column] == 0 ? '0' : +((parseFloat(row[column]) * 100).toFixed(2)) :
-                            (column == 'Universal' || column == 'Bloqueados') ? parseFloat(row[column]) :
-                                row[column])
-                        : ''
-                }), {})
-            )
-        );
+        const cellMorosoA = morososSheet.getCell('A1');
+        cellMorosoA.alignment = { vertical: 'middle', horizontal: 'center' };
+        cellMorosoA.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFF' },
+        };
+        cellMorosoA.font = { bold: true, size: 14 };
+        cellMorosoA.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+        };
+
+        ['A2', 'A3'].forEach(cellAddress => {
+            const cell = morososSheet.getCell(cellAddress);
+            cell.font = { bold: true, size: 11 };
+            cell.alignment = { vertical: 'middle', horizontal: 'start' };
+        });
+
+        // Agregar los datos
+        bloqueados.forEach(cliente => {
+            morososSheet.addRow({
+                SucName: cliente.SucName,
+                ZoneName: cliente.ZoneName,
+                GroupName: cliente.GroupName,
+                SlpNames: cliente.SlpNames || 'Vendedor no asignado',
+                CardName: cliente.CardName,
+                OverdueInvoicesCount: cliente.OverdueInvoicesCount,
+                TotalOverdueAmount: parseFloat(cliente.TotalOverdueAmount)
+            });
+        });
+
+
+        // Estilizar cabecera
+        morososSheet.getRow(4).eachCell(cell => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFFFFF' },
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            };
+        });
+
+        let currentRowIndex = 5;
+        const rowRefs = [];
+
+        const startRowMorosos = 4;
+        mergeCellsByColumn(morososSheet, startRowMorosos + 1, 'SucName', bloqueados);
+        mergeCellsByColumn(morososSheet, startRowMorosos + 1, 'ZoneName', bloqueados);
+        mergeCellsByColumn(morososSheet, startRowMorosos + 1, 'SlpNames', bloqueados);
+
+        data.forEach(sucursal => {
+            const rows = sucursal.data;
+
+            if (Array.isArray(rows) && rows.length > 0) {
+                const startRow = currentRowIndex;
+                const endRow = currentRowIndex + rows.length - 1;
+
+                rows.forEach(item => {
+                    const rowData = {
+                        SucName: sucursal.SucName,
+                        SlpName: item.SlpName,
+                        ZoneName: item.ZoneName,
+                        Universal: item.TotalClients,
+                        Bloqueados: item.OverdueClientsCount,
+                        Deuda: parseFloat(item.TotalOverdueAmount),
+                        Porcentaje: item.Percent == 0 ? '0' : +((parseFloat(item.Percent) * 100).toFixed(2)),
+                    };
+                    const addedRow = worksheet.addRow(rowData);
+                    rowRefs.push(addedRow);
+                    currentRowIndex++;
+                });
+
+                // Fusionar la columna 'Sucursal' para esta sucursal
+                if (rows.length >= 1) {
+                    const sucCol = worksheet.getColumn('SucName');
+                    const cellIndex = sucCol.number;
+
+                    worksheet.mergeCells(startRow, cellIndex, endRow, cellIndex);
+                    worksheet.getCell(startRow, cellIndex).alignment = {
+                        vertical: 'middle',
+                        horizontal: 'center',
+                    };
+                }
+            }
+        });
         // Apply formatting per row
         rowRefs.forEach(row => {
             row.eachCell(cell => {
@@ -3535,44 +3671,7 @@ const excelClientesBloqueados = async (req, res) => {
             });
         });
 
-        function mergeSameValues(startRowIndex, columnKeys) {
-            const ends = []
-            let i = 0;
-            while (i < data.length) {
-                let j = i + 1;
-                while (
-                    j < data.length &&
-                    columnKeys.every(key => data[i][key] === data[j][key])
-                ) {
-                    j++;
-                }
-
-                if (j - i > 1) {
-                    const start = startRowIndex + i;
-                    const end = startRowIndex + j - 1;
-                    columnKeys.forEach(key => {
-                        const col = worksheet.getColumn(key);
-                        const cellIndex = col.number;
-                        worksheet.mergeCells(start, cellIndex, end, cellIndex);
-                        worksheet.getCell(start, cellIndex).alignment = {
-                            vertical: 'middle',
-                            horizontal: 'center'
-                        };
-                        // worksheet.getCell(end, cellIndex).border = 
-
-                    });
-                    ends.push(end);
-                } else {
-                    const end = startRowIndex + j - 1
-                    ends.push(end);
-                }
-                i = j;
-            }
-            return ends;
-        }
-        const ends = mergeSameValues(5, ['ZoneName', 'Universal', 'Bloqueados', 'Porcentaje']);
-        console.log({ ends })
-
+        morososSheet.getColumn('TotalOverdueAmount').numFmt = '[$Bs.]#,##0.00';
 
         worksheet.getRow(4).eachCell(cell => {
             cell.font = { bold: true };
@@ -3598,16 +3697,6 @@ const excelClientesBloqueados = async (req, res) => {
             }
         })
 
-        ends.forEach(end => {
-            worksheet.getRow(end).eachCell(cell => {
-                cell.border = {
-                    bottom: { style: 'thin' },
-                    left: { style: 'thin' },
-                    right: { style: 'thin' },
-                }
-            })
-        });
-
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=devoluciones.xlsx');
 
@@ -3623,6 +3712,40 @@ const excelClientesBloqueados = async (req, res) => {
         //   );
         return res.status(500).json({ mensaje: `Error generando el Excel de clientes bloqueados ${error}` });
     }
+}
+
+function mergeCellsByColumn(worksheet, startRowIndex, columnKey, data) {
+    let i = 0;
+    const ends = [];
+
+    while (i < data.length) {
+        let j = i + 1;
+
+        while (
+            j < data.length &&
+            data[i][columnKey] === data[j][columnKey]
+        ) {
+            j++;
+        }
+
+        const span = j - i;
+        if (span > 1) {
+            const colIndex = worksheet.getColumn(columnKey).number;
+            const start = startRowIndex + i;
+            const end = startRowIndex + j - 1;
+
+            worksheet.mergeCells(start, colIndex, end, colIndex);
+            worksheet.getCell(start, colIndex).alignment = {
+                vertical: 'middle',
+                horizontal: 'center'
+            };
+        }
+
+        ends.push(startRowIndex + j - 1);
+        i = j;
+    }
+
+    return ends;
 }
 
 const ventasVendedoresByLineasSucursalController = async (req, res) => {
@@ -3844,7 +3967,7 @@ const ventasPendienteController = async (req, res) => {
             groupCode = null
         }
 
-        const data = await ventasPendientes(startDate, endDate, tipo, cardCode,itemCode,groupCode)
+        const data = await ventasPendientes(startDate, endDate, tipo, cardCode, itemCode, groupCode)
         return res.json(data)
 
     } catch (error) {
@@ -3854,82 +3977,82 @@ const ventasPendienteController = async (req, res) => {
 }
 
 const searchBlockedClients = async (req, res) => {
-  try {
-    const tipoCliente = Number(req.query.tipoCliente);
+    try {
+        const tipoCliente = Number(req.query.tipoCliente);
 
-    // Opcional: validar si es un número válido
-    if (isNaN(tipoCliente)) {
-      return res.status(400).json({
-        mensaje: 'El parámetro tipoCliente debe ser un número válido.',
-      });
+        // Opcional: validar si es un número válido
+        if (isNaN(tipoCliente)) {
+            return res.status(400).json({
+                mensaje: 'El parámetro tipoCliente debe ser un número válido.',
+            });
+        }
+
+        const resultado = await findBlockedClients(tipoCliente);
+        const agrupado = groupBySucursal(resultado);
+
+        return res.json(agrupado);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
+        });
     }
-
-    const resultado = await findBlockedClients(tipoCliente);
-    const agrupado = groupBySucursal(resultado);
-
-    return res.json(agrupado);
-  } catch (error) {
-    console.error({ error });
-    return res.status(500).json({
-      mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
-    });
-  }
 };
 
 const searchBlockedClientsByZoneSucAndGroup = async (req, res) => {
-  try {
-    const suc = Number(req.params.suc);
-    const zone = Number(req.params.zone);
-    const group = Number(req.params.group);
+    try {
+        const suc = Number(req.params.suc);
+        const zone = Number(req.params.zone);
+        const group = Number(req.params.group);
 
-    if (isNaN(suc) || isNaN(zone) || isNaN(group)) {
-      return res.status(400).json({
-        mensaje: 'Los parámetros suc, zone y group deben ser números válidos.',
-      });
+        if (isNaN(suc) || isNaN(zone) || isNaN(group)) {
+            return res.status(400).json({
+                mensaje: 'Los parámetros suc, zone y group deben ser números válidos.',
+            });
+        }
+
+        // Asumo que findBlockedClients ahora recibe estos parámetros:
+        const resultado = await findBlockedClientsByZoneAndSuc(suc, zone, group);
+
+        return res.json(resultado);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
+        });
     }
-
-    // Asumo que findBlockedClients ahora recibe estos parámetros:
-    const resultado = await findBlockedClientsByZoneAndSuc(suc, zone, group);
-
-    return res.json(resultado);
-  } catch (error) {
-    console.error({ error });
-    return res.status(500).json({
-      mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
-    });
-  }
 };
 
 const clientesVendedorBloqueadosController = async (req, res) => {
-  try {
-    const slpCodeRaw = req.params.slpCode; // Ej: "14 - 21"
-    const groupCode = Number(req.params.groupCode);
+    try {
+        const slpCodeRaw = req.params.slpCode; // Ej: "14 - 21"
+        const groupCode = Number(req.params.groupCode);
 
-    if (!slpCodeRaw || isNaN(groupCode)) {
-      return res.status(400).json({ mensaje: 'Parámetros inválidos.' });
+        if (!slpCodeRaw || isNaN(groupCode)) {
+            return res.status(400).json({ mensaje: 'Parámetros inválidos.' });
+        }
+
+        const slpCodes = slpCodeRaw
+            .split('-')
+            .map(code => Number(code.trim()))
+            .filter(code => !isNaN(code));
+
+        if (slpCodes.length === 0) {
+            return res.status(400).json({ mensaje: 'Código(s) de vendedor inválido(s).' });
+        }
+
+        const response = await clientesVendedorBloqueados(groupCode, slpCodes);
+
+        // Agrupar por sucursal y luego vendedor
+        const agrupado = groupBySucursalYVendedor(response);
+
+        return res.json(agrupado);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            mensaje: `Error en clientesVendedorBloqueadosController: ${error.message || 'No definido'}`
+        });
     }
-
-    const slpCodes = slpCodeRaw
-      .split('-')
-      .map(code => Number(code.trim()))
-      .filter(code => !isNaN(code));
-
-    if (slpCodes.length === 0) {
-      return res.status(400).json({ mensaje: 'Código(s) de vendedor inválido(s).' });
-    }
-
-    const response = await clientesVendedorBloqueados(groupCode, slpCodes);
-
-    // Agrupar por sucursal y luego vendedor
-    const agrupado = groupBySucursalYVendedor(response);
-
-    return res.json(agrupado);
-  } catch (error) {
-    console.error({ error });
-    return res.status(500).json({
-      mensaje: `Error en clientesVendedorBloqueadosController: ${error.message || 'No definido'}`
-    });
-  }
 }
 
 
@@ -3938,7 +4061,7 @@ const clientesVendedorBloqueadosExcelController = async (req, res) => {
         const clientes = req.body;
 
         if (!Array.isArray(clientes) || clientes.length === 0) {
-        return res.status(400).json({ mensaje: 'No se proporcionaron datos válidos.' });
+            return res.status(400).json({ mensaje: 'No se proporcionaron datos válidos.' });
         }
 
         // Crear libro y hoja
@@ -3947,26 +4070,49 @@ const clientesVendedorBloqueadosExcelController = async (req, res) => {
 
         // Definir columnas
         worksheet.columns = [
-        { header: 'Sucursal Código', key: 'SucCode', width: 15 },
-        { header: 'Sucursal Nombre', key: 'SucName', width: 20 },
-        { header: 'Zona Código', key: 'ZoneCode', width: 15 },
-        { header: 'Zona Nombre', key: 'ZoneName', width: 20 },
-        { header: 'Grupo Código', key: 'GroupCode', width: 15 },
-        { header: 'Grupo Nombre', key: 'GroupName', width: 20 },
-        { header: 'Código Cliente', key: 'CardCode', width: 20 },
-        { header: 'Nombre Cliente', key: 'CardName', width: 25 },
-        { header: 'Facturas Vencidas', key: 'OverdueInvoicesCount', width: 20 },
-        { header: 'Monto Vencido', key: 'TotalOverdueAmount', width: 20 },
+            { header: 'Sucursal Código', key: 'SucCode', width: 15 },
+            { header: 'Sucursal Nombre', key: 'SucName', width: 20 },
+            { header: 'Zona Código', key: 'ZoneCode', width: 15 },
+            { header: 'Zona Nombre', key: 'ZoneName', width: 20 },
+            { header: 'Grupo Código', key: 'GroupCode', width: 15 },
+            { header: 'Grupo Nombre', key: 'GroupName', width: 20 },
+            { header: 'Vendedor', key: 'SlpNames', width: 25 },
+            { header: 'Código Cliente', key: 'CardCode', width: 20 },
+            { header: 'Nombre Cliente', key: 'CardName', width: 25 },
+            { header: 'Facturas Vencidas', key: 'OverdueInvoicesCount', width: 20 },
+            { header: 'Monto Vencido', key: 'TotalOverdueAmount', width: 20 },
         ];
 
         // Agregar filas
         clientes.forEach(cliente => {
-        worksheet.addRow(cliente);
+            worksheet.addRow({
+                ...cliente,
+                TotalOverdueAmount: Number(cliente.TotalOverdueAmount), // 👈 Conversión explícita
+            });
         });
+
 
         // Formato de cabecera
         worksheet.getRow(1).font = { bold: true };
 
+        const startRowIndex = 2;
+
+        // Ordenar clientes por las columnas que vas a mergear
+        clientes.sort((a, b) => {
+            return (
+                a.SucCode - b.SucCode ||
+                a.ZoneCode - b.ZoneCode ||
+                a.GroupCode - b.GroupCode // si también quisieras esto
+            );
+        });
+
+        // Hacer merge por las columnas deseadas
+        mergeCellsByColumn(worksheet, startRowIndex, 'SucCode', clientes);
+        mergeCellsByColumn(worksheet, startRowIndex, 'SucName', clientes);
+        mergeCellsByColumn(worksheet, startRowIndex, 'ZoneCode', clientes);
+        mergeCellsByColumn(worksheet, startRowIndex, 'ZoneName', clientes);
+
+        worksheet.getColumn('TotalOverdueAmount').numFmt = '[$Bs.]#,##0.00';
         // Generar el buffer del Excel
         const buffer = await workbook.xlsx.writeBuffer();
 
@@ -4107,7 +4253,7 @@ const ventasPendienteByItemController = async (req, res) => {
             groupCode = null
         }
 
-        const data = await ventasPendientesByItem(startDate, endDate, tipo, cardCode,itemCode,groupCode)
+        const data = await ventasPendientesByItem(startDate, endDate, tipo, cardCode, itemCode, groupCode)
         return res.json(data)
 
     } catch (error) {
@@ -4152,7 +4298,7 @@ const reportePendienteByItemController = async (req, res) => {
         if (!itemCode || itemCode == '') {
             itemCode = null
         }
-        const response = await reportePendienteByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent,itemCode)
+        const response = await reportePendienteByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemCode)
         // return res.json({ response })
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
@@ -4190,6 +4336,45 @@ const reportePendienteByItemController = async (req, res) => {
     }
 }
 
+// const searchBlockedClientsByGroup = async (groupCode, res) => {
+//     try {
+//         const data = await clientesBloqueadoByGroup(groupCode);
+
+//         if (!Array.isArray(data)) {
+//             throw new Error('Formato inesperado de datos devueltos por HANA');
+//         }
+
+//         return res.status(200).json({ ok: true, data });
+
+//     } catch (error) {
+//         console.error('searchBlockedClientsByGroup error:', error);
+//         return res.status(500).json({
+//             ok: false,
+//             mensaje: `Error en searchBlockedClientsByGroup: ${error.message || 'No definido'}`
+//         });
+//     }
+// }
+
+const clientExpiryPolicyController = async (req, res) => {
+    try {
+        let cardCode = req.query.cardCode
+
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+
+        const response = await clientExpiryPolicy(cardCode)
+        if (response.length == 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false })
+        }
+        let data = response[0]
+        return res.json({ data, goToExpiry: true })
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en clientExpiryPolicyController ${error.message || 'No definido'}` });
+    }
+}
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -4299,4 +4484,5 @@ module.exports = {
     clientesVendedorBloqueadosExcelController,
     reportePendienteByItemController,
     ventasPendienteByItemController,
+    clientExpiryPolicyController,
 };
