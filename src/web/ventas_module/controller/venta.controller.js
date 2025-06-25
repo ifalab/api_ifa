@@ -1121,11 +1121,11 @@ const detalleOfertaCadenaPendController = async (req, res) => {
             row.subTotal = Number(subtotal)
             row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
             row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
-            if(BatchNum && BatchNum!==''){
+            if (BatchNum && BatchNum !== '') {
                 row.BatchDataSelect = {
                     BatchNum,
-                    ExpDate:row.ExpDate || null,
-                    NumInSale:Number(row.NumPerMsr) || null,
+                    ExpDate: row.ExpDate || null,
+                    NumInSale: Number(row.NumPerMsr) || null,
                 }
                 row.BatchDataSelectBatchNum = BatchNum
                 row.BatchDataSelectBatcExpDate = row.ExpDate
@@ -2893,21 +2893,27 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
     try {
         const { usercode, isAnt } = req.body;
         console.log({ usercode, isAnt })
+
+        const dateNow = new Date();
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
+
+        // console.log("end point ----------------- ventasPorZonasVendedor2Controller")
         let response
         if (isAnt == true) {
             console.log('isAnt')
-            response = await ventasPorZonasVendedorMesAnt2(usercode)
+            response = await ventasPorZonasVendedor2(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, usercode)
         } else {
-            response = await ventasPorZonasVendedor2(usercode)
+            response = await ventasPorZonasVendedor2(dateNow.getFullYear(), dateNow.getMonth() + 1, usercode)
         }
-        console.log(response)
+        // console.log(response)
 
         let LineItemCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
         // let grandTotalQuota = 0;
         // let grandTotalSales = 0;
-        console.log('length', response.length)
+        // console.log('length', response.length)
 
         const results = []
         response.forEach((r, index) => {
@@ -2952,7 +2958,7 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
                 res1.hide = false
                 results.push(res1)
 
-                console.log('index', index)
+                // console.log('index', index)
                 if ((response.length - 1) == index) {
                     const res = {
                         LineItemCode: `Total ${r.LineItemCode}`,
@@ -2968,7 +2974,7 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
             // grandTotalQuota += +r.Quota;
             // grandTotalSales += +r.Sales;
         });
-        console.log({ results })
+        // console.log({ results })
         return res.json(results);
     } catch (error) {
         console.error({ error })
@@ -3002,7 +3008,7 @@ const getVentasZonaSupervisorController = async (req, res) => {
         let response = []
         if (isMesAnterior == true || isMesAnterior == 'true') {
             console.log('is mes anterior')
-            response = await getVentasZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth()+1, supCode)
+            response = await getVentasZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, supCode)
         } else {
             console.log('is mes actual')
             response = await getVentasZonaSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, supCode)
@@ -3298,10 +3304,21 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
     try {
         const { sucursales, isMesAnterior } = req.body
         console.log({ sucursales, isMesAnterior })
-        let response = await getVentasLineaSucursalSupervisor(sucursales.toString(), isMesAnterior);
+        console.log('Ventas por lineas')
+        const user = req.usuarioAutorizado
+        const supCode = user.ID_VENDEDOR_SAP || 0
+        const dateNow = new Date();
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
+        let response = {}
+        if (isMesAnterior == true) {
+            response = await getVentasLineaSucursalSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, supCode);
+        } else {
+            response = await getVentasLineaSucursalSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, supCode);
+        }
         // console.log({ response })
         // return res.json({response,})
-        let LineName = '';
+        let LineItemName = '';
         let totalSalesByLineName = {};
         let totalUniByLineName = {};
         let totalSales = 0;
@@ -3310,13 +3327,13 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
         const results = [];
 
         response.forEach((r, index) => {
-            const currentLine = r.LineName;
+            const currentLine = r.LineItemName;
 
             // Inicializar acumuladores si no existen
             if (!totalSalesByLineName[currentLine]) totalSalesByLineName[currentLine] = 0;
             if (!totalUniByLineName[currentLine]) totalUniByLineName[currentLine] = 0;
 
-            if (currentLine === LineName) {
+            if (currentLine === LineItemName) {
                 // MISMA SUCURSAL
                 const res1 = { ...r };
                 res1.cumplimiento = +r.cumplimiento;
@@ -3329,7 +3346,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
                 // Último elemento
                 if (index === response.length - 1) {
                     results.push({
-                        LineName: `Total ${r.LineName}`,
+                        LineItemName: `Total ${r.LineItemName}`,
                         Sales: +totalSalesByLineName[currentLine],
                         Quota: +totalUniByLineName[currentLine],
                         cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
@@ -3342,10 +3359,10 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
 
                 // Agregar subtotal anterior si no es el primer elemento
                 if (index > 0) {
-                    const prevName = response[index - 1].LineName;
+                    const prevName = response[index - 1].LineItemName;
 
                     results.push({
-                        LineName: `Total ${prevName}`,
+                        LineItemName: `Total ${prevName}`,
                         Quota: +totalUniByLineName[prevName],
                         Sales: +totalSalesByLineName[prevName],
                         cumplimiento: totalUniByLineName[prevName] === 0 ? 0 : (+totalSalesByLineName[prevName] / +totalUniByLineName[prevName]),
@@ -3366,7 +3383,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
                 // Si es el último
                 if (index === response.length - 1) {
                     results.push({
-                        LineName: `Total ${r.LineName}`,
+                        LineItemName: `Total ${r.LineItemName}`,
                         Quota: +totalUniByLineName[currentLine],
                         Sales: +totalSalesByLineName[currentLine],
                         cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
@@ -3381,7 +3398,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
             totalQuota += +r.Quota;
 
             // Actualizar estado actual
-            LineName = currentLine;
+            LineItemName = currentLine;
         });
 
         const totales = {
