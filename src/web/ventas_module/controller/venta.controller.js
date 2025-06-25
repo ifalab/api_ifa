@@ -112,7 +112,8 @@ const {
     findBlockedClients,
     findBlockedClientsByZoneAndSuc,
     clientesVendedorBloqueados,
-    clientesBloqueadoByGroup
+    clientesBloqueadoByGroup,
+    clientExpiryPolicy
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1113,22 +1114,22 @@ const detalleOfertaCadenaPendController = async (req, res) => {
         const { data } = response
         data.forEach((row) => {
             const subtotal = row.subTotal
-            const {BatchNum } = row
+            const { BatchNum } = row
             row.Quantity = Number(row.Quantity)
             row.PendQuantity = Number(row.PendQuantity)
             row.Stock = Number(row.Stock)
             row.subTotal = Number(subtotal)
             row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
             row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
-            // if(BatchNum && BatchNum!==''){
-            //     row.BatchDataSelect = {
-            //         BatchNum,
-            //         ExpDate:row.ExpDate || null,
-            //         NumInSale:Number(row.NumPerMsr) || null,
-            //     }
-            //     row.BatchDataSelectBatchNum = BatchNum
-            //     row.BatchDataSelectBatcExpDate = row.ExpDate
-            // }
+            if (BatchNum && BatchNum !== '') {
+                row.BatchDataSelect = {
+                    BatchNum,
+                    ExpDate: row.ExpDate || null,
+                    NumInSale: Number(row.NumPerMsr) || null,
+                }
+                row.BatchDataSelectBatchNum = BatchNum
+                row.BatchDataSelectBatcExpDate = row.ExpDate
+            }
         })
         return res.json(data)
     } catch (error) {
@@ -2892,21 +2893,27 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
     try {
         const { usercode, isAnt } = req.body;
         console.log({ usercode, isAnt })
+
+        const dateNow = new Date();
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
+
+        // console.log("end point ----------------- ventasPorZonasVendedor2Controller")
         let response
         if (isAnt == true) {
             console.log('isAnt')
-            response = await ventasPorZonasVendedorMesAnt2(usercode)
+            response = await ventasPorZonasVendedor2(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, usercode)
         } else {
-            response = await ventasPorZonasVendedor2(usercode)
+            response = await ventasPorZonasVendedor2(dateNow.getFullYear(), dateNow.getMonth() + 1, usercode)
         }
-        console.log(response)
+        // console.log(response)
 
         let LineItemCode = ''
         let totalQuotaByLineItem = {};
         let totalSalesByLineItem = {};
         // let grandTotalQuota = 0;
         // let grandTotalSales = 0;
-        console.log('length', response.length)
+        // console.log('length', response.length)
 
         const results = []
         response.forEach((r, index) => {
@@ -2951,7 +2958,7 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
                 res1.hide = false
                 results.push(res1)
 
-                console.log('index', index)
+                // console.log('index', index)
                 if ((response.length - 1) == index) {
                     const res = {
                         LineItemCode: `Total ${r.LineItemCode}`,
@@ -2967,7 +2974,7 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
             // grandTotalQuota += +r.Quota;
             // grandTotalSales += +r.Sales;
         });
-        console.log({ results })
+        // console.log({ results })
         return res.json(results);
     } catch (error) {
         console.error({ error })
@@ -2990,14 +2997,21 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
 const getVentasZonaSupervisorController = async (req, res) => {
     try {
         const { sucursales, isMesAnterior } = req.body
-        console.log({ sucursales, isMesAnterior })
+        // console.log({ sucursales, isMesAnterior })
+        const user = req.usuarioAutorizado
+        const supCode = user.ID_VENDEDOR_SAP || 0
+        const dateNow = new Date()
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1)
+        console.log({ month: dateNow.getMonth() })
+        console.log({ monthAnterior: dateMesAnterior.getMonth() })
         let response = []
         if (isMesAnterior == true || isMesAnterior == 'true') {
             console.log('is mes anterior')
-            response = await getVentasZonaAntSupervisor(sucursales.toString())
+            response = await getVentasZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, supCode)
         } else {
             console.log('is mes actual')
-            response = await getVentasZonaSupervisor(sucursales.toString())
+            response = await getVentasZonaSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, supCode)
         }
         // console.log({ response })
         let SucCode = ''
@@ -3290,10 +3304,21 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
     try {
         const { sucursales, isMesAnterior } = req.body
         console.log({ sucursales, isMesAnterior })
-        let response = await getVentasLineaSucursalSupervisor(sucursales.toString(), isMesAnterior);
+        console.log('Ventas por lineas')
+        const user = req.usuarioAutorizado
+        const supCode = user.ID_VENDEDOR_SAP || 0
+        const dateNow = new Date();
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
+        let response = {}
+        if (isMesAnterior == true) {
+            response = await getVentasLineaSucursalSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, supCode);
+        } else {
+            response = await getVentasLineaSucursalSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, supCode);
+        }
         // console.log({ response })
         // return res.json({response,})
-        let LineName = '';
+        let LineItemName = '';
         let totalSalesByLineName = {};
         let totalUniByLineName = {};
         let totalSales = 0;
@@ -3302,13 +3327,13 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
         const results = [];
 
         response.forEach((r, index) => {
-            const currentLine = r.LineName;
+            const currentLine = r.LineItemName;
 
             // Inicializar acumuladores si no existen
             if (!totalSalesByLineName[currentLine]) totalSalesByLineName[currentLine] = 0;
             if (!totalUniByLineName[currentLine]) totalUniByLineName[currentLine] = 0;
 
-            if (currentLine === LineName) {
+            if (currentLine === LineItemName) {
                 // MISMA SUCURSAL
                 const res1 = { ...r };
                 res1.cumplimiento = +r.cumplimiento;
@@ -3321,7 +3346,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
                 // Último elemento
                 if (index === response.length - 1) {
                     results.push({
-                        LineName: `Total ${r.LineName}`,
+                        LineItemName: `Total ${r.LineItemName}`,
                         Sales: +totalSalesByLineName[currentLine],
                         Quota: +totalUniByLineName[currentLine],
                         cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
@@ -3334,10 +3359,10 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
 
                 // Agregar subtotal anterior si no es el primer elemento
                 if (index > 0) {
-                    const prevName = response[index - 1].LineName;
+                    const prevName = response[index - 1].LineItemName;
 
                     results.push({
-                        LineName: `Total ${prevName}`,
+                        LineItemName: `Total ${prevName}`,
                         Quota: +totalUniByLineName[prevName],
                         Sales: +totalSalesByLineName[prevName],
                         cumplimiento: totalUniByLineName[prevName] === 0 ? 0 : (+totalSalesByLineName[prevName] / +totalUniByLineName[prevName]),
@@ -3358,7 +3383,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
                 // Si es el último
                 if (index === response.length - 1) {
                     results.push({
-                        LineName: `Total ${r.LineName}`,
+                        LineItemName: `Total ${r.LineItemName}`,
                         Quota: +totalUniByLineName[currentLine],
                         Sales: +totalSalesByLineName[currentLine],
                         cumplimiento: totalUniByLineName[currentLine] === 0 ? 0 : (+totalSalesByLineName[currentLine] / +totalUniByLineName[currentLine]),
@@ -3373,7 +3398,7 @@ const ventasLineaSucursalSupervisorController = async (req, res) => {
             totalQuota += +r.Quota;
 
             // Actualizar estado actual
-            LineName = currentLine;
+            LineItemName = currentLine;
         });
 
         const totales = {
@@ -3459,7 +3484,7 @@ const excelClientesBloqueados = async (req, res) => {
 
         console.log({ data });
         console.log({ displayedColumns })
-        console.log({bloqueados});
+        console.log({ bloqueados });
         const fechaActual = new Date();
         const date = new Intl.DateTimeFormat('es-VE', {
             weekday: 'long',
@@ -3483,7 +3508,7 @@ const excelClientesBloqueados = async (req, res) => {
 
         const morososSheet = workbook.addWorksheet('Clientes Morosos');
 
-       morososSheet.columns = [
+        morososSheet.columns = [
             { header: 'Sucursal', key: 'SucName', width: 20 },
             { header: 'Zona', key: 'ZoneName', width: 25 },
             { header: 'Grupo', key: 'GroupName', width: 20 },
@@ -3563,7 +3588,7 @@ const excelClientesBloqueados = async (req, res) => {
         });
 
         // Agregar los datos
-       bloqueados.forEach(cliente => {
+        bloqueados.forEach(cliente => {
             morososSheet.addRow({
                 SucName: cliente.SucName,
                 ZoneName: cliente.ZoneName,
@@ -3942,7 +3967,7 @@ const ventasPendienteController = async (req, res) => {
             groupCode = null
         }
 
-        const data = await ventasPendientes(startDate, endDate, tipo, cardCode,itemCode,groupCode)
+        const data = await ventasPendientes(startDate, endDate, tipo, cardCode, itemCode, groupCode)
         return res.json(data)
 
     } catch (error) {
@@ -3952,82 +3977,82 @@ const ventasPendienteController = async (req, res) => {
 }
 
 const searchBlockedClients = async (req, res) => {
-  try {
-    const tipoCliente = Number(req.query.tipoCliente);
+    try {
+        const tipoCliente = Number(req.query.tipoCliente);
 
-    // Opcional: validar si es un número válido
-    if (isNaN(tipoCliente)) {
-      return res.status(400).json({
-        mensaje: 'El parámetro tipoCliente debe ser un número válido.',
-      });
+        // Opcional: validar si es un número válido
+        if (isNaN(tipoCliente)) {
+            return res.status(400).json({
+                mensaje: 'El parámetro tipoCliente debe ser un número válido.',
+            });
+        }
+
+        const resultado = await findBlockedClients(tipoCliente);
+        const agrupado = groupBySucursal(resultado);
+
+        return res.json(agrupado);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
+        });
     }
-
-    const resultado = await findBlockedClients(tipoCliente);
-    const agrupado = groupBySucursal(resultado);
-
-    return res.json(agrupado);
-  } catch (error) {
-    console.error({ error });
-    return res.status(500).json({
-      mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
-    });
-  }
 };
 
 const searchBlockedClientsByZoneSucAndGroup = async (req, res) => {
-  try {
-    const suc = Number(req.params.suc);
-    const zone = Number(req.params.zone);
-    const group = Number(req.params.group);
+    try {
+        const suc = Number(req.params.suc);
+        const zone = Number(req.params.zone);
+        const group = Number(req.params.group);
 
-    if (isNaN(suc) || isNaN(zone) || isNaN(group)) {
-      return res.status(400).json({
-        mensaje: 'Los parámetros suc, zone y group deben ser números válidos.',
-      });
+        if (isNaN(suc) || isNaN(zone) || isNaN(group)) {
+            return res.status(400).json({
+                mensaje: 'Los parámetros suc, zone y group deben ser números válidos.',
+            });
+        }
+
+        // Asumo que findBlockedClients ahora recibe estos parámetros:
+        const resultado = await findBlockedClientsByZoneAndSuc(suc, zone, group);
+
+        return res.json(resultado);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
+        });
     }
-
-    // Asumo que findBlockedClients ahora recibe estos parámetros:
-    const resultado = await findBlockedClientsByZoneAndSuc(suc, zone, group);
-
-    return res.json(resultado);
-  } catch (error) {
-    console.error({ error });
-    return res.status(500).json({
-      mensaje: `Error en searchBlockedClients: ${error.message || 'No definido'}`,
-    });
-  }
 };
 
 const clientesVendedorBloqueadosController = async (req, res) => {
-  try {
-    const slpCodeRaw = req.params.slpCode; // Ej: "14 - 21"
-    const groupCode = Number(req.params.groupCode);
+    try {
+        const slpCodeRaw = req.params.slpCode; // Ej: "14 - 21"
+        const groupCode = Number(req.params.groupCode);
 
-    if (!slpCodeRaw || isNaN(groupCode)) {
-      return res.status(400).json({ mensaje: 'Parámetros inválidos.' });
+        if (!slpCodeRaw || isNaN(groupCode)) {
+            return res.status(400).json({ mensaje: 'Parámetros inválidos.' });
+        }
+
+        const slpCodes = slpCodeRaw
+            .split('-')
+            .map(code => Number(code.trim()))
+            .filter(code => !isNaN(code));
+
+        if (slpCodes.length === 0) {
+            return res.status(400).json({ mensaje: 'Código(s) de vendedor inválido(s).' });
+        }
+
+        const response = await clientesVendedorBloqueados(groupCode, slpCodes);
+
+        // Agrupar por sucursal y luego vendedor
+        const agrupado = groupBySucursalYVendedor(response);
+
+        return res.json(agrupado);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            mensaje: `Error en clientesVendedorBloqueadosController: ${error.message || 'No definido'}`
+        });
     }
-
-    const slpCodes = slpCodeRaw
-      .split('-')
-      .map(code => Number(code.trim()))
-      .filter(code => !isNaN(code));
-
-    if (slpCodes.length === 0) {
-      return res.status(400).json({ mensaje: 'Código(s) de vendedor inválido(s).' });
-    }
-
-    const response = await clientesVendedorBloqueados(groupCode, slpCodes);
-
-    // Agrupar por sucursal y luego vendedor
-    const agrupado = groupBySucursalYVendedor(response);
-
-    return res.json(agrupado);
-  } catch (error) {
-    console.error({ error });
-    return res.status(500).json({
-      mensaje: `Error en clientesVendedorBloqueadosController: ${error.message || 'No definido'}`
-    });
-  }
 }
 
 
@@ -4036,7 +4061,7 @@ const clientesVendedorBloqueadosExcelController = async (req, res) => {
         const clientes = req.body;
 
         if (!Array.isArray(clientes) || clientes.length === 0) {
-        return res.status(400).json({ mensaje: 'No se proporcionaron datos válidos.' });
+            return res.status(400).json({ mensaje: 'No se proporcionaron datos válidos.' });
         }
 
         // Crear libro y hoja
@@ -4074,19 +4099,19 @@ const clientesVendedorBloqueadosExcelController = async (req, res) => {
 
         // Ordenar clientes por las columnas que vas a mergear
         clientes.sort((a, b) => {
-        return (
-            a.SucCode - b.SucCode ||
-            a.ZoneCode - b.ZoneCode ||
-            a.GroupCode - b.GroupCode // si también quisieras esto
-        );
+            return (
+                a.SucCode - b.SucCode ||
+                a.ZoneCode - b.ZoneCode ||
+                a.GroupCode - b.GroupCode // si también quisieras esto
+            );
         });
-        
+
         // Hacer merge por las columnas deseadas
         mergeCellsByColumn(worksheet, startRowIndex, 'SucCode', clientes);
         mergeCellsByColumn(worksheet, startRowIndex, 'SucName', clientes);
         mergeCellsByColumn(worksheet, startRowIndex, 'ZoneCode', clientes);
         mergeCellsByColumn(worksheet, startRowIndex, 'ZoneName', clientes);
-        
+
         worksheet.getColumn('TotalOverdueAmount').numFmt = '[$Bs.]#,##0.00';
         // Generar el buffer del Excel
         const buffer = await workbook.xlsx.writeBuffer();
@@ -4228,7 +4253,7 @@ const ventasPendienteByItemController = async (req, res) => {
             groupCode = null
         }
 
-        const data = await ventasPendientesByItem(startDate, endDate, tipo, cardCode,itemCode,groupCode)
+        const data = await ventasPendientesByItem(startDate, endDate, tipo, cardCode, itemCode, groupCode)
         return res.json(data)
 
     } catch (error) {
@@ -4273,7 +4298,7 @@ const reportePendienteByItemController = async (req, res) => {
         if (!itemCode || itemCode == '') {
             itemCode = null
         }
-        const response = await reportePendienteByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent,itemCode)
+        const response = await reportePendienteByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemCode)
         // return res.json({ response })
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
@@ -4330,7 +4355,26 @@ const reportePendienteByItemController = async (req, res) => {
 //     }
 // }
 
+const clientExpiryPolicyController = async (req, res) => {
+    try {
+        let cardCode = req.query.cardCode
 
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+
+        const response = await clientExpiryPolicy(cardCode)
+        if (response.length == 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false })
+        }
+        let data = response[0]
+        return res.json({ data, goToExpiry: true })
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en clientExpiryPolicyController ${error.message || 'No definido'}` });
+    }
+}
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -4440,4 +4484,5 @@ module.exports = {
     clientesVendedorBloqueadosExcelController,
     reportePendienteByItemController,
     ventasPendienteByItemController,
+    clientExpiryPolicyController,
 };

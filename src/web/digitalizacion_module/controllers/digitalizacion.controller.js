@@ -670,19 +670,17 @@ const excelEntregasDigitalizadas = async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Entregas Digitalizadas');
 
-        // Definir columnas
+        // Definir columnas exactamente como en la imagen
         worksheet.columns = [
-            // { header: 'Código Sucursal', key: 'SucCode', width: 15 },
+            { header: 'Nro.', key: 'RowNumber', width: 5 },
             { header: 'Sucursal', key: 'SucName', width: 20 },
-            { header: 'Zona', key: 'ZoneName', width: 15 },
-            { header: 'Nro. Asiento', key: 'TransId', width: 12 },
             { header: 'Fecha Documento', key: 'DocDate', width: 18 },
-            { header: 'Número Doc.', key: 'DocNum', width: 12 },
+            { header: 'Número Doc.', key: 'DocNum', width: 15 },
             { header: 'Código Cliente', key: 'CardCode', width: 15 },
             { header: 'Nombre Cliente', key: 'CardName', width: 30 },
             { header: 'Total', key: 'DocTotal', width: 15 },
-            // { header: 'Despachador', key: 'DeliveryName', width: 25 },
-            // { header: 'Fecha Digitalización', key: 'CreateDate', width: 20 }
+            { header: 'Despachador', key: 'DeliveryName', width: 25 },
+            { header: 'Fecha Digitalización', key: 'CreateDate', width: 20 }
         ];
 
         // Insertar filas de cabecera
@@ -696,9 +694,9 @@ const excelEntregasDigitalizadas = async (req, res) => {
         worksheet.getCell('A3').value = `Fecha de impresión: ${date}`;
         
         // Fusionar celdas para cabecera
-        worksheet.mergeCells('A1:H1');
-        worksheet.mergeCells('A2:H2');
-        worksheet.mergeCells('A3:H3');
+        worksheet.mergeCells('A1:I1');
+        worksheet.mergeCells('A2:I2');
+        worksheet.mergeCells('A3:I3');
 
         // Estilizar cabecera
         const headerRow = worksheet.getRow(1);
@@ -712,7 +710,7 @@ const excelEntregasDigitalizadas = async (req, res) => {
         worksheet.getRow(3).getCell(1).font = { bold: true, size: 12 };
         worksheet.getRow(3).getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // Estilizar encabezados de columnas
+        // Estilizar encabezados de columnas (fila 4)
         const columnsRow = worksheet.getRow(4);
         columnsRow.height = 20;
         columnsRow.eachCell((cell) => {
@@ -724,67 +722,75 @@ const excelEntregasDigitalizadas = async (req, res) => {
             };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = {
-                top: { style: 'thin' },
-                bottom: { style: 'thin' },
-                left: { style: 'thin' },
-                right: { style: 'thin' }
+                top: { style: 'thin', color: {argb: '000000'} },
+                bottom: { style: 'thin', color: {argb: '000000'} },
+                left: { style: 'thin', color: {argb: '000000'} },
+                right: { style: 'thin', color: {argb: '000000'} }
             };
         });
 
-        // Agregar datos
-        data.forEach(item => {
-            // Formatear fechas y valores numéricos
-            const rowData = {
-                ...item,
-                DocDate: item.DocDate ? new Date(item.DocDate) : null,
-                CreateDate: item.CreateDate ? new Date(item.CreateDate) : null,
-                DocTotal: item.DocTotal ? parseFloat(item.DocTotal) : 0
-            };
-            
-            const row = worksheet.addRow(rowData);
-            
-            // Formato para números
-            row.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
-            
-            // Agregar bordes a cada celda
-            row.eachCell((cell) => {
-                cell.border = {
-                    top: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    left: { style: 'thin' },
-                    right: { style: 'thin' }
+        // Agregar datos reales o filas vacías
+        const numRows = 20; // Número de filas a generar (ajustar según necesario)
+        const startRow = 5; // La primera fila de datos es la 5
+        
+        if (data && data.length > 0) {
+            // Usar datos reales
+            data.forEach((item, index) => {
+                const rowData = {
+                    RowNumber: index + 1,
+                    ...item,
+                    DocDate: item.DocDate ? new Date(item.DocDate) : null,
+                    CreateDate: item.CreateDate ? new Date(item.CreateDate) : null,
+                    DocTotal: item.DocTotal ? parseFloat(item.DocTotal) : 0
                 };
                 
-                // Alineación específica por tipo de celda
-                if (typeof cell.value === 'number') {
-                    cell.alignment = { horizontal: 'right' };
-                } else if (cell.value instanceof Date) {
-                    cell.alignment = { horizontal: 'center' };
-                }
+                const row = worksheet.addRow(rowData);
+                row.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
+                
+                // Aplicar bordes y formatos
+                applyFormatToRow(row);
             });
-        });
-
-        const totalGeneral = data.reduce((acc, item) => acc + (parseFloat(item.DocTotal) || 0), 0)
-        const totalRow = worksheet.addRow([
-        '', '', '', '', '', '', 'TOTAL GENERAL:', totalGeneral
-        ]);
-        totalRow.eachCell((cell, colNumber) => {
-            cell.font = { bold: true };
-            cell.border = {
-                top: { style: 'double' },
-                bottom: { style: 'double' },
-                left: { style: 'thin' },
-                right: { style: 'thin' }
-            };
-            if (colNumber === 9) { // Columna 'DocTotal'
-                cell.numFmt = '"Bs" #,##0.00';
-                cell.alignment = { horizontal: 'right' };
+        } else {
+            // Crear filas vacías con bordes
+            for (let i = 0; i < numRows; i++) {
+                const row = worksheet.addRow({
+                    RowNumber: i + 1,
+                    SucName: '',
+                    DocDate: '',
+                    DocNum: '',
+                    CardCode: '',
+                    CardName: '',
+                    DeliveryName: '',
+                    CreateDate: '',
+                    DocTotal: 0,
+                });
+                
+                row.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
+                
+                // Aplicar bordes y formatos
+                applyFormatToRow(row);
             }
-            if (colNumber === 8) { // Label
-                cell.alignment = { horizontal: 'right' };
-            }
-        });
-
+        }
+        
+        // Calcular total general
+        const totalGeneral = data && data.length > 0 
+            ? data.reduce((acc, item) => acc + (parseFloat(item.DocTotal) || 0), 0)
+            : 0;
+            
+        // Agregar fila de total al final (como en la imagen)
+        const totalRowIndex = startRow + numRows;
+        const totalRow = worksheet.addRow(['', '', '', '', '', '','','TOTAL GENERAL:', totalGeneral]);
+        
+        // Estilizar fila de total
+        applyFormatToRow(totalRow, true);
+        
+        // Formato específico para el total
+        totalRow.getCell('CardName').font = { bold: true };
+        totalRow.getCell('CardName').alignment = { horizontal: 'right' };
+        totalRow.getCell('DocTotal').font = { bold: true };
+        totalRow.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
+        totalRow.getCell('DocTotal').alignment = { horizontal: 'right' };
+        
         // Configuración de respuesta
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=entregas_digitalizadas.xlsx');
@@ -813,6 +819,37 @@ const excelEntregasDigitalizadas = async (req, res) => {
         });
     }
 };
+
+// Función auxiliar para aplicar formato a todas las celdas de una fila
+function applyFormatToRow(row, isTotal = false) {
+    // Determinar el estilo de borde que se usará
+    const borderStyle = isTotal ? 'double' : 'thin';
+    
+    // Aplicar bordes a TODAS las celdas de la fila
+    for (let i = 1; i <= 9; i++) { // 9 columnas en total
+        const cell = row.getCell(i);
+        
+        // Asegurarnos de que la celda tenga un valor (aunque sea vacío)
+        if (cell.value === undefined || cell.value === null) {
+            cell.value = '';
+        }
+        
+        // Aplicar bordes con color negro explícito
+        cell.border = {
+            top: { style: borderStyle, color: {argb: '000000'} },
+            bottom: { style: borderStyle, color: {argb: '000000'} },
+            left: { style: 'thin', color: {argb: '000000'} },
+            right: { style: 'thin', color: {argb: '000000'} }
+        };
+        
+        // Aplicar alineación específica por tipo de columna
+        if (i === 7) { // DocTotal
+            cell.alignment = { horizontal: 'right' };
+        } else if (i === 3 || i === 9) { // Fechas
+            cell.alignment = { horizontal: 'center' };
+        }
+    }
+}
 
 
 module.exports = {

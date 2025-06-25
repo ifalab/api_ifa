@@ -1814,12 +1814,16 @@ const getDescuentosDeVendedoresParaPedido = async (cliente, vendedor, fecha) => 
     }
 }
 
-const ventasPorZonasVendedor2 = async (userCode) => {
+const ventasPorZonasVendedor2 = async (year, month, slpCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.PRD}.LAPP_VEN_VENTAS_ZONA2('${userCode}');`;
+        const query = `CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_LINE_ZONE_SALES_BY_SELLER(
+            i_year         => ${year},
+            i_month        => ${month},
+            i_slpcode => ${slpCode})`;
+        console.log({ query })
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en ventas por zona: ', err.message);
@@ -1854,12 +1858,16 @@ const getUbicacionClientesByVendedor = async (codVendedor) => {
     }
 }
 
-const getVentasZonaSupervisor = async (sucursales) => {
+const getVentasZonaSupervisor = async (year, month, supCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM  LAB_IFA_LAPP.LAPP_VEN_VENTAS_ZONA_SUPERVISOR WHERE "SucCode" in (${sucursales})`;
+        // const query = `SELECT * FROM  LAB_IFA_LAPP.LAPP_VEN_VENTAS_ZONA_SUPERVISOR WHERE "SucCode" in (${sucursales})`;
+        const query = `CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_BRANCH_SELLER_SALES_BY_SUPERVISOR(
+    i_year         => ${year},
+    i_month        => ${month},
+    i_supervisorcode=>${supCode} );`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en getVentasZonaSupervisor: ', err.message);
@@ -1925,16 +1933,20 @@ const getVentasLineaSupervisor = async (sucursales) => {
     }
 }
 
-const getVentasLineaSucursalSupervisor = async (sucursales, isMesAnterior) => {
+const getVentasLineaSucursalSupervisor = async (year, month, supCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         let query
-        if (isMesAnterior == true || isMesAnterior == 'true')
-            query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUC_SUPERVISOR_ANT where "SucCode" in (${sucursales})`;
-        else
-            query = `select * from LAB_IFA_LAPP.LAPP_VEN_VENTAS_LINEA_SUC_SUPERVISOR where "SucCode" in (${sucursales})`
+
+        query = `CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_LINE_BRANCH_SALES_BY_SUPERVISOR(
+            i_year         => ${year},
+            i_month        => ${month},
+            i_supervisorcode => ${supCode});`;
+
+        console.log({ query })
+
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en getVentasLineaSucursalSupervisor: ', err.message);
@@ -2118,7 +2130,7 @@ const formatParam = (param) => {
     return param
 }
 
-const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode,itemCode,groupCode) => {
+const ventasPendientes = async (startDate, endDate, tipoPendiente, cardCode, itemCode, groupCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2142,39 +2154,39 @@ const ventasPendientes = async (startDate,endDate,tipoPendiente,cardCode,itemCod
 }
 
 const findBlockedClientsByZoneOrSuc = async (SucCode, ZoneCode) => {
-  try {
-    const query = `
+    try {
+        const query = `
       CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_CUSTOMERS_BY_BRANCH_OR_ZONE(?, ?)
     `;
 
-    const result = await executeQueryParamsWithConnection(query, [SucCode, ZoneCode]);
-    return result;
-  } catch (error) {
-    console.log({ error });
-    throw {
-      message: `Error en findBlockedClientsByZoneOrSuc: ${error.message || ''}`
-    };
-  }
+        const result = await executeQueryParamsWithConnection(query, [SucCode, ZoneCode]);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw {
+            message: `Error en findBlockedClientsByZoneOrSuc: ${error.message || ''}`
+        };
+    }
 };
 
 const findBlockedClients = async (tipoCliente) => {
-  try {
-    const query = `CALL LAB_IFA_PRD.IFASP_MD_GET_BLOCKED_OVERDUE_CLIENTS_BY_BRANCH_ZONE(${tipoCliente})`;
+    try {
+        const query = `CALL LAB_IFA_PRD.IFASP_MD_GET_BLOCKED_OVERDUE_CLIENTS_BY_BRANCH_ZONE(${tipoCliente})`;
 
-    console.log(query);
-    const result = await executeQueryParamsWithConnection(query);
-    return result;
-  } catch (error) {
-    console.log({ error });
-    throw {
-      message: `Error en findBlockedClients: ${error.message || ''}`
-    };
-  }
+        console.log(query);
+        const result = await executeQueryParamsWithConnection(query);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw {
+            message: `Error en findBlockedClients: ${error.message || ''}`
+        };
+    }
 };
 
 const findBlockedClientsByZoneAndSuc = async (suc, zone, group) => {
-  try {
-    const query = `
+    try {
+        const query = `
       CALL LAB_IFA_PRD.IFASP_MD_GET_BLOCKED_OVERDUE_DETAIL_CLIENTS_BY_BRANCH_ZONE(
         i_succode => ?,
         i_zonecode => ?,
@@ -2182,68 +2194,68 @@ const findBlockedClientsByZoneAndSuc = async (suc, zone, group) => {
       )
     `;
 
-    console.log('Query:', query, 'Params:', [suc, zone, group]);
+        console.log('Query:', query, 'Params:', [suc, zone, group]);
 
-    // Pasa los parámetros como arreglo (o como lo acepte tu función)
-    const result = await executeQueryParamsWithConnection(query, [suc, zone, group]);
-    return result;
-  } catch (error) {
-    console.log({ error });
-    throw {
-      message: `Error en findBlockedClients: ${error.message || ''}`
-    };
-  }
+        // Pasa los parámetros como arreglo (o como lo acepte tu función)
+        const result = await executeQueryParamsWithConnection(query, [suc, zone, group]);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw {
+            message: `Error en findBlockedClients: ${error.message || ''}`
+        };
+    }
 };
 
 const clientesVendedorBloqueados = async (groupCode, slpCodes) => {
-  try {
-    if (!connection) {
-      await connectHANA();
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        let allResults = [];
+
+        for (const code of slpCodes) {
+            const query = `CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_OVERDUE_CLIENTS_BY_BRANCH_ZONE_BY_SELLER(${groupCode}, ${code})`;
+            console.log({ query });
+            const result = await executeQuery(query);
+
+            // Asegúrate que result sea array, si no, lo conviertes
+            if (Array.isArray(result)) {
+                allResults = allResults.concat(result);
+            }
+        }
+
+        return allResults;
+    } catch (error) {
+        throw {
+            message: `Error en clientesVendedorBloqueados: ${error.message || ''}`
+        };
     }
-
-    let allResults = [];
-
-    for (const code of slpCodes) {
-      const query = `CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_OVERDUE_CLIENTS_BY_BRANCH_ZONE_BY_SELLER(${groupCode}, ${code})`;
-      console.log({ query });
-      const result = await executeQuery(query);
-      
-      // Asegúrate que result sea array, si no, lo conviertes
-      if (Array.isArray(result)) {
-        allResults = allResults.concat(result);
-      }
-    }
-
-    return allResults;
-  } catch (error) {
-    throw {
-      message: `Error en clientesVendedorBloqueados: ${error.message || ''}`
-    };
-  }
 };
 
 
 const clientesBloqueadoByGroup = async (groupCode) => {
-  try {
-    if (!connection) {
-      await connectHANA();
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const safeGroupCode = groupCode !== null && groupCode !== undefined ? parseInt(groupCode) : 'NULL';
+        const query = `CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_OVERDUE_DETAIL_CLIENTS_BY_GROUP_CODE(${safeGroupCode})`;
+        console.log({ query });
+
+        const result = await executeQuery(query);
+
+        return Array.isArray(result) && Array.isArray(result[0]) ? result[0] : result;
+
+    } catch (error) {
+        throw new Error(`Error en clientesBloqueadoByGroup: ${error.message || 'Error no definido'}`);
     }
-
-    const safeGroupCode = groupCode !== null && groupCode !== undefined ? parseInt(groupCode) : 'NULL';
-    const query = `CALL ${process.env.PRD}.IFASP_MD_GET_BLOCKED_OVERDUE_DETAIL_CLIENTS_BY_GROUP_CODE(${safeGroupCode})`;
-    console.log({ query });
-
-    const result = await executeQuery(query);
-
-    return Array.isArray(result) && Array.isArray(result[0]) ? result[0] : result;
-
-  } catch (error) {
-    throw new Error(`Error en clientesBloqueadoByGroup: ${error.message || 'Error no definido'}`);
-  }
 };
 
 
-const ventasPendientesByItem = async (startDate,endDate,tipoPendiente,cardCode,itemCode,groupCode) => {
+const ventasPendientesByItem = async (startDate, endDate, tipoPendiente, cardCode, itemCode, groupCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2266,7 +2278,7 @@ const ventasPendientesByItem = async (startDate,endDate,tipoPendiente,cardCode,i
     }
 }
 
-const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent,itemCode) => {
+const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2296,6 +2308,23 @@ const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode,
     } catch (error) {
         throw {
             message: `Error en reportePendienteByItem: ${error.message || ''}`
+        }
+    }
+}
+
+const clientExpiryPolicy = async (cardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramCardCode = formatParam(cardCode)
+        const query = `call ${process.env.PRD}.IFASP_CRM_READ_CLIENTS_EXPIRY_POLICY(${paramCardCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
         }
     }
 }
@@ -2417,4 +2446,5 @@ module.exports = {
     reportePendienteByItem,
     ventasPendientesByItem,
     clientesBloqueadoByGroup,
+    clientExpiryPolicy,
 }

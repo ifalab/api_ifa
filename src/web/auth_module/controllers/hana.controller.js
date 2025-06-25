@@ -752,6 +752,29 @@ const deleteRutasDespachadores = async (id_vendedor_sap, id_ruta) => {
     }
 }
 
+const happyBirthday = async (username,message) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_LAPP.HAPPY_BIRTHDAY_GO('${username}','${message}');`
+        console.log({query})
+        const result = await executeQuery(query)
+        return {
+            statusCode: 200,
+            data: result,
+            query: query
+        }
+    } catch (error) {
+        console.log({ error })
+        return {
+            statusCode: 400,
+            message: `Error en happyBirthday: ${error.message || ''}`,
+            query: 'happyBirthday'
+        }
+    }
+}
+
 module.exports = {
     loginUser,
     createUser,
@@ -792,4 +815,5 @@ module.exports = {
     dimensionSublineaByUser,
     rollBackDimensionSublineaByUser,
     findAllSubLines,
+    happyBirthday,
 }

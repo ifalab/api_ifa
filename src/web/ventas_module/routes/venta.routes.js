@@ -113,7 +113,8 @@ const {
     searchBlockedClients,
     searchBlockedClientsByZoneSucAndGroup,
     clientesVendedorBloqueadosController,
-    clientesVendedorBloqueadosExcelController
+    clientesVendedorBloqueadosExcelController,
+    clientExpiryPolicyController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -255,5 +256,7 @@ router.get('/clientes-vendedor-bloqueados/:slpCode/:groupCode', [validarToken, v
 router.post('/clientes-vendedor-bloqueados/excel', [validarToken, validarCampos], clientesVendedorBloqueadosExcelController)
 router.get('/detalle-reporte-pendiente-by-item', [validarToken, validarCampos], ventasPendienteByItemController)
 // ventasPendienteByItemController
+//! nueva forma con oferta de ventas con seleccion de muchos lotes:
+router.get('/cliente-expiry-policy', [validarToken, validarCampos], clientExpiryPolicyController)
 
 module.exports = router

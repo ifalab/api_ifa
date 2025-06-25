@@ -388,7 +388,7 @@ const listaNegraDescuentos = async () => {
         }
         // const query = `select * from ${process.env.PRD}.IFA_DM_ARTICULOS_LISTA_NEGRA_DESCUENTOS`;
         const query = `select * from LAB_IFA_PRD.IFA_DM_ARTICULOS_LISTA_NEGRA_DESCUENTOS`;
-
+        console.log({query})
         const result = await executeQuery(query)
         return result
 
