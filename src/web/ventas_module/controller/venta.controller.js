@@ -2991,14 +2991,21 @@ const getUbicacionClientesByVendedorController = async (req, res) => {
 const getVentasZonaSupervisorController = async (req, res) => {
     try {
         const { sucursales, isMesAnterior } = req.body
-        console.log({ sucursales, isMesAnterior })
+        // console.log({ sucursales, isMesAnterior })
+        const user = req.usuarioAutorizado
+        const supCode = user.ID_VENDEDOR_SAP || 0
+        const dateNow = new Date()
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1)
+        console.log({ month: dateNow.getMonth() })
+        console.log({ monthAnterior: dateMesAnterior.getMonth() })
         let response = []
         if (isMesAnterior == true || isMesAnterior == 'true') {
             console.log('is mes anterior')
-            response = await getVentasZonaAntSupervisor(sucursales.toString())
+            response = await getVentasZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth()+1, supCode)
         } else {
             console.log('is mes actual')
-            response = await getVentasZonaSupervisor(sucursales.toString())
+            response = await getVentasZonaSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, supCode)
         }
         // console.log({ response })
         let SucCode = ''

@@ -1854,12 +1854,16 @@ const getUbicacionClientesByVendedor = async (codVendedor) => {
     }
 }
 
-const getVentasZonaSupervisor = async (sucursales) => {
+const getVentasZonaSupervisor = async (year,month,supCode) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM  LAB_IFA_LAPP.LAPP_VEN_VENTAS_ZONA_SUPERVISOR WHERE "SucCode" in (${sucursales})`;
+        // const query = `SELECT * FROM  LAB_IFA_LAPP.LAPP_VEN_VENTAS_ZONA_SUPERVISOR WHERE "SucCode" in (${sucursales})`;
+        const query = `CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_BRANCH_SELLER_SALES_BY_SUPERVISOR(
+    i_year         => ${year},
+    i_month        => ${month},
+    i_supervisorcode=>${supCode} );`;
         return await executeQuery(query);
     } catch (err) {
         console.error('Error en getVentasZonaSupervisor: ', err.message);
