@@ -306,7 +306,22 @@ const CommercialMarginByProducts = async (startDate, endDate, succode, divcode, 
   }
 };
 
+const getMonthlyCommercialMargin = async (year) => {
+  try {
+    const query = `
+      CALL "LAB_IFA_DATA"."IFASP_SAL_CALCULATE_MONTHLY_COMERCIAL_SALES_MARGINS"(
+        i_Year => ?, 
+        o_result => ?
+      );
+    `;
 
+    const result = await executeQueryParamsWithConnection(query, [year]);
+    return result;
+  } catch (error) {
+    console.error('Error in getMonthlyCommercialMargin:', error);
+    throw new Error(`Error in getMonthlyCommercialMargin: ${error.message}`);
+  }
+};
 
 module.exports = {
     parteDiario,
@@ -323,4 +338,5 @@ module.exports = {
     reporteArticuloPendientes,
     reporteMargenComercial,
     CommercialMarginByProducts,
+    getMonthlyCommercialMargin
 }

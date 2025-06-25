@@ -1,5 +1,6 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts } = require("./hana.controller")
+const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
@@ -1131,6 +1132,27 @@ const getCommercialMarginByProducts = async (req, res) => {
   }
 } 
 
+const getMonthlyCommercialMarginController = async (req, res) => {
+  try {
+    const { year } = req.query;
+
+    if (!year || isNaN(parseInt(year))) {
+      return res.status(400).json({ mensaje: 'El parámetro "year" es requerido y debe ser numérico.' });
+    }
+
+    const response = await getMonthlyCommercialMargin(parseInt(year));
+    const resultadoFinal = groupMarginByMonth(response);
+
+    return res.json(resultadoFinal);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      mensaje: `Error en getMonthlyCommercialMarginController: ${error.message || 'error desconocido'}`
+    });
+  }
+};
+
+
 module.exports = {
   parteDiaroController,
   abastecimientoController,
@@ -1151,4 +1173,5 @@ module.exports = {
   reporteArticulosPendientesController,
   reporteMargenComercialController,
   getCommercialMarginByProducts,
+  getMonthlyCommercialMarginController,
 }
