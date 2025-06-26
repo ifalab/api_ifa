@@ -603,6 +603,7 @@ const getAsientoContableCCById = async (req, res) => {
                     TransId: current.TransId,
                     TransType: current.TransType,
                     RefDate: current.RefDate,
+                    Year: current.AnioCreacion,
                     Memo: current.Memo,
                     Ref1: current.Ref1,
                     Ref2: current.Ref2,

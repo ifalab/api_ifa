@@ -720,6 +720,7 @@ const getAsientosContablesCC = async (req, res) => {
             } else {
                 acc[current.TransId] = {
                     TransId: current.TransId,
+                    Year: current.AnioCreacion,
                     TransType: current.TransType,
                     RefDate: current.RefDate,
                     Memo: current.Memo,
