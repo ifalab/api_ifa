@@ -606,11 +606,6 @@ const crearOrderCadenaController = async (req, res) => {
         })
 
         ordenBody.DocumentLines = DocumentLinesToBody
-
-        // return res.json({ ordenBody, detalle })
-        // console.log("body de post orden: =====================================");
-        // console.log(JSON.stringify(ordenBody, null, 2))
-        // console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
         let totalOrden = 0
         ordenBody.DocumentLines.map((item) => {
             const { GrossTotal } = item
@@ -621,16 +616,8 @@ const crearOrderCadenaController = async (req, res) => {
         })
 
         totalOrden = Number(totalOrden.toFixed(2))
-
-        // if (totalOrden !== ordenBody.DocTotal) {
-        //     grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
-        //     return res.status(400).json({
-        //         mensaje: `Error al crear la orden de la oferta, existe una diferencia entre el total de la cabecera (${ordenBody.DocTotal}) y el total del detalle (${totalOrden})`,
-        //         detalle, DocumentLines, ordenBody
-        //     })
-        // }
         ordenBody.DocTotal = totalOrden
-        // return res.json({ detalle, DocumentLines, ordenBody })
+        
         const ordenResponse = await postOrden(ordenBody)
         console.log(ordenResponse)
         if (ordenResponse.status == 400) {

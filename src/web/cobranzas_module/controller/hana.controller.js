@@ -1007,12 +1007,15 @@ const cobranzaPorZonaSupervisor = async (sucursal) => {
     }
 }
 
-const cobranzaPorZonaAntSupervisor = async (sucursal) => {
+const cobranzaPorZonaAntSupervisor = async (year,month,userCodeSap) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_ANT_SUPERVISOR"(${sucursal})`
+        const query = `CALL LAB_IFA_DATA.ifasp_col_calculate_branch_zone_division_seller_collections_by_supervisor(
+    i_year         => ${year},
+    i_month        => ${month},
+    i_supervisorcode => ${userCodeSap} );`
         return await executeQuery(query)
     } catch (error) {
         console.error(error)

@@ -2925,7 +2925,7 @@ const ventasPorZonasVendedor2Controller = async (req, res) => {
 
                 totalQuotaByLineItem[r.LineItemCode] += +r.Quota;
                 totalSalesByLineItem[r.LineItemCode] += +r.Sales;
-                console.log('index', index)
+                // console.log('index', index)
                 if ((response.length - 1) == index) {
                     const res = {
                         LineItemCode: `Total ${r.LineItemCode}`,
