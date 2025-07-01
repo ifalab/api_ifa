@@ -18,7 +18,7 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getComprobantesBajasByUser,
     getClientes,
     getEstadoCuentaCliente,
-    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor,
+    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor,
     cobranzaPorZonaNoUser,
     getCobranzaDocNumPorDocEntry
 } = require("./hana.controller")
@@ -2631,10 +2631,10 @@ const cobranzasSupervisorController = async (req, res) => {
         let response1
         if (isMesAnterior == true || isMesAnterior == 'true') {
             console.log('is mes anterior')
-            response1 = await cobranzaPorZonaSupervisor(dateMesAnterior.getFullYear(), datedateMesAnteriorNow.getMonth() + 1, userIdSap)
+            response1 = await cobranzaPorZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, userIdSap)
         } else {
             console.log('is mes actual')
-            response1 = await cobranzaPorZonaAntSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, userIdSap)
+            response1 = await cobranzaPorZonaSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, userIdSap)
         }
         response = [...response, ...response1]
         response = response.map((item)=>{
