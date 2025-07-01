@@ -192,8 +192,8 @@
             <td style="width: 100px;"><%= line.AcctName %></td>
             <td><%= line.ShortName %></td>
             <td style="width: 100px;"><%= line.CardName %></td>
-            <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>
-            <td><%= (Number(line.Credit) || 0).toFixed(2) %></td>            
+            <td><%= (Number(line.Debit) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+            <td><%= (Number(line.Credit) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
             <td style="width: 100px;"><%= line.LineMemo %></td>
             <td><%= line.Ref1Detail || '-' %></td>
             <td><%= line.Ref2Detail || '-' %></td>
@@ -210,8 +210,8 @@
           <td style="width: 200px;"><hr style="opacity: 0;"></td>
           <td style="width: 200px;"><hr style="opacity: 0;"></td>
           <td style="width: 200px;"><hr style="opacity: 0;"></td>
-          <td style="width: 100px;"><%= data.sumDebit %></td>
-          <td style="width: 110px;"><%= data.sumCredit %></td>
+          <td style="width: 100px;"><%= Number(data.sumDebit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 110px;"><%= Number(data.sumCredit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
           <td style="width: 100px;"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>
