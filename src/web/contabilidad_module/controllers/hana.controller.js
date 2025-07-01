@@ -180,6 +180,7 @@ const asientosPreliminaresCCIds = async () => {
 const rendicionesPorCaja = async (idCaja) => {
   console.log('rendicionesPorCaja EXECUTE');
   const query = `CALL ${process.env.PRD}.ifa_rw_obtener_rendiciones_por_caja(${idCaja});`;
+  console.log({query})
   return await executeQueryWithConnection(query);
 };
 

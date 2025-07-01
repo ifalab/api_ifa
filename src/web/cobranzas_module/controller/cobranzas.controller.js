@@ -18,7 +18,7 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getComprobantesBajasByUser,
     getClientes,
     getEstadoCuentaCliente,
-    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor,
+    auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor,
     cobranzaPorZonaNoUser,
     getCobranzaDocNumPorDocEntry
 } = require("./hana.controller")
@@ -2617,22 +2617,33 @@ const excelReporte = async (req, res) => {
 
 const cobranzasSupervisorController = async (req, res) => {
     try {
+        const user = req.usuarioAutorizado
+        const userIdSap = user.ID_VENDEDOR_SAP || 0
         const { sucursales, isMesAnterior } = req.body
-        console.log({ sucursales, isMesAnterior })
-        sucursales.sort((a, b) => a - b);
-        console.log({ sucursales });
+        const dateNow = new Date();
+        const dateMesAnterior = new Date(dateNow);
+        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
         let response = []
-        for (const sucursal of sucursales) {
-            let response1
-            if (isMesAnterior == true || isMesAnterior == 'true') {
-                console.log('is mes anterior')
-                response1 = await cobranzaPorZonaAntSupervisor(sucursal ?? 0)
-            } else {
-                console.log('is mes actual')
-                response1 = await cobranzaPorZonaSupervisor(sucursal ?? 0)
-            }
-            response = [...response, ...response1]
+        // for (const sucursal of sucursales) {
+
+        // }
+
+        let response1
+        if (isMesAnterior == true || isMesAnterior == 'true') {
+            console.log('is mes anterior')
+            response1 = await cobranzaPorZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, userIdSap)
+        } else {
+            console.log('is mes actual')
+            response1 = await cobranzaPorZonaSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, userIdSap)
         }
+        response = [...response, ...response1]
+        response = response.map((item)=>{
+            return {
+                ...item,
+                SlpCode:item.SalesPersonCode,
+                SlpName:item.SalesPerson
+            }
+        })
         console.log({ response })
         let SucCode = ''
         let totalQuotaBySuc = {};

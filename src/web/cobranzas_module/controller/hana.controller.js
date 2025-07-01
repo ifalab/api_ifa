@@ -993,26 +993,16 @@ const findCliente = async (buscar) => {
     }
 }
 
-const cobranzaPorZonaSupervisor = async (sucursal) => {
-    try {
-        if (!connection) {
-            await connectHANA()
-        }
-        const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_SUPERVISOR"(${sucursal})`
-        console.log({query})
-        return await executeQuery(query)
-    } catch (error) {
-        console.error(error)
-        throw new Error(`Error en cobranzaPorZonaSupervisor: ${error.message}`);
-    }
-}
 
-const cobranzaPorZonaAntSupervisor = async (sucursal) => {
+const cobranzaPorZonaSupervisor = async (year,month,userCodeSap) => {
     try {
         if (!connection) {
             await connectHANA()
         }
-        const query = `CALL "LAB_IFA_LAPP"."LAPP_COBRANZA_ZONA_ANT_SUPERVISOR"(${sucursal})`
+        const query = `CALL LAB_IFA_DATA.ifasp_col_calculate_branch_zone_division_seller_collections_by_supervisor(
+    i_year         => ${year},
+    i_month        => ${month},
+    i_supervisorcode => ${userCodeSap} );`
         return await executeQuery(query)
     } catch (error) {
         console.error(error)
@@ -1104,7 +1094,7 @@ module.exports = {
     getEstadoCuentaCliente,
     getComprobantesBajasByUser,
     auditoriaSaldoDeudor,
-    obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor, cobranzaPorZonaAntSupervisor,
+    obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor,
     cobranzaPorZonaNoUser,
     getCobranzaDocNumPorDocEntry
 }

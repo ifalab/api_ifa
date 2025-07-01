@@ -780,7 +780,7 @@ const reporteDevolucionCambios = async (fechaIni, fechaFin, user) => {
         if (!fechaIni && !fechaFin){
             query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
         }else{
-            query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
+            query = `select * from ${process.env.PRD}.ifa_dev_cambios WHERE "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
             // query = `select * from ${process.env.PRD}.ifa_dev_cambios where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         }
         console.log({ query })
@@ -803,7 +803,7 @@ const reporteDevolucionRefacturacion = async (fechaIni, fechaFin, user) => {
         if (!fechaIni && !fechaFin)
             query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
         else
-            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
+            query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones WHERE "DocDate" between '${fechaIni}' and '${fechaFin}'`;
             // query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user} and "DocDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
