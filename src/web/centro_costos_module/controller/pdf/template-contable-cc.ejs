@@ -150,7 +150,7 @@
 
     <p>FECHA CONTABLE: <%= data.RefDate?.split(' ')[0] %></p>
 
-    <h1>COMPROBANTE CONTABLE CENTRO DE COSTO Nº <%= data.Number %> - <%= data.Year %></h1>
+    <h2>COMPROBANTE CONTABLE CENTRO DE COSTO Nº <%= data.Number %> - <%= data.Year %></h2>
 
     <!-- Detalle cabecera -->
     <div class="detalle-container">
@@ -178,6 +178,8 @@
           <th>Nombre Asociado</th>
           <th>Debe BS.</th>
           <th>Haber BS.</th>
+          <th>Debe USD</th>
+          <th>Haber USD</th>
           <th>Glosa Linea</th>
           <th>Ref 1</th>
           <th>Ref 2</th>
@@ -194,6 +196,8 @@
             <td style="width: 100px;"><%= line.CardName %></td>
             <td><%= (Number(line.Debit) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
             <td><%= (Number(line.Credit) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+            <td><%= (Number(line.SYSDeb) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+            <td><%= (Number(line.SYSCred) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
             <td style="width: 100px;"><%= line.LineMemo %></td>
             <td><%= line.Ref1Detail || '-' %></td>
             <td><%= line.Ref2Detail || '-' %></td>
@@ -205,14 +209,16 @@
     <table>
       <tfoot>
         <tr>
-          <td style="width: 55px;">Total</td>
-          <td style="width: 200px;"><hr style="opacity: 0;"></td>
-          <td style="width: 200px;"><hr style="opacity: 0;"></td>
-          <td style="width: 200px;"><hr style="opacity: 0;"></td>
-          <td style="width: 200px;"><hr style="opacity: 0;"></td>
-          <td style="width: 100px;"><%= Number(data.sumDebit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
-          <td style="width: 110px;"><%= Number(data.sumCredit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
-          <td style="width: 100px;"><hr style="opacity: 0;"></td>
+          <td style="width: 60px;">Total</td>
+          <td style="width: 300px;"><hr style="opacity: 0;"></td>
+          <td style="width: 300px;"><hr style="opacity: 0;"></td>
+          <td style="width: 300px;"><hr style="opacity: 0;"></td>
+          <td style="width: 300px;"><hr style="opacity: 0;"></td>
+          <td style="width: 50px;"><%= Number(data.sumDebit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 50px;"><%= Number(data.sumCredit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 50px;"><%= Number(data.sumDebitSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 50px;"><%= Number(data.sumCreditSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 300px;"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>

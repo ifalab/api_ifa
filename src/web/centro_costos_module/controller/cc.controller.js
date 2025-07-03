@@ -93,6 +93,8 @@ const getPDFAsientoContableCC = async (req, res) => {
         // Sumar Débito y Crédito
         let sumDebit = 0;
         let sumCredit = 0;
+        let sumDebitSYS = 0;
+        let sumCreditSYS = 0;
 
         // let libroMayorData = [];
         // let cuentasConsultadas = [];
@@ -101,6 +103,8 @@ const getPDFAsientoContableCC = async (req, res) => {
             sumDebit += Number(line.Debit) || 0;
             sumCredit += Number(line.Credit) || 0;
 
+            sumDebitSYS += Number(line.SYSDeb) || 0;
+            sumCreditSYS += Number(line.SYSCred) || 0;
             // if (line.Account && !isNaN(Number(line.Account))) {
             //     try {
             //         if(!cuentasConsultadas.includes(line.Account)){
@@ -129,6 +133,8 @@ const getPDFAsientoContableCC = async (req, res) => {
         // Agregamos a la data principal
         data.sumDebit = sumDebit.toFixed(2);
         data.sumCredit = sumCredit.toFixed(2);
+        data.sumDebitSYS = sumDebitSYS.toFixed(2);
+        data.sumCreditSYS = sumCreditSYS.toFixed(2);
         // data.LibroMayor = libroMayorData; 
         
         const resultUser = await getNombreUsuario(data.UserSign);
@@ -577,6 +583,8 @@ const getAsientoContableCCById = async (req, res) => {
                 ContraAct: current.ContraAct,
                 Debit: current.Debit,
                 Credit: current.Credit,
+                SYSDeb: current.SYSDeb,
+                SYSCred: current.SYSCred,
                 LineMemo: current.LineMemo,
                 ShortName: current.ShortName,
                 U_IdComlConcept: current.U_IdComlConcept,
