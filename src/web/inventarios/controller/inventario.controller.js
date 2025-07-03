@@ -3517,16 +3517,22 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
     let entregaFinished = false
     let allBodies = {}
     try {
-        const { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
+        let { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
             // AlmacenSalida, nuevosArticulos 
         } = req.body
         console.log(JSON.stringify({
             facturas, id_sap, CardCode, AlmacenIngreso
             // , AlmacenSalida, nuevosArticulos 
         }, null, 2))
-
-        // return res.json({ facturas, id_sap, AlmacenIngreso, AlmacenSalida, CardCode, nuevosArticulos })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const idSap = user.ID_SAP || 0
+        id_sap = idSap
+        if (id_sap == 0 || !id_sap) {
+            return res.status(400).json({ mensaje: 'Usted no tiene ID SAP' })
+        }
+        // return res.json({ facturas, id_sap, AlmacenIngreso, CardCode })
+        // return 
+
         let totalFacturas = 0
         let totalesFactura = []
 
@@ -5297,7 +5303,7 @@ const crearTrasladoController = async (req, res) => {
                 }
             });
         }
-        
+
         for (let data of StockTransferLines) {
             const { U_BatchNum, LineNum, Quantity, ItemCode, FromWarehouseCode, NumPerMsr, ...rest } = data
             if (isReception) {

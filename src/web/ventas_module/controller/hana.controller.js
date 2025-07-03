@@ -2329,6 +2329,24 @@ const clientExpiryPolicy = async (cardCode) => {
     }
 }
 
+const selectionBatchByItemWhsCode = async (itemCode,whsCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramItemCode = formatParam(itemCode)
+        const paramWhsCode = formatParam(whsCode)
+        const query = `call ${process.env.PRD}.IFASP_INV_SELECTION_BATCH_BY_ITEM_AND_WAREHOUSE(${paramItemCode},${paramWhsCode})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en selectionBatchByItemWhsCode: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2447,4 +2465,5 @@ module.exports = {
     ventasPendientesByItem,
     clientesBloqueadoByGroup,
     clientExpiryPolicy,
+    selectionBatchByItemWhsCode,
 }

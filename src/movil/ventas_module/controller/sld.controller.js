@@ -85,6 +85,42 @@ const postOrden = async (newOrderDate) => {
 
 };
 
+const ordenById = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const url = `https://172.16.11.25:50000/b1s/v1/Orders(${id})`
+
+        // Configura los encabezados para incluir la cookie y el encabezado Prefer
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+
+        const response = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers
+        });
+
+        console.log({dataOrder:response})
+        return {
+            message: 'Orden obtenido con exito',
+            status: response.status,
+            order: response.data
+        }
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        console.error('Error en la solicitud GET para Entrega:', error.response?.data || error.message);
+        return {
+            message: 'Hubo un problema al obtener la orden',
+            status: 400,
+            errorMessage
+        }
+    }
+
+};
+
 const patchQuotations = async (id, DocumentLines) => {
     try {
         const currentSession = await validateSession();
@@ -457,5 +493,6 @@ module.exports = {
     cancelIncomingPayment,
     postQuotations,
     patchQuotations,
-    getQuotation
+    getQuotation,
+    ordenById
 }

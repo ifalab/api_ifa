@@ -26,9 +26,10 @@ const { findClientePorVendedor,
     clientePorCardCode,
     articuloPorItemCode,
     descuentosCortoVencimiento,
-    listaPrecioOficialCortoVencimiento
+    listaPrecioOficialCortoVencimiento,
+    createOrdersBatchDetails
 } = require("./hana.controller");
-const { postOrden, postQuotations, patchQuotations, getQuotation } = require("../../../movil/ventas_module/controller/sld.controller");
+const { postOrden, postQuotations, patchQuotations, getQuotation, ordenById } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
 const QRCode = require('qrcode');
 const path = require('path');
@@ -38,6 +39,7 @@ const { detalleOfertaCadena } = require("../../ventas_module/controller/hana.con
 const { getDocDueDate } = require("../../../controllers/hanaController");
 const { body } = require("express-validator");
 const { aniadirDetalleVisita } = require("../../planificacion_module/controller/hana.controller");
+const { validarItemCodesDuplicados } = require("../../../helpers/validarItemsDuplicados");
 
 const clientesVendedorController = async (req, res) => {
     try {
@@ -469,13 +471,19 @@ const crearOrderCadenaController = async (req, res) => {
         // console.log("body de llegada: =====================================");
         // console.log(JSON.stringify({ body }, null, 2))
         // return res.json({ body })
+        const validarDuplicados = await validarItemCodesDuplicados(docLine)
+        if (validarDuplicados.length > 0) {
+            const duplicado = validarDuplicados[0]
+            return res.status(400).json({ message: `Error ${duplicado.mensaje}`, })
+        }
+
         const DocumentLines = []
         let grossTotal = 0
         docLine.map((item) => {
             if (item.BaseLine == -2) {
-                const { BaseLine, GrossTotal, BaseEntry, BaseType,BatchSelect, ...rest } = item
+                const { BaseLine, GrossTotal, BaseEntry, BaseType, BatchSelect, ...rest } = item
                 const data = { ...rest, LineNum: null, Currency: 'BS' }
-                if(BatchSelect){
+                if (BatchSelect) {
                     data.U_BatchNum = BatchSelect.BatchNum
                 }
                 DocumentLines.push(data)
@@ -531,7 +539,8 @@ const crearOrderCadenaController = async (req, res) => {
             SalesPersonCode,
             U_OSLP_ID,
             U_UserCode,
-            Comments
+            Comments,
+            goToExpiry
         } = body
         const ordenBody = {
             Series: process.env.SAP_SERIES_ORDER,
@@ -562,8 +571,9 @@ const crearOrderCadenaController = async (req, res) => {
         // ordenBody.DocTotal = DocTotal
         const DocumentLinesToBody = []
         let idx = 0
-        // console.log({docLine})
-        // return res.json({docLine,detalle})
+        let batchSelectItems = []
+        // console.log(JSON.stringify(detalle,null,2))
+        // return res.json({ detalle,docLine })
         docLine.map((item) => {
             const {
                 GrossTotal,
@@ -599,7 +609,10 @@ const crearOrderCadenaController = async (req, res) => {
                 BaseType: 23,
             }
             if (BatchSelect) {
-                line.U_BatchNum = BatchSelect.BatchNum
+                batchSelectItems.push({
+                    ItemCode,
+                    BatchSelect
+                })
             }
             DocumentLinesToBody.push(line)
             idx++
@@ -615,9 +628,10 @@ const crearOrderCadenaController = async (req, res) => {
             console.log({ totalOrden })
         })
 
+
         totalOrden = Number(totalOrden.toFixed(2))
         ordenBody.DocTotal = totalOrden
-        
+
         const ordenResponse = await postOrden(ordenBody)
         console.log(ordenResponse)
         if (ordenResponse.status == 400) {
@@ -626,7 +640,59 @@ const crearOrderCadenaController = async (req, res) => {
         }
         console.log({ usuario })
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Pedido crear orden CAD", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-cad", process.env.PRD)
-        return res.json({ ...ordenResponse })
+        if (!goToExpiry || goToExpiry == false) {
+            return res.json({ ...ordenResponse })
+        } else {
+
+            //? inicio de post orden con go to expiry
+            const orden = await ordenById(ordenResponse.orderNumber)
+            if (orden.status !== 200) {
+                return res.status(400).json({ message: `Error, se creo la orden pero no se obtuvo la orden por ID`, ordenResponse, ordenBody })
+            }
+            const documentLinesOrder = orden.order.DocumentLines
+
+            for (const element of batchSelectItems) {
+
+                const itemCode = element.ItemCode
+                const lineOrder = documentLinesOrder.find((item) => item.ItemCode == itemCode)
+
+                if (lineOrder) {
+
+                    element.LineNum = lineOrder.LineNum
+                    element.BaseEntry = lineOrder.BaseEntry
+                    element.BaseLine = lineOrder.BaseLine
+
+                }
+            }
+
+            for (const element of batchSelectItems) {
+
+                const itemCode = element.ItemCode
+                const batchList = element.BatchSelect
+                const lineNum = element.LineNum
+                const baseEntry = element.BaseEntry
+                const baseLine = element.BaseLine
+
+                for (const element of batchList) {
+
+                    const batchNum = element.BatchNum
+                    const quantity = element.Quantity
+
+                    const createBatchDetails = await createOrdersBatchDetails(
+                        lineNum,
+                        baseEntry,
+                        baseLine,
+                        batchNum,
+                        +quantity,
+                        itemCode
+                    )
+
+                    console.log({ createBatchDetails })
+                }
+            }
+            return res.json({ ...ordenResponse, batchSelectItems, documentLinesOrder })
+            //? fin de post orden con go to expiry
+        }
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
