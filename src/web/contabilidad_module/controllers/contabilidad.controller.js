@@ -696,6 +696,8 @@ const getAsientosContablesCC = async (req, res) => {
                 ContraAct: current.ContraAct,
                 Debit: current.Debit,
                 Credit: current.Credit,
+                SYSDeb: current.SYSDeb,
+                SYSCred: current.SYSCred,
                 LineMemo: current.LineMemo,
                 ShortName: current.ShortName,
                 U_IdComlConcept: current.U_IdComlConcept,
