@@ -1,6 +1,6 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, abastecimientoPorMes } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 
 const parteDiaroController = async (req, res) => {
@@ -213,15 +213,18 @@ const abastecimientoController = async (req, res) => {
 const abastecimientoMesActualController = async (req, res) => {
   try {
 
-    const result = await abastecimientoMesActual()
+    // const result = await abastecimientoMesActual()
+    const dateNow = new Date()
+    const result = await abastecimientoPorMes(dateNow.getMonth() + 1, dateNow.getFullYear())
+    // return res.status(200).json({ result })
     let data = []
     let response = []
     let totalBs = 0, totalDolares = 0, totalPorcentaje = 1
     result.map((item) => {
       const newData = {
         Tipo: item.Tipo,
-        CostoComercial: item["Costo Comercial"],
-        CostoComercialDolares: item["SUM(ROUND(COSTO COMERCIAL TOTAL/6.96,2))"]
+        CostoComercial: item.CostoComercial,
+        CostoComercialDolares: item.CostoComercialUSD
       }
       data.push(newData)
     })
@@ -257,15 +260,16 @@ const abastecimientoMesActualController = async (req, res) => {
 
 const abastecimientoMesAnteriorController = async (req, res) => {
   try {
-    const result = await abastecimientoMesAnterior()
+    const dateNow = new Date()
+    const result = await abastecimientoPorMes(dateNow.getMonth(), dateNow.getFullYear())
     let data = []
     let response = []
     let totalBs = 0, totalDolares = 0, totalPorcentaje = 1
     result.map((item) => {
       const newData = {
         Tipo: item.Tipo,
-        CostoComercial: item["Costo Comercial"],
-        CostoComercialDolares: item["SUM(ROUND(COSTO COMERCIAL TOTAL/6.96,2))"]
+        CostoComercial: item.CostoComercial,
+        CostoComercialDolares: item.CostoComercialUSD
       }
       data.push(newData)
     })
@@ -1051,7 +1055,7 @@ const reporteArticulosPendientesController = async (req, res) => {
   try {
     const startDate = req.query.startDate
     const endDate = req.query.endDate
-    const response  = await reporteArticuloPendientes(startDate,endDate)
+    const response = await reporteArticuloPendientes(startDate, endDate)
     return res.json(response)
   } catch (error) {
     console.log({ error })
@@ -1118,8 +1122,8 @@ const getCommercialMarginByProducts = async (req, res) => {
 
     // Convertir los parámetros opcionales a número o null
     const parsedLineCode = lineCode !== undefined ? Number(lineCode) : null;
-    const parsedSuccode  = succode  !== undefined ? Number(succode)  : null;
-    const parsedDivcode  = divcode  !== undefined ? Number(divcode)  : null;
+    const parsedSuccode = succode !== undefined ? Number(succode) : null;
+    const parsedDivcode = divcode !== undefined ? Number(divcode) : null;
 
     const result = await CommercialMarginByProducts(start, end, parsedSuccode, parsedDivcode, parsedLineCode);
 
@@ -1130,7 +1134,7 @@ const getCommercialMarginByProducts = async (req, res) => {
       mensaje: `Error en el controlador getCommercialMarginByProducts, ${error.message || 'error desconocido'}`
     });
   }
-} 
+}
 
 const getMonthlyCommercialMarginController = async (req, res) => {
   try {
