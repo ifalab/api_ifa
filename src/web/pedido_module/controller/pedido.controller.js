@@ -655,6 +655,7 @@ const crearOrderCadenaController = async (req, res) => {
 
                 const itemCode = element.ItemCode
                 const lineOrder = documentLinesOrder.find((item) => item.ItemCode == itemCode)
+                element.OrderNumber = ordenResponse.orderNumber
 
                 if (lineOrder) {
 
@@ -672,6 +673,7 @@ const crearOrderCadenaController = async (req, res) => {
                 const lineNum = element.LineNum
                 const baseEntry = element.BaseEntry
                 const baseLine = element.BaseLine
+                const orderNumber = element.OrderNumber
 
                 for (const element of batchList) {
 
@@ -684,7 +686,8 @@ const crearOrderCadenaController = async (req, res) => {
                         baseLine,
                         batchNum,
                         +quantity,
-                        itemCode
+                        itemCode,
+                        orderNumber
                     )
 
                     console.log({ createBatchDetails })
