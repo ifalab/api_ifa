@@ -13,7 +13,7 @@ const {
     deleteCabeceraImageController,
     deleteDetalleImageController,
     getDeliveryDigitalizedController,
-    excelEntregasDigitalizadas
+    excelEntregasDigitalizadasController
 } = require('../controllers/digitalizacion.controller');
 
 const router = Router();
@@ -62,10 +62,9 @@ router.get('/reporte/entregas-realizadas',
     getDeliveryDigitalizedController
 );
 
-router.post('/reporte/excel-entregas', 
-    [validarToken, validarCampos], 
-    excelEntregasDigitalizadas
+router.post('/reporte/excel-entregas',
+    [validarToken, validarCampos],
+    excelEntregasDigitalizadasController
 );
-
 
 module.exports = router;

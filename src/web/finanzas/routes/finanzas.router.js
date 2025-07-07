@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController, reporteMargenComercialController, getCommercialMarginByProducts, getMonthlyCommercialMarginController } = require('../controller/finanzas.controller')
+const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController, reporteMargenComercialController, getCommercialMarginByProducts, getMonthlyCommercialMarginController, getReportBankMajorController, getCommercialBankAccountsController, excelBankMajorController } = require('../controller/finanzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -25,4 +25,9 @@ router.get('/reporte-articulos-pendientes', [validarToken, validarCampos], repor
 router.get('/margen-comercial', [validarToken, validarCampos], reporteMargenComercialController)
 router.get('/margen-comercial-mensual', [validarToken, validarCampos], getMonthlyCommercialMarginController)
 router.get('/margen-comercial-articulos', [validarToken, validarCampos], getCommercialMarginByProducts)
+router.get('/mayor-banco', [validarCampos], getReportBankMajorController)
+router.get('/commercial-bank-accounts', [validarToken, validarCampos], getCommercialBankAccountsController)
+router.post('/reporte/excel-mayor-banco', [validarToken, validarCampos], excelBankMajorController);
+
+
 module.exports = router
