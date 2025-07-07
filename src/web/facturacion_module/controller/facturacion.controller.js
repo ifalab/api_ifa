@@ -34,7 +34,8 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     facturaPedidoTodos,
     actualizarEstadoPedido,
     stockByItemCodeBatchNumWhsCode,
-    getBatchDetailByOrderNum } = require("./hana.controller")
+    getBatchDetailByOrderNum,
+    fefoMinExpiry } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations, } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
@@ -169,7 +170,7 @@ const facturacionController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `Se al consulto facturacionByIdSld,  id: ${id || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "https://srvhana:50000/b1s/v1/Orders(${id})", process.env.PRD)
             const facturacion = await facturacionByIdSld(id)
             console.log('2 facturacion ')
-            console.log({ facturacion })
+            // console.log({ facturacion })
             // return res.json({data})
             if (facturacion.lang) {
                 const setOrderResponse = await setOrderState(id, '') // pendiente 
@@ -217,7 +218,7 @@ const facturacionController = async (req, res) => {
             let batchNumbers = []
             let newDocumentLines = []
 
-            // return res.json({ data, dataBatchDetails })
+            // return res.json({ data })
             for (const line of DocumentLines) {
                 let newLine = {}
                 const {
@@ -235,6 +236,19 @@ const facturacionController = async (req, res) => {
                     ...restLine
                 } = line;
 
+                console.log({
+                    ItemCode,
+                    WarehouseCode,
+                    Quantity,
+                    UnitsOfMeasurment,
+                    LineNum,
+                    BaseLine: base1,
+                    BaseType: base2,
+                    BaseEntry: base3,
+                    LineStatus,
+                    U_BatchNum,
+                    BaseLine,
+                })
                 if (expiryClient == true) {
                     //TODO SI el cliente esta dentro de la tabla CLIENTS_EXPIRY_POLICY ------------------------------
                     const batchData = await getBatchDetailByOrderNum(id, base3, BaseLine)
@@ -253,9 +267,10 @@ const facturacionController = async (req, res) => {
 
                     if (batchData && batchData.length > 0) {
 
+                        // console.log({new_quantity, UnitsOfMeasurment})
                         let new_quantity = 0
                         batchData.map((item) => {
-                            new_quantity += Number(item.Quantity).toFixed(6)
+                            new_quantity += Number(item.Quantity)
                         })
 
                         batchNumbers = batchData.map(batch => {
@@ -287,10 +302,61 @@ const facturacionController = async (req, res) => {
                         }
 
                         newLine = { ...newLine }
+                        console.log({new_quantity, UnitsOfMeasurment})
                         newDocumentLines.push(newLine)
                     } else {
                         //! HACER FEFO 12 MESES
-                        newDocumentLines.push({ FEFO: 'HACER FEFO 12 MESES' })
+                        const batchData = await fefoMinExpiry(ItemCode, WarehouseCode, Quantity)
+                        if (batchData.message) {
+                            const setOrderResponse = await setOrderState(id, '') // pendiente 
+                            if (setOrderResponse.length > 0 && setOrderResponse[0].response !== 200) {
+                                endTime = Date.now();
+                                grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se pudo cambiar el estado de la orden , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                                return res.status(400).json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
+                            }
+                            endTime = Date.now();
+                            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+                            return res.status(400).json({ mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}` })
+                        }
+
+                        if (batchData && batchData.length > 0) {
+
+                            let new_quantity = 0
+                            batchData.map((item) => {
+                                new_quantity += Number(item.Quantity)
+                            })
+
+                            batchNumbers = batchData.map(batch => {
+
+                                const newBatch = {
+                                    BaseLineNumber: LineNum,
+                                    BatchNumber: batch.BatchNum,
+                                    Quantity: Number(batch.Quantity),
+                                    ItemCode: batch.ItemCode
+                                }
+
+                                return newBatch
+                            })
+
+                            const data = {
+                                BaseLine: LineNum,
+                                BaseType: 17,
+                                BaseEntry: id,
+                            }
+
+                            newLine = {
+                                ...data,
+                                ItemCode,
+                                WarehouseCode,
+                                Quantity: Number(new_quantity / UnitsOfMeasurment),
+                                LineNum,
+                                ...restLine,
+                                BatchNumbers: batchNumbers
+                            }
+
+                            newLine = { ...newLine }
+                            newDocumentLines.push(newLine)
+                        }
                     }
 
                 } else {
@@ -313,7 +379,7 @@ const facturacionController = async (req, res) => {
 
                         let new_quantity = 0
                         batchData.map((item) => {
-                            new_quantity += Number(item.Quantity).toFixed(6)
+                            new_quantity += Number(item.Quantity)
                         })
 
                         batchNumbers = batchData.map(batch => {
@@ -321,7 +387,7 @@ const facturacionController = async (req, res) => {
                             const newBatch = {
                                 BaseLineNumber: LineNum,
                                 BatchNumber: batch.BatchNum,
-                                Quantity: Number(batch.Quantity).toFixed(6),
+                                Quantity: Number(batch.Quantity),
                                 ItemCode: batch.ItemCode
                             }
 
@@ -359,7 +425,7 @@ const facturacionController = async (req, res) => {
             console.log('rest data------------------------------------------------------------')
             // return res.json({ restData })
             const { U_NIT, U_RAZSOC, U_UserCode } = restData
-            console.log({ restData })
+            // console.log({ restData })
             const {
                 DocDate,
                 DocDueDate,
@@ -379,9 +445,9 @@ const facturacionController = async (req, res) => {
             }
 
             finalDataEntrega = finalData
-            return res.json({ data, finalDataEntrega })
+            // return res.json({ data, finalDataEntrega })
             console.log('FINAL ENTREGA------------------------------------------------------------')
-            console.log({ finalDataEntrega })
+            // console.log({ finalDataEntrega })
             // return res.json({ finalDataEntrega })
             //TODO --------------------------------------------------------------  ENTREGA DELIVERY NOTES
             endTime = Date.now()
@@ -3257,18 +3323,19 @@ const crearPedidoExportacionController = async (req, res) => {
                 return res.status(404).json({ mensaje: `El Item No fue encontrado: ${itemData}` })
             }
             const { SalUnitMsr } = itemData
-            const { cantidad, precio, subtotal } = element
+            const { cantidad, precio, subtotal,U_DESCLINEA } = element
+            const subTotalDesc = subtotal - U_DESCLINEA
             const newData = {
                 LineNum: idx,
                 ItemCode,
                 Quantity: cantidad,
                 GrossPrice: precio,
-                GrossTotal: subtotal,
+                GrossTotal: Number(subTotalDesc.toFixed(2)),
                 WarehouseCode: WhsCode,
                 AccountCode: '4110101',
                 TaxCode: 'IVA_EXE',
                 MeasureUnit: SalUnitMsr,
-                U_DESCLINEA: 0
+                U_DESCLINEA
             }
 
             docLines.push({ ...newData })
@@ -3501,6 +3568,8 @@ const facturarExportacionController = async (req, res) => {
                 } = line;
                 const batchData = await lotesArticuloAlmacenCantidad(ItemCode, WarehouseCode, Quantity);
                 console.log({ batch: batchData })
+                // newDocumentLines.push({batchData})
+                // break
                 if (batchData.message) {
 
                     const setOrderResponse = await setOrderState(id, '') // pendiente 

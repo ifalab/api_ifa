@@ -59,6 +59,24 @@ const lotesArticuloAlmacenCantidad = async (articulo, almacen, lote) => {
     }
 }
 
+
+const fefoMinExpiry = async (articulo, almacen, lote) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.IFASP_INV_GET_BATCH_FEFO_MIN_EXPIRY('${articulo}','${almacen}',${lote})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en fefoMinExpiry:', error.message);
+        return { message: `Error en fefoMinExpiry: ${error.message || ''}` }
+    }
+}
+
 const stockByItemCodeBatchNumWhsCode = async (itemCode, batchNum, whsCode) => {
     try {
         if (!connection) {
@@ -688,4 +706,5 @@ module.exports = {
     actualizarEstadoPedido,
     stockByItemCodeBatchNumWhsCode,
     getBatchDetailByOrderNum,
+    fefoMinExpiry,
 }
