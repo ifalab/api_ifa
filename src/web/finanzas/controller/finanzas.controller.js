@@ -1,6 +1,6 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
 const ExcelJS = require('exceljs');
 
@@ -215,15 +215,18 @@ const abastecimientoController = async (req, res) => {
 const abastecimientoMesActualController = async (req, res) => {
   try {
 
-    const result = await abastecimientoMesActual()
+    // const result = await abastecimientoMesActual()
+    const dateNow = new Date()
+    const result = await abastecimientoPorMes(dateNow.getMonth() + 1, dateNow.getFullYear())
+    // return res.status(200).json({ result })
     let data = []
     let response = []
     let totalBs = 0, totalDolares = 0, totalPorcentaje = 1
     result.map((item) => {
       const newData = {
         Tipo: item.Tipo,
-        CostoComercial: item["Costo Comercial"],
-        CostoComercialDolares: item["SUM(ROUND(COSTO COMERCIAL TOTAL/6.96,2))"]
+        CostoComercial: item.CostoComercial,
+        CostoComercialDolares: item.CostoComercialUSD
       }
       data.push(newData)
     })
@@ -259,15 +262,16 @@ const abastecimientoMesActualController = async (req, res) => {
 
 const abastecimientoMesAnteriorController = async (req, res) => {
   try {
-    const result = await abastecimientoMesAnterior()
+    const dateNow = new Date()
+    const result = await abastecimientoPorMes(dateNow.getMonth(), dateNow.getFullYear())
     let data = []
     let response = []
     let totalBs = 0, totalDolares = 0, totalPorcentaje = 1
     result.map((item) => {
       const newData = {
         Tipo: item.Tipo,
-        CostoComercial: item["Costo Comercial"],
-        CostoComercialDolares: item["SUM(ROUND(COSTO COMERCIAL TOTAL/6.96,2))"]
+        CostoComercial: item.CostoComercial,
+        CostoComercialDolares: item.CostoComercialUSD
       }
       data.push(newData)
     })

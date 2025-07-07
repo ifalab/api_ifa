@@ -101,6 +101,21 @@ const abastecimientoMesActual = async () => {
     }
 }
 
+const abastecimientoPorMes = async (month, year) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `CALL ${process.env.PRD}.IFASP_INV_CALCULATE_PLANT_PURCHASES(i_Year => ${year}, i_Month => ${month})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log('error en abastecimientoPorMes')
+        console.log(error)
+    }
+}
+
 const abastecimientoPorFecha = async () => {
     try {
         if (!connection) {
@@ -381,6 +396,7 @@ module.exports = {
     reporteArticuloPendientes,
     reporteMargenComercial,
     CommercialMarginByProducts,
+    abastecimientoPorMes,
     getMonthlyCommercialMargin,
     getReportBankMajor,
     getCommercialBankAccounts

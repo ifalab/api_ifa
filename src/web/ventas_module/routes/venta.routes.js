@@ -114,7 +114,8 @@ const {
     searchBlockedClientsByZoneSucAndGroup,
     clientesVendedorBloqueadosController,
     clientesVendedorBloqueadosExcelController,
-    clientExpiryPolicyController
+    clientExpiryPolicyController,
+    selectionBatchByItemWhsCodeController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -258,5 +259,7 @@ router.get('/detalle-reporte-pendiente-by-item', [validarToken, validarCampos], 
 // ventasPendienteByItemController
 //! nueva forma con oferta de ventas con seleccion de muchos lotes:
 router.get('/cliente-expiry-policy', [validarToken, validarCampos], clientExpiryPolicyController)
+//! END
+router.get('/selection-batch-item-whs', [validarToken, validarCampos], selectionBatchByItemWhsCodeController)
 
 module.exports = router

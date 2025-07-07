@@ -113,7 +113,8 @@ const {
     findBlockedClientsByZoneAndSuc,
     clientesVendedorBloqueados,
     clientesBloqueadoByGroup,
-    clientExpiryPolicy
+    clientExpiryPolicy,
+    selectionBatchByItemWhsCode
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -1110,26 +1111,27 @@ const detalleOfertaCadenaPendController = async (req, res) => {
     try {
         const id = req.query.id
         const response = await detalleOfertaPendCadena(id)
+        // return res.json(response)
         if (response.status == 400) return res.status(400).json({ mensaje: response.message || 'Error en detalleOfertaCadena' })
         const { data } = response
         data.forEach((row) => {
             const subtotal = row.subTotal
-            const { BatchNum } = row
+            // const { BatchNum } = row
             row.Quantity = Number(row.Quantity)
             row.PendQuantity = Number(row.PendQuantity)
             row.Stock = Number(row.Stock)
             row.subTotal = Number(subtotal)
             row.DiscPrcnt = row.DiscPrcnt == null ? 0 : Number(row.DiscPrcnt)
             row.cantidadMod = row.Stock < row.PendQuantity ? row.Stock : row.PendQuantity
-            if (BatchNum && BatchNum !== '') {
-                row.BatchDataSelect = {
-                    BatchNum,
-                    ExpDate: row.ExpDate || null,
-                    NumInSale: Number(row.NumPerMsr) || null,
-                }
-                row.BatchDataSelectBatchNum = BatchNum
-                row.BatchDataSelectBatcExpDate = row.ExpDate
-            }
+            // if (BatchNum && BatchNum !== '') {
+            //     row.BatchDataSelect = {
+            //         BatchNum,
+            //         ExpDate: row.ExpDate || null,
+            //         NumInSale: Number(row.NumPerMsr) || null,
+            //     }
+            //     row.BatchDataSelectBatchNum = BatchNum
+            //     row.BatchDataSelectBatcExpDate = row.ExpDate
+            // }
         })
         return res.json(data)
     } catch (error) {
@@ -4375,6 +4377,29 @@ const clientExpiryPolicyController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en clientExpiryPolicyController ${error.message || 'No definido'}` });
     }
 }
+
+const selectionBatchByItemWhsCodeController = async (req, res) => {
+    try {
+        let itemCode = req.query.itemCode
+        let whsCode = req.query.whsCode
+
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+
+        if (!whsCode || whsCode == '') {
+            whsCode = null
+        }
+
+        const response = await selectionBatchByItemWhsCode(itemCode,whsCode)
+        
+        return res.json(response)
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
+    }
+}
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -4485,4 +4510,5 @@ module.exports = {
     reportePendienteByItemController,
     ventasPendienteByItemController,
     clientExpiryPolicyController,
+    selectionBatchByItemWhsCodeController
 };
