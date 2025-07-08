@@ -1241,10 +1241,12 @@ const excelBankMajorController = async (req, res) => {
     // Definir columnas con anchos ajustados
     worksheet.columns = [
       { header: 'Fecha', key: 'RefDate', width: 12 }, // Aumentado ancho para fechas
+      { header: 'Origen', key: 'TransName', width: 12 }, // Aumentado ancho para fechas
+      { header: 'Voucher', key: 'Voucher', width: 12 }, // Aumentado ancho para fechas
       { header: 'Codigo Cuenta', key: 'AcctCode', width: 15 },
       { header: 'Nombre Cuenta', key: 'AcctName', width: 30 }, // Aumentado para nombres más largos
-      { header: 'Debito', key: 'Debit', width: 15 },
       { header: 'Credito', key: 'Credit', width: 15 },
+      { header: 'Debito', key: 'Debit', width: 15 },
       { header: 'Glosa', key: 'LineMemo', width: 50 }, // Aumentado para glosas largas
     ];
 
@@ -1259,9 +1261,9 @@ const excelBankMajorController = async (req, res) => {
     worksheet.getCell('A3').value = `Fecha de impresión: ${date}`;
 
     // Fusionar celdas para cabecera
-    worksheet.mergeCells('A1:F1');
-    worksheet.mergeCells('A2:F2');
-    worksheet.mergeCells('A3:F3');
+    worksheet.mergeCells('A1:I1');
+    worksheet.mergeCells('A2:I2');
+    worksheet.mergeCells('A3:I3');
 
     // Estilizar cabecera
     const headerRow = worksheet.getRow(1);
@@ -1324,10 +1326,12 @@ const excelBankMajorController = async (req, res) => {
 
         const row = worksheet.addRow({
           RefDate: formattedDate,
+          TransName: item.TransName || '',
+          Voucher: item.Voucher || '',
           AcctCode: item.AcctCode || '',
           AcctName: item.AcctName || '',
-          Debit: debitoValue,
           Credit: creditoValue,
+          Debit: debitoValue,
           LineMemo: item.LineMemo || '',
         });
 
@@ -1352,10 +1356,12 @@ const excelBankMajorController = async (req, res) => {
       // Agregar fila de totales
       const totalRow = worksheet.addRow({
         RefDate: '',
+        TransName: '',
+        Voucher: '',
         AcctCode: '',
         AcctName: 'TOTALES',
-        Debit: totalDebito,
         Credit: totalCredito,
+        Debit: totalDebito,
         LineMemo: ''
       });
 
