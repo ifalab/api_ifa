@@ -35,9 +35,12 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     actualizarEstadoPedido,
     stockByItemCodeBatchNumWhsCode,
     getBatchDetailByOrderNum,
-    fefoMinExpiry } = require("./hana.controller")
+    fefoMinExpiry,
+    baseEntryByDetailsNDC } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
-    cancelOrder, closeQuotations, } = require("./sld.controller");
+    cancelOrder, closeQuotations,
+    cancelCreditNotes,
+    cancelReturns, } = require("./sld.controller");
 const { spObtenerCUF, spEstadoFactura, listaFacturasSfl, spObtenerCUFString } = require('./sql_genesis.controller');
 const { postFacturacionProsin } = require('./prosin.controller');
 const { response } = require('express');
@@ -302,7 +305,7 @@ const facturacionController = async (req, res) => {
                         }
 
                         newLine = { ...newLine }
-                        console.log({new_quantity, UnitsOfMeasurment})
+                        console.log({ new_quantity, UnitsOfMeasurment })
                         newDocumentLines.push(newLine)
                     } else {
                         //! HACER FEFO 12 MESES
@@ -536,6 +539,10 @@ const facturacionController = async (req, res) => {
                 precioUnitario,
                 montoDescuento,
                 subTotal,
+                //?! ELIMINAR PRUEBA
+                // montoDescuento: 0,
+                // subTotal: Number(precioUnitario) * Number(cantidad),
+                //?! ELIMINAR PRUEBA
                 numeroImei,
                 numeroSerie
             })
@@ -730,7 +737,13 @@ const facturacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
             }
 
+            dataToProsin.correo = 'SINCORREO@LABORATORIOSIFA.COM'
             dataToProsin.usuario = user.USERNAME || 'No definido'
+            //! PRUEBA CON DESCUENTOS ELIMINAR
+            // dataToProsin.descuentoAdicional = 5
+            // dataToProsin.montoDetalle = "646.31"
+            //! PRUEBA CON DESCUENTOS ELIMINAR
+            console.log({ dataToProsin })
             // return res.json({dataToProsin})
             const responseProsin = await facturacionProsin(dataToProsin, user)
             console.log({ responseProsin })
@@ -1345,6 +1358,18 @@ const cancelToProsinController = async (req, res) => {
             docEntry,
             anulacionOrden,
         } = req.body
+        console.log({
+            sucursal,
+            punto,
+            cuf,
+            descripcion,
+            motivoAnulacion,
+            tipoDocumento,
+            usuario,
+            mediaPagina,
+            docEntry,
+            anulacionOrden,
+        })
         let responseProsin = {}
         let endTime = Date.now();
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -1361,6 +1386,17 @@ const cancelToProsinController = async (req, res) => {
         let { estado } = estadoFacturaResponse[0]
         console.log({ estado })
         if (estado) {
+            console.log({
+                mensaje: 'ANULACION PROSIN',
+                sucursal,
+                punto,
+                cuf,
+                descripcion,
+                motivoAnulacion,
+                tipoDocumento,
+                usuario,
+                mediaPagina,
+            })
             responseProsin = await anulacionFacturacion({
                 sucursal,
                 punto,
@@ -1506,6 +1542,128 @@ const cancelToProsinController = async (req, res) => {
     }
 }
 
+const cancelToProsinNDCController = async (req, res) => {
+    const startTime = Date.now();
+    try {
+        const {
+            sucursal,
+            punto,
+            cuf,
+            descripcion,
+            motivoAnulacion,
+            tipoDocumento,
+            usuario,
+            mediaPagina,
+            docEntry,
+            anulacionOrden,
+        } = req.body
+        console.log({
+            sucursal,
+            punto,
+            cuf,
+            descripcion,
+            motivoAnulacion,
+            tipoDocumento,
+            usuario,
+            mediaPagina,
+            docEntry,
+            anulacionOrden,
+        })
+        let responseProsin = {}
+        let endTime = Date.now();
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ user })
+        if (!cuf || cuf == '') {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
+        }
+        const estadoFacturaResponse = await spEstadoFactura(cuf)
+        if (estadoFacturaResponse.message) {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}` })
+        }
+        let { estado } = estadoFacturaResponse[0]
+        console.log({ estado })
+        if (estado) {
+            console.log({
+                mensaje: 'ANULACION PROSIN',
+                sucursal,
+                punto,
+                cuf,
+                descripcion,
+                motivoAnulacion,
+                tipoDocumento,
+                usuario,
+                mediaPagina,
+            })
+            responseProsin = await anulacionFacturacion({
+                sucursal,
+                punto,
+                cuf,
+                descripcion,
+                motivoAnulacion,
+                tipoDocumento,
+                usuario,
+                mediaPagina,
+            }, user)
+            console.log({ responseProsin });
+
+            if (responseProsin.data.mensaje) {
+                const mess = responseProsin.data.mensaje.split('§')
+                endTime = Date.now();
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en anulacionFacturacion de parte de Prosin: ${mess[1] || responseProsin.data.mensaje || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+                return res.status(400).json({ mensaje: `${mess[1] || responseProsin.data.mensaje || 'Error de Prosin en anulacionFacturacion'}` })
+            }
+        }
+
+        if (!docEntry) {
+            endTime = Date.now();
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Debe venir el doc entry CUF(${cuf})`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Debe venir el doc entry` })
+        }
+
+        const reponseCreditNotes = await cancelCreditNotes(docEntry)
+
+        if (reponseCreditNotes.value && !reponseCreditNotes.value.includes('Document is already closed')) {
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel Credit Notes: ${reponseCreditNotes.value || ''}, CUF(${cuf})`, `https://srvhana:50000/b1s/v1/Invoices(id)/Cancel, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            return res.status(400).json({ mensaje: `Error en cancel Credit Notes: ${reponseCreditNotes.value || ''}` })
+        }
+
+        const baseEntryByNDC = await baseEntryByDetailsNDC(docEntry)
+        let listResponseCancelReturns = []
+        for (const element of baseEntryByNDC) {
+            const { BaseEntry } = element
+            const responseCancelReturns = await cancelReturns(BaseEntry)
+            listResponseCancelReturns.push({ ...listResponseCancelReturns })
+            if (responseCancelReturns.value && !responseCancelReturns.value.includes('Document is already closed')) {
+                grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en Returns: ${responseCancelReturns.value || ''}, CUF(${cuf}), BASE ENTRY: ${BaseEntry || 'No Definido'}`, `https://srvhana:50000/b1s/v1/Invoices(id)/Cancel, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+                return res.status(400).json({
+                    mensaje: `Error en Returns: ${responseCancelReturns.value || ''}`,
+                    listResponseCancelReturns,
+                    responseProsin: { ...responseProsin, cuf },
+                    reponseCreditNotes,
+                })
+            }
+        }
+
+        return res.json({
+            responseProsin: { ...responseProsin, cuf },
+            reponseCreditNotes,
+            listResponseCancelReturns
+        })
+
+    } catch (error) {
+        console.log({ error })
+
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        console.log({ usuario })
+        let mensaje = `Error en el controlador CancelToProsin: ${error.message || ''}`
+        console.log({ statuscode: error.statusCode })
+        const endTime = Date.now();
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Facturacion Anular factura NDC", mensaje + `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, 'Catch de CancelToProsin', "facturacion/cancel-to-prosin-ndc", process.env.PRD)
+        return res.status(error.statusCode ?? 500).json({ mensaje })
+    }
+}
 const pedidosFacturadosController = async (req, res) => {
     try {
         let { SucCodes, fecha } = req.body
@@ -3227,7 +3385,12 @@ const crearPedidoExportacionController = async (req, res) => {
 
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-
+        const usdResponse = await tipoDeCambio()
+        if (!usdResponse || usdResponse.length == 0) {
+            return res.status(400).json({ message: `Error al intentar obtener el tipo de cambio` })
+        }
+        const usd = usdResponse[0].Rate
+        // return res.json({usd})
         const docLine = items
         let alprazolamContains = false
         let otherContains = false
@@ -3323,14 +3486,15 @@ const crearPedidoExportacionController = async (req, res) => {
                 return res.status(404).json({ mensaje: `El Item No fue encontrado: ${itemData}` })
             }
             const { SalUnitMsr } = itemData
-            const { cantidad, precio, subtotal,U_DESCLINEA } = element
-            const subTotalDesc = subtotal - U_DESCLINEA
+            const { cantidad, precio, subtotal, U_DESCLINEA } = element
+            const subTotalBs = subtotal * Number(usd)
             const newData = {
                 LineNum: idx,
                 ItemCode,
                 Quantity: cantidad,
                 GrossPrice: precio,
-                GrossTotal: Number(subTotalDesc.toFixed(2)),
+                GrossTotalFC: subtotal,
+                GrossTotal: Number(subTotalBs.toFixed(2)),
                 WarehouseCode: WhsCode,
                 AccountCode: '4110101',
                 TaxCode: 'IVA_EXE',
@@ -3341,8 +3505,11 @@ const crearPedidoExportacionController = async (req, res) => {
             docLines.push({ ...newData })
             idx++
         }
-
+        const sumDescLinea = docLines.reduce((acc, item) => {
+            return acc + item.U_DESCLINEA
+        }, 0)
         bodyToOrder.DocumentLines = docLines
+        // bodyToOrder.DocTotal = bodyToOrder.DocTotal + sumDescLinea
         console.log('--------------------------------------------------------')
         console.log(JSON.stringify(bodyToOrder, null, 2))
         console.log('--------------------------------------------------------')
@@ -3970,6 +4137,11 @@ const facturarExportacionController = async (req, res) => {
                 item.montoDescuento = 0
                 item.subTotal = Number(item.subTotal).toFixed(2)
             })
+
+            const totalDescuentoAdicional = dataToProsin.detalle.reduce((acc, item) => {
+                return acc + Number(item.montoDescuento)
+            }, 0)
+
             let informacionAdd = ''
             const infoAdd = dataToProsin.PickRmrk || ''
             const arrayInfoAdd = infoAdd.split('-')
@@ -4007,7 +4179,7 @@ const facturarExportacionController = async (req, res) => {
                 totalGastosNacionalesFob: 0,
                 totalGastosInternacionales: 0,
                 informacionAdicional: (informacionAdd) ? informacionAdd.slice(0, -1) : ' ',
-                descuentoAdicional: Number(dataToProsin.descuentoAdicional),
+                descuentoAdicional: Number(totalDescuentoAdicional.toFixed(2)),
                 codigoMoneda: dataToProsin.codigoMoneda,
                 tipoCambio: usd,
                 usuario: dataToProsin.usuario,
@@ -4080,7 +4252,7 @@ const facturarExportacionController = async (req, res) => {
                 )
             }
             // const setOrderResponsew = await setOrderState(id, '') //! pendiente 
-            // return res.json({ formatedDataToProsin, dataToProsin })
+            return res.json({ formatedDataToProsin, dataToProsin })
 
             BodyToProsin = formatedDataToProsin
 
@@ -4378,5 +4550,6 @@ module.exports = {
     getClienteByCardCodeController,
     setStatusFacturaController,
     facturacionAllStatusListController,
-    actualizarEstadoPedidoController
+    actualizarEstadoPedidoController,
+    cancelToProsinNDCController,
 }

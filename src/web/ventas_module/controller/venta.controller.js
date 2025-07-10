@@ -2879,10 +2879,13 @@ const getVendedorByCodeController = async (req, res) => {
 
 const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
     try {
-        ////
+        
         const { cliente, vendedor } = req.body;
         const fecha = new Date()
-        const response = await getDescuentosDeVendedoresParaPedido(cliente, vendedor, fecha.toISOString())
+        const month = `${fecha.getMonth() + 1}`
+        const day = `${fecha.getDate()}`
+        const data = `${fecha.getFullYear()}${month.padStart(2, '0')}${day.padStart(2, '0')}`
+        const response = await getDescuentosDeVendedoresParaPedido(cliente, vendedor, data)
         console.log(response)
         return res.json(response);
     } catch (error) {
@@ -4391,8 +4394,8 @@ const selectionBatchByItemWhsCodeController = async (req, res) => {
             whsCode = null
         }
 
-        const response = await selectionBatchByItemWhsCode(itemCode,whsCode)
-        
+        const response = await selectionBatchByItemWhsCode(itemCode, whsCode)
+
         return res.json(response)
 
     } catch (error) {

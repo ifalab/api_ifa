@@ -605,7 +605,7 @@ const crearOrderCadenaController = async (req, res) => {
                 MeasureUnit: data.SalUnitMsr || MeasureUnit,
                 U_DESCLINEA: Number(descLin.toFixed(2)),
                 BaseLine: baseLine,
-                BaseEntry: docEntry,
+                BaseEntry: docEntry,    
                 BaseType: 23,
             }
             if (BatchSelect) {
