@@ -737,9 +737,9 @@ const facturacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: `No existe hay datos del CORREO `, dataToProsin, bodyFinalFactura })
             }
 
-            dataToProsin.correo = 'SINCORREO@LABORATORIOSIFA.COM'
             dataToProsin.usuario = user.USERNAME || 'No definido'
             //! PRUEBA CON DESCUENTOS ELIMINAR
+            // dataToProsin.correo = 'SINCORREO@LABORATORIOSIFA.COM'
             // dataToProsin.descuentoAdicional = 5
             // dataToProsin.montoDetalle = "646.31"
             //! PRUEBA CON DESCUENTOS ELIMINAR

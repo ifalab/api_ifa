@@ -1263,6 +1263,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         console.log({ docEntry })
 
         //----------------------
+        console.log({BaseEntry, Cuf, docEntry, formater})
         const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
         console.log({ entregas })
         // return res.json({ entregas })
@@ -1660,6 +1661,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 finalDataEntrega
             })
         }
+        
         idCreditNote = responseCreditNote.orderNumber
         return res.json({
             finalDataEntrega,
