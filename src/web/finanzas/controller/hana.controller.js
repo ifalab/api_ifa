@@ -329,7 +329,6 @@ const getMonthlyCommercialMargin = async (year) => {
         o_result => ?
       );
     `;
-
         const result = await executeQueryParamsWithConnection(query, [year]);
         return result;
     } catch (error) {
@@ -337,6 +336,50 @@ const getMonthlyCommercialMargin = async (year) => {
         throw new Error(`Error in getMonthlyCommercialMargin: ${error.message}`);
     }
 };
+
+const getReportBankMajor = async (startDate, endDate, skip, limit, search) => {
+    try {
+        const query = `
+        CALL "LAB_IFA_PRD"."IFASP_ACC_GET_BANK_MAJOR"(
+            i_dateIni => ?,
+            i_dateFin => ?,
+            i_skip => ?,
+            i_limit => ?,
+            i_search => ?
+        );
+    `;
+        const start = formatDate(startDate)
+        const end = formatDate(endDate)
+
+        console.log(start, end, ">>>>>>>>>>")
+        console.log({ query });
+        const result = await executeQueryParamsWithConnection(query, [
+            start,
+            end,
+            skip,
+            limit,
+            search
+        ]);
+        return result;
+
+    } catch (error) {
+        console.error('Error in getReportBankMajor:', error);
+        throw new Error(`Error in getReportBankMajor: ${error.message}`);
+    }
+}
+
+
+const getCommercialBankAccounts = async () => {
+    try {
+        const query = `call "LAB_IFA_PRD"."IFASP_ACC_GET_COMMERCIAL_BANK_ACCOUNT"`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.error('Error in getCommercialBankAccounts:', error);
+        throw new Error(`Error in getCommercialBankAccounts: ${error.message}`);
+    }
+}
+
 
 module.exports = {
     parteDiario,
@@ -354,5 +397,7 @@ module.exports = {
     reporteMargenComercial,
     CommercialMarginByProducts,
     abastecimientoPorMes,
-    getMonthlyCommercialMargin
+    getMonthlyCommercialMargin,
+    getReportBankMajor,
+    getCommercialBankAccounts
 }

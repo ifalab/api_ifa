@@ -1,7 +1,9 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, abastecimientoPorMes } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
+const ExcelJS = require('exceljs');
+
 
 const parteDiaroController = async (req, res) => {
   try {
@@ -1156,6 +1158,274 @@ const getMonthlyCommercialMarginController = async (req, res) => {
   }
 };
 
+const getReportBankMajorController = async (req, res) => {
+  try {
+    const { startDate, endDate, page = 1, limit = 10, search = '' } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ mensaje: 'Los parámetros "startDate","endDate" y "account" son requeridos.' });
+    }
+
+    const skip = (page - 1) * limit;
+    const start = parseDateFromYYYYMMDD(startDate);
+    const end = parseDateFromYYYYMMDD(endDate);
+
+    if (!start || !end) {
+      return res.status(400).json({
+        mensaje: 'Las fechas deben tener un formato válido de 8 dígitos (ej: 20250101 => AAAAMMDD)'
+      });
+    }
+
+    const parsedSkip = skip !== undefined ? Number(skip) : 1;
+    const parsedLimit = limit !== undefined ? Number(limit) : 10;
+    const parsedSearch = search !== undefined ? String(search) : '';
+
+    const response = await getReportBankMajor(
+      start,
+      end,
+      parsedSkip,
+      parsedLimit,
+      parsedSearch
+    );
+
+    const total = response.length > 0 ? response[0].TotalCount : 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      reporte: response,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages,
+      }
+    });
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      mensaje: `Error en getReportBankMajorController: ${error.message || 'error desconocido'}`
+    });
+  }
+}
+
+
+const getCommercialBankAccountsController = async (req, res) => {
+  try {
+    const response = await getCommercialBankAccounts();
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      mensaje: `Error en getCommercialBankAccounts: ${error.message || 'error desconocido'}`
+    });
+  }
+}
+
+
+const excelBankMajorController = async (req, res) => {
+  try {
+    const { data, fechaInicio, fechaFin } = req.body;
+
+    const fechaActual = new Date();
+    const date = new Intl.DateTimeFormat('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(fechaActual);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Mayor Banco');
+
+    // Definir columnas con anchos ajustados
+    worksheet.columns = [
+      { header: 'Fecha', key: 'RefDate', width: 12 }, // Aumentado ancho para fechas
+      { header: 'Origen', key: 'TransName', width: 12 }, // Aumentado ancho para fechas
+      { header: 'Voucher', key: 'Voucher', width: 12 }, // Aumentado ancho para fechas
+      { header: 'Codigo Cuenta', key: 'AcctCode', width: 15 },
+      { header: 'Nombre Cuenta', key: 'AcctName', width: 30 }, // Aumentado para nombres más largos
+      { header: 'Credito', key: 'Credit', width: 15 },
+      { header: 'Debito', key: 'Debit', width: 15 },
+      { header: 'Glosa', key: 'LineMemo', width: 50 }, // Aumentado para glosas largas
+    ];
+
+    // Insertar filas de cabecera
+    worksheet.insertRow(1, []);
+    worksheet.insertRow(1, []);
+    worksheet.insertRow(1, []);
+
+    // Agregar contenido a las filas de cabecera
+    worksheet.getCell('A1').value = 'REPORTE DE MAYOR BANCO';
+    worksheet.getCell('A2').value = `Período: ${fechaInicio} - ${fechaFin}`;
+    worksheet.getCell('A3').value = `Fecha de impresión: ${date}`;
+
+    // Fusionar celdas para cabecera
+    worksheet.mergeCells('A1:I1');
+    worksheet.mergeCells('A2:I2');
+    worksheet.mergeCells('A3:I3');
+
+    // Estilizar cabecera
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 30;
+    headerRow.getCell(1).font = { bold: true, size: 16, color: { argb: '004D76' } };
+    headerRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    worksheet.getRow(2).getCell(1).font = { bold: true, size: 12 };
+    worksheet.getRow(2).getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    worksheet.getRow(3).getCell(1).font = { bold: true, size: 12 };
+    worksheet.getRow(3).getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Estilizar encabezados de columnas (fila 4)
+    const columnsRow = worksheet.getRow(4);
+    columnsRow.height = 20;
+    columnsRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'BA005C' } // Color corporativo IFA
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } }
+      };
+    });
+
+    // Estilo de borde para aplicar a todas las celdas
+    const borderStyle = {
+      top: { style: 'thin', color: { argb: '000000' } },
+      bottom: { style: 'thin', color: { argb: '000000' } },
+      left: { style: 'thin', color: { argb: '000000' } },
+      right: { style: 'thin', color: { argb: '000000' } }
+    };
+
+    // Variables para totales
+    let totalDebito = 0;
+    let totalCredito = 0;
+
+    if (data && data.length > 0) {
+      data.forEach((item, index) => {
+        // Formatear la fecha en formato legible
+        let formattedDate = '';
+        if (item.RefDate) {
+          const fecha = new Date(item.RefDate);
+          formattedDate = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
+        }
+
+        const debitoValue = item.Debit ? parseFloat(item.Debit) : 0;
+        const creditoValue = item.Credit ? parseFloat(item.Credit) : 0;
+
+        // Acumular totales
+        totalDebito += debitoValue;
+        totalCredito += creditoValue;
+
+        const row = worksheet.addRow({
+          RefDate: formattedDate,
+          TransName: item.TransName || '',
+          Voucher: item.Voucher || '',
+          AcctCode: item.AcctCode || '',
+          AcctName: item.AcctName || '',
+          Credit: creditoValue,
+          Debit: debitoValue,
+          LineMemo: item.LineMemo || '',
+        });
+
+        // Aplicar bordes a todas las celdas de la fila
+        row.eachCell((cell) => {
+          cell.border = borderStyle;
+
+          // Alineación específica para cada tipo de columna
+          if (cell.column === 1) { // Fecha
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          } else if (cell.column === 4 || cell.column === 5) { // Debito y Credito
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            cell.numFmt = '#,##0.00'; // Formato de número con dos decimales
+          } else if (cell.column === 6) { // Glosa
+            cell.alignment = { vertical: 'middle', wrapText: true }; // Permitir ajuste de texto
+          } else {
+            cell.alignment = { vertical: 'middle' };
+          }
+        });
+      });
+
+      // Agregar fila de totales
+      const totalRow = worksheet.addRow({
+        RefDate: '',
+        TransName: '',
+        Voucher: '',
+        AcctCode: '',
+        AcctName: 'TOTALES',
+        Credit: totalCredito,
+        Debit: totalDebito,
+        LineMemo: ''
+      });
+
+      // Estilizar fila de totales
+      totalRow.eachCell((cell) => {
+        cell.border = borderStyle;
+        cell.font = { bold: true };
+
+        if (cell.column === 3) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        } else if (cell.column === 4 || cell.column === 5) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          cell.numFmt = '#,##0.00';
+          // Color de fondo para destacar los totales
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'F0F0F0' }
+          };
+        }
+      });
+    } else {
+      // Si no hay datos, agregar una fila informativa
+      const emptyRow = worksheet.addRow(['No hay datos disponibles para el período seleccionado']);
+      worksheet.mergeCells(`A${emptyRow.number}:F${emptyRow.number}`);
+      emptyRow.getCell(1).alignment = { horizontal: 'center' };
+      emptyRow.getCell(1).font = { italic: true };
+    }
+
+    // Aplicar autoajuste para la columna de glosa (basado en el contenido)
+    worksheet.getColumn('LineMemo').eachCell({ includeEmpty: false }, (cell) => {
+      if (cell.value && cell.value.toString().length > 50) {
+        cell.alignment = { wrapText: true, vertical: 'middle' };
+      }
+    });
+
+    // Configuración de respuesta
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=reporte_mayor_banco.xlsx');
+
+    // Generar y enviar el Excel
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error('Error generando Excel:', error);
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+
+    grabarLog(
+      user.USERCODE,
+      user.USERNAME,
+      'Reporte de Mayor Banco',
+      `Error generando el Excel: ${error}`,
+      'catch de excelBankMajorController',
+      'finanzas/excel-mayor-banco',
+      process.env.PRD
+    );
+
+    return res.status(500).json({
+      mensaje: `Error al generar el Excel: ${error.message || 'Error desconocido'}`
+    });
+  }
+};
+
 
 module.exports = {
   parteDiaroController,
@@ -1178,4 +1448,7 @@ module.exports = {
   reporteMargenComercialController,
   getCommercialMarginByProducts,
   getMonthlyCommercialMarginController,
+  getReportBankMajorController,
+  getCommercialBankAccountsController,
+  excelBankMajorController
 }

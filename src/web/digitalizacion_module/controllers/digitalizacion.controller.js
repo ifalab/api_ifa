@@ -1,7 +1,7 @@
 const digitalizacionService = require('../services/digitalizacion.service');
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const {
-reporteEntregaDigitalizacion
+    reporteEntregaDigitalizacion
 } = require('../controllers/hana.controller');
 
 const ExcelJS = require('exceljs');
@@ -551,16 +551,16 @@ const deleteDetalleImageController = async (req, res) => {
 const getDeliveryDigitalizedController = async (req, res) => {
     try {
         // Obtener parámetros de la consulta
-        const { startDate, endDate, search ,  page = 1, limit = 10, sucCode } = req.query;
+        const { startDate, endDate, search, page = 1, limit = 10, sucCode } = req.query;
         const skip = parseInt(page - 1) * parseInt(limit);
-        
+
         // Formatear fechas
         // Por defecto usar la fecha de hoy si no se proporcionan fechas
         const now = new Date();
-        
+
         let actualStartDate = null;
         let actualEndDate = null;
-        
+
         // Si las fechas son vacías, null o undefined, usar valores por defecto
         if (startDate && startDate.trim() !== '') {
             actualStartDate = startDate;
@@ -570,7 +570,7 @@ const getDeliveryDigitalizedController = async (req, res) => {
             startOfDay.setHours(0, 0, 0, 0);
             actualStartDate = startOfDay.toISOString().slice(0, 19).replace('T', ' ');
         }
-        
+
         if (endDate && endDate.trim() !== '') {
             actualEndDate = endDate;
         } else {
@@ -579,7 +579,7 @@ const getDeliveryDigitalizedController = async (req, res) => {
             endOfDay.setHours(23, 59, 59, 999);
             actualEndDate = endOfDay.toISOString().slice(0, 19).replace('T', ' ');
         }
-        
+
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
 
         // Procesar la solicitud
@@ -589,15 +589,15 @@ const getDeliveryDigitalizedController = async (req, res) => {
             search || '',
             skip,
             limit,
-            sucCode 
+            sucCode
         );
 
         // Registrar la operación exitosa en el log
         grabarLog(
-            usuario.USERCODE, 
-            usuario.USERNAME, 
-            "Digitalización - Reporte Entregas", 
-            `Reporte de entregas digitalizadas generado exitosamente`, 
+            usuario.USERCODE,
+            usuario.USERNAME,
+            "Digitalización - Reporte Entregas",
+            `Reporte de entregas digitalizadas generado exitosamente`,
             JSON.stringify({
                 startDate: actualStartDate,
                 endDate: actualEndDate,
@@ -605,7 +605,7 @@ const getDeliveryDigitalizedController = async (req, res) => {
                 skip,
                 limit
             }),
-            "digitalizacion/reporte/entregas", 
+            "digitalizacion/reporte/entregas",
             process.env.PRD || 'DEV'
         );
 
@@ -628,12 +628,12 @@ const getDeliveryDigitalizedController = async (req, res) => {
         // Registrar el error en el log
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
         const mensaje = `Error al generar reporte de entregas digitalizadas: ${error.message || ''}`;
-        
+
         grabarLog(
-            usuario.USERCODE, 
-            usuario.USERNAME, 
-            "Digitalización - Reporte Entregas", 
-            mensaje, 
+            usuario.USERCODE,
+            usuario.USERNAME,
+            "Digitalización - Reporte Entregas",
+            mensaje,
             JSON.stringify({
                 startDate: req.query.startDate,
                 endDate: req.query.endDate,
@@ -641,7 +641,7 @@ const getDeliveryDigitalizedController = async (req, res) => {
                 skip: req.query.skip,
                 limit: req.query.limit
             }),
-            "digitalizacion/reporte/entregas", 
+            "digitalizacion/reporte/entregas",
             process.env.PRD || 'DEV'
         );
 
@@ -652,10 +652,11 @@ const getDeliveryDigitalizedController = async (req, res) => {
     }
 };
 
-const excelEntregasDigitalizadas = async (req, res) => {
+
+const excelEntregasDigitalizadasController = async (req, res) => {
     try {
         const { data, fechaInicio, fechaFin } = req.body;
-                
+
         // Obtener fecha actual formateada
         const fechaActual = new Date();
         const date = new Intl.DateTimeFormat('es-ES', {
@@ -687,12 +688,12 @@ const excelEntregasDigitalizadas = async (req, res) => {
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
         worksheet.insertRow(1, []);
-        
+
         // Agregar contenido a las filas de cabecera
         worksheet.getCell('A1').value = 'REPORTE DE ENTREGAS DIGITALIZADAS';
         worksheet.getCell('A2').value = `Período: ${fechaInicio} - ${fechaFin}`;
         worksheet.getCell('A3').value = `Fecha de impresión: ${date}`;
-        
+
         // Fusionar celdas para cabecera
         worksheet.mergeCells('A1:I1');
         worksheet.mergeCells('A2:I2');
@@ -703,10 +704,10 @@ const excelEntregasDigitalizadas = async (req, res) => {
         headerRow.height = 30;
         headerRow.getCell(1).font = { bold: true, size: 16, color: { argb: '004D76' } };
         headerRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
-        
+
         worksheet.getRow(2).getCell(1).font = { bold: true, size: 12 };
         worksheet.getRow(2).getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
-        
+
         worksheet.getRow(3).getCell(1).font = { bold: true, size: 12 };
         worksheet.getRow(3).getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
@@ -722,17 +723,17 @@ const excelEntregasDigitalizadas = async (req, res) => {
             };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = {
-                top: { style: 'thin', color: {argb: '000000'} },
-                bottom: { style: 'thin', color: {argb: '000000'} },
-                left: { style: 'thin', color: {argb: '000000'} },
-                right: { style: 'thin', color: {argb: '000000'} }
+                top: { style: 'thin', color: { argb: '000000' } },
+                bottom: { style: 'thin', color: { argb: '000000' } },
+                left: { style: 'thin', color: { argb: '000000' } },
+                right: { style: 'thin', color: { argb: '000000' } }
             };
         });
 
         // Agregar datos reales o filas vacías
         const numRows = 20; // Número de filas a generar (ajustar según necesario)
         const startRow = 5; // La primera fila de datos es la 5
-        
+
         if (data && data.length > 0) {
             // Usar datos reales
             data.forEach((item, index) => {
@@ -743,10 +744,10 @@ const excelEntregasDigitalizadas = async (req, res) => {
                     CreateDate: item.CreateDate ? new Date(item.CreateDate) : null,
                     DocTotal: item.DocTotal ? parseFloat(item.DocTotal) : 0
                 };
-                
+
                 const row = worksheet.addRow(rowData);
                 row.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
-                
+
                 // Aplicar bordes y formatos
                 applyFormatToRow(row);
             });
@@ -764,33 +765,33 @@ const excelEntregasDigitalizadas = async (req, res) => {
                     CreateDate: '',
                     DocTotal: 0,
                 });
-                
+
                 row.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
-                
+
                 // Aplicar bordes y formatos
                 applyFormatToRow(row);
             }
         }
-        
+
         // Calcular total general
-        const totalGeneral = data && data.length > 0 
+        const totalGeneral = data && data.length > 0
             ? data.reduce((acc, item) => acc + (parseFloat(item.DocTotal) || 0), 0)
             : 0;
-            
+
         // Agregar fila de total al final (como en la imagen)
         const totalRowIndex = startRow + numRows;
-        const totalRow = worksheet.addRow(['', '', '', '', '', '','','TOTAL GENERAL:', totalGeneral]);
-        
+        const totalRow = worksheet.addRow(['', '', '', '', '', '', '', 'TOTAL GENERAL:', totalGeneral]);
+
         // Estilizar fila de total
         applyFormatToRow(totalRow, true);
-        
+
         // Formato específico para el total
         totalRow.getCell('CardName').font = { bold: true };
         totalRow.getCell('CardName').alignment = { horizontal: 'right' };
         totalRow.getCell('DocTotal').font = { bold: true };
         totalRow.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
         totalRow.getCell('DocTotal').alignment = { horizontal: 'right' };
-        
+
         // Configuración de respuesta
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=entregas_digitalizadas.xlsx');
@@ -798,24 +799,24 @@ const excelEntregasDigitalizadas = async (req, res) => {
         // Generar y enviar el Excel
         await workbook.xlsx.write(res);
         res.end();
-        
+
     } catch (error) {
         console.error('Error generando Excel:', error);
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
-        
+
         // Registrar el error en el log
         grabarLog(
-            user.USERCODE, 
-            user.USERNAME, 
-            'Reporte de Entregas Digitalizadas', 
+            user.USERCODE,
+            user.USERNAME,
+            'Reporte de Entregas Digitalizadas',
             `Error generando el Excel: ${error}`,
-            'catch de excelEntregasDigitalizadas', 
-            'digitalizacion/excel-entregas', 
+            'catch de excelEntregasDigitalizadas',
+            'digitalizacion/excel-entregas',
             process.env.PRD
         );
-        
-        return res.status(500).json({ 
-            mensaje: `Error al generar el Excel: ${error.message || 'Error desconocido'}` 
+
+        return res.status(500).json({
+            mensaje: `Error al generar el Excel: ${error.message || 'Error desconocido'}`
         });
     }
 };
@@ -824,24 +825,24 @@ const excelEntregasDigitalizadas = async (req, res) => {
 function applyFormatToRow(row, isTotal = false) {
     // Determinar el estilo de borde que se usará
     const borderStyle = isTotal ? 'double' : 'thin';
-    
+
     // Aplicar bordes a TODAS las celdas de la fila
     for (let i = 1; i <= 9; i++) { // 9 columnas en total
         const cell = row.getCell(i);
-        
+
         // Asegurarnos de que la celda tenga un valor (aunque sea vacío)
         if (cell.value === undefined || cell.value === null) {
             cell.value = '';
         }
-        
+
         // Aplicar bordes con color negro explícito
         cell.border = {
-            top: { style: borderStyle, color: {argb: '000000'} },
-            bottom: { style: borderStyle, color: {argb: '000000'} },
-            left: { style: 'thin', color: {argb: '000000'} },
-            right: { style: 'thin', color: {argb: '000000'} }
+            top: { style: borderStyle, color: { argb: '000000' } },
+            bottom: { style: borderStyle, color: { argb: '000000' } },
+            left: { style: 'thin', color: { argb: '000000' } },
+            right: { style: 'thin', color: { argb: '000000' } }
         };
-        
+
         // Aplicar alineación específica por tipo de columna
         if (i === 7) { // DocTotal
             cell.alignment = { horizontal: 'right' };
@@ -863,5 +864,5 @@ module.exports = {
     deleteCabeceraImageController,
     deleteDetalleImageController,
     getDeliveryDigitalizedController,
-    excelEntregasDigitalizadas
+    excelEntregasDigitalizadasController,
 };
