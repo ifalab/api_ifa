@@ -14,6 +14,7 @@ const { loginUser, createUser, findAllUser, findUserById, updateUser, desactiveU
 } = require("./hana.controller")
 const { postSalesPersons, patchSalesPersons } = require("./sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
+const { clientByCardCode } = require('../../datos_maestros_module/controller/hana.controller');
 
 const authLoginPost = async (req, res) => {
     try {
@@ -95,37 +96,20 @@ const createUserController = async (req, res) => {
             dimensionDos,
             dimensionTres,
             dimensionSublinea,
+            externalClient,
             roles
         } = req.body
 
-        console.log({
-            usercode,
-            username,
-            pass,
-            codemp,
-            confirm_pass,
-            superuser,
-            etiqueta,
-            dimensionUno: [...dimensionUno],
-            dimensionDos: [...dimensionDos],
-            dimensionTres: [...dimensionTres],
-            dimensionSublinea: [...dimensionSublinea],
-            roles: [...roles]
-        })
-        // return res.status(400).json({
-        //     usercode,
-        //     username,
-        //     pass,
-        //     codemp,
-        //     confirm_pass,
-        //     superuser,
-        //     etiqueta,
-        //     dimensionUno: [...dimensionUno],
-        //     dimensionDos: [...dimensionDos],
-        //     dimensionTres: [...dimensionTres],
-        //     dimensionSublinea: [...dimensionSublinea],
-        //     roles: [...roles]
-        // })
+        let dataClientExternal = []
+
+        if (externalClient) {
+            dataClientExternal = await clientByCardCode(usercode)
+        }
+
+        if (dataClientExternal.length == 0) {
+            return res.status(400).json({ mensaje: 'No se pueden crear clientes externo si el CardCode no se especifica en el UserCode' })
+        }
+        // return res.json({ dataClientExternal })
         if (pass !== confirm_pass) {
             return res.status(400).json({ mensaje: 'las contraseñas son distintas' })
         }
@@ -137,7 +121,9 @@ const createUserController = async (req, res) => {
             codemp,
             encryptPassword,
             superuser,
-            etiqueta,)
+            etiqueta,
+            externalClient
+        )
         const response = result[0]
 
         const value = response["response"]

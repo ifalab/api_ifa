@@ -104,6 +104,7 @@ const createUser = async (
     new_pass,
     new_superuser,
     new_etiqueta,
+    new_externalClient,
 ) => {
     try {
         if (!connection) {
@@ -116,7 +117,7 @@ const createUser = async (
             new_superuser,
             new_etiqueta,
         })
-        const query = `call LAB_IFA_LAPP.LAPP_CREAR_USUARIO('${new_usercode}', '${new_username}','${new_codemp}','${new_pass}',${new_superuser},'${new_etiqueta}')`;
+        const query = `call LAB_IFA_LAPP.LAPP_CREAR_USUARIO('${new_usercode}', '${new_username}','${new_codemp}','${new_pass}',${new_superuser},${new_externalClient},'${new_etiqueta}')`;
         console.log({ query });
         const result = await executeQuery(query);
         console.log('hana')
