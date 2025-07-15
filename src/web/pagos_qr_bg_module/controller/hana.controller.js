@@ -93,7 +93,6 @@ const registrarNotificacionPago = async (qrId, transactionId, fechaPago) => {
     } catch (error) {
         console.error("[PAGO-QR] Error en registrarNotificacionPago:", error);
 
-        // Devolver un objeto estructurado con el error en lugar de lanzar la excepción
         return {
             result: false,
             message: `Error al registrar el pago: ${error.message}`

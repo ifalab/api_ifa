@@ -50,7 +50,9 @@ app.use('/v1/web/contabilidad/digitalizacion', require('./web/digitalizacion_mod
 
 //TODO BANCO QR --------------------------------------------------------------------------------------
 app.use('/v1/web/pago-qr-bg', require('./web/pagos_qr_bg_module/routes/pago-qr.bg.routes'));
+app.use('/v1/web/pago-qr-bg/prod/notification', require('./web/pagos_qr_bg_module/routes/pago-qr.bg-prod.routes'));
 app.use('/v1/web/pago-qr-bg/test', require('./web/pagos_qr_bg_module/routes/banco-qr-test.routes'));
+app.use('/v1/web/pago-qr-bg/prod', require('./web/pagos_qr_bg_module/routes/banco-qr-prod.routes'));
 
 //TODO VERSION MOVIL --------------------------------------------------------------------------------------
 app.use('/v1/movil/ventas', require('./movil/ventas_module/routes/ventas.routes'))
