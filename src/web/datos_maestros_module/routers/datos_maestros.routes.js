@@ -73,6 +73,7 @@ router.post('/delete-desc-linea', [validarToken, validarCampos], deleteDescuento
 router.post('/desc-especial-articulo', [validarToken, validarCampos], setDescuentoEspecialPorArticuloController)
 router.get('/tipos', [validarToken, validarCampos], obtenerTiposController)
 router.get('/tipos-by-groupcode', [validarToken, validarCampos], tipoByGroupCodeController)
+
 router.get('/descuentos-especiales', [validarToken, validarCampos], obtenerDescuetosEspecialesController)
 router.get('/ids-especiales', [validarToken, validarCampos], getIdsDescuentoEspecialController)
 router.post('/especiales-by-id', [validarToken, validarCampos], getDescuentosEspecialesByIdController)

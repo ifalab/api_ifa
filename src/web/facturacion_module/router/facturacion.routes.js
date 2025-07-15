@@ -27,7 +27,8 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     getClienteByCardCodeController,
     setStatusFacturaController,
     facturacionAllStatusListController,
-    actualizarEstadoPedidoController
+    actualizarEstadoPedidoController,
+    cancelToProsinNDCController
 } = require('../controller/facturacion.controller')
 const router = Router()
 
@@ -45,6 +46,7 @@ router.post('/obtener-invoices-cancel', [validarToken, validarCampos], obtenerIn
 router.post('/facturas-anular', [validarToken, validarCampos], listaFacturasAnular)
 router.get('/info-factura', [validarToken, validarCampos], infoFacturaController)
 router.post('/cancel-to-prosin', [validarToken, validarCampos], cancelToProsinController)
+router.post('/cancel-to-prosin-ndc', [validarToken, validarCampos], cancelToProsinNDCController)
 router.post('/pedidos-facturados', [validarToken, validarCampos], pedidosFacturadosController)
 router.get('/obtener-entregas', [validarToken, validarCampos], obtenerEntregasController)
 router.get('/obtener-entrega-detalle', [validarToken, validarCampos], obtenerEntregaDetalleController)

@@ -519,7 +519,7 @@ const articulosExportacion = async (parameter) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemName" LIKE '%${parameter}%' AND "SellItem" = 'Y' limit 50`
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemName" LIKE '%${parameter}%' OR "ItemCode" LIKE '%${parameter}%' AND "SellItem" = 'Y' limit 50`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -667,6 +667,21 @@ const getBatchDetailByOrderNum = async(orderNum, baseEntry,baseLine)=>{
     }
 }
 
+const baseEntryByDetailsNDC = async(docEntry)=>{
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFAP_SAL_GET_DETAILS_BY_NDC(${docEntry})`
+        console.log({query})
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de baseEntryByDetailsNDC: ${error.message}`)
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -707,4 +722,5 @@ module.exports = {
     stockByItemCodeBatchNumWhsCode,
     getBatchDetailByOrderNum,
     fefoMinExpiry,
+    baseEntryByDetailsNDC,
 }
