@@ -27,7 +27,9 @@ const { findClientePorVendedor,
     articuloPorItemCode,
     descuentosCortoVencimiento,
     listaPrecioOficialCortoVencimiento,
-    createOrdersBatchDetails
+    createOrdersBatchDetails,
+    listaPrecioClienteExterno,
+    ofertaClienteExterno
 } = require("./hana.controller");
 const { postOrden, postQuotations, patchQuotations, getQuotation, ordenById } = require("../../../movil/ventas_module/controller/sld.controller");
 const { findClientesByVendedor, grabarLog } = require("../../shared/controller/hana.controller");
@@ -201,8 +203,82 @@ const descuentoCondicionController = async (req, res) => {
 const listaPreciosOficilaController = async (req, res) => {
     try {
         const cardCode = req.query.cardCode
+
         const listaPrecioResponse = await listaPrecioOficial(cardCode)
         return res.json({ listaPrecio: listaPrecioResponse })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
+    }
+}
+
+const listaPreciosIfaExternoController = async (req, res) => {
+    try {
+        const user = req.usuarioAutorizado
+        const { USERCODE, EXTERNAL_CLIENT } = user
+        if (!EXTERNAL_CLIENT) {
+            return res.status(401).json({ mensaje: `No autorizado, Usted no es un cliente Externo` })
+        }
+        const cardCode = USERCODE
+        let response = []
+        const clientData = await clientePorCardCode(cardCode)
+        if (clientData.length == 0) {
+            return res.status(404).json({ mensaje: `Cliente no encontrado` })
+        }
+        console.log(JSON.stringify({ clientData }, null, 2))
+        const listaPrecioResponse = await listaPrecioClienteExterno(cardCode, null)
+        response = listaPrecioResponse.map((item) => {
+            const { FrgnName, LineItemCode, WhsCode, ...rest } = item
+            return {
+                ...rest,
+                PriceMax: Number(item.PriceMax),
+                Stock: Number(item.Stock),
+                descEsp: Number(item.descEsp),
+            }
+        })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
+    }
+}
+
+const ofertaClienteExternoController = async (req, res) => {
+    try {
+        const user = req.usuarioAutorizado
+        const estado = req.query.estado
+        const { USERCODE, EXTERNAL_CLIENT } = user
+
+        if (!EXTERNAL_CLIENT) {
+            return res.status(401).json({ mensaje: `No autorizado, Usted no es un cliente Externo` })
+        }
+
+        const estadosPermitidos = ['P', 'R', 'E']
+        /**
+         * Estado a manejar @estadosPermitidos 
+         * P = Pendiente
+         * R = Procesado
+         * E = Error
+         * 
+        */
+
+        if (!estado) {
+            return res.status(401).json({ mensaje: `No existe el Parametro 'estado' en la Query`, estado })
+        }
+
+        if (!estadosPermitidos.includes(estado)) {
+            return res.status(401).json({ mensaje: `El estado (${estado}) no esta permitido`, estadosPermitidos })
+        }
+
+        const cardCode = USERCODE
+        const data = await ofertaClienteExterno(cardCode, estado)
+        const response = data.map((item) => {
+            const { DocNum, CreateDate, JrnlMemo, DocTotal, DocTime, ...rest } = item
+            return {
+                DocNum, CreateDate, DocTime, JrnlMemo, DocTotal: Number(DocTotal),
+            }
+        })
+        return res.json(response)
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador: ${error.message || 'Nodefinido'}` })
@@ -349,56 +425,143 @@ const crearOrderController = async (req, res) => {
     }
 }
 
-const crearOrderIfaController = async (req, res) => {
+const crearOfertaIfaController = async (req, res) => {
     let body = req.body
     try {
-        const { CardCode, DocDate } = body
+        const user = req.usuarioAutorizado
+        const { DocDate } = body
 
-        const cliente = await clientePorCardCode(CardCode)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+        if (!dateRegex.test(DocDate)) {
+            return res.status(400).json({
+                mensaje: `El formato de la fecha (DocDate) es inválido. Se espera AAAA-MM-DD.`,
+                DataBody: { DocDate }
+            });
+        }
+
+        const parsedDate = new Date(DocDate);
+
+        if (isNaN(parsedDate.getTime())) {
+            return res.status(400).json({
+                mensaje: `La fecha (DocDate) no es una fecha válida. Verifica que el día y el mes sean correctos.`,
+                DataBody: { DocDate }
+            });
+        }
+
+        const [year, month, day] = DocDate.split('-').map(Number);
+        if (isNaN(parsedDate.getTime()) ||
+            parsedDate.getUTCFullYear() !== year ||
+            parsedDate.getUTCMonth() !== (month - 1) ||
+            parsedDate.getUTCDate() !== day) {
+            return res.status(400).json({
+                mensaje: `La fecha (DocDate) no es una fecha válida. Verifica que el día y el mes sean correctos y válidos para el año.`,
+                DataBody: { DocDate }
+            });
+        }
+
+        const cardCode = user.USERCODE
+        const cliente = await clientePorCardCode(cardCode)
         if (!cliente || cliente.length == 0) {
-            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El cliente no existe: ${CardCode || 'No Definido'}`, `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode" = '${CardCode || 'No Definido'}'`, "pedido/crear-orden-ifa", process.env.PRD)
+            grabarLog(`${cardCode || 'No Definido'}`, `${user.USERNAME || 'No Definido'}`, "Pedido crear oferta IFA", `El cliente no existe: ${cardCode || 'No Definido'}`, `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "cardCode" = '${CardCode || 'No Definido'}'`, "pedido/crear-oferta-ifa", process.env.PRD)
             return res.status(404).json({ mensaje: 'El cliente no existe' })
         }
+
         const paymentCode = cliente[0].GroupNum
+        const clientData = cliente[0]
         const DocDue = await getDocDueDate(DocDate, paymentCode)
         if (!DocDue || DocDue.length == 0) {
-            grabarLog(`${DocDue || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `No se pudo calcular el DocDueDate`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
-            return res.status(404).json({ mensaje: `No se pudo calcular el DocDueDate, revise el DocDate` })
+            grabarLog(`${DocDue || 'No Definido'}`, `${user.USERNAME || 'No Definido'}`, "Pedido crear oferta IFA", `No se pudo calcular el DocDueDate`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-oferta-ifa", process.env.PRD)
+            return res.status(400).json({ mensaje: `No se pudo calcular el DocDueDate, revise el DocDate` })
         }
         const docDueData = DocDue[0].DocDueDate
+
         body.PaymentGroupCode = paymentCode
-        body.Comments = body.Comments + ' PEDIDO DESDE EL ENDPOINT PUBLICO'
+        body.CardCode = cardCode
+        body.Comments = "Oferta de Venta desde la WEB, PEDIDO DESDE EL ENDPOINT PUBLICO"
         body.DocDueDate = docDueData
         body.Series = process.env.SAP_SERIES_ORDER
+        body.FederalTaxID = cliente.LicTradNum
+        body.JournalMemo = body.JournalMemo
+        body.U_NIT = cliente.LicTradNum
+        body.U_RAZSOC = cliente.CardFName
+        body.U_B_State = 'P'
+        body.U_ORIGIN = 'DMS'
+
         let docLines = body.DocumentLines
         let newDocLines = []
+        let lineNum = 0
         for (const element of docLines) {
-            const { ItemCode } = element
+            const { ItemCode, Quantity } = element
             if (!ItemCode || ItemCode == '') {
-                grabarLog(`${ItemCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El Item No es valido: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
-                return res.status(404).json({ mensaje: `El Item No es valido: ${ItemCode}` })
+                grabarLog(`${ItemCode || 'No Definido'}`, `${user.USERNAME || 'No Definido'}`, "Pedido oferta orden IFA", `El Item No es valido: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-oferta-ifa", process.env.PRD)
+                return res.status(400).json({ mensaje: `El Item No es valido: ${ItemCode}` })
             }
             const itemData = await articuloPorItemCode(ItemCode)
+            const itemDataPrice = await listaPrecioClienteExterno(cardCode, ItemCode)
             if (!itemData || itemData.length == 0) {
-                grabarLog(`${itemData || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `El Item No fue encontrado: ${itemData || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
-                return res.status(404).json({ mensaje: `El Item No fue encontrado: ${itemData}` })
+                grabarLog(`${itemData || 'No Definido'}`, `${user.USERNAME || 'No Definido'}`, "Pedido crear oferta IFA", `El Item No fue encontrado: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-oferta-ifa", process.env.PRD)
+                return res.status(404).json({
+                    mensaje: `El Item No fue encontrado: ${ItemCode}`,
+                    DataBody: { ItemCode, Quantity }
+                })
             }
-            const { SalUnitMsr } = itemData
+
+            if (!itemDataPrice || itemDataPrice.length == 0) {
+                grabarLog(`${itemDataPrice || 'No Definido'}`, `${user.USERNAME || 'No Definido'}`, "Pedido crear oferta IFA", `El precio del item No fue encontrado: ${ItemCode || 'No definido'}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-oferta-ifa", process.env.PRD)
+                return res.status(404).json({
+                    mensaje: `El precio del item No fue encontrado: ${ItemCode}`,
+                    DataBody: { ItemCode, Quantity }
+                })
+            }
+            const { SalUnitMsr, ItemName } = itemData[0]
+            const { PriceMax, descEsp } = itemDataPrice[0]
+
+            if (isNaN(Quantity)) {
+                return res.status(400).json({
+                    mensaje: `La cantidad (Quantity) no es un parametro Numerico aceptable.`,
+                    DataBody: { ItemCode, Quantity }
+                })
+            }
+            const quantity = Number(Quantity)
+
+            if (Quantity <= 0) {
+                return res.status(400).json({
+                    mensaje: `La cantidad (Quantity) no puede ser Negativo o 0.`,
+                    DataBody: { ItemCode, Quantity }
+                })
+            }
+
+            if (!Number.isInteger(quantity)) {
+                return res.status(400).json({
+                    mensaje: `La cantidad (Quantity) no puede ser un valor decimal.`,
+                    DataBody: { ItemCode, Quantity }
+                })
+            }
+
+            const priceMax = Number(PriceMax)
+            const grossTotal = quantity * priceMax
             const newData = {
-                ...element,
-                WarehouseCode: cliente[0].DftWhsCode,
+                LineNum: lineNum,
+                ItemCode,
+                ItemName,
+                Quantity: quantity,
+                GrossPrice: priceMax,
+                GrossTotal: Number(grossTotal.toFixed(2)),
+                WarehouseCode: clientData.DftWhsCode,
                 AccountCode: '4110101',
                 TaxCode: 'IVA',
-                MeasureUnit: SalUnitMsr
+                MeasureUnit: SalUnitMsr,
+                U_DESCLINEA: Number(descEsp)
             }
 
             newDocLines.push({ ...newData })
+            lineNum++
         }
+
         body.DocumentLines = newDocLines
-        // return res.json(body)
-        console.log(JSON.stringify({ body }, null, 2))
+
         const alprazolamCode = '102-004-028'
-        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const docLine = body.DocumentLines
         let alprazolamContains = false
         let otherContains = false
@@ -409,36 +572,35 @@ const crearOrderIfaController = async (req, res) => {
                 otherContains = true
             }
         })
-        // return
+
         if (alprazolamContains && otherContains) {
-            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden IFA", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-orden-ifa", process.env.PRD)
+            grabarLog(`${cardCode || 'No Definido'}`, `${user.USERNAME || 'No Definido'}`, "Pedido crear oferta IFA", `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.`, '', "pedido/crear-oferta-ifa", process.env.PRD)
             return res.status(400).json({ message: `Error no se puede MEZCLAR ALPRAZOLAM con otros articulos.` })
         }
-        console.log(JSON.stringify({ docLine, alprazolamContains, otherContains }, null, 2))
-        // return
-        console.log(JSON.stringify({ body }, null, 2))
-        const ordenResponse = await postOrden(body)
 
-        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        console.log(JSON.stringify(ordenResponse, null, 2))
-        console.log('crear orden /6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6/6')
-        if (ordenResponse.status == 400) {
-            grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden ifa", `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
-            return res.status(400).json({ message: `Error en el proceso postOrden. ${ordenResponse.errorMessage.value || ordenResponse.errorMessage || ordenResponse.message || ''}` })
+        const total = newDocLines.reduce((acc, item) => {
+            return acc + item.GrossTotal
+        }, 0)
+
+        body.DocTotal = Number(total.toFixed(2))
+        // return res.json({ body })
+        const ofertaResponse = await postQuotations(body)
+
+        if (ofertaResponse.status == 400) {
+            grabarLog(`${cardCode || 'No Definido'}`, `${user.USERNAME || 'No Definido'}`, "Pedido oferta orden ifa", `Error en el proceso postQuotations. ${ofertaResponse.errorMessage.value || ofertaResponse.errorMessage || ofertaResponse.message || ''}`, 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-ifa", process.env.PRD)
+            return res.status(400).json({ message: `Error desde el SAP. ${ofertaResponse.errorMessage.value || ofertaResponse.errorMessage || ofertaResponse.message || ''}` })
         }
 
+        console.log({ user })
+        grabarLog(`${cardCode || 'No Definido'}`, `${user.USERNAME || 'No Definido'}`, "Pedido crear oferta ifa", "Oferta creada con exito", 'https://srvhana:50000/b1s/v1/Quotations', "pedido/crear-oferta-ifa", process.env.PRD)
 
-        console.log({ usuario })
-        grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden ifa", "Orden creada con exito", 'https://srvhana:50000/b1s/v1/Orders', "pedido/crear-orden-ifa", process.env.PRD)
-
-        return res.json({ ...ordenResponse })
+        return res.json({ ...ofertaResponse })
     } catch (error) {
         console.log({ error })
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ usuario })
-        const message = `Error en el controlador crearOrderController: ${error.message || ''}`
-        grabarLog(`${CardCode || 'No Definido'}`, 'Farmacorp', "Pedido crear orden ifa", `${message || ''}`, '', "pedido/crear-orden-ifa", process.env.PRD)
-
+        const message = `Error en el controlador. ${error.message || ''}`
+        grabarLog(`${usuario.USERCODE || 'No Definido'}`, `${usuario.USERNAME || 'No Definido'}`, "Pedido crear oferta ifa", `${message || ''}`, '', "pedido/crear-oferta-ifa", process.env.PRD)
         return res.status(500).json({ message })
     }
 }
@@ -605,7 +767,7 @@ const crearOrderCadenaController = async (req, res) => {
                 MeasureUnit: data.SalUnitMsr || MeasureUnit,
                 U_DESCLINEA: Number(descLin.toFixed(2)),
                 BaseLine: baseLine,
-                BaseEntry: docEntry,    
+                BaseEntry: docEntry,
                 BaseType: 23,
             }
             if (BatchSelect) {
@@ -1486,11 +1648,12 @@ module.exports = {
     stockInstitucionPorArticuloController,
     pedidoOfertaInstitucionesController,
     listaNegraDescuentosController,
-    crearOrderIfaController,
+    crearOfertaIfaController,
     pedidosPorVendedorFacturadosOrdenadoController,
     patchQuotationsWhscodeController,
     descuentoCortoVencimientoController,
     findClienteController,
     listaPreciosOficilaCVController,
-
+    listaPreciosIfaExternoController,
+    ofertaClienteExternoController,
 }

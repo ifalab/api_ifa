@@ -607,9 +607,9 @@ const facturasClienteLoteItemCodeController = async (req, res) => {
         const batchNum = req.query.batchNum
         console.log({ itemCode, cardCode, batchNum })
         const response = await facturasClienteLoteItemCode(itemCode, cardCode, batchNum)
-        console.log({ response })
+        // console.log({ response })
         const responseGenesis = await getFacturasParaDevolucion(cardCode, itemCode, batchNum)
-        console.log({ responseGenesis })
+        // console.log({ responseGenesis })
         if (responseGenesis.message) {
             return res.json(response)
         }
@@ -1471,7 +1471,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             } else {
                 mensaje += responseProsin.data.mensaje || ''
             }
-            return res.status(400).json({
+            return res.status(400).json({   
                 mensaje,
                 dataToProsin, entregasFromProsin, idReturn, finalDataEntrega, entregas
             })

@@ -415,6 +415,7 @@ const cerrarCajaChicaController = async (req, res) => {
         const tipoCambio = await tipoDeCambio()
         const usdRate = tipoCambio[0]
         const usd = +usdRate.Rate
+        console.log({usd})
         const montoAccount = Number(dataAccount.FondoFijo)
         let JournalEntryLines = []
         if (montoAccount == 0) {
@@ -525,12 +526,13 @@ const cerrarCajaChicaController = async (req, res) => {
         // return res.json({ postJournalEntry, dataAccount, dataBankAccount, dataRendiciones, totalDebe, totalHaber })
         console.log('data asiento cierre:')
         console.log({ postJournalEntry })
+        return res.json({postJournalEntry})
         const response = await asientoContable({
             ...postJournalEntry
         })
         if (response.value) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error al cerrar la apertura de caja. SAP: ${response.value || 'no definido'}`, `${response.lang || ''}`, "contabilidad/cierre-caja-chica", process.env.PRD)
-            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. SAP: ${response.value || 'no definido'}` })
+            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. SAP: ${response.value || 'no definido'}`,postJournalEntry })
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Cierre de Caja realizado con exito`, `${''}`, "contabilidad/cierre-caja-chica", process.env.PRD)
         return res.json({ mensaje: 'Cierre de Caja realizado con exito', postJournalEntry, data })

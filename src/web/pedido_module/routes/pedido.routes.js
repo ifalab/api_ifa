@@ -14,11 +14,13 @@ const { clientesVendedorController, clientesMoraController, moraController, cata
     stockInstitucionPorArticuloController,
     pedidoOfertaInstitucionesController,
     listaNegraDescuentosController,
-    pedidosPorVendedorFacturadosOrdenadoController, 
-    crearOrderIfaController,
+    pedidosPorVendedorFacturadosOrdenadoController,
     patchQuotationsWhscodeController,
     descuentoCortoVencimientoController, findClienteController,
-    listaPreciosOficilaCVController} = require('../controller/pedido.controller')
+    listaPreciosOficilaCVController,
+    listaPreciosIfaExternoController,
+    crearOfertaIfaController,
+    ofertaClienteExternoController} = require('../controller/pedido.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const router = Router()
 
@@ -29,12 +31,13 @@ router.get('/catalogo', [validarToken, validarCampos], catalogoController)
 router.get('/regla-articulo', [validarToken, validarCampos], descuentoArticuloController)
 router.get('/regla-condicion', [validarToken, validarCampos], descuentoCondicionController)
 router.get('/lista-precio', [validarToken, validarCampos], listaPreciosOficilaController)
+
 router.get('/lista-precio-cv', [validarToken, validarCampos], listaPreciosOficilaCVController)
+
 router.get('/sugerido-zona', [validarToken, validarCampos], sugeridosXZonaController)
 router.get('/sugerido-cliente', [validarToken, validarCampos], sugeridosXClienteController)
 router.get('/zonas-vendedor', [validarToken, validarCampos], findZonasXVendedorController)
 router.post('/crear-orden', [validarToken, validarCampos], crearOrderController)
-router.post('/crear-orden-ifa', [checkToken, validarCampos], crearOrderIfaController)
 router.post('/crear-orden-cad', [validarToken, validarCampos], crearOrderCadenaController)
 router.post('/crear-oferta', [validarToken, validarCampos], crearOrderController)
 router.get('/white-list', [validarToken, validarCampos], whiteListController)
@@ -59,6 +62,12 @@ router.patch('/patch-quotation-whscode', [validarToken, validarCampos], patchQuo
 router.get('/descuento-corto-vencimiento', [validarToken, validarCampos], descuentoCortoVencimientoController)
 
 router.post('/cliente-vendedor-cardcode', [validarToken, validarCampos], findClienteController)
+
+//! CLIENTES EXTERNO --------------------:
+router.get('/lista-precio-ifa', [validarToken, validarCampos], listaPreciosIfaExternoController)
+router.post('/crear-oferta-ifa', [validarToken, validarCampos], crearOfertaIfaController)
+router.get('/lista-ofertas-cliente-externo', [validarToken, validarCampos], ofertaClienteExternoController)
+//! -------------------------------------
 
 
 module.exports = router

@@ -4184,7 +4184,7 @@ const facturarExportacionController = async (req, res) => {
                 // totalGastosInternacionales: Number(dataToProsin.TransFrontInt || 0) + Number(dataToProsin.SegFrontInt || 0) + Number(dataToProsin.OtrosInt || 0),
                 totalGastosNacionalesFob: 0,
                 totalGastosInternacionales: 0,
-                informacionAdicional: (informacionAdd) ? informacionAdd.slice(0, -1) : ' ',
+                informacionAdicional: (informacionAdd) ? informacionAdd.slice(0, -1) : '',
                 descuentoAdicional: Number(totalDescuentoAdicional.toFixed(2)),
                 codigoMoneda: dataToProsin.codigoMoneda,
                 tipoCambio: usd,
@@ -4280,6 +4280,10 @@ const facturarExportacionController = async (req, res) => {
                     return res.status(400).json({ mensaje: 'No existe el Codigo de Pais en el Cliente ', formatedDataToProsin })
                 }
                 return res.status(400).json({ mensaje: 'No existe el Codigo de Pais en el Cliente ', formatedDataToProsin })
+            }
+            
+            if (formatedDataToProsin.informacionAdicional == ' ') {
+                formatedDataToProsin.informacionAdicional = ''
             }
 
             console.log(JSON.stringify({ formatedDataToProsin }, null, 2))
