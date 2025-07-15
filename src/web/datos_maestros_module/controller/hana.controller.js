@@ -588,6 +588,24 @@ const findCliente = async (buscar) => {
     }
 }
 
+const clientByCardCode = async (buscar) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_clientes where "CardCode" = '${buscar}'`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en clientByCardCode:', error);
+        throw {
+            status: 400,
+            message: `Error en clientByCardCode: ${error.message || ''}`
+        }
+    }
+}
+
 const getIdDescuentosCantidad = async (itemCode) => {
     try {
         if (!connection) {
@@ -1157,5 +1175,7 @@ module.exports = {
     sucursalBySucCode,
     tipoByGroupCode,
     dmSearchClientes,
-    findAllArticulos,searchArticulos,
+    findAllArticulos,
+    searchArticulos,
+    clientByCardCode,
 }

@@ -101,6 +101,21 @@ const abastecimientoMesActual = async () => {
     }
 }
 
+const abastecimientoPorMes = async (month, year) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `CALL ${process.env.PRD}.IFASP_INV_CALCULATE_PLANT_PURCHASES(i_Year => ${year}, i_Month => ${month})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log('error en abastecimientoPorMes')
+        console.log(error)
+    }
+}
+
 const abastecimientoPorFecha = async () => {
     try {
         if (!connection) {
@@ -230,13 +245,13 @@ const findAllGroupAlmacenes = async () => {
     }
 }
 
-const reporteArticuloPendientes = async (startDate,endDate) => {
+const reporteArticuloPendientes = async (startDate, endDate) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.ifa_lapp_inv_analisis_de_pendientes_por_fecha('${startDate}','${endDate}')`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -246,8 +261,8 @@ const reporteArticuloPendientes = async (startDate,endDate) => {
 }
 
 const reporteMargenComercial = async (startDate, endDate) => {
-  try {
-    const query = `
+    try {
+        const query = `
       CALL "LAB_IFA_DATA"."IFASP_SAL_CALCULATE_COMERCIAL_SALES_MARGINS"(
         i_ini_date => ?, 
         i_fin_date => ?, 
@@ -255,30 +270,30 @@ const reporteMargenComercial = async (startDate, endDate) => {
       );
     `;
 
-    // Asegúrate de pasar las fechas en formato 'yyyyMMdd'
-    const start = formatDate(startDate); // Ej: '20250101'
-    const end = formatDate(endDate);     // Ej: '20250531'
-    const result = await executeQueryParamsWithConnection(query, [start, end]);
+        // Asegúrate de pasar las fechas en formato 'yyyyMMdd'
+        const start = formatDate(startDate); // Ej: '20250101'
+        const end = formatDate(endDate);     // Ej: '20250531'
+        const result = await executeQueryParamsWithConnection(query, [start, end]);
 
-    return result;
-  } catch (error) {
-    console.error('Error en reporteMargenComercial:', error);
-    throw new Error(`Error en reporteMargenComercial: ${error.message}`);
-  }
+        return result;
+    } catch (error) {
+        console.error('Error en reporteMargenComercial:', error);
+        throw new Error(`Error en reporteMargenComercial: ${error.message}`);
+    }
 };
 
 // Función utilitaria para convertir Date o string a 'yyyyMMdd'
 function formatDate(date) {
-  const d = new Date(date);
-  const yyyy = d.getFullYear();
-  const mm = `${d.getMonth() + 1}`.padStart(2, '0');
-  const dd = `${d.getDate()}`.padStart(2, '0');
-  return `${yyyy}${mm}${dd}`;
+    const d = new Date(date);
+    const yyyy = d.getFullYear();
+    const mm = `${d.getMonth() + 1}`.padStart(2, '0');
+    const dd = `${d.getDate()}`.padStart(2, '0');
+    return `${yyyy}${mm}${dd}`;
 }
 
 const CommercialMarginByProducts = async (startDate, endDate, succode, divcode, lineCode) => {
-  try {
-    const query = `
+    try {
+        const query = `
       CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ITEMS_COMERCIAL_MARGINS_BY_ITEMCODE (
         i_ini_date      => ?,     -- Fecha inicial
         i_fin_date      => ?,     -- Fecha final
@@ -288,40 +303,83 @@ const CommercialMarginByProducts = async (startDate, endDate, succode, divcode, 
         o_result        => ?
       );
     `;
-    const start = formatDate(startDate)
-    const end = formatDate(endDate)
-    console.log({start, end, succode, divcode, lineCode})
-    const result = await executeQueryParamsWithConnection(query, [
-      start,
-      end,
-      succode,
-      divcode,
-      lineCode
-    ]);
+        const start = formatDate(startDate)
+        const end = formatDate(endDate)
+        console.log({ start, end, succode, divcode, lineCode })
+        const result = await executeQueryParamsWithConnection(query, [
+            start,
+            end,
+            succode,
+            divcode,
+            lineCode
+        ]);
 
-    return result;
-  } catch (error) {
-    console.error('Error en reporteMargenComercial:', error);
-    throw new Error(`Error en reporteMargenComercial: ${error.message}`);
-  }
+        return result;
+    } catch (error) {
+        console.error('Error en reporteMargenComercial:', error);
+        throw new Error(`Error en reporteMargenComercial: ${error.message}`);
+    }
 };
 
 const getMonthlyCommercialMargin = async (year) => {
-  try {
-    const query = `
+    try {
+        const query = `
       CALL "LAB_IFA_DATA"."IFASP_SAL_CALCULATE_MONTHLY_COMERCIAL_SALES_MARGINS"(
         i_Year => ?, 
         o_result => ?
       );
     `;
-
-    const result = await executeQueryParamsWithConnection(query, [year]);
-    return result;
-  } catch (error) {
-    console.error('Error in getMonthlyCommercialMargin:', error);
-    throw new Error(`Error in getMonthlyCommercialMargin: ${error.message}`);
-  }
+        const result = await executeQueryParamsWithConnection(query, [year]);
+        return result;
+    } catch (error) {
+        console.error('Error in getMonthlyCommercialMargin:', error);
+        throw new Error(`Error in getMonthlyCommercialMargin: ${error.message}`);
+    }
 };
+
+const getReportBankMajor = async (startDate, endDate, skip, limit, search) => {
+    try {
+        const query = `
+        CALL "LAB_IFA_PRD"."IFASP_ACC_GET_BANK_MAJOR"(
+            i_dateIni => ?,
+            i_dateFin => ?,
+            i_skip => ?,
+            i_limit => ?,
+            i_search => ?
+        );
+    `;
+        const start = formatDate(startDate)
+        const end = formatDate(endDate)
+
+        console.log(start, end, ">>>>>>>>>>")
+        console.log({ query });
+        const result = await executeQueryParamsWithConnection(query, [
+            start,
+            end,
+            skip,
+            limit,
+            search
+        ]);
+        return result;
+
+    } catch (error) {
+        console.error('Error in getReportBankMajor:', error);
+        throw new Error(`Error in getReportBankMajor: ${error.message}`);
+    }
+}
+
+
+const getCommercialBankAccounts = async () => {
+    try {
+        const query = `call "LAB_IFA_PRD"."IFASP_ACC_GET_COMMERCIAL_BANK_ACCOUNT"`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.error('Error in getCommercialBankAccounts:', error);
+        throw new Error(`Error in getCommercialBankAccounts: ${error.message}`);
+    }
+}
+
 
 module.exports = {
     parteDiario,
@@ -338,5 +396,8 @@ module.exports = {
     reporteArticuloPendientes,
     reporteMargenComercial,
     CommercialMarginByProducts,
-    getMonthlyCommercialMargin
+    abastecimientoPorMes,
+    getMonthlyCommercialMargin,
+    getReportBankMajor,
+    getCommercialBankAccounts
 }

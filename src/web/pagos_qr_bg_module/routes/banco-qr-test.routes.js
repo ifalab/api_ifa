@@ -18,7 +18,7 @@ const router = Router();
 router.get('/autenticar', testAutenticarController);
 
 // Para estas rutas, primero verificamos que tengamos token del banco
-router.post('/generar-qr', [verificarTokenDelBanco,validarToken], testGenerarQRController);
+router.post('/generar-qr', [verificarTokenDelBanco, validarToken], testGenerarQRController);
 router.post('/anular-qr', [verificarTokenDelBanco, validarToken], testAnularQRController);
 router.post('/listar-ordenes', [verificarTokenDelBanco, validarToken], testListarOrdenesController);
 router.post('/estado-qr', [verificarTokenDelBanco, validarToken], testConsultarEstadoController);

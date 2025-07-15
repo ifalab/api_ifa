@@ -292,7 +292,7 @@ const listaPrecioCadenas = async () => {
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
-        console.log({error})
+        console.log({ error })
         throw new Error('Error al procesar la solicitud: listaPrecioCadenas');
     }
 }
@@ -311,7 +311,7 @@ const precioArticuloCadena = async (nroLista, itemArticulo) => {
     }
 }
 
-const clientesPorSucursal= async (id_sucursal) => {
+const clientesPorSucursal = async (id_sucursal) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -325,14 +325,14 @@ const clientesPorSucursal= async (id_sucursal) => {
         }
     } catch (error) {
         console.error('Error en clientesPorSucursal:', error.message);
-        return { 
+        return {
             statusCode: 400,
-            message: `Error al procesar clientesPorSucursal: ${error.message || ''}` 
+            message: `Error al procesar clientesPorSucursal: ${error.message || ''}`
         }
     }
 }
 
-const getAllArticulos= async (itemName) => {
+const getAllArticulos = async (itemName) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -343,8 +343,8 @@ const getAllArticulos= async (itemName) => {
         return result
     } catch (error) {
         console.error('Error en getAllArticulos:', error.message);
-        throw { 
-            message: `Error al procesar getAllArticulos: ${error.message || ''}` 
+        throw {
+            message: `Error al procesar getAllArticulos: ${error.message || ''}`
         }
     }
 }
@@ -388,7 +388,7 @@ const listaNegraDescuentos = async () => {
         }
         // const query = `select * from ${process.env.PRD}.IFA_DM_ARTICULOS_LISTA_NEGRA_DESCUENTOS`;
         const query = `select * from LAB_IFA_PRD.IFA_DM_ARTICULOS_LISTA_NEGRA_DESCUENTOS`;
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
 
@@ -413,7 +413,7 @@ const clientePorCardCode = async (cardCode) => {
     }
 }
 
-const articuloPorItemCode= async (itemCode) => {
+const articuloPorItemCode = async (itemCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -428,7 +428,7 @@ const articuloPorItemCode= async (itemCode) => {
     }
 }
 
-const descuentosCortoVencimiento = async()=>{
+const descuentosCortoVencimiento = async () => {
     try {
         if (!connection) {
             await connectHANA();
@@ -440,6 +440,29 @@ const descuentosCortoVencimiento = async()=>{
     } catch (error) {
         console.error('Error en listaNegraDescuentos:', error.message);
         throw { message: `Error al procesar articuloPorItemCode: ${error.message}` }
+    }
+}
+
+const createOrdersBatchDetails = async (
+    i_LineNum,
+    i_BaseEntry,
+    i_BaseLine,
+    i_BatchNum,
+    i_Quantity,
+    i_ItemCode,
+    i_OrderNum) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFAT_SAL_CREATE_ORDERS_BATCH_DETAILS(${i_LineNum},${i_BaseEntry},${i_BaseLine},'${i_BatchNum}',${i_Quantity},'${i_ItemCode}','${i_OrderNum}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+
+    } catch (error) {
+        console.error('Error en createOrdersBatchDetails:', error.message);
+        throw { message: `Error al procesar createOrdersBatchDetails: ${error.message}` }
     }
 }
 
@@ -471,4 +494,5 @@ module.exports = {
     articuloPorItemCode,
     descuentosCortoVencimiento,
     listaPrecioOficialCortoVencimiento,
+    createOrdersBatchDetails,
 }

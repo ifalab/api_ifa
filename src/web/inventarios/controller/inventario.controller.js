@@ -38,7 +38,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     updateOpenqtyTrasladoSolicitud,
     entregasClienteDespachadorCabecera,
     entregasClienteDespachadorDetalle,
-    todasSolicitudesPendiente
+    todasSolicitudesPendiente,
+    ndcByDateRange
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -46,7 +47,7 @@ const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditN
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega } = require("../../facturacion_module/controller/hana.controller")
-const { spObtenerCUF } = require("../../facturacion_module/controller/sql_genesis.controller")
+const { spObtenerCUF, spDetalleNDC } = require("../../facturacion_module/controller/sql_genesis.controller")
 const { notaDebitoCredito } = require("../../facturacion_module/service/apiFacturacionProsin")
 const path = require('path');
 const fs = require('fs');
@@ -741,10 +742,27 @@ const devolucionCompletaController = async (req, res) => {
         let cabeceraReturn = []
         let numRet = 0
         for (const line of entregas) {
+
             let newLine = {}
-            const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode,
-                AccountCode, U_B_cuf: U_B_cufEntr, U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,
-                ...restLine } = line;
+            const {
+                ItemCode,
+                WarehouseCode,
+                Quantity,
+                UnitsOfMeasurment,
+                LineNum,
+                BaseLine: base1,
+                BaseType: base2,
+                LineStatus,
+                BaseEntry: base3,
+                TaxCode,
+                AccountCode,
+                U_B_cuf: U_B_cufEntr,
+                U_NIT, U_RAZSOC,
+                U_UserCode,
+                CardCode: cardCodeEntrega,
+                ...restLine
+            } = line;
+
             if (cabeceraReturn.length == 0) {
                 cabeceraReturn.push({
                     U_NIT, U_RAZSOC,
@@ -1229,6 +1247,9 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             idReturnHecho
         })
 
+        // const detailNDCw = await spDetalleNDC('4661A21FEE5FD111BA79A103C86598C1013D037841868FD6B569E1F74')
+        // const product = detailNDCw.find((item) => item.producto == '101-005-010')
+        // return res.json({ detailNDCw, product })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         if (!docEntry || docEntry <= 0) {
             return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
@@ -1242,8 +1263,10 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         console.log({ docEntry })
 
         //----------------------
+        console.log({BaseEntry, Cuf, docEntry, formater})
         const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
         console.log({ entregas })
+        // return res.json({ entregas })
         let finalDataEntrega
         if (entregas.message) {
             endTime = Date.now()
@@ -1324,7 +1347,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     }
                 }
             }
-            const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, U_B_cuf } = entregas[0]
+            const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,U_B_cuf } = entregas[0]
             const finalData = {
                 // DocDate,
                 // DocDueDate,
@@ -1333,6 +1356,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 U_NIT,
                 U_RAZSOC,
                 U_B_cufd: U_B_cuf,
+                U_TIPODOC: '6',
                 U_UserCode: id_sap,
                 DocumentLines: newDocumentLines,
             }
@@ -1364,6 +1388,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //*------------------------------------------------ DETALLE TO PROSIN
         // return res.json({idReturn})
 
+        console.log({idReturn})
         const entregasFromProsin = await entregaDetalleToProsin(idReturn)
         console.log({ entregasFromProsin })
         if (!entregasFromProsin || entregasFromProsin.length == 0) {
@@ -1451,8 +1476,9 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 dataToProsin, entregasFromProsin, idReturn, finalDataEntrega, entregas
             })
         }
-        console.log({ responseProsin })
-        // return res.json({responseProsin})
+
+
+        // return res.json({ responseProsin })
 
         //     "responseProsin": {
         //     "statusCode": 200,
@@ -1468,12 +1494,39 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //     "query": "https://lab2.laboratoriosifa.com:96/api/sfl/NotaCreditoDebito"
         // }
         //*------------------------------------------------------------------------ RESPONSE PROSIN
-
+        console.log({ responseProsin })
         console.log({ datosProsin: responseProsin.data.datos })
         cufndc = responseProsin.data.datos.cuf
         const facturandc = responseProsin.data.datos.factura
-        //---------------------------------------------------------------------PATCH RETURNS
+        //TODO START OBTENER EL DETALLE NDC DESDE PDF, XML, O DB
+        const detailNDC = await spDetalleNDC(cufndc)
+        if (detailNDC.length == 0) {
+            return res.status(responceReturn.status).json({
+                mensaje: 'Error, no se pudo obtener el detalle NDC'
+            })
+        }
 
+        // "detailNDCw": [
+        //     {
+        //         "producto": "101-005-010",
+        //         "descripcion": "FENORAL X 2 ML X 3 AMP. SOLUCION INY.",
+        //         "cantidad": 3,
+        //         "precio_unitario": 76.55,
+        //         "monto_descuento": 4.59,
+        //         "sub_total": 225.06
+        //     },
+        //     {
+        //         "producto": "101-011-011",
+        //         "descripcion": "CILASTAX POLVO INY. + AGUA INYECTABLE X 10 ML",
+        //         "cantidad": 11,
+        //         "precio_unitario": 117.7,
+        //         "monto_descuento": 0,
+        //         "sub_total": 1294.7
+        //     }
+        // ]
+        //TODO END
+        //---------------------------------------------------------------------PATCH RETURNS
+        console.log({detailNDC})
         const responsePatchReturns = await patchReturn({ U_B_cuf: cufndc, NumAtCard: facturandc }, idReturn)
 
         if (responsePatchReturns.status > 299) {
@@ -1545,16 +1598,31 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_NC' },
                 ]
             }
-
+            // const detailNDCw = await spDetalleNDC('4661A21FEE5FD111BA79A103C86598C1013D037841868FD6B569E1F74')
+            const product = detailNDC.find((item) => item.producto == ItemCodeDev)
+            if (!product) {
+                grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Completa", `Error, se realiazo la devolucion pero no se guardo en SAP , no se encontro el articulo: ${ItemCodeDev || "No definido"} en la lista detailNDC, revise la consola.`, ``, "inventario/devolucion-ndc", process.env.PRD)
+                return res.status(400).json({
+                    mensaje: `Error, se realiazo la devolucion pero no se guardo en SAP , no se encontro el articulo: ${ItemCodeDev || "No definido"} en la lista detailNDC, revise la consola.`,
+                    detailNDC
+                })
+            }
+            // return res.json({ detailNDCw, product })
             const newLineDev = {
                 LineNum: numDev,
                 BaseLine: LineNumDev,
                 BaseType: 16,
                 BaseEntry: idReturn,
-                ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev,
+                ItemCode: ItemCodeDev,
+                Quantity: product.cantidad,
+                WarehouseCode: WarehouseCodeDev,
                 AccountCode: '6210103',
-                GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev,
-                TaxCode: 'IVA_NC'
+                GrossTotal: product.sub_total,
+                GrossPrice: product.precio_unitario,
+                MeasureUnit: MeasureUnitDev,
+                UnitsOfMeasurment: UnitsOfMeasurmentDev,
+                TaxCode: 'IVA_NC',
+                U_DESCLINEA: product.monto_descuento,
             }
 
             DocumentLinesCN.push(newLineDev)
@@ -1564,9 +1632,16 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
 
         const bodyCreditNotes = {
             ...cabeceraCN[0],
+            U_TIPODOC: '6',
             DocumentLines: DocumentLinesCN,
             DocumentAdditionalExpenses
         }
+
+        const total = bodyCreditNotes.DocumentLines.reduce((acc, item) => {
+            return acc + Number(item.GrossTotal)
+        }, 0)
+        bodyCreditNotes.DocTotal = Number(total.toFixed(2))
+        console.log({ bodyCreditNotes })
         const responseCreditNote = await postCreditNotes(bodyCreditNotes)
 
         if (responseCreditNote.status > 299) {
@@ -1586,6 +1661,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 finalDataEntrega
             })
         }
+        
         idCreditNote = responseCreditNote.orderNumber
         return res.json({
             finalDataEntrega,
@@ -3517,16 +3593,22 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
     let entregaFinished = false
     let allBodies = {}
     try {
-        const { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
+        let { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
             // AlmacenSalida, nuevosArticulos 
         } = req.body
         console.log(JSON.stringify({
             facturas, id_sap, CardCode, AlmacenIngreso
             // , AlmacenSalida, nuevosArticulos 
         }, null, 2))
-
-        // return res.json({ facturas, id_sap, AlmacenIngreso, AlmacenSalida, CardCode, nuevosArticulos })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const idSap = user.ID_SAP || 0
+        id_sap = idSap
+        if (id_sap == 0 || !id_sap) {
+            return res.status(400).json({ mensaje: 'Usted no tiene ID SAP' })
+        }
+        // return res.json({ facturas, id_sap, AlmacenIngreso, CardCode })
+        // return 
+
         let totalFacturas = 0
         let totalesFactura = []
 
@@ -5297,7 +5379,7 @@ const crearTrasladoController = async (req, res) => {
                 }
             });
         }
-        
+
         for (let data of StockTransferLines) {
             const { U_BatchNum, LineNum, Quantity, ItemCode, FromWarehouseCode, NumPerMsr, ...rest } = data
             if (isReception) {
@@ -5943,6 +6025,35 @@ const excelReporte = async (req, res) => {
     }
 };
 
+const ndcByDateRangeController = async (req, res) => {
+    try {
+        const { startDate, endDate, listSucCode } = req.body
+
+        if (!startDate || startDate == '') {
+            return res.status(400).json({ mensaje: `No existe la fecha inicial` });
+        }
+
+        if (!endDate || endDate == '') {
+            return res.status(400).json({ mensaje: `No existe la fecha final` });
+        }
+
+        if (!listSucCode || listSucCode.length == 0) {
+            return res.status(400).json({ mensaje: `No existe la lista de sucursales o la listas esta vacia` });
+        }
+
+        let data = []
+        for (const element of listSucCode) {
+            const response = await ndcByDateRange(startDate, endDate, element)
+            data = [...data, ...response]
+        }
+
+        return res.json(data)
+
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -6012,5 +6123,6 @@ module.exports = {
     excelDevolucion,
     entregasRealizadasCabeceraController,
     entregasRealizadasDetalleController,
-    todasSolicitudesTrasladoController
+    todasSolicitudesTrasladoController,
+    ndcByDateRangeController
 }

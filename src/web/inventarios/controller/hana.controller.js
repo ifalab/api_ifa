@@ -1061,6 +1061,23 @@ const updateOpenqtyTrasladoSolicitud = async (idTralado, LineTralado, itemcode, 
         }
     }
 }
+
+const ndcByDateRange= async (start, end, sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_GET_DEBIT_CREDIT_MEMOS_BY_DATE_RANGE('${start}','${end}',${sucCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en ndcByDateRange:', error.message);
+        throw {
+            message: `Error al procesar ndcByDateRange: ${error.message || ''}`
+        }
+    }
+}
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1114,5 +1131,6 @@ module.exports = {
     updateOpenqtyTrasladoSolicitud,
     entregasClienteDespachadorCabecera,
     entregasClienteDespachadorDetalle,
-    todasSolicitudesPendiente
+    todasSolicitudesPendiente,
+    ndcByDateRange
 }

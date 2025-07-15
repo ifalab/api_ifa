@@ -272,6 +272,54 @@ const cancelInvoice = async (id) => {
     }
 }
 
+const cancelCreditNotes = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://172.16.11.25:50000/b1s/v1/CreditNotes(${id})/Cancel`
+        const sapResponse = await axios.post(url, {}, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        console.log(sapResponse)
+        return { data: sapResponse.data }
+    } catch (error) {
+        console.log("Error sld controller ", { error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        return errorMessage
+    }
+}
+
+const cancelReturns = async (id) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://172.16.11.25:50000/b1s/v1/Returns(${id})/Cancel`
+        const sapResponse = await axios.post(url, {}, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        console.log(sapResponse)
+        return { data: sapResponse.data }
+    } catch (error) {
+        console.log("Error sld controller ", { error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud POST';
+        return errorMessage
+    }
+}
+
 const cancelDeliveryNotes = async (id) => {
     try {
         const currentSession = await validateSession();
@@ -352,6 +400,8 @@ module.exports = {
     cancelOrder,
     closeQuotations,
     getEntrega,
+    cancelCreditNotes,
+    cancelReturns,
     // setOrderState,
     // getOrdersById,
 }

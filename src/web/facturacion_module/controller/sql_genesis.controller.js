@@ -42,6 +42,20 @@ async function spEstadoFactura(cuf) {
     }
 }
 
+async function spDetalleNDC(cuf) {
+    try {
+        const pool = await poolGenesisPromise;
+        console.log({pool})
+        console.log({cuf})
+        const result = await pool.request().query(`exec spDetalleNDC '${cuf}'`);
+        console.log('Resultados:', result.recordset);
+        return result.recordset
+    } catch (err) {
+        console.error('Error en la consulta:', err);
+        return {message: `Error en la consulta spDetalleNDC : ${err.message}`}
+    }
+}
+
 async function listaFacturasSfl(matriz,startDate,endDate) {
     try {
         const pool = await poolGenesisPromise;
@@ -76,4 +90,5 @@ module.exports = {
     listaFacturasSfl,
     listaFacturasAnuladasSfl,
     spObtenerCUFString,
+    spDetalleNDC,
 }
