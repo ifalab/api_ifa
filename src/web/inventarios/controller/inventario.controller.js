@@ -39,7 +39,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     entregasClienteDespachadorCabecera,
     entregasClienteDespachadorDetalle,
     todasSolicitudesPendiente,
-    ndcByDateRange
+    ndcByDateRange,
+    getAllWarehousePlantByParams
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -1263,7 +1264,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         console.log({ docEntry })
 
         //----------------------
-        console.log({BaseEntry, Cuf, docEntry, formater})
+        console.log({ BaseEntry, Cuf, docEntry, formater })
         const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
         console.log({ entregas })
         // return res.json({ entregas })
@@ -1347,7 +1348,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     }
                 }
             }
-            const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,U_B_cuf } = entregas[0]
+            const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, U_B_cuf } = entregas[0]
             const finalData = {
                 // DocDate,
                 // DocDueDate,
@@ -1388,7 +1389,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //*------------------------------------------------ DETALLE TO PROSIN
         // return res.json({idReturn})
 
-        console.log({idReturn})
+        console.log({ idReturn })
         const entregasFromProsin = await entregaDetalleToProsin(idReturn)
         console.log({ entregasFromProsin })
         if (!entregasFromProsin || entregasFromProsin.length == 0) {
@@ -1471,7 +1472,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             } else {
                 mensaje += responseProsin.data.mensaje || ''
             }
-            return res.status(400).json({   
+            return res.status(400).json({
                 mensaje,
                 dataToProsin, entregasFromProsin, idReturn, finalDataEntrega, entregas
             })
@@ -1526,7 +1527,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         // ]
         //TODO END
         //---------------------------------------------------------------------PATCH RETURNS
-        console.log({detailNDC})
+        console.log({ detailNDC })
         const responsePatchReturns = await patchReturn({ U_B_cuf: cufndc, NumAtCard: facturandc }, idReturn)
 
         if (responsePatchReturns.status > 299) {
@@ -1661,7 +1662,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 finalDataEntrega
             })
         }
-        
+
         idCreditNote = responseCreditNote.orderNumber
         return res.json({
             finalDataEntrega,
@@ -6054,6 +6055,48 @@ const ndcByDateRangeController = async (req, res) => {
     }
 }
 
+const getAllWarehousePlantByParamsController = async (req, res) => {
+    try {
+        const parametro = req.query.parametro
+        console.log({ parametro })
+        if (parametro == undefined || parametro == null) {
+            return res.status(400).json({ mensaje: `No existe el parametro de busqueda` });
+        }
+        const response = await getAllWarehousePlantByParams(parametro)
+        const dataFilter = response.map((item) => {
+            const {
+                BusinessUnit,
+                WhsCode,
+                WhsName,
+                SucCode,
+                SucName,
+                County,
+                City,
+                createDate,
+                Address3,
+                Address2,
+                ...restDataItem
+
+            } = item
+            return {
+                BusinessUnit,
+                WhsCode,
+                WhsName,
+                SucCode,
+                SucName,
+                County,
+                City,
+                createDate,
+                Address3,
+                Address2,
+            }
+        })
+        return res.json(dataFilter)
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -6124,5 +6167,6 @@ module.exports = {
     entregasRealizadasCabeceraController,
     entregasRealizadasDetalleController,
     todasSolicitudesTrasladoController,
-    ndcByDateRangeController
+    ndcByDateRangeController,
+    getAllWarehousePlantByParamsController
 }

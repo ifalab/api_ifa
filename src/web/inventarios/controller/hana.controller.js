@@ -752,14 +752,14 @@ const reporteDevolucionValorados = async (fechaIni, fechaFin, user) => {
             await connectHANA();
         }
         let query
-        if (!fechaIni && !fechaFin){
+        if (!fechaIni && !fechaFin) {
             // query = `select * from ${process.env.PRD}.ifa_dev_valorados where "UserID"=${user}`;
-        query = `select * from ${process.env.PRD}.ifa_dev_valorados `;
-        }else{
+            query = `select * from ${process.env.PRD}.ifa_dev_valorados `;
+        } else {
             // query = `select * from ${process.env.PRD}.ifa_dev_valorados where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
             query = `select * from ${process.env.PRD}.ifa_dev_valorados where "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         }
-            
+
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -777,9 +777,9 @@ const reporteDevolucionCambios = async (fechaIni, fechaFin, user) => {
             await connectHANA();
         }
         let query
-        if (!fechaIni && !fechaFin){
+        if (!fechaIni && !fechaFin) {
             query = `select * from ${process.env.PRD}.ifa_dev_cambios`;
-        }else{
+        } else {
             query = `select * from ${process.env.PRD}.ifa_dev_cambios WHERE "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
             // query = `select * from ${process.env.PRD}.ifa_dev_cambios where "UserID"=${user} and "CreateDate" between '${fechaIni}' and '${fechaFin}'`;
         }
@@ -804,7 +804,7 @@ const reporteDevolucionRefacturacion = async (fechaIni, fechaFin, user) => {
             query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones`;
         else
             query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones WHERE "DocDate" between '${fechaIni}' and '${fechaFin}'`;
-            // query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user} and "DocDate" between '${fechaIni}' and '${fechaFin}'`;
+        // query = `select * from ${process.env.PRD}.ifa_dev_refacturaciones where "UserID"=${user} and "DocDate" between '${fechaIni}' and '${fechaFin}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -1062,7 +1062,7 @@ const updateOpenqtyTrasladoSolicitud = async (idTralado, LineTralado, itemcode, 
     }
 }
 
-const ndcByDateRange= async (start, end, sucCode) => {
+const ndcByDateRange = async (start, end, sucCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -1075,6 +1075,23 @@ const ndcByDateRange= async (start, end, sucCode) => {
         console.error('Error en ndcByDateRange:', error.message);
         throw {
             message: `Error al procesar ndcByDateRange: ${error.message || ''}`
+        }
+    }
+}
+
+const getAllWarehousePlantByParams = async (params) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFASP_MD_GET_ALL_WAREHOUSE_PLANT_BY_WHSPARAM('${params}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllWarehousePlantByParams:', error.message);
+        throw {
+            message: `Error al procesar getAllWarehousePlantByParams: ${error.message || ''}`
         }
     }
 }
@@ -1132,5 +1149,6 @@ module.exports = {
     entregasClienteDespachadorCabecera,
     entregasClienteDespachadorDetalle,
     todasSolicitudesPendiente,
-    ndcByDateRange
+    ndcByDateRange,
+    getAllWarehousePlantByParams,
 }

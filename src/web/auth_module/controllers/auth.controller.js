@@ -123,7 +123,7 @@ const createUserController = async (req, res) => {
             encryptPassword,
             superuser,
             etiqueta,
-            externalClient
+            externalClient 
         )
         const response = result[0]
 

@@ -526,7 +526,7 @@ const cerrarCajaChicaController = async (req, res) => {
         // return res.json({ postJournalEntry, dataAccount, dataBankAccount, dataRendiciones, totalDebe, totalHaber })
         console.log('data asiento cierre:')
         console.log({ postJournalEntry })
-        return res.json({postJournalEntry})
+        // return res.json({postJournalEntry})
         const response = await asientoContable({
             ...postJournalEntry
         })
