@@ -1,4 +1,5 @@
 const hana = require('@sap/hana-client');
+const { formattParam } = require('../../../helpers/formattParams.helpers');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -1095,6 +1096,30 @@ const getAllWarehousePlantByParams = async (params) => {
         }
     }
 }
+
+const kardexPlant = async (start, end, whsCode, itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const whsCodeParams = formattParam(whsCode)
+        const itemCodeParams = formattParam(itemCode)
+        const query = `call ${process.env.PRD}.IFASP_INV_GET_KARDEX(
+        i_dateini => '${start}',
+	    i_datefin => '${end}',
+	    i_whscode => ${whsCodeParams},
+	    i_itemcode =>${itemCodeParams})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en kardexPlant:', error.message);
+        throw {
+            message: `Error al procesar kardexPlant: ${error.message || ''}`
+        }
+    }
+}
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1151,4 +1176,5 @@ module.exports = {
     todasSolicitudesPendiente,
     ndcByDateRange,
     getAllWarehousePlantByParams,
+    kardexPlant,
 }

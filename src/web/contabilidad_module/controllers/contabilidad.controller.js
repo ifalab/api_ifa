@@ -551,7 +551,7 @@ const cerrarCajaChicaController = async (req, res) => {
 
         if (totalDebe !== totalHaber) {
             const diferencia = totalHaber - totalDebe
-            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `El Total Debe (${totalDebe}) no puede ser diferente que al total haber (${totalHaber}), hay una diferencia de ${diferencia}`, ``, "contabilidad/cierre-caja-chica", process.env.PRD)
+            grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Error, El Total Debe (${totalDebe}) no puede ser diferente que al total haber (${totalHaber}), hay una diferencia de ${diferencia}`, ``, "contabilidad/cierre-caja-chica", process.env.PRD)
             return res.status(400).json({
                 mensaje: `El Total Debe (${totalDebe}) no puede ser diferente que al total haber (${totalHaber}), hay una diferencia de ${diferencia}`,
                 postJournalEntry,

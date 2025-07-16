@@ -48,7 +48,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     entregasRealizadasDetalleController,
     todasSolicitudesTrasladoController,
     ndcByDateRangeController,
-    getAllWarehousePlantByParamsController
+    getAllWarehousePlantByParamsController,
+    kardexPlantController
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -138,5 +139,6 @@ router.get('/entregas-realizadas-detalles', [validarToken, validarCampos], entre
 router.post('/ndc-by-date-range', [validarToken, validarCampos], ndcByDateRangeController)
 //!-------------------  KARDEX DE PLANTA
 router.get('/all-warehouse-plant', [validarToken, validarCampos], getAllWarehousePlantByParamsController)
+router.post('/kardex-plant', [validarToken, validarCampos], kardexPlantController)
 
 module.exports = router

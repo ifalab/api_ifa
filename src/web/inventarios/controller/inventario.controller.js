@@ -40,7 +40,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     entregasClienteDespachadorDetalle,
     todasSolicitudesPendiente,
     ndcByDateRange,
-    getAllWarehousePlantByParams
+    getAllWarehousePlantByParams,
+    kardexPlant
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -6097,6 +6098,39 @@ const getAllWarehousePlantByParamsController = async (req, res) => {
     }
 }
 
+const kardexPlantController = async (req, res) => {
+    try {
+       
+        const { 
+            start,
+            end,
+            whsCode,
+            itemCode, } = req.body
+
+        if (!start || start == undefined || start == '') {
+            return res.status(400).json({ mensaje: `Se requiere una fecha de inicio (start)` });
+        }
+
+        if (!end || end == undefined || end == '') {
+            return res.status(400).json({ mensaje: `Se requiere una fecha de final (end)` });
+        }
+
+        const response = await kardexPlant(start, end, whsCode, itemCode)
+        const dataFilter = response.map((item) => {
+            const { InQty, OutQty, StockPrice, ...rest } = item
+            return {
+                ...rest,
+                InQty: +InQty,
+                OutQty: +OutQty,
+                StockPrice: +StockPrice,
+            }
+        })
+        return res.json(dataFilter)
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -6168,5 +6202,6 @@ module.exports = {
     entregasRealizadasDetalleController,
     todasSolicitudesTrasladoController,
     ndcByDateRangeController,
-    getAllWarehousePlantByParamsController
+    getAllWarehousePlantByParamsController,
+    kardexPlantController
 }
