@@ -401,12 +401,15 @@ const findAllAccountController = async (req, res) => {
 
 const cerrarCajaChicaController = async (req, res) => {
     try {
+
         const { id, glosa, montoBank, dataBankAccount, nroDeposito } = req.body
+
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ id, glosa })
         const data = await dataCierreCaja(id)
         const dataRendiciones = await rendicionesPorCaja(+id)
         console.log({ data })
+        
         if (data.length !== 2) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error en traer los datos necesarios para el cierre de caja`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
             return res.status(400).json({ mensaje: 'Hubo un problemas en traer los datos necesarios para el cierre de caja', data })
@@ -428,6 +431,7 @@ const cerrarCajaChicaController = async (req, res) => {
         }
         const newMontoBank = +montoBank / usd
         const newMontoAccount = +montoAccount / usd
+
 
         if (dataRendiciones.length > 0) {
             dataRendiciones.map((item) => {
@@ -493,6 +497,35 @@ const cerrarCajaChicaController = async (req, res) => {
 
 
         JournalEntryLines.push(contraAccount)
+
+        const totalDebe = JournalEntryLines.reduce((acc, item) => {
+            const debe = Number(item.Debit)
+            return acc + debe
+        }, 0)
+
+        const diferencia = montoBank - totalDebe
+
+        if (diferencia > 0){
+
+            const diferenciaDolar = diferencia / usd
+            
+            let contraAccount = {
+                AccountCode: '4210102',
+                ShortName: '',
+                Credit: diferencia, //nuevo monto de la diferencia
+                Debit: 0,
+                CreditSys: parseFloat(diferenciaDolar.toFixed(2)),//nuevo monto la diferencias
+                DebitSys: 0,
+                ContraAccount: ``,
+                LineMemo: `${glosa}`,
+                Reference1: ``,
+                Reference2: '',
+            }
+
+
+            JournalEntryLines.push(contraAccount)
+        }
+
         const postJournalEntry = {
             ReferenceDate: '',
             Memo: glosa,
@@ -501,10 +534,7 @@ const cerrarCajaChicaController = async (req, res) => {
             Reference3: `${nroDeposito}`,
             JournalEntryLines
         }
-        const totalDebe = JournalEntryLines.reduce((acc, item) => {
-            const debe = Number(item.Debit)
-            return acc + debe
-        }, 0)
+        
 
         const totalHaber = JournalEntryLines.reduce((acc, item) => {
             const haber = Number(item.Credit)
