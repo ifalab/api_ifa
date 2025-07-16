@@ -403,13 +403,14 @@ const cerrarCajaChicaController = async (req, res) => {
     try {
 
         const { id, glosa, montoBank, dataBankAccount, nroDeposito } = req.body
-
+        console.log({ id, glosa, montoBank, dataBankAccount, nroDeposito })
+        // return res.status(400).json({id, glosa, montoBank, dataBankAccount, nroDeposito})
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ id, glosa })
         const data = await dataCierreCaja(id)
         const dataRendiciones = await rendicionesPorCaja(+id)
         console.log({ data })
-        
+
         if (data.length !== 2) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error en traer los datos necesarios para el cierre de caja`, `call ${process.env.PRD}.ifa_lapp_rw_obtener_caja_para_cerrar(${id})`, "contabilidad/cierre-caja-chica", process.env.PRD)
             return res.status(400).json({ mensaje: 'Hubo un problemas en traer los datos necesarios para el cierre de caja', data })
@@ -418,7 +419,7 @@ const cerrarCajaChicaController = async (req, res) => {
         const tipoCambio = await tipoDeCambio()
         const usdRate = tipoCambio[0]
         const usd = +usdRate.Rate
-        console.log({usd})
+        console.log({ usd })
         const montoAccount = Number(dataAccount.FondoFijo)
         let JournalEntryLines = []
         if (montoAccount == 0) {
@@ -498,23 +499,24 @@ const cerrarCajaChicaController = async (req, res) => {
 
         JournalEntryLines.push(contraAccount)
 
-        const totalDebe = JournalEntryLines.reduce((acc, item) => {
-            const debe = Number(item.Debit)
-            return acc + debe
+        let totalHaber = JournalEntryLines.reduce((acc, item) => {
+            const haber = Number(item.Credit)
+            return acc + haber
         }, 0)
 
-        const diferencia = montoBank - totalDebe
+        const diferencia = montoBank - totalHaber
 
-        if (diferencia > 0){
+        console.log({ montoBank, diferencia, totalHaber })
+        if (diferencia > 0) {
 
             const diferenciaDolar = diferencia / usd
-            
+
             let contraAccount = {
                 AccountCode: '4210102',
                 ShortName: '',
-                Credit: diferencia, //nuevo monto de la diferencia
+                Credit:parseFloat(diferencia.toFixed(2)) ,
                 Debit: 0,
-                CreditSys: parseFloat(diferenciaDolar.toFixed(2)),//nuevo monto la diferencias
+                CreditSys: parseFloat(diferenciaDolar.toFixed(2)),
                 DebitSys: 0,
                 ContraAccount: ``,
                 LineMemo: `${glosa}`,
@@ -534,12 +536,18 @@ const cerrarCajaChicaController = async (req, res) => {
             Reference3: `${nroDeposito}`,
             JournalEntryLines
         }
-        
 
-        const totalHaber = JournalEntryLines.reduce((acc, item) => {
+
+        totalHaber = JournalEntryLines.reduce((acc, item) => {
             const haber = Number(item.Credit)
             return acc + haber
         }, 0)
+
+        totalDebe = JournalEntryLines.reduce((acc, item) => {
+            const debe = Number(item.Debit)
+            return acc + debe
+        }, 0)
+
         if (totalDebe !== totalHaber) {
             const diferencia = totalHaber - totalDebe
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `El Total Debe (${totalDebe}) no puede ser diferente que al total haber (${totalHaber}), hay una diferencia de ${diferencia}`, ``, "contabilidad/cierre-caja-chica", process.env.PRD)
@@ -556,13 +564,13 @@ const cerrarCajaChicaController = async (req, res) => {
         // return res.json({ postJournalEntry, dataAccount, dataBankAccount, dataRendiciones, totalDebe, totalHaber })
         console.log('data asiento cierre:')
         console.log({ postJournalEntry })
-        // return res.json({postJournalEntry})
+        // return res.json({ postJournalEntry })
         const response = await asientoContable({
             ...postJournalEntry
         })
         if (response.value) {
             grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Hubo un error al cerrar la apertura de caja. SAP: ${response.value || 'no definido'}`, `${response.lang || ''}`, "contabilidad/cierre-caja-chica", process.env.PRD)
-            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. SAP: ${response.value || 'no definido'}`,postJournalEntry })
+            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. SAP: ${response.value || 'no definido'}`, postJournalEntry })
         }
         grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `Cierre de Caja realizado con exito`, `${''}`, "contabilidad/cierre-caja-chica", process.env.PRD)
         return res.json({ mensaje: 'Cierre de Caja realizado con exito', postJournalEntry, data })
