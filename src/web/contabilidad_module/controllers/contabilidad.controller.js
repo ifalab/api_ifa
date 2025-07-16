@@ -507,9 +507,10 @@ const cerrarCajaChicaController = async (req, res) => {
         const diferencia = montoBank - totalHaber
 
         console.log({ montoBank, diferencia, totalHaber })
+        //? en caso de la diferencia del banco sea mayor
         if (diferencia > 0) {
 
-            const diferenciaDolar = diferencia / usd
+            const diferenciaDolar = diferencia / usd 
 
             let contraAccount = {
                 AccountCode: '4210102',
