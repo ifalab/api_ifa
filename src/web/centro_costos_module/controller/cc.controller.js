@@ -7,7 +7,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, saveAreaCC, saveTipoClienteCC, saveLineaCC, saveClasificacionCC, saveConceptosComCC, saveEspecialidadCC } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, saveAreaCC, saveTipoClienteCC, saveLineaCC, saveClasificacionCC, saveConceptosComCC, saveEspecialidadCC, getAsientoCompletosDimensionados, getAsientoCabecera } = require('./hana.controller');
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const postInventoryEntriesController = async (req, res) => {
     try {
@@ -1087,6 +1087,135 @@ function fixToISODate(dateStr) {
   return `${year}-${month}-${day}`;
 }
 
+const obtenerAsientoCompletosDimensionados = async (req, res) => {
+    try {
+        const { transId } = req.query;
+
+        if (!transId) {
+            res.status(400).json({
+                status: false,
+                mensaje: 'Parámetro transId es requerido',
+            });
+            return;
+        }
+
+        const data = await getAsientoCompletosDimensionados(transId);
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Asientos recuperados',
+            data: data
+        });
+    } catch (error) {
+        console.error('Error al obtener los asientos con dimensiones:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener los asientos con dimensiones',
+            error: error.message,
+        });
+    }
+};
+
+const obtenerAsientoCabecera = async (req, res) => {
+    try {
+        const data = await getAsientoCabecera();
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Cabeceras recuperados',
+            data: data
+        });
+    } catch (error) {
+        console.error('Error al obtener las cabeceras de asientos:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener las cabeceras de asientos',
+            error: error.message,
+        });
+    }
+};
+
+const obtenerAsientoCompletosDimensionadosExcel = async (req, res) => {
+    const asientos = req.body;
+
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Asientos');
+
+    // Definir columnas basadas en tu interfaz Datum
+    worksheet.columns = [
+      { header: 'TransId', key: 'TransId', width: 10 },
+      { header: 'TransType', key: 'TransType', width: 10 },
+      { header: 'RefDate', key: 'RefDate', width: 15 },
+      { header: 'DueDate', key: 'DueDate', width: 15 },
+      { header: 'AnioCreacion', key: 'AnioCreacion', width: 15 },
+      { header: 'Memo', key: 'Memo', width: 40 },
+      { header: 'Ref1', key: 'Ref1', width: 15 },
+      { header: 'Ref2', key: 'Ref2', width: 15 },
+      { header: 'Ref3', key: 'Ref3', width: 15 },
+      { header: 'Number', key: 'Number', width: 10 },
+      { header: 'IndicatorCabecera', key: 'IndicatorCabecera', width: 20 },
+      { header: 'Indicator', key: 'Indicator', width: 15 },
+      { header: 'UserSign', key: 'UserSign', width: 10 },
+      { header: 'Username', key: 'Username', width: 25 },
+      { header: 'Line_ID', key: 'Line_ID', width: 10 },
+      { header: 'DocFuenteCod', key: 'DocFuenteCod', width: 20 },
+      { header: 'Account', key: 'Account', width: 20 },
+      { header: 'AcctName', key: 'AcctName', width: 30 },
+      { header: 'Debit', key: 'Debit', width: 15 },
+      { header: 'Credit', key: 'Credit', width: 15 },
+      { header: 'SYSDeb', key: 'SYSDeb', width: 15 },
+      { header: 'SYSCred', key: 'SYSCred', width: 15 },
+      { header: 'LineMemo', key: 'LineMemo', width: 40 },
+      { header: 'MIEntry', key: 'MIEntry', width: 10 },
+      { header: 'ShortName', key: 'ShortName', width: 20 },
+      { header: 'CardName', key: 'CardName', width: 30 },
+      { header: 'ContraAct', key: 'ContraAct', width: 15 },
+      { header: 'Ref1Detail', key: 'Ref1Detail', width: 15 },
+      { header: 'Ref2Detail', key: 'Ref2Detail', width: 15 },
+      { header: 'Ref3Deatil', key: 'Ref3Deatil', width: 15 },
+      { header: 'U_Clasif_Gastos', key: 'U_Clasif_Gastos', width: 20 },
+      { header: 'SourceID', key: 'SourceID', width: 10 },
+      { header: 'Area', key: 'Area', width: 20 },
+      { header: 'Tipo_Cliente', key: 'Tipo_Cliente', width: 20 },
+      { header: 'Linea', key: 'Linea', width: 20 },
+      { header: 'Especialidad', key: 'Especialidad', width: 25 },
+      { header: 'Clasificacion_Gastos', key: 'Clasificacion_Gastos', width: 25 },
+      { header: 'Conceptos_Comerciales', key: 'Conceptos_Comerciales', width: 30 },
+      { header: 'Cuenta_Contable', key: 'Cuenta_Contable', width: 20 },
+      { header: 'SucCode', key: 'SucCode', width: 15 },
+      { header: 'SucName', key: 'SucName', width: 20 },
+      { header: 'GroupCode', key: 'GroupCode', width: 15 },
+      { header: 'GroupName', key: 'GroupName', width: 20 },
+      { header: 'LineItemCode', key: 'LineItemCode', width: 15 },
+      { header: 'LineItemName', key: 'LineItemName', width: 20 },
+      { header: 'SubLineItemCode', key: 'SubLineItemCode', width: 15 },
+      { header: 'SubLineItemName', key: 'SubLineItemName', width: 20 },
+      { header: 'DistributionPercent', key: 'DistributionPercent', width: 20 },
+      { header: 'Amount', key: 'Amount', width: 20 },
+      { header: 'Comments', key: 'Comments', width: 30 },
+    ];
+
+    // Agregar filas
+    asientos.forEach(row => worksheet.addRow(row));
+
+    // Configurar headers para forzar descarga del archivo Excel
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=asientos_dimensionados.xlsx');
+
+    // Enviar archivo Excel como respuesta
+    await workbook.xlsx.write(res);
+    res.status(200).end();
+
+  } catch (error) {
+    console.error('Error al generar Excel:', error);
+    res.status(500).json({
+      status: false,
+      mensaje: 'Error al generar el Excel',
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
     postInventoryEntriesController,
@@ -1115,5 +1244,8 @@ module.exports = {
     obtenerAsientoCompletos,
     obtenerExcelAsientos,
     saveClasificacionGastos,
-    cargarExcelMasivo
+    cargarExcelMasivo,
+    obtenerAsientoCompletosDimensionados,
+    obtenerAsientoCabecera,
+    obtenerAsientoCompletosDimensionadosExcel
 }

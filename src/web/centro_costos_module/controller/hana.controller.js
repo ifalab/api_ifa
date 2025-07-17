@@ -386,6 +386,38 @@ const saveEspecialidadCC = async (especialidad) => {
     }
 };
 
+const getAsientoCompletosDimensionados = async (transId) => {
+    try {
+        const query = `
+            SELECT * 
+            FROM "LAB_IFA_COM"."IFA_CC_JOURNAL_DETAILS" 
+            WHERE "TransId" = ?;
+        `;
+        const result = await executeQueryParamsWithConnection(query, [transId]);
+
+        return result; // o result[0] si solo esperas un resultado
+    } catch (error) {
+        console.error('Error en getAsientoCompletosDimensionados:', error);
+        throw new Error(`Error en getAsientoCompletosDimensionados: ${error.message}`);
+    }
+};
+
+const getAsientoCabecera = async () => {
+    try {
+        const query = `
+            SELECT "TransId", "Memo", YEAR("DueDate") as "Year"
+            FROM "LAB_IFA_COM"."JOURNAL"
+            ORDER BY "TransId";
+        `;
+        const result = await executeQueryParamsWithConnection(query);
+
+        return result; // o result[0] si solo esperas un resultado
+    } catch (error) {
+        console.error('Error en getAsientoCabecera:', error);
+        throw new Error(`Error en getAsientoCabecera: ${error.message}`);
+    }
+};
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -412,5 +444,7 @@ module.exports = {
     saveLineaCC,
     saveClasificacionCC,
     saveConceptosComCC,
-    saveEspecialidadCC
+    saveEspecialidadCC,
+    getAsientoCompletosDimensionados,
+    getAsientoCabecera,
 };
