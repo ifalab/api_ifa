@@ -1097,6 +1097,23 @@ const getAllWarehousePlantByParams = async (params) => {
     }
 }
 
+const getAllWarehouseCommercialByParams = async (params) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFASP_MD_GET_ALL_WAREHOUSE_COMMERCIAL_BY_WHSPARAM('${params}')`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllWarehouseCommercialByParams:', error.message);
+        throw {
+            message: `Error al procesar getAllWarehouseCommercialByParams: ${error.message || ''}`
+        }
+    }
+}
+
 const kardexPlant = async (start, end, whsCode, itemCode) => {
     try {
         if (!connection) {
@@ -1120,6 +1137,31 @@ const kardexPlant = async (start, end, whsCode, itemCode) => {
         }
     }
 }
+
+const kardexCommercial = async (start, end, whsCode, itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const whsCodeParams = formattParam(whsCode)
+        const itemCodeParams = formattParam(itemCode)
+        const query = `call ${process.env.PRD}.IFASP_INV_GET_KARDEX_COMMERCIAL(
+        i_dateini => '${start}',
+	    i_datefin => '${end}',
+	    i_whscode => ${whsCodeParams},
+	    i_itemcode =>${itemCodeParams})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en kardexCommercial:', error.message);
+        throw {
+            message: `Error al procesar kardexCommercial: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1177,4 +1219,6 @@ module.exports = {
     ndcByDateRange,
     getAllWarehousePlantByParams,
     kardexPlant,
+    getAllWarehouseCommercialByParams,
+    kardexCommercial,
 }

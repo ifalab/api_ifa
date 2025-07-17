@@ -103,11 +103,12 @@ const createUserController = async (req, res) => {
 
         let dataClientExternal = []
 
-        if (externalClient) {
+        console.log({externalClient,usercode})
+        if (externalClient==true) {
             dataClientExternal = await clientByCardCode(usercode)
         }
 
-        if (dataClientExternal.length == 0) {
+        if (externalClient==true && dataClientExternal.length == 0) {
             return res.status(400).json({ mensaje: 'No se pueden crear clientes externo si el CardCode no se especifica en el UserCode' })
         }
         // return res.json({ dataClientExternal })

@@ -505,6 +505,7 @@ const abastecimientoFechaAnualController = async (req, res) => {
       return acc;
     }, []);
 
+    // return res.json({agrupadoPorMes})
     const ordenarTiposYCalcularVariacion = (agrupadoPorMes) => {
       // Ordenar los tipos en cada mes alfabéticamente por el atributo 'name'
       agrupadoPorMes.forEach(mes => {
