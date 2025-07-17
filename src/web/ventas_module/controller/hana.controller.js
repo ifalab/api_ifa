@@ -48,7 +48,20 @@ const ventaPorSucursal = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','')`
+
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth() + 1;
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes}
+        );
+        
+        `
+        
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventaPorSucursal:', error.message);
@@ -61,7 +74,20 @@ const ventasNormales = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','NORMALES')`
+
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth() + 1;
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 100
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasNormales:', error.message);
@@ -74,7 +100,20 @@ const ventasCadena = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','CADENAS')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth() + 1;
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 104
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasCadena:', error.message);
@@ -87,7 +126,20 @@ const ventasInstitucion = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','INSTITUCIONES')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth() + 1;
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 105
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasInstitucion:', error.message);
@@ -100,7 +152,20 @@ const ventasIfaVet = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','IFAVET')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth() + 1;
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 108
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasIfaVet:', error.message);
@@ -113,7 +178,20 @@ const ventasMasivo = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA('','MASIVOS')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth() + 1;
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 107
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasMasivo:', error.message);
@@ -128,7 +206,7 @@ const ventasUsuario = async (userCode, dim1, dim2, dim3, groupBy) => {
         }
 
         /*const query = `call "LAB_IFA_PRD".IFA_LAPP_VEN_DETALLADAS_X_AUTH('${userCode}','${dim1}','${dim2}','${dim3}',${groupBy})`*/
-        const query = `call LAB_IFA_DATA.VEN_GROUPBY_DIMA_CUBE_B_X_C1('${userCode}','${dim1}','${dim2}','${dim3}',${groupBy})`
+        const query = `call LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_USER_AND_DIM_A_B_C('${userCode}','${dim1}','${dim2}','${dim3}')`
 
         return await executeQuery(query)
     } catch (error) {
@@ -143,7 +221,19 @@ const ventaPorSucursalMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_ANT('','')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth();
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes}
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventaPorSucursal:', error.message);
@@ -156,7 +246,20 @@ const ventasNormalesMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_ANT('','NORMALES')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth();
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 100
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasNormales:', error.message);
@@ -169,7 +272,20 @@ const ventasCadenaMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_ANT('','CADENAS')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth();
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 104
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasCadena:', error.message);
@@ -182,7 +298,20 @@ const ventasInstitucionMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_ANT('','INSTITUCIONES')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth();
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 105
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasInstitucion:', error.message);
@@ -195,7 +324,20 @@ const ventasIfaVetMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_ANT('','IFAVET')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth();
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 108
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasIfaVet:', error.message);
@@ -208,7 +350,20 @@ const ventasMasivoMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL LAB_IFA_DATA.VEN_GROUPBY_DIMA_ANT('','MASIVOS')`
+        
+        const now = new Date();
+        const anho = now.getFullYear(); 
+        const mes = now.getMonth();
+        
+        
+        const query = `
+        CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
+            i_year  => ${anho},
+            i_month => ${mes},
+            i_dimensionb => 107
+        );
+        
+        `
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventasMasivo:', error.message);
