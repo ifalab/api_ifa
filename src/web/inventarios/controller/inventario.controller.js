@@ -41,7 +41,9 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     todasSolicitudesPendiente,
     ndcByDateRange,
     getAllWarehousePlantByParams,
-    kardexPlant
+    kardexPlant,
+    getAllWarehouseCommercialByParams,
+    kardexCommercial
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -2657,6 +2659,7 @@ const clientesDevMalEstado = async (req, res) => {
     try {
         const { listSucCode } = req.body
         let listClients = []
+        console.log({listSucCode})
         const clientes = await clientesBySucCode()
         listSucCode.map((sucursal) => {
             const filter = clientes.filter(client => client.SucCode === sucursal)
@@ -6098,6 +6101,48 @@ const getAllWarehousePlantByParamsController = async (req, res) => {
     }
 }
 
+const getAllWarehouseCommercialByParamsController = async (req, res) => {
+    try {
+        const parametro = req.query.parametro
+        console.log({ parametro })
+        if (parametro == undefined || parametro == null) {
+            return res.status(400).json({ mensaje: `No existe el parametro de busqueda` });
+        }
+        const response = await getAllWarehouseCommercialByParams(parametro)
+        const dataFilter = response.map((item) => {
+            const {
+                BusinessUnit,
+                WhsCode,
+                WhsName,
+                SucCode,
+                SucName,
+                County,
+                City,
+                createDate,
+                Address3,
+                Address2,
+                ...restDataItem
+
+            } = item
+            return {
+                BusinessUnit,
+                WhsCode,
+                WhsName,
+                SucCode,
+                SucName,
+                County,
+                City,
+                createDate,
+                Address3,
+                Address2,
+            }
+        })
+        return res.json(dataFilter)
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
 const kardexPlantController = async (req, res) => {
     try {
        
@@ -6116,6 +6161,39 @@ const kardexPlantController = async (req, res) => {
         }
 
         const response = await kardexPlant(start, end, whsCode, itemCode)
+        const dataFilter = response.map((item) => {
+            const { InQty, OutQty, StockPrice, ...rest } = item
+            return {
+                ...rest,
+                InQty: +InQty,
+                OutQty: +OutQty,
+                StockPrice: +StockPrice,
+            }
+        })
+        return res.json(dataFilter)
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
+const kardexCommercialController = async (req, res) => {
+    try {
+       
+        const { 
+            start,
+            end,
+            whsCode,
+            itemCode, } = req.body
+
+        if (!start || start == undefined || start == '') {
+            return res.status(400).json({ mensaje: `Se requiere una fecha de inicio (start)` });
+        }
+
+        if (!end || end == undefined || end == '') {
+            return res.status(400).json({ mensaje: `Se requiere una fecha de final (end)` });
+        }
+
+        const response = await kardexCommercial(start, end, whsCode, itemCode)
         const dataFilter = response.map((item) => {
             const { InQty, OutQty, StockPrice, ...rest } = item
             return {
@@ -6203,5 +6281,7 @@ module.exports = {
     todasSolicitudesTrasladoController,
     ndcByDateRangeController,
     getAllWarehousePlantByParamsController,
-    kardexPlantController
+    kardexPlantController,
+    getAllWarehouseCommercialByParamsController,
+    kardexCommercialController,
 }
