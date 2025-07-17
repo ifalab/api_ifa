@@ -134,6 +134,42 @@
             margin-top: 2rem;
         }
 
+        .glosa-row {
+            font-style: italic;
+            font-size: 10px;
+            text-align: left;
+            padding: 4px 8px;
+        }
+
+        .glosa-row td {
+            padding: 4px 8px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .detalle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detalle-row p {
+            margin: 0;
+        }
+
+        .indicador {
+            text-align: right;
+            flex: 1;
+        }
+
+        .glosa-general {
+            margin-top: 6px;
+            padding: 4px 6px;
+            background-color: #f2f2f2;
+            font-style: italic;
+            font-size: 12px;
+            border-left: 3px solid #ccc;
+        }
+
     </style>
 </head>
 <body>
@@ -146,17 +182,19 @@
 
     <!-- Detalle cabecera -->
     <div class="detalle-container">
-        <div class="detalle-left">
-            <p><strong>Referencia 1:</strong> <%= data.Ref1 || '-' %></p>
-            <p><strong>Referencia 2:</strong> <%= data.Ref2 || '-' %></p>
-            <% if (data.Ref3) { %>
-                <p><strong>Referencia 3:</strong> <%= data.Ref3 %></p>
-            <% } %>
+      <div class="detalle-left" style="width: 100%;">
+        <div class="detalle-row">
+        <p><strong>Referencia 1:</strong> <%= data.Ref1 || '-' %></p>
+        <p class="indicador"><strong>Indicador:</strong> <%= data.Indicator || '-' %></p>
         </div>
-        <div class="detalle-right">
-            <p><strong>Glosa:</strong> <%= data.Memo || '-' %></p>
-            <p><strong>Indicador:</strong> <%= data.Indicator || '-' %></p>
+        <p><strong>Referencia 2:</strong> <%= data.Ref2 || '-' %></p>
+        <% if (data.Ref3) { %>
+        <p><strong>Referencia 3:</strong> <%= data.Ref3 %></p>
+        <% } %>
+        <div class="glosa-general">
+        <strong>Glosa:</strong> <%= data.Memo || '-' %>
         </div>
+      </div>
     </div>
 
      <!-- Tabla de movimientos contables -->
@@ -167,7 +205,6 @@
           <th>Cuenta</th>
           <th>Nombre Cuenta</th>
           <th>Debe BS.</th>
-          <th>Glosa Linea</th>
           <th>Ref 1</th>
           <th>Ref 2</th>
           <th>Ref 3</th>
@@ -185,8 +222,7 @@
             <td><%= line.Indicator %></td>
             <td><%= line.Account %></td>
             <td><%= line.AcctName %></td>
-            <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>      
-            <td style="min-width: 250px;"><%= line.LineMemo %></td>
+            <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>
             <td><%= line.Ref1Detail || '-' %></td>
             <td><%= line.Ref2Detail || '-' %></td>
             <td><%= line.Ref3Deatil || '-' %></td>
@@ -196,6 +232,12 @@
             <td><%= line.Especialidad || '-' %></td>
             <td><%= line.Clasificacion_Gastos || '-' %></td>
             <td><%= line.Conceptos_Comerciales || '-' %></td>
+          </tr>
+
+          <tr class="glosa-row">
+            <td colspan="13">
+                <strong>Glosa:</strong> <%= line.LineMemo || '-' %>
+            </td>
           </tr>
         <% }); %>
       </tbody>

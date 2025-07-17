@@ -142,6 +142,41 @@
           width: 100px;
         }
 
+        .glosa-row {
+            font-style: italic;
+            font-size: 10px;
+            text-align: left;
+            padding: 4px 8px;
+        }
+
+        .glosa-row td {
+            padding: 4px 8px;
+            border-bottom: 1px dashed #ccc;
+        }
+
+        .detalle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detalle-row p {
+            margin: 0;
+        }
+
+        .indicador {
+            text-align: right;
+            flex: 1;
+        }
+
+        .glosa-general {
+            margin-top: 6px;
+            padding: 4px 6px;
+            background-color: #f2f2f2;
+            font-style: italic;
+            font-size: 12px;
+            border-left: 3px solid #ccc;
+        }
     </style>
 </head>
 <body>
@@ -153,18 +188,21 @@
     <h2>COMPROBANTE CONTABLE CENTRO DE COSTO Nº <%= data.Number %> - <%= data.Year %></h2>
 
     <!-- Detalle cabecera -->
+
     <div class="detalle-container">
-        <div class="detalle-left">
-            <p><strong>Referencia 1:</strong> <%= data.Ref1 || '-' %></p>
-            <p><strong>Referencia 2:</strong> <%= data.Ref2 || '-' %></p>
-            <% if (data.Ref3) { %>
-                <p><strong>Referencia 3:</strong> <%= data.Ref3 %></p>
-            <% } %>
+      <div class="detalle-left" style="width: 100%;">
+        <div class="detalle-row">
+        <p><strong>Referencia 1:</strong> <%= data.Ref1 || '-' %></p>
+        <p class="indicador"><strong>Indicador:</strong> <%= data.Indicator || '-' %></p>
         </div>
-        <div class="detalle-right">
-            <p><strong>Glosa:</strong> <%= data.Memo || '-' %></p>
-            <p><strong>Indicador:</strong> <%= data.Indicator || '-' %></p>
+        <p><strong>Referencia 2:</strong> <%= data.Ref2 || '-' %></p>
+        <% if (data.Ref3) { %>
+        <p><strong>Referencia 3:</strong> <%= data.Ref3 %></p>
+        <% } %>
+        <div class="glosa-general">
+        <strong>Glosa:</strong> <%= data.Memo || '-' %>
         </div>
+      </div>
     </div>
 
      <!-- Tabla de movimientos contables -->
@@ -180,7 +218,6 @@
           <th>Haber BS.</th>
           <th>Debe USD</th>
           <th>Haber USD</th>
-          <th>Glosa Linea</th>
           <th>Ref 1</th>
           <th>Ref 2</th>
           <th>Ref 3</th>
@@ -198,10 +235,15 @@
             <td><%= (Number(line.Credit) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
             <td><%= (Number(line.SYSDeb) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
             <td><%= (Number(line.SYSCred) || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
-            <td style="width: 100px;"><%= line.LineMemo %></td>
             <td><%= line.Ref1Detail || '-' %></td>
             <td><%= line.Ref2Detail || '-' %></td>
             <td><%= line.Ref3Deatil || '-' %></td>
+          </tr>
+
+          <tr class="glosa-row">
+            <td colspan="13">
+                <strong>Glosa:</strong> <%= line.LineMemo || '-' %>
+            </td>
           </tr>
         <% }); %>
       </tbody>
@@ -210,14 +252,13 @@
       <tfoot>
         <tr>
           <td style="width: 60px;">Total</td>
-          <td style="width: 300px;"><hr style="opacity: 0;"></td>
-          <td style="width: 300px;"><hr style="opacity: 0;"></td>
-          <td style="width: 300px;"><hr style="opacity: 0;"></td>
-          <td style="width: 300px;"><hr style="opacity: 0;"></td>
-          <td style="width: 50px;"><%= Number(data.sumDebit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
-          <td style="width: 50px;"><%= Number(data.sumCredit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
-          <td style="width: 50px;"><%= Number(data.sumDebitSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
-          <td style="width: 50px;"><%= Number(data.sumCreditSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 500px;"><hr style="opacity: 0;"></td>
+          <td style="width: 500px;"><hr style="opacity: 0;"></td>
+          <td style="width: 500px;"><hr style="opacity: 0;"></td>
+          <td style="width: 90px;"><%= Number(data.sumDebit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 130px;"><%= Number(data.sumCredit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 130px;"><%= Number(data.sumDebitSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 130px;"><%= Number(data.sumCreditSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
           <td style="width: 300px;"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>
