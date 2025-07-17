@@ -959,7 +959,6 @@ const analisisVentas = async (CardCode, DimensionCCode, starDate, endDate) => {
             await connectHANA();
         }
         const query = `SELECT * FROM LAB_IFA_DATA.kds_sales_analysis WHERE "CardCode" = '${CardCode}' AND "DimensionCCode" = ${DimensionCCode} AND "Date" BETWEEN '${starDate}' AND '${endDate}'`;
-        // const query = `SELECT * FROM LAB_IFA_DATA.ANALISIS_DE_VENTAS LIMIT 15`;
         return await executeQuery(query);
     } catch (err) {
         console.log({ err })
@@ -1624,33 +1623,56 @@ const deleteSolicitudDescuento = async (id) => {
     }
 }
 
+
 const getVentasPrespuestosSubLinea = async () => {
     try {
         if (!connection) {
-            await connectHANA()
+            await connectHANA();
         }
+
+        const now = new Date();
+        const anho = now.getFullYear();
+        const mes = now.getMonth() + 1; 
+
         const query = `
-            SELECT * FROM LAB_IFA_DATA.ven_ventas_resumen_by_dim ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
-        `
-        const result = await executeQuery(query)
-        return result
+            CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ALL_DIMENSIONS_BY_PERIOD(
+                i_year  => ${anho},
+                i_month => ${mes}
+            );
+        `;
+
+        const result = await executeQuery(query);
+        return result;
+
     } catch (error) {
         throw {
             message: `Error en getVentasPrespuestosSubLinea: ${error.message || ''}`
-        }
+        };
     }
-}
+};
+
+
 
 const getVentasPrespuestosSubLineaAnterior = async () => {
     try {
         if (!connection) {
             await connectHANA()
         }
+
+        const now = new Date();
+        const anho = now.getFullYear();
+        const mes = now.getMonth(); 
+
         const query = `
-            SELECT * FROM LAB_IFA_DATA.VEN_VENTAS_RESUMEN_BY_DIM_ANT ORDER BY "DimensionACode", "DimensionBCode", "DimensionCCode"
-        `
-        const result = await executeQuery(query)
-        return result
+            CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ALL_DIMENSIONS_BY_PERIOD(
+                i_year  => ${anho},
+                i_month => ${mes}
+            );
+        `;
+
+        const result = await executeQuery(query);
+        return result;
+
     } catch (error) {
         throw {
             message: `Error en getVentasPrespuestosSubLineaAnterior: ${error.message || ''}`
