@@ -1,5 +1,6 @@
 const hana = require('@sap/hana-client');
 const { query } = require('express');
+const { formattParam } = require('../../../helpers/formattParams.helpers');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -152,6 +153,36 @@ const listaPrecioOficial = async (cardCode) => {
     } catch (error) {
         console.log({ error })
         throw new Error(`Error al procesar la solicitud: listaPrecioOficial: ${error.message}`);
+    }
+}
+
+const listaPrecioClienteExterno = async (cardCode,itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const paramsItemCode = formattParam(itemCode)
+        const query = `CALL ${process.env.PRD}.ifasp_md_price_list_by_customer('${cardCode}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la solicitud: listaPrecioClienteExterno: ${error.message}`);
+    }
+}
+
+const ofertaClienteExterno = async (cardCode,state) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        
+        const query = `CALL ${process.env.PRD}.IFAP_SAL_GET_QUOTATIONS_EXTERNAL_BY_CARDCODE('${cardCode}','${state}')`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error al procesar la solicitud: ofertaClienteExterno ${error.message}`);
     }
 }
 
@@ -403,6 +434,7 @@ const clientePorCardCode = async (cardCode) => {
         if (!connection) {
             await connectHANA();
         }
+        
         const query = `select * from ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode" = '${cardCode}'`;
         const result = await executeQuery(query)
         return result
@@ -455,7 +487,7 @@ const createOrdersBatchDetails = async (
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}.IFAT_SAL_CREATE_ORDERS_BATCH_DETAILS(${i_LineNum},${i_BaseEntry},${i_BaseLine},'${i_BatchNum}',${i_Quantity},'${i_ItemCode}','${i_OrderNum}')`;
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_CREATE_ORDERS_BATCH_DETAILS(${i_LineNum},${i_BaseEntry},${i_BaseLine},'${i_BatchNum}',${i_Quantity},'${i_ItemCode}','${i_OrderNum}')`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -495,4 +527,6 @@ module.exports = {
     descuentosCortoVencimiento,
     listaPrecioOficialCortoVencimiento,
     createOrdersBatchDetails,
+    listaPrecioClienteExterno,
+    ofertaClienteExterno
 }

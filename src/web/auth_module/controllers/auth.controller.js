@@ -75,7 +75,8 @@ const authLoginV2 = async (req, res) => {
             })
         })
         // return res.json({ UserCode:user.USERCODE })
-        return res.json({ user, rol, dimensionUno, dimensionDos, dimensionTres, dimensionSublinea, token })
+        const { PASSWORD, ETIQUETA, ...restData } = user
+        return res.json({ user: { ...restData }, rol, dimensionUno, dimensionDos, dimensionTres, dimensionSublinea, token })
     } catch (error) {
         console.log({ error })
         grabarLog(userCode, '', 'Login', `${error.message}`, 'LAPP_USER_BY_USERCODE', 'auth/login-v2', process.env.PRD)
@@ -102,11 +103,12 @@ const createUserController = async (req, res) => {
 
         let dataClientExternal = []
 
-        if (externalClient) {
+        console.log({externalClient,usercode})
+        if (externalClient==true) {
             dataClientExternal = await clientByCardCode(usercode)
         }
 
-        if (dataClientExternal.length == 0) {
+        if (externalClient==true && dataClientExternal.length == 0) {
             return res.status(400).json({ mensaje: 'No se pueden crear clientes externo si el CardCode no se especifica en el UserCode' })
         }
         // return res.json({ dataClientExternal })
@@ -122,7 +124,7 @@ const createUserController = async (req, res) => {
             encryptPassword,
             superuser,
             etiqueta,
-            externalClient
+            externalClient 
         )
         const response = result[0]
 

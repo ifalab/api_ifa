@@ -39,7 +39,11 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     entregasClienteDespachadorCabecera,
     entregasClienteDespachadorDetalle,
     todasSolicitudesPendiente,
-    ndcByDateRange
+    ndcByDateRange,
+    getAllWarehousePlantByParams,
+    kardexPlant,
+    getAllWarehouseCommercialByParams,
+    kardexCommercial
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -607,9 +611,9 @@ const facturasClienteLoteItemCodeController = async (req, res) => {
         const batchNum = req.query.batchNum
         console.log({ itemCode, cardCode, batchNum })
         const response = await facturasClienteLoteItemCode(itemCode, cardCode, batchNum)
-        console.log({ response })
+        // console.log({ response })
         const responseGenesis = await getFacturasParaDevolucion(cardCode, itemCode, batchNum)
-        console.log({ responseGenesis })
+        // console.log({ responseGenesis })
         if (responseGenesis.message) {
             return res.json(response)
         }
@@ -1263,7 +1267,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         console.log({ docEntry })
 
         //----------------------
-        console.log({BaseEntry, Cuf, docEntry, formater})
+        console.log({ BaseEntry, Cuf, docEntry, formater })
         const entregas = await entregaDetallerFactura(BaseEntry, Cuf, docEntry, formater)
         console.log({ entregas })
         // return res.json({ entregas })
@@ -1347,7 +1351,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                     }
                 }
             }
-            const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega,U_B_cuf } = entregas[0]
+            const { U_NIT, U_RAZSOC, U_UserCode, CardCode: cardCodeEntrega, U_B_cuf } = entregas[0]
             const finalData = {
                 // DocDate,
                 // DocDueDate,
@@ -1388,7 +1392,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         //*------------------------------------------------ DETALLE TO PROSIN
         // return res.json({idReturn})
 
-        console.log({idReturn})
+        console.log({ idReturn })
         const entregasFromProsin = await entregaDetalleToProsin(idReturn)
         console.log({ entregasFromProsin })
         if (!entregasFromProsin || entregasFromProsin.length == 0) {
@@ -1526,7 +1530,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
         // ]
         //TODO END
         //---------------------------------------------------------------------PATCH RETURNS
-        console.log({detailNDC})
+        console.log({ detailNDC })
         const responsePatchReturns = await patchReturn({ U_B_cuf: cufndc, NumAtCard: facturandc }, idReturn)
 
         if (responsePatchReturns.status > 299) {
@@ -1661,7 +1665,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 finalDataEntrega
             })
         }
-        
+
         idCreditNote = responseCreditNote.orderNumber
         return res.json({
             finalDataEntrega,
@@ -2655,6 +2659,7 @@ const clientesDevMalEstado = async (req, res) => {
     try {
         const { listSucCode } = req.body
         let listClients = []
+        console.log({listSucCode})
         const clientes = await clientesBySucCode()
         listSucCode.map((sucursal) => {
             const filter = clientes.filter(client => client.SucCode === sucursal)
@@ -6054,6 +6059,156 @@ const ndcByDateRangeController = async (req, res) => {
     }
 }
 
+const getAllWarehousePlantByParamsController = async (req, res) => {
+    try {
+        const parametro = req.query.parametro
+        console.log({ parametro })
+        if (parametro == undefined || parametro == null) {
+            return res.status(400).json({ mensaje: `No existe el parametro de busqueda` });
+        }
+        const response = await getAllWarehousePlantByParams(parametro)
+        const dataFilter = response.map((item) => {
+            const {
+                BusinessUnit,
+                WhsCode,
+                WhsName,
+                SucCode,
+                SucName,
+                County,
+                City,
+                createDate,
+                Address3,
+                Address2,
+                ...restDataItem
+
+            } = item
+            return {
+                BusinessUnit,
+                WhsCode,
+                WhsName,
+                SucCode,
+                SucName,
+                County,
+                City,
+                createDate,
+                Address3,
+                Address2,
+            }
+        })
+        return res.json(dataFilter)
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
+const getAllWarehouseCommercialByParamsController = async (req, res) => {
+    try {
+        const parametro = req.query.parametro
+        console.log({ parametro })
+        if (parametro == undefined || parametro == null) {
+            return res.status(400).json({ mensaje: `No existe el parametro de busqueda` });
+        }
+        const response = await getAllWarehouseCommercialByParams(parametro)
+        const dataFilter = response.map((item) => {
+            const {
+                BusinessUnit,
+                WhsCode,
+                WhsName,
+                SucCode,
+                SucName,
+                County,
+                City,
+                createDate,
+                Address3,
+                Address2,
+                ...restDataItem
+
+            } = item
+            return {
+                BusinessUnit,
+                WhsCode,
+                WhsName,
+                SucCode,
+                SucName,
+                County,
+                City,
+                createDate,
+                Address3,
+                Address2,
+            }
+        })
+        return res.json(dataFilter)
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
+const kardexPlantController = async (req, res) => {
+    try {
+       
+        const { 
+            start,
+            end,
+            whsCode,
+            itemCode, } = req.body
+
+        if (!start || start == undefined || start == '') {
+            return res.status(400).json({ mensaje: `Se requiere una fecha de inicio (start)` });
+        }
+
+        if (!end || end == undefined || end == '') {
+            return res.status(400).json({ mensaje: `Se requiere una fecha de final (end)` });
+        }
+
+        const response = await kardexPlant(start, end, whsCode, itemCode)
+        const dataFilter = response.map((item) => {
+            const { InQty, OutQty, StockPrice, ...rest } = item
+            return {
+                ...rest,
+                InQty: +InQty,
+                OutQty: +OutQty,
+                StockPrice: +StockPrice,
+            }
+        })
+        return res.json(dataFilter)
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
+const kardexCommercialController = async (req, res) => {
+    try {
+       
+        const { 
+            start,
+            end,
+            whsCode,
+            itemCode, } = req.body
+
+        if (!start || start == undefined || start == '') {
+            return res.status(400).json({ mensaje: `Se requiere una fecha de inicio (start)` });
+        }
+
+        if (!end || end == undefined || end == '') {
+            return res.status(400).json({ mensaje: `Se requiere una fecha de final (end)` });
+        }
+
+        const response = await kardexCommercial(start, end, whsCode, itemCode)
+        const dataFilter = response.map((item) => {
+            const { InQty, OutQty, StockPrice, ...rest } = item
+            return {
+                ...rest,
+                InQty: +InQty,
+                OutQty: +OutQty,
+                StockPrice: +StockPrice,
+            }
+        })
+        return res.json(dataFilter)
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -6124,5 +6279,9 @@ module.exports = {
     entregasRealizadasCabeceraController,
     entregasRealizadasDetalleController,
     todasSolicitudesTrasladoController,
-    ndcByDateRangeController
+    ndcByDateRangeController,
+    getAllWarehousePlantByParamsController,
+    kardexPlantController,
+    getAllWarehouseCommercialByParamsController,
+    kardexCommercialController,
 }

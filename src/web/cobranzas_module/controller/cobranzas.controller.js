@@ -2814,7 +2814,7 @@ const cobranzasSupervisorController = async (req, res) => {
                 SlpName:item.SalesPerson
             }
         })
-        console.log({ response })
+        // console.log({ response })
         let SucCode = ''
         let totalQuotaBySuc = {};
         let totalCollectionBySuc = {};
