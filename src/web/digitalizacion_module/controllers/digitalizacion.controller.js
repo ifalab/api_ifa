@@ -852,6 +852,82 @@ function applyFormatToRow(row, isTotal = false) {
     }
 }
 
+const compressMultipleImagesController = async (req, res) => {
+    try {
+        // Verificar que se hayan cargado archivos
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                error: true,
+                message: 'No se han proporcionado imágenes'
+            });
+        }
+
+        const user = req.usuarioAutorizado;
+
+        // Obtener los datos del formulario
+        const formData = {
+            ...req.body,
+            files: req.files
+        };
+
+        // Procesar la solicitud usando el nuevo servicio
+        const result = await digitalizacionService.processMultipleImages(formData, user);
+
+        // Registrar la operación exitosa en el log
+        if (user) {
+            await grabarLog(
+                user.USERCODE || 'SYSTEM',
+                user.USERNAME || 'SISTEMA',
+                "Digitalización - Carga Múltiple",
+                `Imágenes procesadas exitosamente - Cabecera ID: ${result.data?.data?.cabecera?.ID || 'N/A'}, Anexos: ${result.data?.data?.anexos?.length || 0}`,
+                JSON.stringify({
+                    nro_asiento: formData.nro_asiento,
+                    prefijo: formData.prefijo,
+                    cantidad_imagenes: req.files.length
+                }),
+                "digitalizacion/multiple",
+                process.env.PRD || 'DEV'
+            );
+        }
+
+        // Devolver respuesta
+        res.status(200).json(result.data);
+    } catch (error) {
+        console.error('Error en compressMultipleImagesController:', error);
+
+        // Registrar el error en el log
+        const user = req.usuarioAutorizado;
+        if (user) {
+            await grabarLog(
+                user.USERCODE || 'SYSTEM',
+                user.USERNAME || 'SISTEMA',
+                "Digitalización - Carga Múltiple",
+                `Error al procesar imágenes: ${error.message || 'Error desconocido'}`,
+                JSON.stringify({
+                    nro_asiento: req.body.nro_asiento,
+                    prefijo: req.body.prefijo,
+                    cantidad_imagenes: req.files?.length || 0
+                }),
+                "digitalizacion/multiple",
+                process.env.PRD || 'DEV'
+            );
+        }
+
+        res.status(error.statusCode || 500).json({
+            error: true,
+            message: error.message || 'Error al procesar las imágenes'
+        });
+    }
+};
+
+const createUserVisitaController = async (req, res) => {
+    try {
+        await digitalizacionService.createUserVisita();
+    } catch (error) {
+        throw new Error('Error al crear usuarios visita: ' + error);
+    }
+}
+
 
 module.exports = {
     searchImagesController,
@@ -865,4 +941,6 @@ module.exports = {
     deleteDetalleImageController,
     getDeliveryDigitalizedController,
     excelEntregasDigitalizadasController,
+    compressMultipleImagesController,
+    createUserVisitaController
 };

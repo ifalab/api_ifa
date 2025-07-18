@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { validarToken } = require('../../../middleware/validar_token.middleware');
 const { validarCampos } = require('../../../middleware/validar_campos.middleware');
-const { processMultipartSingleFile } = require('../middlewares/process-multipart.middleware');
+const { processMultipartSingleFile, processMultipartMultipleFiles } = require('../middlewares/process-multipart.middleware');
 const {
     searchImagesController,
     getCabeceraImageController,
@@ -13,7 +13,9 @@ const {
     deleteCabeceraImageController,
     deleteDetalleImageController,
     getDeliveryDigitalizedController,
-    excelEntregasDigitalizadasController
+    excelEntregasDigitalizadasController,
+    compressMultipleImagesController,
+    createUserVisitaController
 } = require('../controllers/digitalizacion.controller');
 
 const router = Router();
@@ -28,6 +30,11 @@ router.get('/preview/detalle/:id', [validarToken], getDetalleImageController);
 router.post('/compress-cabecera-transaccion',
     [validarToken, processMultipartSingleFile, validarCampos],
     compressCabeceraController
+);
+
+router.post('/compress-multiple-images',
+    [processMultipartMultipleFiles, validarCampos],
+    compressMultipleImagesController
 );
 
 router.post('/compress-detalle-transaccion',
@@ -65,6 +72,10 @@ router.get('/reporte/entregas-realizadas',
 router.post('/reporte/excel-entregas',
     [validarToken, validarCampos],
     excelEntregasDigitalizadasController
+);
+
+router.post('/create-user-visita',
+    createUserVisitaController
 );
 
 module.exports = router;
