@@ -234,7 +234,7 @@ const cobranzaPorZona = async (username) => {
         const year = now.getFullYear();
         const  month = now.getMonth() + 1;
 
-        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_ZONE_DIVISION_COLLECTIONS_BY_SELLER(
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_ZONE_COLLECTIONS_BY_SELLER(
             i_year => ${year},
             i_month => ${month},
             i_slpcode => ${username}
@@ -337,7 +337,7 @@ const cobranzaPorZonaMesAnt = async (username) => {
         const year = now.getFullYear();
         const  month = now.getMonth();
 
-        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_ZONE_DIVISION_COLLECTIONS_BY_SELLER(
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_ZONE_COLLECTIONS_BY_SELLER(
             i_year => ${year},
             i_month => ${month},
             i_slpcode => ${username}
