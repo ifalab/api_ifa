@@ -15,7 +15,7 @@ dotenv.config();
 
 // Configuración del cliente
 const config = {
-    baseUrl: 'https://api.bg.com.bo/bgqa/ws-servicio-codigo-qr-empresas',
+    baseUrl: 'https://api.bg.com.bo/bgprod/empresas/ws-servicio-codigo-qr-empresas',
     apiKey: process.env.X_API_KEY,
     username: process.env.QR_USERNAME,
     password: process.env.QR_PASSWORD,
@@ -52,6 +52,7 @@ const autenticarConBanco = async () => {
         });
 
 
+        console.log('[BANCO-QR] Respuesta de autenticación:', response);
 
         if (response.data.result === 'COD000') {
             authToken = response.data.token;
@@ -130,6 +131,8 @@ const generarOrdenQR = async (ordenData) => {
             gloss: ordenData.glosa || '',
             singleUse: ordenData.usoUnico !== undefined ? ordenData.usoUnico : 1
         };
+
+        console.log('[BANCO-QR] Datos de la orden:', datosOrden);
 
         const response = await axios({
             method: 'post',

@@ -16,7 +16,7 @@ const testAutenticarController = async (req, res) => {
         if (!resultado || !resultado.result || !resultado.token) {
             return res.status(500).json({
                 result: 'COD003',
-                message: 'Error al autenticar con el banco: respuesta inválida'
+                message: `Error al autenticar con el banco: ${resultado.message || 'Respuesta inesperada'}`
             });
         }
 

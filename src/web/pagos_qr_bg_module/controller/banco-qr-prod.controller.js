@@ -50,6 +50,8 @@ const generarQRController = async (req, res) => {
             });
         }
 
+        console.log('[PAGO-QR] Generando QR con token: ----------------- ', token);
+
         const { monto, moneda, referencia, glosa, fechaExpiracion, usoUnico } = req.body;
         const formato = req.query.formato || 'json'; // Formato por defecto: JSON
 
