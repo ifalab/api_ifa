@@ -142,12 +142,6 @@ const postHabilitacionController = async (req, res) => {
         let listItem = []
         let index = 0
 
-        // console.log({ code })
-        // console.log({ concepto })
-        // console.log({ inventario })
-        // console.log({ warehouseCode })
-        // console.log({ id })
-        // return res.json({ id: userLocal.user.ID })
         for (const item of inventario) {
             console.log({ item })
             if (!item.articulo || item.articulo == null || item.articulo == '') {
@@ -165,16 +159,6 @@ const postHabilitacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: 'El lote es obligatorio' })
                 break
             }
-
-            // if (!item.unidad || item.unidad == null || item.unidad == 0) {
-            //     return res.status(400).json({ mensaje: 'La cantidad por caja debe ser mayor a cero' })
-            //     break
-            // }
-
-            // if (!item.cantidadSalida || item.cantidadSalida == null || item.cantidadSalida == 0) {
-            //     return res.status(400).json({ mensaje: 'La cantidad de cajas debe ser mayor a cero' })
-            //     break
-            // }
 
             if (!item.cantidadIngreso || item.cantidadIngreso == null || item.cantidadIngreso <= 0) {
                 return res.status(400).json({ mensaje: 'La cantidad por ingreso debe ser mayor a cero' })
@@ -216,12 +200,10 @@ const postHabilitacionController = async (req, res) => {
             "U_UserCode": `${id}`,
             "DocumentLines": listItem
         }
-        // console.log('data que se envia a salida: ')
-        // console.log({ data })
-        // return res.json({ data })
+
 
         const response = await postSalidaHabilitacion(data)
-        // return res.json({response })
+
         console.log('postSalidaHabilitacion ejecutado')
         console.log({ response })
         if (response.lang) {
@@ -246,7 +228,7 @@ const postHabilitacionController = async (req, res) => {
             // Si no coincide con ninguno de los mensajes anteriores
             return res.status(400).json({ response });
         }
-        //todo-------------------------------------------------------------
+        //todo PROCESO ENTREGA con id salida:
 
         const orderNumber = response.orderNumber
         console.log({ orderNumber })
@@ -307,17 +289,12 @@ const postHabilitacionController = async (req, res) => {
         console.log({ responseEntradaHabilitacion })
         console.log({ value: responseEntradaHabilitacion.value })
         console.log({ lang: responseEntradaHabilitacion.lang })
-
-        if (responseEntradaHabilitacion.value) {
+        const { status } = responseEntradaHabilitacion
+        if (status == undefined || status !== 204) {
             grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error. Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value || ''}`, ``, "inventario/habilitacion", process.env.PRD)
             return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
         }
-        if (responseEntradaHabilitacion.errorMessage) {
-            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error del SAP en postEntradaHabilitacion, ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value || 'No definido'}`, `https://srvhana:50000/b1s/v1/InventoryGenExits`, "inventario/habilitacion", process.env.PRD)
-            return res.status(400).json({ mensaje: `Error del SAP en postEntradaHabilitacion. ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || 'No definido'}` });
-        }
-        grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Habilitado con exito`, ``, "inventario/habilitacion", process.env.PRD)
-        return res.json(responseEntradaHabilitacion)
+        return res.json({ responseEntradaHabilitacion })
     } catch (error) {
         console.error(error)
         const user = req.usuarioAutorizado || { USERCODE: 'No definido', USERNAME: 'No definido' }
@@ -2659,7 +2636,7 @@ const clientesDevMalEstado = async (req, res) => {
     try {
         const { listSucCode } = req.body
         let listClients = []
-        console.log({listSucCode})
+        console.log({ listSucCode })
         const clientes = await clientesBySucCode()
         listSucCode.map((sucursal) => {
             const filter = clientes.filter(client => client.SucCode === sucursal)
@@ -6145,8 +6122,8 @@ const getAllWarehouseCommercialByParamsController = async (req, res) => {
 
 const kardexPlantController = async (req, res) => {
     try {
-       
-        const { 
+
+        const {
             start,
             end,
             whsCode,
@@ -6178,8 +6155,8 @@ const kardexPlantController = async (req, res) => {
 
 const kardexCommercialController = async (req, res) => {
     try {
-       
-        const { 
+
+        const {
             start,
             end,
             whsCode,
@@ -6208,6 +6185,85 @@ const kardexCommercialController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en el controlador.`, error });
     }
 }
+
+const postEntregaPorOrderNumberController = async (req, res) => {
+
+    try {
+        const orderNumber = req.query.orderNumber
+        const user = req.usuarioAutorizado
+        console.log({ orderNumber })
+        if (!orderNumber) {
+            return res.status(400).json({ mensaje: 'no existe eol orden number en la peticion' });
+        }
+        // return res.json({ orderNumber })
+        const responseHana = await inventarioHabilitacion(orderNumber)
+        // return res.json({responseHana})
+        console.log('inventarioHabilitacion')
+        // const lote = await fechaVencLote('1231231313213213')
+        // if(lote.length==0){
+        //     return res.status(400).json({ mensaje: 'el lote no se encontro' });
+        // }
+        console.log({ responseHana })
+        const cabecera = {
+            // DocEntry: responseHana[0].DocEntry,
+            Reference2: responseHana[0].Ref2,
+            U_CardCode: responseHana[0].U_CardCode,
+            U_Tipo_entradas: responseHana[0].U_Tipo_entradas,
+            Comments: responseHana[0].Comments,
+            U_UserCode: responseHana[0].U_UserCode,
+            JrnlMemo: responseHana[0].JrnlMemo,
+        }
+        const DocumentLines = []
+
+        responseHana.map(async (item) => {
+            const BatchNumbers = []
+            const batch = {
+                BatchNumber: item.BatchNumber,
+                Quantity: item.Quantity,
+                BaseLineNumber: item.DocLineNum,
+                ItemCode: item.ItemCode,
+                ExpiryDate: item.ExpiryDate,
+            }
+
+            BatchNumbers.push(batch)
+            //? item code por articuloDict
+            const linea = {
+                DocLineNum: item.DocLineNum,
+                ItemCode: item.ItemCode,
+                Dscription: item.Dscription,
+                WarehouseCode: item.WhsCode,
+                Quantity: item.Quantity,
+                Price: item.Price,
+                LineTotal: item.LineTotal,
+                AccountCode: item.AccountCode,
+                BatchNumbers
+            }
+
+            DocumentLines.push(linea)
+        })
+
+        const dataFinal = {
+            ...cabecera,
+            DocumentLines
+        }
+        console.log({ dataFinal })
+        // return res.json({ dataFinal})
+        const responseEntradaHabilitacion = await postEntradaHabilitacion(dataFinal)
+        console.log('respuesta post entrada habilitacion')
+        console.log({ responseEntradaHabilitacion })
+        console.log({ value: responseEntradaHabilitacion.value })
+        console.log({ lang: responseEntradaHabilitacion.lang })
+        const { status } = responseEntradaHabilitacion
+        if (status == undefined || status !== 204) {
+            grabarLog(user.USERCODE, user.USERNAME, "inventario habilitacion", `Error. Habilitacion incompleta, entrada no realizada: ${responseEntradaHabilitacion.value || responseEntradaHabilitacion.errorMessage || responseEntradaHabilitacion.errorMessage.value || ''}`, ``, "inventario/habilitacion", process.env.PRD)
+            return res.status(400).json({ mensaje: 'Habilitacion incompleta, entrada no realizada' });
+        }
+        return res.json({ responseEntradaHabilitacion })
+    } catch (error) {
+        return res.status(500).json({ mensaje: `Error en el controlador.`, error });
+    }
+}
+
 
 module.exports = {
     clientePorDimensionUnoController,
@@ -6284,4 +6340,5 @@ module.exports = {
     kardexPlantController,
     getAllWarehouseCommercialByParamsController,
     kardexCommercialController,
+    postEntregaPorOrderNumberController,
 }

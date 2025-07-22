@@ -46,17 +46,13 @@ const authLoginV2 = async (req, res) => {
         const { usercode, password } = req.body
         userCode = usercode;
         const response = await findUserByUsercode(usercode)
-        // const dateNow = new Date()
-        // let dateMoreThan90 = new Date()
-        // dateMoreThan90.setDate(dateNow.getDate() + 90)
-        // return res.json({ response, dateNow, dateMoreThan90 })
         console.log({ response })
         if (response.length == 0) return res.status(401).json({ mensaje: 'Por favor revise sus credenciales' })
         const user = response[0]
         const validarPassword = bcrypt.compareSync(password, user.PASSWORD)
         if (!validarPassword) return res.status(401).json({ mensaje: 'No autorizado, la contraseña es distinta' })
         if (!user.ISACTIVE) return res.status(401).json({ mensaje: 'Usted no esta autorizado para entrar al sistema' })
-        const token = await generarToken(user.USERCODE)
+        const token = await generarToken(user.USERCODE, '24h')
         const rol = await roleByUser(user.ID)
         const valueRol = rol[0]
         const dimensionUno = await dimensionUnoByUser(user.ID)
@@ -74,7 +70,6 @@ const authLoginV2 = async (req, res) => {
                 ID_DIMENSION_TRES: item.LineItemCode,
             })
         })
-        // return res.json({ UserCode:user.USERCODE })
         const { PASSWORD, ETIQUETA, ...restData } = user
         return res.json({ user: { ...restData }, rol, dimensionUno, dimensionDos, dimensionTres, dimensionSublinea, token })
     } catch (error) {
@@ -103,15 +98,16 @@ const createUserController = async (req, res) => {
 
         let dataClientExternal = []
 
-        console.log({externalClient,usercode})
-        if (externalClient==true) {
+        console.log({ externalClient, usercode })
+        if (externalClient == true) {
             dataClientExternal = await clientByCardCode(usercode)
         }
 
-        if (externalClient==true && dataClientExternal.length == 0) {
+        if (externalClient == true && dataClientExternal.length == 0) {
             return res.status(400).json({ mensaje: 'No se pueden crear clientes externo si el CardCode no se especifica en el UserCode' })
         }
-        // return res.json({ dataClientExternal })
+        const clientExternal = dataClientExternal[0]
+        // return res.json({ clientExternal })
         if (pass !== confirm_pass) {
             return res.status(400).json({ mensaje: 'las contraseñas son distintas' })
         }
@@ -119,12 +115,12 @@ const createUserController = async (req, res) => {
         const encryptPassword = bcrypt.hashSync(pass, salt)
         const result = await createUser(
             usercode,
-            username,
+            (externalClient == true) ? clientExternal.CardName : username,
             codemp,
             encryptPassword,
             superuser,
             etiqueta,
-            externalClient 
+            externalClient
         )
         const response = result[0]
 

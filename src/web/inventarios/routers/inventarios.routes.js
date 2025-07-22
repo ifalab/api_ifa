@@ -51,7 +51,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     getAllWarehousePlantByParamsController,
     kardexPlantController,
     getAllWarehouseCommercialByParamsController,
-    kardexCommercialController
+    kardexCommercialController,
+    postEntregaPorOrderNumberController
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -63,6 +64,7 @@ const router = Router()
 router.get('/cliente-dimension', [validarToken, validarCampos], clientePorDimensionUnoController)
 router.post('/almacen-dimension', [validarToken, validarCampos], almacenesPorDimensionUnoController)
 router.post('/habilitacion', [validarToken, validarCampos], postHabilitacionController)
+router.get('/habilitacion-entrega', [validarToken, validarCampos], postEntregaPorOrderNumberController)
 router.get('/inventario-valorado', [validarToken, validarCampos], inventarioValoradoController)
 router.post('/descripcion-articulo', [validarToken, validarCampos], descripcionArticuloController)
 router.get('/fecha-prueba', fechaVenLoteController)

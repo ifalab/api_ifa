@@ -430,7 +430,7 @@ const crearOfertaIfaController = async (req, res) => {
     try {
         const user = req.usuarioAutorizado
         const { DocDate } = body
-
+        const alprazolamCode = '102-004-028'
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
         if (!dateRegex.test(DocDate)) {
@@ -561,7 +561,7 @@ const crearOfertaIfaController = async (req, res) => {
 
         body.DocumentLines = newDocLines
 
-        const alprazolamCode = '102-004-028'
+
         const docLine = body.DocumentLines
         let alprazolamContains = false
         let otherContains = false
@@ -583,7 +583,7 @@ const crearOfertaIfaController = async (req, res) => {
         }, 0)
 
         body.DocTotal = Number(total.toFixed(2))
-        // return res.json({ body })
+        return res.json({ body })
         const ofertaResponse = await postQuotations(body)
 
         if (ofertaResponse.status == 400) {
