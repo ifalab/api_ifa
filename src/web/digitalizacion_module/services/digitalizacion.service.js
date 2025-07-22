@@ -3,6 +3,11 @@ const FormData = require('form-data'); // Ya incluido con axios
 const fs = require('fs');
 const path = require('path');
 
+//quitar
+const jsonVisitadores = require('./visitadores.json');
+const bcrypt = require('bcryptjs')
+const { createUser, addRolUser, addUsuarioDimensionUno, addUsuarioDimensionDos, addUsuarioDimensionTres, addUsuarioDimensionSublinea } = require("../../auth_module/controllers/hana.controller")
+
 
 // Configuración base para Axios
 const apiClient = axios.create({
@@ -363,9 +368,254 @@ const digitalizacionService = {
         } catch (error) {
             handleError(error, `Error al eliminar imagen de detalle ${id}`);
         }
+    },
+
+
+    /**
+     * Procesa múltiples imágenes, la primera como cabecera y las demás como anexos
+     * @param {Object} reqData - Datos de la solicitud incluyendo los archivos y parámetros
+     * @param {Object} user - Información del usuario autenticado
+     * @returns {Promise<Object>} - Resultado de la operación
+     */
+    async processMultipleImages(reqData, user) {
+        try {
+            // Extraer los archivos y otros parámetros
+            const { files, ...otherParams } = reqData;
+
+            if (!files || files.length === 0) {
+                throw new Error('No se han proporcionado imágenes');
+            }
+
+            console.log(`Procesando ${files.length} imágenes con el endpoint /compress-multiple-images`);
+
+            // Crear un FormData para enviar los archivos y parámetros a Python
+            const formData = new FormData();
+
+            // Añadir cada archivo al FormData
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i].buffer, {
+                    filename: files[i].originalname,
+                    contentType: files[i].mimetype
+                });
+            }
+
+            console.log(`Archivos añadidos al FormData: ${files.map(f => f.originalname).join(', ')}`);
+
+            // Añadir los parámetros requeridos
+            formData.append('nro_asiento', otherParams.nro_asiento);
+            formData.append('prefijo', otherParams.prefijo);
+            formData.append('id_usuario_sap', user && user.ID_SAP ? user.ID_SAP : otherParams.id_usuario_sap);
+
+            // Añadir parámetros opcionales
+            if (otherParams.quality) formData.append('quality', otherParams.quality);
+            if (otherParams.grayscale) formData.append('grayscale', otherParams.grayscale);
+            if (otherParams.output_format) formData.append('output_format', otherParams.output_format);
+            if (otherParams.target_size_kb) formData.append('target_size_kb', otherParams.target_size_kb);
+            if (otherParams.save_locally !== undefined) formData.append('save_locally', otherParams.save_locally);
+            if (otherParams.save_to_share !== undefined) formData.append('save_to_share', otherParams.save_to_share);
+
+            // Enviar la solicitud al endpoint Python que procesa múltiples imágenes
+            console.log('Enviando solicitud a /compress-multiple-images');
+            const response = await apiClient.post('/compress-multiple-images', formData, {
+                headers: {
+                    ...formData.getHeaders()
+                }
+            });
+
+            return {
+                statusCode: response.status,
+                data: response.data
+            };
+
+        } catch (error) {
+            return handleError(error, 'Error al procesar múltiples imágenes');
+        }
+    },
+
+
+    // ... imports y configuración igual
+
+    async createUserVisita() {
+        try {
+            let visitadoresData = jsonVisitadores; // Array de todos los usuarios a procesar
+
+            let results = [];
+            for (const visitador of visitadoresData) {
+                try {
+                    // Desestructurar los datos del usuario
+                    let {
+                        usercode,
+                        username,
+                        codemp,
+                        pass,
+                        confirm_pass,
+                        superuser,
+                        etiqueta,
+                        dimensionUno,
+                        dimensionDos,
+                        dimensionTres,
+                        dimensionSublinea,
+                        externalClient,
+                        roles
+                    } = visitador;
+
+                    // Validación de contraseña
+                    if (pass !== confirm_pass) {
+                        results.push({
+                            username,
+                            success: false,
+                            message: 'Las contraseñas son distintas',
+                            error: 400
+                        });
+                        continue;
+                    }
+
+                    // Crear usuario en BD
+                    const salt = bcrypt.genSaltSync();
+                    const encryptPassword = bcrypt.hashSync(pass, salt);
+
+                    // SIEMPRE crea uno a uno y espera la respuesta antes de seguir
+                    const result = await createUser(
+                        usercode,
+                        username,
+                        codemp,
+                        encryptPassword,
+                        superuser,
+                        etiqueta,
+                        externalClient = false
+                    );
+                    const response = result[0];
+                    const value = response["response"];
+                    const id = response["id"];
+
+                    if (value == 409) {
+                        results.push({
+                            username,
+                            success: false,
+                            message: `El usuario con el usercode: ${usercode}, ya existe`,
+                            error: 409
+                        });
+                        continue;
+                    }
+
+                    if (value == 200) {
+                        // Procesar roles uno a uno
+                        if (Array.isArray(roles) && roles.length > 0) {
+                            for (const id_rol of roles) {
+                                const responseRol = await addRolUser(id, id_rol);
+                                const statusCode = responseRol[0]?.response;
+                                if (statusCode !== 200) {
+                                    console.log({ mensaje: 'conflicto ya existe roles y usuario' });
+                                } else {
+                                    console.log({ mensaje: 'ok rol' });
+                                }
+                            }
+                        }
+
+                        // Procesar dimensionUno uno a uno
+                        if (Array.isArray(dimensionUno) && dimensionUno.length > 0) {
+                            for (const item of dimensionUno) {
+                                const id_dim = item.ID;
+                                const responseDim = await addUsuarioDimensionUno(id, id_dim);
+                                const valueDim = responseDim["response"];
+                                console.log({ valueDim });
+                                if (valueDim == 409) {
+                                    console.log({ mensaje: 'conflicto ya existe dim1 y usuario' });
+                                } else {
+                                    console.log({ mensaje: 'ok dim1' });
+                                }
+                            }
+                        }
+
+                        // Procesar dimensionDos uno a uno
+                        if (Array.isArray(dimensionDos) && dimensionDos.length > 0) {
+                            for (const item of dimensionDos) {
+                                const id_dim = item.ID;
+                                const responseDim = await addUsuarioDimensionDos(id, id_dim);
+                                const valueDim = responseDim["response"];
+                                console.log({ valueDim });
+                                if (valueDim == 409) {
+                                    console.log({ mensaje: 'conflicto ya existe dim2 y usuario' });
+                                } else {
+                                    console.log({ mensaje: 'ok dim2' });
+                                }
+                            }
+                        }
+
+                        // Procesar dimensionTres uno a uno
+                        if (Array.isArray(dimensionTres) && dimensionTres.length > 0) {
+                            for (const item of dimensionTres) {
+                                const id_dim = item.ID;
+                                const responseDim = await addUsuarioDimensionTres(id, id_dim);
+                                const valueDim = responseDim["response"];
+                                console.log({ valueDim });
+                                if (valueDim == 409) {
+                                    console.log({ mensaje: 'conflicto ya existe dim3 y usuario' });
+                                } else {
+                                    console.log({ mensaje: 'ok dim3' });
+                                }
+                            }
+                        }
+
+                        // Procesar dimensionSublinea uno a uno
+                        if (Array.isArray(dimensionSublinea) && dimensionSublinea.length > 0) {
+                            for (const item of dimensionSublinea) {
+                                const id_dim = item.ID;
+                                const responseDim = await addUsuarioDimensionSublinea(id, id_dim);
+                                const valueDim = responseDim["response"];
+                                console.log({ valueDim });
+                                if (valueDim == 409) {
+                                    console.log({ mensaje: 'conflicto ya existe dim sublinea y usuario' });
+                                } else {
+                                    console.log({ mensaje: 'ok dim sublinea' });
+                                }
+                            }
+                        }
+
+                        console.log(`Usuario creado con éxito: ${username}`);
+                        results.push({
+                            username,
+                            success: true,
+                            message: 'Usuario creado exitosamente',
+                            data: response
+                        });
+                    } else {
+                        results.push({
+                            username,
+                            success: false,
+                            message: 'Error no controlado',
+                            error: 500
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Error al crear visitador ${visitador.username}:`, error.message);
+                    results.push({
+                        username: visitador.username,
+                        success: false,
+                        message: error.message || 'Error desconocido',
+                        error: error.statusCode || 500
+                    });
+                }
+            }
+
+            // Generar resumen de resultados
+            const summary = {
+                total: visitadoresData.length,
+                success: results.filter(r => r.success).length,
+                failed: results.filter(r => !r.success).length,
+                details: results
+            };
+
+            console.log(`Finalizado: ${summary.success} exitosos, ${summary.failed} fallidos`);
+
+            return {
+                statusCode: 200,
+                data: summary
+            };
+        } catch (error) {
+            return handleError(error, 'Error al procesar la creación de usuarios visitadores');
+        }
     }
-
-
 };
 
 /**

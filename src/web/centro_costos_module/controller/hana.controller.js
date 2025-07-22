@@ -418,6 +418,63 @@ const getAsientoCabecera = async () => {
     }
 };
 
+const getLineasCCHana = async (groupCodes = []) => {
+    try {
+        let query = `SELECT * FROM LAB_IFA_COM.IFA_CC_LINEAS`;
+        let params = [];
+
+        if (groupCodes.length > 0) {
+            const placeholders = groupCodes.map(() => '?').join(', ');
+            query += ` WHERE "GroupCode" IN (${placeholders})`;
+            params = groupCodes;
+        }
+
+        console.log(query, params);
+        const result = await executeQueryParamsWithConnection(query, params);
+        return result;
+    } catch (error) {
+        console.error('Error en getLineasCCHana:', error);
+        throw new Error(`Error en getLineasCCHana: ${error.message}`);
+    }
+};
+
+const getSubLineasCCHana = async (groupCodes = []) => {
+    try {
+        let query = `SELECT * FROM LAB_IFA_COM.IFA_CC_SUBLINEAS`;
+        let params = [];
+
+        if (groupCodes.length > 0) {
+            const placeholders = groupCodes.map(() => '?').join(', ');
+            query += ` WHERE "LineItemCode" IN (${placeholders})`;
+            params = groupCodes;
+        }
+
+        console.log(query, params);
+        const result = await executeQueryParamsWithConnection(query, params);
+        return result;
+    } catch (error) {
+        console.error('Error en getSubLineasCCHana:', error);
+        throw new Error(`Error en getSubLineasCCHana: ${error.message}`);
+    }
+};
+
+const updateAgenciaHana = async (TransId, Line_ID, Agencia) => {
+  try {
+    const query = `CALL LAB_IFA_COM.IFASP_CC_UPDATE_AGENCIA(?, ?, ?)`;
+
+    const params = [TransId, Line_ID, Agencia];
+
+    console.log('Ejecutando:', query, 'con params:', params);
+    const result = await executeQueryParamsWithConnection(query, params);
+
+    return result;
+  } catch (error) {
+    console.error('Error en updateAgenciaHana:', error);
+    throw new Error(`Error en updateAgenciaHana: ${error.message}`);
+  }
+};
+
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -447,4 +504,7 @@ module.exports = {
     saveEspecialidadCC,
     getAsientoCompletosDimensionados,
     getAsientoCabecera,
+    getLineasCCHana,
+    getSubLineasCCHana,
+    updateAgenciaHana
 };

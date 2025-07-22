@@ -13,7 +13,7 @@ const {
 dotenv.config();
 
 const config = {
-    baseUrl: 'https://api.bg.com.bo/bgqa/ws-servicio-codigo-qr-empresas',
+    baseUrl: 'https://api.bg.com.bo/bgprod/empresas/ws-servicio-codigo-qr-empresas',
     apiKey: process.env.X_API_KEY_PRD,
     username: process.env.QR_USERNAME_PRD,
     password: process.env.QR_PASSWORD_PRD,

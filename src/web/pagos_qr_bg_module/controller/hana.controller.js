@@ -66,11 +66,11 @@ const registrarNotificacionPago = async (qrId, transactionId, fechaPago) => {
         const checkResult = await findPagoQrByIds(qrId, transactionId);
         console.log("[PAGO-QR] Resultado de verificación:", JSON.stringify(checkResult));
 
-        // Verificar si ya existe (nota: el campo se llama 'total', no 'count')
-        if (checkResult && checkResult[0] && checkResult[0].TOTAL > 0) {
-            console.log(`[PAGO-QR] Notificación ya registrada: QR=${qrId}, Transacción=${transactionId}`);
-            throw Error('Notificación ya registrada');
-        }
+        // // Verificar si ya existe (nota: el campo se llama 'total', no 'count')
+        // if (checkResult && checkResult[0] && checkResult[0].TOTAL > 0) {
+        //     console.log(`[PAGO-QR] Notificación ya registrada: QR=${qrId}, Transacción=${transactionId}`);
+        //     throw Error('Notificación ya registrada');
+        // }
 
         // Insertar nueva notificación
         console.log("[PAGO-QR] Insertando nueva notificación...");

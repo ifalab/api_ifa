@@ -7,7 +7,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, saveAreaCC, saveTipoClienteCC, saveLineaCC, saveClasificacionCC, saveConceptosComCC, saveEspecialidadCC, getAsientoCompletosDimensionados, getAsientoCabecera } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, saveAreaCC, saveTipoClienteCC, saveLineaCC, saveClasificacionCC, saveConceptosComCC, saveEspecialidadCC, getAsientoCompletosDimensionados, getAsientoCabecera, getLineasCCHana, getSubLineasCCHana, updateAgenciaHana } = require('./hana.controller');
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const postInventoryEntriesController = async (req, res) => {
     try {
@@ -1136,8 +1136,7 @@ const obtenerAsientoCabecera = async (req, res) => {
 };
 
 const obtenerAsientoCompletosDimensionadosExcel = async (req, res) => {
-    const asientos = req.body;
-
+  const asientos = req.body;
   try {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Asientos');
@@ -1217,6 +1216,111 @@ const obtenerAsientoCompletosDimensionadosExcel = async (req, res) => {
   }
 };
 
+const getLineasCC = async (req, res) => {
+    try {
+        const groupCodesParam = req.query.groupCodes; // "100,104,110"
+        
+        const groupCodes = groupCodesParam
+            ? groupCodesParam.split(',').map(code => parseInt(code.trim())).filter(code => !isNaN(code))
+            : [];
+
+        const data = await getLineasCCHana(groupCodes);
+
+        const lineasUnicasMap = new Map();
+
+        data.forEach(item => {
+            if (!lineasUnicasMap.has(item.LineItemCode)) {
+                lineasUnicasMap.set(item.LineItemCode, {
+                    LineItemCode: item.LineItemCode,
+                    LineItemName: item.LineItemName
+                });
+            }
+        });
+
+        const lineasUnicas = Array.from(lineasUnicasMap.values());
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Lineas recuperadas',
+            data: lineasUnicas
+        });
+    } catch (error) {
+        console.error('Error al obtener las lineas:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener las lineas',
+            error: error.message,
+        });
+    }
+}
+
+const getSubLineasCC = async (req, res) => {
+    try {
+        const groupLinesParam = req.query.groupLines; // "1,2,6"
+        
+        const groupLines = groupLinesParam
+            ? groupLinesParam.split(',').map(code => parseInt(code.trim())).filter(code => !isNaN(code))
+            : [];
+
+        const data = await getSubLineasCCHana(groupLines);
+
+        const subLineasUnicasMap = new Map();
+
+        data.forEach(item => {
+            if (!subLineasUnicasMap.has(item.SubLineItemCode)) {
+                subLineasUnicasMap.set(item.SubLineItemCode, {
+                    SubLineItemCode: item.SubLineItemCode,
+                    SubLineItemName: item.SubLineItemName
+                });
+            }
+        });
+
+        const subLineasUnicas = Array.from(subLineasUnicasMap.values());
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Sublineas recuperadas',
+            data: subLineasUnicas
+        });
+    } catch (error) {
+        console.error('Error al obtener las sublineas:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener las sublineas',
+            error: error.message,
+        });
+    }
+}
+
+const updateAgenciaController = async (req, res) => {
+  try {
+    const { transId, Line_ID, agencias } = req.body;
+
+    if (!transId || !agencias) {
+      return res.status(400).json({
+        status: false,
+        mensaje: 'Parámetros transId y agencias son requeridos.',
+      });
+    }
+
+    // Puede enviar null en Line_ID para actualizar todas las líneas
+    await updateAgenciaHana(transId, Line_ID ?? null, agencias);
+
+    res.status(200).json({
+      status: true,
+      mensaje: 'Agencias actualizadas correctamente.',
+    });
+  } catch (error) {
+    console.error('Error al actualizar las agencias:', error);
+    res.status(500).json({
+      status: false,
+      mensaje: 'Error al actualizar las agencias',
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -1247,5 +1351,8 @@ module.exports = {
     cargarExcelMasivo,
     obtenerAsientoCompletosDimensionados,
     obtenerAsientoCabecera,
-    obtenerAsientoCompletosDimensionadosExcel
+    obtenerAsientoCompletosDimensionadosExcel,
+    getLineasCC,
+    getSubLineasCC,
+    updateAgenciaController
 }
