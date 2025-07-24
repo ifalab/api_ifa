@@ -755,7 +755,8 @@ const getAsientosContablesCC = async (req, res) => {
                 Clasificacion_Gastos: current.Clasificacion_Gastos,
                 Conceptos_Comerciales: current.Conceptos_Comerciales,
                 Cuenta_Contable: current.Cuenta_Contable,
-                Indicator: current.Indicator
+                Indicator: current.Indicator,
+                DocFuenteCod: current.DocFuenteCod,
             };
 
             if (acc[current.TransId]) {

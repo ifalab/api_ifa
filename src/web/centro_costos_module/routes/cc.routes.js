@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const multer = require('multer');
-const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC, descontabilizarAsientoCC, obtenerBalanceGeneral, obtenerAsientoCompletos, obtenerExcelAsientos, saveClasificacionGastos, cargarExcelMasivo, obtenerAsientoCompletosDimensionados, obtenerAsientoCabecera, obtenerAsientoCompletosDimensionadosExcel, getLineasCC, getSubLineasCC, updateAgenciaController } = require('../controller/cc.controller')
+const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC, descontabilizarAsientoCC, obtenerBalanceGeneral, obtenerAsientoCompletos, obtenerExcelAsientos, saveClasificacionGastos, cargarExcelMasivo, obtenerAsientoCompletosDimensionados, obtenerAsientoCabecera, obtenerAsientoCompletosDimensionadosExcel, getLineasCC, getSubLineasCC, updateAgenciaController, copyAsientoController, getExcelAsientoController } = require('../controller/cc.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -50,5 +50,8 @@ router.get('/asientos-cabecera', [validarToken, validarCampos], obtenerAsientoCa
 router.get('/lineas-cc', [validarToken, validarCampos], getLineasCC)
 router.get('/sublineas-cc', [validarToken, validarCampos], getSubLineasCC)
 router.patch('/update-agencias-cc', [validarToken, validarCampos], updateAgenciaController)
+
+router.post('/copy-asiento-cc', [validarToken, validarCampos], copyAsientoController);
+router.post('/get-excel-asiento', [validarToken, validarCampos], getExcelAsientoController);
 
 module.exports = router

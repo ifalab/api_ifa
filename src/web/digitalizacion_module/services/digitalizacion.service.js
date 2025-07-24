@@ -61,6 +61,25 @@ const digitalizacionService = {
     },
 
     /**
+     * Obtiene una imagen de anexo por su ID
+     */
+    async getAnexoImage(id) {
+        try {
+            const response = await apiClient.get(`/preview/anexo/${id}`, {
+                responseType: 'arraybuffer'
+            });
+            return {
+                statusCode: response.status,
+                data: response.data,
+                contentType: response.headers['content-type']
+            };
+        } catch (error) {
+            handleError(error, 'Error al obtener imagen de anexo de cabecera');
+        }
+    },
+
+
+    /**
      * Obtiene una imagen de detalle por su ID
      */
     async getDetalleImage(id) {
@@ -252,6 +271,77 @@ const digitalizacionService = {
         }
     },
 
+
+    /**
+     * Actualiza imágenes de anexos existentes.
+     * @param {Array<Number>} anexoIds - Array de IDs de anexos a actualizar
+     * @param {Array<Object>} filesData - Array de archivos, cada uno con { buffer, originalname, mimetype }
+     * @param {Object} [options={}] - Opciones adicionales (quality, output_format, target_size_kb, grayscale, ...)
+     * @param {Boolean} [deletePrevious=true] - Si debe eliminar la imagen anterior
+     * @returns {Promise<Object>} - Respuesta de la API
+     */
+    async updateAnexosImages(anexoIds, filesData, options = {}, deletePrevious = true) {
+
+        if (!Array.isArray(anexoIds) || !Array.isArray(filesData) || anexoIds.length !== filesData.length) {
+            throw new Error('Debe proveer arrays de IDs y archivos de igual longitud');
+        }
+
+        // Guardar archivos como temporales igual que en updateCabeceraImage
+        const tempFilePaths = [];
+        try {
+            // Crear formData real
+            const form = new FormData();
+
+            // Agregar IDs
+            anexoIds.forEach(id => form.append('anexo_ids', id.toString()));
+
+            // Agregar opciones extra
+            form.append('delete_previous', deletePrevious.toString());
+            if (options.quality !== undefined) form.append('quality', options.quality.toString());
+            if (options.output_format !== undefined) form.append('output_format', options.output_format);
+            if (options.target_size_kb !== undefined) form.append('target_size_kb', options.target_size_kb.toString());
+            if (options.grayscale !== undefined) form.append('grayscale', options.grayscale.toString());
+            if (options.save_locally !== undefined) form.append('save_locally', options.save_locally.toString());
+            if (options.save_to_share !== undefined) form.append('save_to_share', options.save_to_share.toString());
+
+            // Guardar los archivos temporales y agregarlos al FormData
+            for (let i = 0; i < filesData.length; i++) {
+                const file = filesData[i];
+                if (!file || !file.buffer) throw new Error(`Archivo no válido o vacío en la posición ${i}`);
+
+                const tempFilePath = path.join(__dirname, `../../../temp_${Date.now()}_${file.originalname}`);
+                fs.writeFileSync(tempFilePath, file.buffer);
+                tempFilePaths.push(tempFilePath);
+
+                form.append('files', fs.createReadStream(tempFilePath), {
+                    filename: file.originalname,
+                    contentType: file.mimetype
+                });
+            }
+
+            // Llamar a la API Python (PUT /update/anexos)
+            const response = await apiClient.put('/update/anexos', form, {
+                headers: {
+                    ...form.getHeaders()
+                },
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
+            });
+
+            // Limpiar archivos temporales
+            tempFilePaths.forEach(f => { if (fs.existsSync(f)) fs.unlinkSync(f); });
+
+            return {
+                statusCode: response.status,
+                data: response.data
+            };
+        } catch (error) {
+            // Limpiar archivos temporales en caso de error
+            tempFilePaths.forEach(f => { if (fs.existsSync(f)) fs.unlinkSync(f); });
+            handleError(error, 'Error al actualizar imágenes de anexos');
+        }
+    },
+
     /**
      * Actualiza la imagen de un detalle existente
      * @param {Number} id - ID del detalle a actualizar
@@ -433,7 +523,101 @@ const digitalizacionService = {
     },
 
 
-    // ... imports y configuración igual
+    /**
+     * Procesa múltiples imágenes SOLO como anexos (no toca la cabecera).
+     * @param {Object} reqData - Datos de la solicitud incluyendo los archivos y parámetros
+     * @param {Object} user - Información del usuario autenticado
+     * @returns {Promise<Object>} - Resultado de la operación
+     */
+    async processMultipleAnexos(reqData, user) {
+        try {
+            const { files, ...otherParams } = reqData;
+
+            if (!files || files.length === 0) {
+                throw new Error('No se han proporcionado imágenes');
+            }
+
+            // Crear un FormData para enviar los archivos y parámetros al backend Python
+            const formData = new FormData();
+
+            // Añadir cada archivo al FormData
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i].buffer, {
+                    filename: files[i].originalname,
+                    contentType: files[i].mimetype
+                });
+            }
+
+            // Parámetros requeridos
+            formData.append('id_cabecera', otherParams.id_cabecera);
+            formData.append('prefijo', otherParams.prefijo);
+            formData.append('id_usuario_sap', user && user.ID_SAP ? user.ID_SAP : otherParams.id_usuario_sap);
+
+            // Parámetros opcionales
+            if (otherParams.quality) formData.append('quality', otherParams.quality);
+            if (otherParams.grayscale) formData.append('grayscale', otherParams.grayscale);
+            if (otherParams.output_format) formData.append('output_format', otherParams.output_format);
+            if (otherParams.target_size_kb) formData.append('target_size_kb', otherParams.target_size_kb);
+            if (otherParams.save_locally !== undefined) formData.append('save_locally', otherParams.save_locally);
+
+            // Enviar la solicitud al endpoint para anexos
+            const response = await apiClient.post('/compress-multiple-anexos', formData, {
+                headers: {
+                    ...formData.getHeaders()
+                }
+            });
+
+            return {
+                statusCode: response.status,
+                data: response.data
+            };
+
+        } catch (error) {
+            return handleError(error, 'Error al procesar anexos');
+        }
+    },
+
+    /**
+    * Obtiene la información de la cabecera y sus anexos para previsualización
+    * @param {Number} nroAsiento - Número de asiento único para identificar la cabecera
+    * @param {String} prefijo - Prefijo del documento (AS, R, C, RW, FC, PR)
+    * @returns {Promise<Object>} - Resultado de la operación con cabecera y anexos
+    */
+    async previewCabeceraData(nroAsiento, prefijo) {
+        try {
+            const response = await apiClient.get(`/cabecera/by-nro-prefijo/${nroAsiento}/${prefijo}`, {
+                responseType: 'json' // Esperamos JSON
+            });
+            return {
+                statusCode: response.status,
+                data: response.data
+            };
+        } catch (error) {
+            handleError(error, `Error al obtener información de la cabecera con NRO_ASIENTO ${nroAsiento} y prefijo ${prefijo}`);
+        }
+    },
+
+    /**
+     * Obtiene la información de la cabecera y sus anexos para previsualización por ID de cabecera
+     * @param {Number} idCabecera - ID de la cabecera de transacción
+     * @returns {Promise<Object>} - Resultado de la operación
+     */
+    async getCabeceraYAnexosPreview(idCabecera) {
+        try {
+            const response = await apiClient.get(`/cabecera-anexos/${idCabecera}`, {
+                responseType: 'json'
+            });
+
+            console.log(response)
+
+            return {
+                statusCode: response.status,
+                data: response.data
+            };
+        } catch (error) {
+            handleError(error, `Error al obtener cabecera y anexos para ID ${idCabecera}`);
+        }
+    },
 
     async createUserVisita() {
         try {
@@ -615,7 +799,24 @@ const digitalizacionService = {
         } catch (error) {
             return handleError(error, 'Error al procesar la creación de usuarios visitadores');
         }
+    },
+    /**
+     * Elimina una cabecera y todos sus anexos asociados, tanto en red (SMB) como en base de datos.
+     * @param {Number} idCabecera - ID de la cabecera a eliminar
+     * @returns {Promise<Object>} - Resultado de la operación
+     */
+    async eliminarCabeceraYAnexos(idCabecera) {
+        try {
+            const response = await apiClient.delete(`/cabecera-anexos/eliminar-todo/${idCabecera}`);
+            return {
+                statusCode: response.status,
+                data: response.data
+            };
+        } catch (error) {
+            handleError(error, `Error al eliminar cabecera y anexos (id ${idCabecera})`);
+        }
     }
+
 };
 
 /**
@@ -630,8 +831,13 @@ function handleError(error, defaultMessage) {
 
         if (error.response.data) {
             try {
-                // Si viene como arraybuffer, convertir a texto
-                if (error.response.config.responseType === 'arraybuffer') {
+                // Si claramente es un buffer y el tipo de response lo es (pero no para JSON!)
+                if (
+                    error.response.config &&
+                    error.response.config.responseType === 'arraybuffer' &&
+                    Buffer.isBuffer(error.response.data)
+                ) {
+                    // Intenta decodificar como texto
                     const decoder = new TextDecoder('utf-8');
                     const errorData = decoder.decode(error.response.data);
                     try {
@@ -640,12 +846,14 @@ function handleError(error, defaultMessage) {
                     } catch (e) {
                         errorMessage = errorData || defaultMessage;
                     }
+                } else if (typeof error.response.data === 'object' && error.response.data.detail) {
+                    errorMessage = JSON.stringify(error.response.data.detail);
+                } else if (typeof error.response.data === 'object' && error.response.data.message) {
+                    errorMessage = error.response.data.message;
+                } else if (typeof error.response.data === 'string') {
+                    errorMessage = error.response.data;
                 } else {
-                    if (typeof error.response.data === 'object' && error.response.data.detail) {
-                        errorMessage = JSON.stringify(error.response.data.detail);
-                    } else {
-                        errorMessage = error.response.data.message || error.response.data || defaultMessage;
-                    }
+                    errorMessage = defaultMessage;
                 }
             } catch (e) {
                 console.error('Error al parsear respuesta de error:', e);

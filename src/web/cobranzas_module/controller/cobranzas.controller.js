@@ -27,6 +27,7 @@ const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { aniadirDetalleVisita } = require('../../planificacion_module/controller/hana.controller');
 const formatData = require('../utils/formatEstadoCuenta');
+const { getSucursales } = require('../../datos_maestros_module/controller/hana.controller');
 
 
 const cobranzaGeneralController = async (req, res) => {
@@ -2916,8 +2917,30 @@ const cobranzaDocNumPorDocEntryController = async (req = request, res = response
     }
 }
 
+const saldoDeudorGeneralExcel = async(req = request, res = response) => {
+    let sucursales = req.body;
+    console.log("Longitud Sucursales del Usuario:", sucursales.length);
 
+    const datosMaestros = await getSucursales();
+    console.log("Longitud Sucursales del Sistema:", datosMaestros.data.length);
 
+    if (datosMaestros.data.length === sucursales.length) {
+        sucursales = null;
+    }
+
+    console.log(sucursales);
+
+    try {
+        return res.status(200).json({
+            mensaje: "Datos recuperados con exito",
+            data: sucursales
+        })
+    } catch (error) {
+        console.log('error en saldoDeudorGeneralExcel')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en saldoDeudorGeneralExcel'}` })
+    }
+}
 
 module.exports = {
     cobranzaGeneralController,
@@ -2981,5 +3004,6 @@ module.exports = {
     getBajasFacturasController, findClienteController,
     excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController,
     cobranzaDocNumPorDocEntryController,
-    realizarCobroMultiController
+    realizarCobroMultiController,
+    saldoDeudorGeneralExcel
 }
