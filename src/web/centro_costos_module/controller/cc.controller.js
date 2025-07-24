@@ -7,7 +7,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, saveAreaCC, saveTipoClienteCC, saveLineaCC, saveClasificacionCC, saveConceptosComCC, saveEspecialidadCC, getAsientoCompletosDimensionados, getAsientoCabecera } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, saveAreaCC, saveTipoClienteCC, saveLineaCC, saveClasificacionCC, saveConceptosComCC, saveEspecialidadCC, getAsientoCompletosDimensionados, getAsientoCabecera, getLineasCCHana, getSubLineasCCHana, updateAgenciaHana, copyAsientoHana } = require('./hana.controller');
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const postInventoryEntriesController = async (req, res) => {
     try {
@@ -184,7 +184,7 @@ const getPDFAsientoContableCC = async (req, res) => {
         });
 
         const dataLandscape = JSON.parse(JSON.stringify(data));
-        dataLandscape.lines = dataLandscape.lines.filter(line => Number(line.Debit) !== 0);
+        dataLandscape.lines = dataLandscape.lines.filter(line => String(line.Account).startsWith('6'));
         const filePath2 = path.join(__dirname, './pdf/template-contable-cc-gastos.ejs');
         const htmlHorizontal = await ejs.renderFile(filePath2, {
             data: dataLandscape,
@@ -527,7 +527,7 @@ const cargarPlantillaDimensiones = async (req, res) => {
         return res.status(200).json(response)
     } catch (error) {
         console.error({ error });
-        return res.status(500).json({ mensaje: `Error obtiendo la plantilla para estas dimensiones.${error.message.message}` });
+        return res.status(500).json({ mensaje: `Error obtiendo la plantilla para estas dimensiones ${error}` });
     }
 } 
 
@@ -601,7 +601,8 @@ const getAsientoContableCCById = async (req, res) => {
                 Clasificacion_Gastos: current.Clasificacion_Gastos,
                 Conceptos_Comerciales: current.Conceptos_Comerciales,
                 Cuenta_Contable: current.Cuenta_Contable,
-                Indicator: current.Indicator
+                Indicator: current.Indicator,
+                DocFuenteCod: current.DocFuenteCod,
             };
 
             if (acc[current.TransId]) {
@@ -1022,6 +1023,7 @@ const cargarExcelMasivo = async (req, res) => {
 
         // Mapear columnas del Excel a la estructura del backend Nest
         const detalles = filas.map((fila) => ({
+            Agencia: fila['Agencia'] ?? '',
             U_DocFuenteCod: fila['Documento_Fuente'] ?? '',
             AccountName: fila['Cuenta_Nombre'] ?? '',
             AccountCode: String(fila['Cuenta'] ?? ''),
@@ -1136,8 +1138,7 @@ const obtenerAsientoCabecera = async (req, res) => {
 };
 
 const obtenerAsientoCompletosDimensionadosExcel = async (req, res) => {
-    const asientos = req.body;
-
+  const asientos = req.body;
   try {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Asientos');
@@ -1217,6 +1218,230 @@ const obtenerAsientoCompletosDimensionadosExcel = async (req, res) => {
   }
 };
 
+const getLineasCC = async (req, res) => {
+    try {
+        const groupCodesParam = req.query.groupCodes; // "100,104,110"
+        
+        const groupCodes = groupCodesParam
+            ? groupCodesParam.split(',').map(code => parseInt(code.trim())).filter(code => !isNaN(code))
+            : [];
+
+        const data = await getLineasCCHana(groupCodes);
+
+        const lineasUnicasMap = new Map();
+
+        data.forEach(item => {
+            if (!lineasUnicasMap.has(item.LineItemCode)) {
+                lineasUnicasMap.set(item.LineItemCode, {
+                    LineItemCode: item.LineItemCode,
+                    LineItemName: item.LineItemName
+                });
+            }
+        });
+
+        const lineasUnicas = Array.from(lineasUnicasMap.values());
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Lineas recuperadas',
+            data: lineasUnicas
+        });
+    } catch (error) {
+        console.error('Error al obtener las lineas:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener las lineas',
+            error: error.message,
+        });
+    }
+}
+
+const getSubLineasCC = async (req, res) => {
+    try {
+        const groupLinesParam = req.query.groupLines; // "1,2,6"
+        
+        const groupLines = groupLinesParam
+            ? groupLinesParam.split(',').map(code => parseInt(code.trim())).filter(code => !isNaN(code))
+            : [];
+
+        const data = await getSubLineasCCHana(groupLines);
+
+        const subLineasUnicasMap = new Map();
+
+        data.forEach(item => {
+            if (!subLineasUnicasMap.has(item.SubLineItemCode)) {
+                subLineasUnicasMap.set(item.SubLineItemCode, {
+                    SubLineItemCode: item.SubLineItemCode,
+                    SubLineItemName: item.SubLineItemName
+                });
+            }
+        });
+
+        const subLineasUnicas = Array.from(subLineasUnicasMap.values());
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Sublineas recuperadas',
+            data: subLineasUnicas
+        });
+    } catch (error) {
+        console.error('Error al obtener las sublineas:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener las sublineas',
+            error: error.message,
+        });
+    }
+}
+
+const updateAgenciaController = async (req, res) => {
+  try {
+    const { transId, Line_ID, agencias } = req.body;
+
+    if (!transId || !agencias) {
+      return res.status(400).json({
+        status: false,
+        mensaje: 'Parámetros transId y agencias son requeridos.',
+      });
+    }
+
+    // Puede enviar null en Line_ID para actualizar todas las líneas
+    await updateAgenciaHana(transId, Line_ID ?? null, agencias);
+
+    res.status(200).json({
+      status: true,
+      mensaje: 'Agencias actualizadas correctamente.',
+    });
+  } catch (error) {
+    console.error('Error al actualizar las agencias:', error);
+    res.status(500).json({
+      status: false,
+      mensaje: 'Error al actualizar las agencias',
+      error: error.message,
+    });
+  }
+};
+
+const copyAsientoController = async (req, res) => {
+    try {
+        const {transId} = req.body;
+
+        if (!transId ) {
+            return res.status(400).json({
+                status: false,
+                mensaje: 'Parámetro transId es requerido.',
+            });
+        }
+
+        const id = await copyAsientoHana(transId);
+        console.log(id);
+
+        res.status(200).json({
+            status: true,
+            mensaje: 'Asiento Duplicado correctamente.',
+            data: id,
+        });
+    } catch (error) {
+        console.error('Error al duplicar el asiento CC:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al duplicar el asiento CC',
+            error: error.message,
+        });
+    }
+}
+
+const getExcelAsientoController = async (req, res) => {
+  try {
+    const data = req.body; // Aquí recibes el array completo (no solo transId)
+    console.log(data);
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({
+        status: false,
+        mensaje: 'El cuerpo debe ser un array con datos.',
+      });
+    }
+
+    // Crear workbook y hoja
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Asiento');
+
+    // Definir columnas con los encabezados que pediste (en ese orden)
+    worksheet.columns = [
+      { header: 'Agencia', key: 'Indicator', width: 20 },
+      { header: 'Documento_Fuente', key: 'DocFuenteCod', width: 20 },
+      { header: 'Cuenta', key: 'Account', width: 15 },
+      { header: 'Nombre_Cuenta', key: 'AcctName', width: 30 },
+      { header: 'Codigo_Socio', key: 'ShortName', width: 20 },
+      { header: 'Socio', key: 'CardName', width: 30 },
+      { header: 'Credito', key: 'Credit', width: 15 },
+      { header: 'Debito', key: 'Debit', width: 15 },
+      { header: 'Glosa', key: 'LineMemo', width: 50 },
+      { header: 'Referencia_1', key: 'Ref1Detail', width: 20 },
+      { header: 'Referencia_2', key: 'Ref2Detail', width: 20 },
+      { header: 'Referencia_3', key: 'Ref3Deatil', width: 20 },
+      { header: 'Codigo_Beneficiario', key: 'Codigo_Beneficiario', width: 20 },
+      { header: 'Id_Concepto_Comercial', key: 'U_Clasif_Gastos', width: 20 },
+      { header: 'Area', key: 'Area', width: 15 },
+      { header: 'Tipo', key: 'Tipo_Cliente', width: 15 },
+      { header: 'Linea', key: 'Linea', width: 15 },
+      { header: 'Especialidad', key: 'Especialidad', width: 15 },
+      { header: 'Clasificacion_Gastos', key: 'Clasificacion_Gastos', width: 20 },
+      { header: 'Conceptos_Comerciales', key: 'Conceptos_Comerciales', width: 25 },
+    ];
+
+    // Agregar filas al worksheet con los datos del array
+    data.forEach(row => {
+        console.log(row);
+        worksheet.addRow({
+            Indicator: row.Indicator || '',
+            DocFuenteCod: row.DocFuenteCod || '',
+            Account: row.Account || '',
+            AcctName: row.AcctName || '',
+            ShortName: row.ShortName || '',
+            CardName: row.CardName || '',
+            Credit: Number(row.Credit) || 0,
+            Debit: Number(row.Debit) || 0,
+            LineMemo: row.LineMemo || '',
+            Ref1Detail: row.Ref1Detail || '',
+            Ref2Detail: row.Ref2Detail || '',
+            Ref3Deatil: row.Ref3Deatil || '',
+            Codigo_Beneficiario: '',
+            U_Clasif_Gastos: row.U_Clasif_Gastos != null ? row.U_Clasif_Gastos : '',
+            Area: row.Area || '',
+            Tipo_Cliente: row.Tipo_Cliente || '',
+            Linea: row.Linea || '',
+            Especialidad: row.Especialidad || '',
+            Clasificacion_Gastos: row.Clasificacion_Gastos || '',
+            Conceptos_Comerciales: row.Conceptos_Comerciales || '',
+        });
+    });
+
+    // Estilo opcional: negrita en la fila del header
+    worksheet.getRow(1).font = { bold: true };
+
+    // Preparar respuesta para descargar archivo Excel
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=asiento.xlsx');
+
+    // Escribir workbook al response (stream)
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error('Error al generar Excel:', error);
+    res.status(500).json({
+      status: false,
+      mensaje: 'Error generando Excel',
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { getExcelAsientoController };
+
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -1247,5 +1472,10 @@ module.exports = {
     cargarExcelMasivo,
     obtenerAsientoCompletosDimensionados,
     obtenerAsientoCabecera,
-    obtenerAsientoCompletosDimensionadosExcel
+    obtenerAsientoCompletosDimensionadosExcel,
+    getLineasCC,
+    getSubLineasCC,
+    updateAgenciaController,
+    copyAsientoController,
+    getExcelAsientoController
 }

@@ -139,19 +139,25 @@
             border-bottom: 0.5px solid black;
         }
         .linea-fija {
-          width: 100px;
+          width: 200px;
         }
 
         .glosa-row {
             font-style: italic;
             font-size: 10px;
-            text-align: left;
-            padding: 4px 8px;
-        }
+            }
 
         .glosa-row td {
             padding: 4px 8px;
-            border-bottom: 1px dashed #ccc;
+            padding-left: 12px;
+            text-align: left;
+            border-bottom: 1px dashed #ddd;
+            border-right: 1px dashed #eee;
+        }
+
+        .glosa-row td strong {
+            display: inline-block;
+            margin-right: 4px;
         }
 
         .detalle-row {
@@ -177,6 +183,16 @@
             font-size: 12px;
             border-left: 3px solid #ccc;
         }
+
+        table tbody tr:not(.glosa-row) td {
+            border-bottom: 1px dashed #ddd;
+            border-right: 1px dashed #eee;
+        }
+
+        table thead th {
+            border-right: 1px dashed #eee;
+        }
+
     </style>
 </head>
 <body>
@@ -210,6 +226,7 @@
       <thead>
         <tr>
           <th>Agencia</th>
+          <th>Doc. Fuente</th>
           <th>Cuenta</th>
           <th>Nombre Cuenta</th>
           <th>Código Asociado</th>
@@ -227,6 +244,7 @@
         <% data.lines.forEach(function(line) { %>
           <tr>
             <td><%= line.Indicator %></td>
+            <td><%= line.DocFuenteCod %></td>
             <td><%= line.Account %></td>
             <td style="width: 100px;"><%= line.AcctName %></td>
             <td><%= line.ShortName %></td>
@@ -241,10 +259,15 @@
           </tr>
 
           <tr class="glosa-row">
-            <td colspan="13">
+            <td colspan="6" style="padding-left: 8px;">
+              <div style="text-align: left;">
                 <strong>Glosa:</strong> <%= line.LineMemo || '-' %>
+              </div>
+            </td>
+            <td colspan="7">
             </td>
           </tr>
+
         <% }); %>
       </tbody>
     </table>
@@ -255,10 +278,11 @@
           <td style="width: 500px;"><hr style="opacity: 0;"></td>
           <td style="width: 500px;"><hr style="opacity: 0;"></td>
           <td style="width: 500px;"><hr style="opacity: 0;"></td>
-          <td style="width: 90px;"><%= Number(data.sumDebit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
-          <td style="width: 130px;"><%= Number(data.sumCredit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
-          <td style="width: 130px;"><%= Number(data.sumDebitSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
-          <td style="width: 130px;"><%= Number(data.sumCreditSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 500px;"><hr style="opacity: 0;"></td>
+          <td style="width: 50px;"><%= Number(data.sumDebit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 50px;"><%= Number(data.sumCredit || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 50px;"><%= Number(data.sumDebitSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
+          <td style="width: 50px;"><%= Number(data.sumCreditSYS || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 }) %></td>
           <td style="width: 300px;"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>
           <td class="linea-fija"><hr style="opacity: 0;"></td>
