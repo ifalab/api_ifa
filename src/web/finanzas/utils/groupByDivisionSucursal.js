@@ -6,6 +6,7 @@
  * @returns {Record<string, Array>} Objeto agrupado por DivisionName y una clave 'GENERAL' que contiene el resumen completo.
  */
 const agruparPorDivisionYSucursal = (data) => {
+  // console.log(data);
   const divisionGroups = {};
   const divisionMetadata = {}; 
   const generalGroup = {};
@@ -38,11 +39,26 @@ const agruparPorDivisionYSucursal = (data) => {
     }
 
     const sucDiv = divisionGroups[divisionName][sucKey];
+    const cost = parseFloat(item.TotalCostComercial);
+    sucDiv.TotalCostComercial += isNaN(cost) ? 0 : cost;
 
-    // Acumular en división
-    sucDiv.TotalSales += parseFloat(item.TotalSales);
-    sucDiv.TotalCostComercial += parseFloat(item.TotalCostComercial);
-    sucDiv.ComercialProfit += parseFloat(item.ComercialProfit);
+    if (isNaN(cost)) {
+      console.warn('Valor inválido en TotalCostComercial:', item.TotalCostComercial, 'en sucursal', item.SucName);
+    }
+
+    const sales = parseFloat(item.TotalSales);
+    sucDiv.TotalSales += isNaN(sales) ? 0 : sales;
+
+    if (isNaN(sales)) {
+      console.warn('Valor inválido en TotalSales:', item.TotalSales, 'en sucursal', item.SucName);
+    }
+
+    const profit = parseFloat(item.ComercialProfit);
+    sucDiv.ComercialProfit += isNaN(profit) ? 0 : profit;
+
+    if (isNaN(profit)) {
+      console.warn('Valor inválido en ComercialProfit:', item.ComercialProfit, 'en sucursal', item.SucName);
+    }
 
     const cleanedItem = { ...item };
     delete cleanedItem.SucCode;
@@ -67,9 +83,10 @@ const agruparPorDivisionYSucursal = (data) => {
 
     const sucGen = generalGroup[sucKey];
 
-    sucGen.TotalSales += parseFloat(item.TotalSales);
-    sucGen.TotalCostComercial += parseFloat(item.TotalCostComercial);
-    sucGen.ComercialProfit += parseFloat(item.ComercialProfit);
+    sucGen.TotalSales += isNaN(sales) ? 0 : sales;
+    sucGen.TotalCostComercial += isNaN(cost) ? 0 : cost;
+    sucGen.ComercialProfit += isNaN(profit) ? 0 : profit;
+
 
     // Agregar también al detalle general
     const cleanedItemWithDivision = { ...item };
@@ -96,6 +113,7 @@ const agruparPorDivisionYSucursal = (data) => {
   //   });
   // }
 
+  // console.log(divisionGroups);
   for (const division in divisionGroups) {
     const divisionCode = divisionMetadata[division] ?? null;
     const sucursales = Object.values(divisionGroups[division]).map(suc => {

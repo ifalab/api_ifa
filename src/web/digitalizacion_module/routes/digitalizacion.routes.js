@@ -15,7 +15,13 @@ const {
     getDeliveryDigitalizedController,
     excelEntregasDigitalizadasController,
     compressMultipleImagesController,
-    createUserVisitaController
+    createUserVisitaController,
+    previewCabeceraDataController,
+    getCabeceraYAnexosPreviewController,
+    getAnexoCabeceraImageController,
+    updateAnexosImagesController,
+    eliminarCabeceraYAnexosController,
+    compressMultipleAnexosController
 } = require('../controllers/digitalizacion.controller');
 
 const router = Router();
@@ -23,6 +29,7 @@ const router = Router();
 // Rutas para búsqueda y visualización de imágenes
 router.get('/search/images', [validarToken, validarCampos], searchImagesController);
 router.get('/preview/cabecera/:id', [validarToken], getCabeceraImageController);
+router.get('/preview/anexo/:id', [validarToken], getAnexoCabeceraImageController);
 router.get('/preview/detalle/:id', [validarToken], getDetalleImageController);
 
 // Rutas para cargar y comprimir imágenes
@@ -33,8 +40,13 @@ router.post('/compress-cabecera-transaccion',
 );
 
 router.post('/compress-multiple-images',
-    [processMultipartMultipleFiles, validarCampos],
+    [validarToken, processMultipartMultipleFiles, validarCampos],
     compressMultipleImagesController
+);
+
+router.post('/compress-multiple-anexos',
+    [validarToken, processMultipartMultipleFiles, validarCampos],
+    compressMultipleAnexosController
 );
 
 router.post('/compress-detalle-transaccion',
@@ -74,8 +86,31 @@ router.post('/reporte/excel-entregas',
     excelEntregasDigitalizadasController
 );
 
-router.post('/create-user-visita',
-    createUserVisitaController
+// router.post('/create-user-visita',
+//     createUserVisitaController
+// );
+
+router.get(
+    '/cabecera/by-nro-prefijo/:nroAsiento/:prefijo',
+    [validarToken, validarCampos],
+    previewCabeceraDataController
 );
+
+router.get(
+    '/cabecera-anexos/:idCabecera',
+    [validarToken, validarCampos],
+    getCabeceraYAnexosPreviewController
+);
+
+router.put('/update/anexos',
+    [validarToken, processMultipartMultipleFiles, validarCampos],
+    updateAnexosImagesController
+);
+
+router.delete('/cabecera-anexos/eliminar-todo/:idCabecera',
+    [validarToken, validarCampos],
+    eliminarCabeceraYAnexosController
+);
+
 
 module.exports = router;
