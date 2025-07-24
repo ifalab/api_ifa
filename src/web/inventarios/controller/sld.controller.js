@@ -42,12 +42,22 @@ const validateSession = async () => {
   return session;
 };
 
+const getSession = async () => {
+  // Si no hay sesión, o si la sesión existente ha expirado o está a punto de expirar
+  if (!session || !session.SessionId || Date.now() >= sessionExpirationTime) {
+      console.log('Sesión no existente o expirada/a punto de expirar. Intentando reconectar...');
+      return await connectSLD(); // Reconecta si es necesario
+  }
+  console.log('Usando sesión existente y válida.');
+  return session; // Retorna la sesión existente
+};
+
 
 // Controlador para manejar la solicitud POST de salida de inventario
 const postSalidaHabilitacion = async (data) => {
   try {
     // Verifica o genera una sesión
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
@@ -91,7 +101,7 @@ const postEntradaHabilitacion = async (data) => {
   try {
     // Verifica o genera una sesión
     console.log(JSON.stringify({ data }, null, 2))
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
@@ -140,7 +150,7 @@ const postEntradaHabilitacion = async (data) => {
 const postReturn = async (data) => {
   try {
     // Verifica o genera una sesión
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
@@ -184,7 +194,7 @@ const postReturn = async (data) => {
 const postCreditNotes = async (data) => {
   try {
     // Verifica o genera una sesión
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     // console.log({ currentSession })
 
@@ -231,7 +241,7 @@ const postCreditNotes = async (data) => {
 const patchReturn = async (data, id) => {
   try {
     // Verifica o genera una sesión
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
@@ -272,7 +282,7 @@ const patchReturn = async (data, id) => {
 
 const getCreditNote = async (id) => {
   try {
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
 
     console.log({id})
@@ -305,7 +315,7 @@ const getCreditNote = async (id) => {
 
 const getCreditNotes = async () => {
   try {
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
 
     const url = `https://srvhana:50000/b1s/v1/CreditNotes?$orderby=DocDate desc&$top=20`;
@@ -339,7 +349,7 @@ const getCreditNotes = async () => {
 const postReconciliacion = async (data) => {
   try {
     // Verifica o genera una sesión
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     // console.log({ currentSession })
 
@@ -381,7 +391,7 @@ const postReconciliacion = async (data) => {
 
 const getReturns = async () => {
   try {
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
@@ -414,7 +424,7 @@ const getReturns = async () => {
 
 const cancelReturn = async (id) => {
   try {
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
@@ -446,7 +456,7 @@ const cancelReturn = async (id) => {
 
 const cancelEntrega = async (id) => {
   try {
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
@@ -477,7 +487,7 @@ const cancelEntrega = async (id) => {
 
 const cancelCreditNotes = async (id) => {
   try {
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
@@ -509,7 +519,7 @@ const cancelCreditNotes = async (id) => {
 
 const cancelReconciliacion = async (id) => {
   try {
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
 
     const url = `https://srvhana:50000/b1s/v1/InternalReconciliations(${id})/Cancel`;
@@ -536,7 +546,7 @@ const cancelReconciliacion = async (id) => {
 };
 const cancelInvoice = async (id) => {
   try {
-    const currentSession = await connectSLD();
+    const currentSession = await getSession();
     const sessionSldId = currentSession.SessionId;
     console.log({ currentSession })
 
