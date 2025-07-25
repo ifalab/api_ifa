@@ -1,5 +1,5 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio } = require("./hana.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
@@ -953,6 +953,121 @@ const actualizarEstadoCCController = async (req, res) => {
 
 };
 
+
+const getCuentasController = async (req, res) => {
+    try {
+        let  param = req.query.param
+        if (param && param.length > 20) {
+            return res.status(400).json({
+                mensaje: 'El parámetro de búsqueda no puede contener más de 20 caracteres.'
+            });
+        }
+        if (param) {
+            param = param.toUpperCase();
+        } else {
+            return res.status(400).json({
+                mensaje: 'El parametro no se encontro.'
+            });
+        } 
+
+        const data = await cuentasPorCodigoNombre(param);
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [cuentasPorCodigoNombre], ${error}` })
+    }
+}
+
+const getMaestrosMayoresController = async (req, res) => {
+    try {
+
+        const { fechaInicio, fechaFin, accountCode } = req.body;
+
+
+        if (!fechaInicio || !fechaFin || !accountCode) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Faltan parámetros requeridos: fechaInicio, fechaFin o accountCode.'
+            });
+        }
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+
+
+        const result = await getAccountLedgerData(
+            fechaInicio,
+            fechaFin,
+            accountCode
+        );
+
+
+        let total = 0;
+        let reporteData = [];
+
+
+        reporteData = result;
+        total = result.length; 
+
+        return res.status(200).json({
+            ok: true,
+            reporte: reporteData, 
+            meta: {
+                total
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en getMaestrosMayoresController:', error);
+
+        return res.status(500).json({
+            ok: false,
+            msg: 'Error interno del servidor al obtener datos del Libro Mayor.',
+            error: error.message
+        });
+}
+
+}
+const getBalanceAccountPrevController = async (req, res) => {
+    try {
+
+        const { fechaInicio, accountCode } = req.body;
+
+
+        if (!fechaInicio  || !accountCode) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Faltan parámetros requeridos: fechaInicio o accountCode.'
+            });
+        }
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+
+
+        const result = await getAccountLedgerBalancePrev(
+            fechaInicio,
+            accountCode
+        );
+
+
+
+        return res.status(200).json({
+            result
+        });
+
+    } catch (error) {
+        console.error('Error en getMaestrosMayoresController:', error);
+
+        return res.status(500).json({
+            ok: false,
+            msg: 'Error interno del servidor al obtener datos del Libro Mayor.',
+            error: error.message
+        });
+}
+
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -976,4 +1091,7 @@ module.exports = {
     getJournalPreliminarCCIds,
     getSociosNegocio,
     actualizarEstadoCCController,
+    getCuentasController,
+    getMaestrosMayoresController,
+    getBalanceAccountPrevController
 }
