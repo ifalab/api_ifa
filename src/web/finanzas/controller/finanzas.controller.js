@@ -1,7 +1,7 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes } = require("./hana.controller")
-const { todosGastos, gastosXAgencia, gastosGestionAgencia } = require('./sql_finanza_controller')
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana } = require("./hana.controller")
+const { todosGastos, gastosXAgencia, gastosGestionAgencia, getAgencias } = require('./sql_finanza_controller')
 const ExcelJS = require('exceljs');
 
 
@@ -857,24 +857,203 @@ const findAllSimpleGastosController = async (req, res) => {
   }
 }
 
+// const findXAgenciaSimpleGastosController = async (req, res) => {
+//   try {
+//     const codigo = req.query.codigo;
+//     console.log(codigo)
+
+//     const gastos = await gastosXAgencia(codigo)
+//     const gastosSap = await getGastosSAPHana(codigo)
+//     const datosProcesados = procesarGastos(gastos);
+//     // console.log({ datosProcesados, gastosSap })
+//     const data = calcularPorcentajes(datosProcesados);
+//     // return res.json({data})
+//     const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
+//       date: year,
+//       monto: total,
+//     }));
+
+//     let processData = [];
+//     data.datosConPorcentajes.map((item) => {
+//       const { desc_grupo, montos, porcentajes, ...rest } = item;
+//       const montosArray = Object.entries(montos).map(([year, monto]) => ({
+//         year,
+//         monto,
+//       }));
+
+//       const porcentajesArray = Object.entries(porcentajes).map(([year, porcentaje]) => ({
+//         year,
+//         porcentaje,
+//       }));
+
+//       const newData = {
+//         desc_grupo: desc_grupo.trim(),
+//         montos: montosArray,
+//         porcentajes: porcentajesArray,
+//         ...rest,
+//       };
+//       processData.push(newData);
+//     });
+//     // return res.json({ data })
+//     const { datosConPorcentajes, ...restData } = data;
+//     const montos = processData[0].montos
+//     const year = []
+//     montos.map((item) => {
+//       year.push(item.year)
+//     })
+
+//     const formatDataByYear = (processData) => {
+//       // Inicializamos un objeto para almacenar los datos agrupados por año
+//       const groupedData = processData.reduce((acc, item) => {
+//         const { desc_grupo, montos, porcentajes, total } = item;
+
+//         // Iteramos sobre los años en montos
+//         montos.forEach((montoItem) => {
+//           const date = montoItem.year;
+//           const monto = montoItem.monto;
+
+//           // Buscamos el porcentaje correspondiente para este año
+//           const porcentajeObj = porcentajes.find((p) => p.year === date);
+//           const porcentaje = porcentajeObj ? porcentajeObj.porcentaje : null;
+
+//           // Creamos un objeto de detalle
+//           const detalle = {
+//             desc_grupo,
+//             monto,
+//             porcentaje,
+//           };
+
+//           // Si el año no existe en el acumulador, lo inicializamos
+//           if (!acc[date]) {
+//             acc[date] = { date, detalle: [] };
+//           }
+
+//           // Agregamos el detalle al año correspondiente
+//           acc[date].detalle.push(detalle);
+//         });
+
+//         return acc;
+//       }, {});
+
+//       // Convertimos el objeto agrupado en un array
+//       return Object.values(groupedData);
+//     };
+
+//     // return res.json({ formatDataByYear })
+
+//     const formattedData = formatDataByYear(processData);
+//     // formattedData.map((item))
+//     // let totalizado = []
+//     // processData.map((item) => {
+//     //   totalizado.push({
+//     //     desc_grupo: item.desc_grupo,
+//     //     monto: item.total
+//     //   })
+//     // })
+
+//     // formattedData.push({ date: 'Total', detalle: totalizado })
+
+//     // Agregamos los datos de SAP dentro del detalle de cada año
+//     formattedData.forEach((item) => {
+//     if (item.date === 'Total') return;
+
+//       const sapData = gastosSap.find((g) => String(g.Año) === item.date);
+//       const totalGastos = totalByYearArray.find((g) => g.date === item.date)?.monto ?? 0;
+//       const utilidadBruta = sapData ? Number(sapData.UtilidadBruta) : 0;
+
+//       if (sapData) {
+//         item.detalle.push(
+//           {
+//             desc_grupo: 'TOTAL GASTOS',
+//             monto: totalGastos,
+//             porcentaje: null,
+//           },
+//           {
+//             desc_grupo: 'VENTAS NETAS',
+//             monto: Number(sapData.TotalVentasNetas),
+//             porcentaje: null,
+//           },
+//           {
+//             desc_grupo: 'COSTO COMERCIAL',
+//             monto: Number(sapData.CostoComercialTotal),
+//             porcentaje: null,
+//           },
+//           {
+//             desc_grupo: 'UTILIDAD BRUTA',
+//             monto: utilidadBruta,
+//             porcentaje: null,
+//           },
+//           {
+//             desc_grupo: '% MARGEN',
+//             monto: Number(sapData.MargenPorcentual),
+//             porcentaje: null,
+//           },
+//         );
+//       }
+//     });
+
+//     // === Agregamos el objeto "Total" con la suma de todos los desc_grupo ===
+//     const totalPorGrupo = {};
+
+//     formattedData.forEach(({ detalle }) => {
+//       detalle.forEach(({ desc_grupo, monto }) => {
+//         if (!totalPorGrupo[desc_grupo]) {
+//           totalPorGrupo[desc_grupo] = 0;
+//         }
+//         totalPorGrupo[desc_grupo] += monto;
+//       });
+//     });
+
+//     const detalleTotal = Object.entries(totalPorGrupo).map(([desc_grupo, monto]) => ({
+//       desc_grupo,
+//       monto,
+//       porcentaje: null,
+//     }));
+
+//     // Añadimos la fila final con date: 'Total'
+//     formattedData.push({
+//       date: 'Total',
+//       detalle: detalleTotal,
+//     });
+
+//     const resultadoDiferenciaByYearArray = totalByYearArray.map(({ date, monto: totalGastos }) => {
+//       const sapData = gastosSap.find((g) => String(g.Año) === date);
+//       const utilidadBruta = sapData ? Number(sapData.UtilidadBruta) : 0;
+//       const diferencia = utilidadBruta - totalGastos;
+
+//       return {
+//         date,
+//         monto: diferencia,
+//       };
+//     });
+
+
+//     console.log(formattedData, resultadoDiferenciaByYearArray)
+//     return res.json({ formattedData });
+//   } catch (error) {
+//     console.log({ error })
+//     return res.status(500).json({ mensaje: 'Error en findXAgenciaSimpleGastosController ' })
+//   }
+// }
+
 const findXAgenciaSimpleGastosController = async (req, res) => {
   try {
     const codigo = req.query.codigo;
-    console.log(codigo)
+    console.log(codigo);
 
-    const gastos = await gastosXAgencia(codigo)
+    const gastos = await gastosXAgencia(codigo);
+    const gastosSap = await getGastosSAPHana(codigo);
     const datosProcesados = procesarGastos(gastos);
-    console.log({ datosProcesados })
     const data = calcularPorcentajes(datosProcesados);
-    // return res.json({data})
+
     const totalByYearArray = Object.entries(data.totalByYear).map(([year, total]) => ({
       date: year,
       monto: total,
     }));
 
-    let processData = [];
-    data.datosConPorcentajes.map((item) => {
+    const processData = data.datosConPorcentajes.map((item) => {
       const { desc_grupo, montos, porcentajes, ...rest } = item;
+
       const montosArray = Object.entries(montos).map(([year, monto]) => ({
         year,
         monto,
@@ -885,78 +1064,149 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
         porcentaje,
       }));
 
-      const newData = {
+      return {
         desc_grupo: desc_grupo.trim(),
         montos: montosArray,
         porcentajes: porcentajesArray,
         ...rest,
       };
-      processData.push(newData);
     });
-    // return res.json({ data })
-    const { datosConPorcentajes, ...restData } = data;
-    const montos = processData[0].montos
-    const year = []
-    montos.map((item) => {
-      year.push(item.year)
-    })
 
     const formatDataByYear = (processData) => {
-      // Inicializamos un objeto para almacenar los datos agrupados por año
       const groupedData = processData.reduce((acc, item) => {
-        const { desc_grupo, montos, porcentajes, total } = item;
+        const { desc_grupo, montos, porcentajes } = item;
 
-        // Iteramos sobre los años en montos
         montos.forEach((montoItem) => {
           const date = montoItem.year;
           const monto = montoItem.monto;
 
-          // Buscamos el porcentaje correspondiente para este año
           const porcentajeObj = porcentajes.find((p) => p.year === date);
           const porcentaje = porcentajeObj ? porcentajeObj.porcentaje : null;
 
-          // Creamos un objeto de detalle
           const detalle = {
             desc_grupo,
             monto,
             porcentaje,
           };
 
-          // Si el año no existe en el acumulador, lo inicializamos
           if (!acc[date]) {
             acc[date] = { date, detalle: [] };
           }
 
-          // Agregamos el detalle al año correspondiente
           acc[date].detalle.push(detalle);
         });
 
         return acc;
       }, {});
 
-      // Convertimos el objeto agrupado en un array
       return Object.values(groupedData);
     };
 
-    // return res.json({ formatDataByYear })
-
     const formattedData = formatDataByYear(processData);
-    // formattedData.map((item))
-    let totalizado = []
-    processData.map((item) => {
-      totalizado.push({
-        desc_grupo: item.desc_grupo,
-        monto: item.total
-      })
-    })
 
-    formattedData.push({ date: 'Total', detalle: totalizado })
-    return res.json({ totalByYear: totalByYearArray, formattedData });
+    // Agregamos SAP a cada año
+    formattedData.forEach((item) => {
+      if (item.date === 'Total') return;
+
+      const sapData = gastosSap.find((g) => String(g.Año) === item.date);
+      const totalGastos = totalByYearArray.find((g) => g.date === item.date)?.monto ?? 0;
+      const utilidadBruta = sapData ? Number(sapData.UtilidadBruta) : 0;
+
+      if (sapData) {
+        item.detalle.push(
+          {
+            desc_grupo: 'TOTAL GASTOS',
+            monto: totalGastos,
+            porcentaje: null,
+          },
+          {
+            desc_grupo: 'VENTAS NETAS',
+            monto: Number(sapData.TotalVentasNetas),
+            porcentaje: null,
+          },
+          {
+            desc_grupo: 'COSTO COMERCIAL',
+            monto: Number(sapData.CostoComercialTotal),
+            porcentaje: null,
+          },
+          {
+            desc_grupo: 'UTILIDAD BRUTA',
+            monto: utilidadBruta,
+            porcentaje: Number(sapData.MargenPorcentual),
+          },
+          // {
+          //   desc_grupo: '% MARGEN',
+          //   monto: Number(sapData.MargenPorcentual),
+          //   porcentaje: null,
+          // }
+        );
+      }
+    });
+
+    // Agregamos el objeto "Total" con la suma de todos los desc_grupo
+    const totalPorGrupo = {};
+    formattedData.forEach(({ detalle }) => {
+      detalle.forEach(({ desc_grupo, monto }) => {
+        if (!totalPorGrupo[desc_grupo]) {
+          totalPorGrupo[desc_grupo] = 0;
+        }
+        totalPorGrupo[desc_grupo] += monto;
+      });
+    });
+
+    const detalleTotal = Object.entries(totalPorGrupo).map(([desc_grupo, monto]) => ({
+      desc_grupo,
+      monto,
+      porcentaje: null,
+    }));
+
+    formattedData.push({
+      date: 'Total',
+      detalle: detalleTotal,
+    });
+
+    const resultadoDiferenciaByYearArray = totalByYearArray.map(({ date, monto: totalGastos }) => {
+      const sapData = gastosSap.find((g) => String(g.Año) === date);
+      const utilidadBruta = sapData ? Number(sapData.UtilidadBruta) : 0;
+      const diferencia = utilidadBruta - totalGastos;
+
+      return {
+        date,
+        monto: diferencia,
+      };
+    });
+
+    // Orden personalizado de los desc_grupo
+    const ordenPersonalizado = [
+      'VENTAS NETAS',
+      'COSTO COMERCIAL',
+      'UTILIDAD BRUTA',
+      // '% MARGEN',
+      'DEVOLUCIONES',
+      'GASTOS ADMINISTRATIVOS',
+      'GASTOS COMERCIALES',
+      'PARTIDAS QUE NO MUEVEN EFECTIVO',
+      'RECURSOS HUMANOS',
+      'TOTAL GASTOS',
+    ];
+
+    // Ordenamos los detalles de cada año según el orden personalizado
+    formattedData.forEach((item) => {
+      item.detalle.sort((a, b) => {
+        const indexA = ordenPersonalizado.indexOf(a.desc_grupo);
+        const indexB = ordenPersonalizado.indexOf(b.desc_grupo);
+        return indexA - indexB;
+      });
+    });
+
+    console.log(formattedData, resultadoDiferenciaByYearArray);
+    return res.json({ formattedData });
   } catch (error) {
-    console.log({ error })
-    return res.status(500).json({ mensaje: 'Error en findXAgenciaSimpleGastosController ' })
+    console.log({ error });
+    return res.status(500).json({ mensaje: 'Error en findXAgenciaSimpleGastosController ' });
   }
-}
+};
+
 
 const procesarGastos = (gastos) => {
   const resultado = {};
@@ -1005,22 +1255,118 @@ const calcularPorcentajes = (datosProcesados) => {
 };
 
 const gastosGestionAgenciaController = async (req, res) => {
-
   try {
-    const gestion = req.query.gestion
-    const codigo = req.query.codigo
-    const response = await gastosGestionAgencia(+gestion, +codigo)
+    const gestion = req.query.gestion;
+    const codigo = req.query.codigo;
+
+    const response = await gastosGestionAgencia(+gestion, +codigo);
+    const responseHana = await getGastosAgenciaxGestionSAPHana(+gestion, +codigo);
     const agrupado = agruparPorMes(response);
-    return res.json({ gestion, codigo, agrupado })
-    // return res.json({ mensaje:'modificar' })
+
+    const monthMap = {
+      1: 'JANUARY',
+      2: 'FEBRUARY',
+      3: 'MARCH',
+      4: 'APRIL',
+      5: 'MAY',
+      6: 'JUNE',
+      7: 'JULY',
+      8: 'AUGUST',
+      9: 'SEPTEMBER',
+      10: 'OCTOBER',
+      11: 'NOVEMBER',
+      12: 'DECEMBER'
+    };
+
+    const ordenPersonalizado = [
+      'VENTAS NETAS',
+      'COSTO COMERCIAL',
+      'UTILIDAD BRUTA',
+      'DEVOLUCIONES',
+      'GASTOS ADMINISTRATIVOS',
+      'GASTOS COMERCIALES',
+      'PARTIDAS QUE NO MUEVEN EFECTIVO',
+      'RECURSOS HUMANOS',
+      'TOTAL GASTOS'
+    ];
+
+    // Agregamos datos de HANA a agrupado
+    responseHana.forEach((hanaItem) => {
+      const monthName = monthMap[+hanaItem.Mes];
+      const mesEncontrado = agrupado.find((g) => g.date === monthName);
+
+      const infoHanaDetalle = [
+        {
+          desc_grupo: 'UTILIDAD BRUTA',
+          monto: parseFloat(hanaItem.UtilidadBruta)
+        },
+        {
+          desc_grupo: 'VENTAS NETAS',
+          monto: parseFloat(hanaItem.TotalVentasNetas)
+        },
+        {
+          desc_grupo: 'COSTO COMERCIAL',
+          monto: parseFloat(hanaItem.CostoComercialTotal)
+        },
+        {
+          desc_grupo: 'MARGEN %',
+          monto: parseFloat(hanaItem.MargenPorcentual)
+        }
+      ];
+
+      if (mesEncontrado) {
+        mesEncontrado.detalle.unshift(...infoHanaDetalle.reverse());
+      } else {
+        agrupado.push({
+          date: monthName,
+          detalle: [...infoHanaDetalle]
+        });
+      }
+    });
+
+    // Aseguramos que todos los meses tengan todos los grupos del ordenPersonalizado
+    for (const mes of agrupado) {
+      const descsActuales = mes.detalle.map(d => d.desc_grupo);
+
+      // Añadimos los grupos faltantes con monto 0
+      ordenPersonalizado.forEach((desc) => {
+        if (!descsActuales.includes(desc)) {
+          mes.detalle.push({ desc_grupo: desc, monto: 0 });
+        }
+      });
+
+      mes.detalle = mes.detalle.filter(d => d.desc_grupo !== 'MARGEN %');
+
+      const totalGastos = mes.detalle
+        .filter(d =>
+          !['VENTAS NETAS', 'COSTO COMERCIAL', 'UTILIDAD BRUTA', 'TOTAL GASTOS'].includes(d.desc_grupo)
+        )
+        .reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
+
+      // Reemplazar o insertar TOTAL GASTOS
+      const idxTotal = mes.detalle.findIndex(d => d.desc_grupo === 'TOTAL GASTOS');
+      if (idxTotal >= 0) {
+        mes.detalle[idxTotal].monto = totalGastos;
+      } else {
+        mes.detalle.push({ desc_grupo: 'TOTAL GASTOS', monto: totalGastos });
+      }
+
+      // Ordenar detalle según orden personalizado
+      mes.detalle.sort((a, b) => {
+        const idxA = ordenPersonalizado.indexOf(a.desc_grupo);
+        const idxB = ordenPersonalizado.indexOf(b.desc_grupo);
+        return idxA - idxB;
+      });
+    }
+
+    return res.json({ gestion, codigo, agrupado });
 
   } catch (error) {
-
-    console.log({ error })
-    return res.status(500).json({ mensaje: 'error en el controlador' })
-
+    console.log({ error });
+    return res.status(500).json({ mensaje: 'error en el controlador' });
   }
-}
+};
+
 
 function agruparPorMes(data) {
   const resultado = data.reduce((acumulador, item) => {
@@ -1427,6 +1773,32 @@ const excelBankMajorController = async (req, res) => {
   }
 };
 
+const getAgenciasGenesis = async(req, res) => {
+  try {
+    
+    const response = await getAgencias();
+    return res.status(200).json(response);
+
+  } catch (error) {
+    console.error('Error obteniendo agencias del genesis:', error);
+    const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+
+    grabarLog(
+      user.USERCODE,
+      user.USERNAME,
+      'Agencias Genesis, Gastos',
+      `Error obteniendo agencias del genesis: ${error}`,
+      'catch de getAgenciasGenesis',
+      'finanzas/agencias/genesis',
+      process.env.PRD
+    );
+
+    return res.status(500).json({
+      mensaje: `Error obteniendo agencias del genesis: ${error.message || 'Error desconocido'}`
+    });
+  }
+}
+
 
 module.exports = {
   parteDiaroController,
@@ -1451,5 +1823,6 @@ module.exports = {
   getMonthlyCommercialMarginController,
   getReportBankMajorController,
   getCommercialBankAccountsController,
-  excelBankMajorController
+  excelBankMajorController,
+  getAgenciasGenesis
 }
