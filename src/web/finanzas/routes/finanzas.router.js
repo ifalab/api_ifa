@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController, reporteMargenComercialController, getCommercialMarginByProducts, getMonthlyCommercialMarginController, getReportBankMajorController, getCommercialBankAccountsController, excelBankMajorController } = require('../controller/finanzas.controller')
+const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController, reporteMargenComercialController, getCommercialMarginByProducts, getMonthlyCommercialMarginController, getReportBankMajorController, getCommercialBankAccountsController, excelBankMajorController, getAgenciasGenesis } = require('../controller/finanzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -29,5 +29,6 @@ router.get('/mayor-banco', [validarCampos], getReportBankMajorController)
 router.get('/commercial-bank-accounts', [validarToken, validarCampos], getCommercialBankAccountsController)
 router.post('/reporte/excel-mayor-banco', [validarToken, validarCampos], excelBankMajorController);
 
+router.get('/agencias/genesis', [validarToken, validarCampos], getAgenciasGenesis);
 
 module.exports = router

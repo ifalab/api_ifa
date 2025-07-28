@@ -380,6 +380,103 @@ const getCommercialBankAccounts = async () => {
     }
 }
 
+const getGastosSAPHana = async (codigoDimensionA = 0) => {
+    console.log(codigoDimensionA);
+    try {
+        if (codigoDimensionA == 120) {
+            return []; // o puedes lanzar un error si lo prefieres
+        }
+
+        let query = `
+            SELECT 
+                YEAR("Date") AS "Año",
+                SUM("SalesNetTotal") AS "TotalVentasNetas",
+                SUM("SalesComercialCost") AS "CostoComercialTotal",
+                SUM("SalesNetTotal" - "SalesComercialCost") AS "UtilidadBruta",
+                CASE 
+                    WHEN SUM("SalesNetTotal") = 0 THEN 0
+                    ELSE (SUM("SalesNetTotal" - "SalesComercialCost") / SUM("SalesNetTotal")) * 100
+                END AS "MargenPorcentual"
+            FROM 
+                LAB_IFA_DATA.KDS_SALES_ANALYSIS
+            WHERE 
+                "Type" = 'SALES'
+        `;
+
+        const params = [];
+
+        // Si el código es distinto de 0, agregamos el filtro por dimensión
+        if (codigoDimensionA == 110) {
+            query += ` AND "DimensionACode" IN (?, ?)`;
+            params.push(110, 120);
+        } else if (codigoDimensionA != 0) {
+            query += ` AND "DimensionACode" = ?`;
+            params.push(codigoDimensionA);
+        }
+
+
+        query += `
+            GROUP BY YEAR("Date")
+            ORDER BY "Año"
+        `;
+        console.log(query);
+        const result = await executeQueryParamsWithConnection(query, params);
+        return result;
+
+    } catch (error) {
+        console.error('Error in getGastosSAPHana:', error);
+        throw new Error(`Error in getGastosSAPHana: ${error.message}`);
+    }
+};
+
+const getGastosAgenciaxGestionSAPHana = async (gestion, codigoDimensionA = 0) => {
+    console.log(codigoDimensionA);
+     try {
+        if (codigoDimensionA === 120) {
+            return []; // Sucursal inválida
+        }
+
+        let query = `
+            SELECT 
+                MONTH("Date") AS "Mes",
+                SUM("SalesNetTotal") AS "TotalVentasNetas",
+                SUM("SalesComercialCost") AS "CostoComercialTotal",
+                SUM("SalesNetTotal" - "SalesComercialCost") AS "UtilidadBruta",
+                CASE 
+                    WHEN SUM("SalesNetTotal") = 0 THEN 0
+                    ELSE (SUM("SalesNetTotal" - "SalesComercialCost") / SUM("SalesNetTotal")) * 100
+                END AS "MargenPorcentual"
+            FROM 
+                LAB_IFA_DATA.KDS_SALES_ANALYSIS
+            WHERE 
+                "Type" = 'SALES'
+                AND YEAR("Date") = ?
+        `;
+
+        const params = [gestion];
+
+        if (codigoDimensionA === 110) {
+            query += ` AND "DimensionACode" IN (?, ?)`;
+            params.push(110, 120);
+        } else if (codigoDimensionA !== 0) {
+            query += ` AND "DimensionACode" = ?`;
+            params.push(codigoDimensionA);
+        }
+
+        query += `
+            GROUP BY MONTH("Date")
+            ORDER BY "Mes"
+        `;
+
+        console.log(query, params);
+        const result = await executeQueryParamsWithConnection(query, params);
+        return result;
+
+    } catch (error) {
+        console.error('Error in getGastosMensualesPorSucursalSAPHana:', error);
+        throw new Error(`Error in getGastosMensualesPorSucursalSAPHana: ${error.message}`);
+    }
+};
 
 module.exports = {
     parteDiario,
@@ -399,5 +496,7 @@ module.exports = {
     abastecimientoPorMes,
     getMonthlyCommercialMargin,
     getReportBankMajor,
-    getCommercialBankAccounts
+    getCommercialBankAccounts,
+    getGastosSAPHana,
+    getGastosAgenciaxGestionSAPHana
 }

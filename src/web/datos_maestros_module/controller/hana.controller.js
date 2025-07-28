@@ -1127,6 +1127,48 @@ const desactivePriceList = async (priceList) => {
         }
     }
 }
+
+const getItemsByLine = async (line) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFASP_MD_ITEMS_BY_LINE(${line})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en clientByCardCode:', error);
+        throw {
+            status: 400,
+            message: `Error en clientByCardCode: ${error.message || ''}`
+        }
+    }
+}
+
+const getAllSublines = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select * from LAB_IFA_PRD.IFA_DM_SUBLINEAS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllLineas:', error);
+        throw {
+            status: 400,
+            message: `Error en getAllLineas: ${error.message || ''}`
+        }
+    }
+}
+
+
+
+
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -1178,4 +1220,6 @@ module.exports = {
     findAllArticulos,
     searchArticulos,
     clientByCardCode,
+    getItemsByLine,
+    getAllSublines
 }
