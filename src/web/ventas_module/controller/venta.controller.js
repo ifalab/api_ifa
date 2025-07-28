@@ -3851,6 +3851,7 @@ const reportePendienteCadenasController = async (req, res) => {
             tipo,
             groupCode,
             cardCode,
+            headerParent,
         })
         if (!tipo || tipo == '') {
             tipo = null
@@ -3871,6 +3872,7 @@ const reportePendienteCadenasController = async (req, res) => {
             headerParent = null
         }
         const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
+        // return res.json({ response })
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
         }))].sort();
@@ -3884,6 +3886,7 @@ const reportePendienteCadenasController = async (req, res) => {
                 grouped[key] = {
                     CardCode: item.CardCode,
                     CardName: item.CardName,
+                    SucName: item.SucName,
                 };
 
                 headers.forEach(header => {
