@@ -1,5 +1,5 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev } = require("./hana.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev, getBankingByDate } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
@@ -1068,6 +1068,54 @@ const getBalanceAccountPrevController = async (req, res) => {
 
 }
 
+const getBankingByDateController = async (req, res) => {
+    try {
+
+        const { fechaInicio, fechaFin,  } = req.body;
+
+
+        if (!fechaInicio || !fechaFin ) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Faltan parámetros requeridos: fechaInicio, fechaFin.'
+            });
+        }
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+
+
+        const result = await getBankingByDate(
+            fechaInicio,
+            fechaFin,
+        );
+
+
+        let total = 0;
+        let reporteData = [];
+
+
+        reporteData = result;
+        total = result.length; 
+
+        return res.status(200).json({
+            ok: true,
+            reporte: reporteData, 
+            meta: {
+                total
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en getMaestrosMayoresController:', error);
+
+        return res.status(500).json({
+            ok: false,
+            msg: 'Error interno del servidor al obtener datos del Libro Mayor.',
+            error: error.message
+        });
+}
+
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -1093,5 +1141,6 @@ module.exports = {
     actualizarEstadoCCController,
     getCuentasController,
     getMaestrosMayoresController,
-    getBalanceAccountPrevController
+    getBalanceAccountPrevController,
+    getBankingByDateController
 }

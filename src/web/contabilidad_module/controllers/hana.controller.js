@@ -272,6 +272,41 @@ const getAccountLedgerBalancePrev = async (fechaInicio, accountCode) => {
 
 
 
+const getBankingByDate = async (fechaInicio, fechaFin) => {
+  try {
+    console.log('getBankingByDate EXECUTE');
+
+    const formattedFechaInicio = fechaInicio.replace(/-/g, '');
+    const formattedFechaFin = fechaFin.replace(/-/g, '');
+
+
+    const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_BANKING_PURCHASES(
+      i_dateIni => '${formattedFechaInicio}',
+      i_dateFin => '${formattedFechaFin}'
+    );`;
+
+    console.log('Query a ejecutar:', query);
+
+    const rawResult = await executeQueryWithConnection(query); // <-- Resultado crudo de la DB
+
+
+    if (!rawResult || !Array.isArray(rawResult)) {
+        console.warn('executeQueryWithConnection no retornó un array o es nulo/indefinido:', rawResult);
+        return []; 
+    }
+
+
+    return rawResult; 
+
+  } catch (error) {
+    console.error('Error en getAccountLedgerData:', error);
+    throw new Error('Error al obtener datos del Libro Mayor');
+  }
+};
+
+
+
+
 
 module.exports = {
     tipoDeCambio,
@@ -293,5 +328,6 @@ module.exports = {
     sociosNegocio,
     cuentasPorCodigoNombre,
     getAccountLedgerData,
-    getAccountLedgerBalancePrev
+    getAccountLedgerBalancePrev,
+    getBankingByDate
 }
