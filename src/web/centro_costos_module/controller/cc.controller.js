@@ -975,16 +975,32 @@ const saveClasificacionGastos = async (req, res) => {
 
         // Aquí puedes guardar `datos` en tu base de datos o procesarlos como necesites
 
-        for (const fila of datos) {
-            // const idArea = await saveAreaCC(fila.area);
-            // const idTipo = await saveTipoClienteCC(fila.tipo_cliente);
-            // const idLinea = await saveLineaCC(fila.linea);
-            // const idClasificacion = await saveClasificacionCC(fila.clasificacion_gastos);
-            // const idConceptos = await saveConceptosComCC(fila.conceptos_comerciales);
-            // const idEspecialidad = await saveEspecialidadCC(fila.especialidad);
+        // for (const fila of datos) {
+        //     // const idArea = await saveAreaCC(fila.area);
+        //     // const idTipo = await saveTipoClienteCC(fila.tipo_cliente);
+        //     // const idLinea = await saveLineaCC(fila.linea);
+        //     // const idClasificacion = await saveClasificacionCC(fila.clasificacion_gastos);
+        //     // const idConceptos = await saveConceptosComCC(fila.conceptos_comerciales);
+        //     // const idEspecialidad = await saveEspecialidadCC(fila.especialidad);
 
-            await saveClasificacionGastosHana(fila);
-            // console.log(idArea, idTipo, idLinea, idClasificacion, idConceptos, idEspecialidad);
+        //     await saveClasificacionGastosHana(fila);
+        //     // console.log(idArea, idTipo, idLinea, idClasificacion, idConceptos, idEspecialidad);
+        // }
+
+        for (let i = 0; i < datos.length; i++) {
+            const fila = datos[i];
+
+            try {
+                await saveClasificacionGastosHana(fila);
+            } catch (error) {
+                // Si falla una fila, se corta y se responde con error
+                console.error(`Error en fila ${i + 1}:`, error.message);
+                return res.status(500).json({
+                status: false,
+                mensaje: `Error en fila ${i + 1}: ${error.message}`,
+                fila: fila
+                });
+            }
         }
 
         res.status(200).json({
