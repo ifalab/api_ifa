@@ -1037,7 +1037,11 @@ const cargarExcelMasivo = async (req, res) => {
             });
         }
 
-        // Mapear columnas del Excel a la estructura del backend Nest
+       const roundTo6 = (num) =>
+            typeof num === 'number' && !isNaN(num)
+                ? Math.round(num * 1e6) / 1e6
+                : 0;
+
         const detalles = filas.map((fila) => ({
             Agencia: fila['Agencia'] ?? '',
             U_DocFuenteCod: fila['Documento_Fuente'] ?? '',
@@ -1045,8 +1049,8 @@ const cargarExcelMasivo = async (req, res) => {
             AccountCode: String(fila['Cuenta'] ?? ''),
             ShortName: fila['Codigo_Socio'] ?? '',
             CardName: fila['Socio'] ?? '',
-            Credit: parseFloat(fila['Credito']) || 0,
-            Debit: parseFloat(fila['Debito']) || 0,
+            Credit: roundTo6(parseFloat(fila['Credito'])),
+            Debit: roundTo6(parseFloat(fila['Debito'])),
             LineMemo: fila['Glosa'] ?? '',
             Ref1: String(fila['Referencia_1'] ?? ''),
             Ref2: String(fila['Referencia_2'] ?? ''),
@@ -1065,7 +1069,6 @@ const cargarExcelMasivo = async (req, res) => {
 
         const fechaContabilizacionISO = fixToISODate(fechaContabilizacion);
         const fechaCreacionISO = fixToISODate(fechaCreacion);
-
         // Enviar también fechas y glosa al servicio
         const result = await sapService.cargarExcelCC({
         detalles,
@@ -1107,17 +1110,16 @@ function fixToISODate(dateStr) {
 
 const obtenerAsientoCompletosDimensionados = async (req, res) => {
     try {
-        const { transId } = req.query;
+        const { fechaInicio, fechaFin } = req.query;
 
-        if (!transId) {
-            res.status(400).json({
+        if (!fechaInicio || !fechaFin) {
+            return res.status(400).json({
                 status: false,
-                mensaje: 'Parámetro transId es requerido',
+                mensaje: 'Parámetros fechaInicio y fechaFin son requeridos',
             });
-            return;
         }
 
-        const data = await getAsientoCompletosDimensionados(transId);
+        const data = await getAsientoCompletosDimensionados(fechaInicio, fechaFin);
 
         res.status(200).json({
             status: true,
