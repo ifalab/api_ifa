@@ -1545,6 +1545,7 @@ const cancelToProsinController = async (req, res) => {
 const cancelToProsinNDCController = async (req, res) => {
     const startTime = Date.now();
     try {
+        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         const {
             sucursal,
             punto,
@@ -1569,9 +1570,23 @@ const cancelToProsinNDCController = async (req, res) => {
             docEntry,
             anulacionOrden,
         })
+        // const responseProsin = await anulacionFacturacion({
+        //     sucursal,
+        //     punto,
+        //     cuf,
+        //     descripcion,
+        //     motivoAnulacion,
+        //     tipoDocumento,
+        //     usuario,
+        //     mediaPagina,
+        // }, user)
+        // return res.json({
+        //     responseProsin
+        // })
+        ///? return 
         let responseProsin = {}
         let endTime = Date.now();
-        const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        
         console.log({ user })
         if (!cuf || cuf == '') {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
@@ -4281,7 +4296,7 @@ const facturarExportacionController = async (req, res) => {
                 }
                 return res.status(400).json({ mensaje: 'No existe el Codigo de Pais en el Cliente ', formatedDataToProsin })
             }
-            
+
             if (formatedDataToProsin.informacionAdicional == ' ') {
                 formatedDataToProsin.informacionAdicional = ''
             }
