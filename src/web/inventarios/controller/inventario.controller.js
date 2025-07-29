@@ -43,7 +43,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getAllWarehousePlantByParams,
     kardexPlant,
     getAllWarehouseCommercialByParams,
-    kardexCommercial
+    kardexCommercial,
+    habilitacionesPorIduser
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -6203,6 +6204,9 @@ const postEntregaPorOrderNumberController = async (req, res) => {
         // if(lote.length==0){
         //     return res.status(400).json({ mensaje: 'el lote no se encontro' });
         // }
+        if (responseHana.length == 0) {
+            return res.status(400).json({ mensaje: 'no se encontraron datos' });
+        }
         console.log({ responseHana })
         const cabecera = {
             // DocEntry: responseHana[0].DocEntry,
@@ -6263,6 +6267,32 @@ const postEntregaPorOrderNumberController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en el controlador.`, error });
     }
 }
+
+const habilitacionesPorIduserController = async (req, res) => {
+    try {
+        const userId = req.query.userId;
+
+        if (!userId || userId === '') { // Usar === para una comparación estricta
+            // Si no hay userId, enviar respuesta y SALIR de la función.
+            return res.status(400).json({ mensaje: `Error, no existe el userId`, userId });
+        }
+
+        let response = await habilitacionesPorIduser(userId);
+
+        if (response.length === 0) { // Usar === para una comparación estricta
+            // Si no hay datos, enviar respuesta y SALIR de la función.
+            return res.status(400).json({ mensaje: `No hay datos en la peticion`, response, userId });
+        }
+
+        // Si todo va bien, enviar la respuesta de éxito y SALIR de la función.
+        return res.json(response);
+
+    } catch (error) {
+        console.log({ error });
+        // Si hay un error, enviar la respuesta de error y SALIR de la función.
+        return res.status(500).json({ mensaje: `Error en habilitacionesPorIduserController : ${error.message || 'No definido'}` });
+    }
+};
 
 
 module.exports = {
@@ -6341,4 +6371,5 @@ module.exports = {
     getAllWarehouseCommercialByParamsController,
     kardexCommercialController,
     postEntregaPorOrderNumberController,
+    habilitacionesPorIduserController
 }

@@ -145,6 +145,16 @@
             margin: 1rem 0rem;
             padding: 1rem;
         }
+        .firma-recibi-contenedor {
+            text-align: center;
+        }
+
+        .alinear-izquierda {
+            text-align: left;
+        }
+        .cargo-linea {
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -222,7 +232,11 @@
             <div><strong> Creado por <%= data.U_NAME %></strong></div>
             <div><strong>Preparado por <%= data.U_N %></strong></div>
             <div><strong>Revisado por <%= data.U_N %></strong></div>
-            <div><strong>Recibí conforme <%= data.U_N %></strong></div>
+            <div class="firma-recibi-contenedor">
+                <strong>Recibí conforme <%= data.U_N %></strong>
+                <p class="alinear-izquierda cargo-linea"><strong>Cargo:</strong></p>
+                <p class="alinear-izquierda"><strong>Aclaración:</strong></p>
+            </div>
         </div>
     </div>
 </body>

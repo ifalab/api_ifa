@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Saldo Deudor - <%= data.CardCode %></title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            margin-left: 60px; /* Margen para encuadernación/margen izquierdo */
+            margin-right: 20px;
+        }
+        .header {
+            position: relative;
+            width: 100%;
+            height: 60px; /* Altura para contener el logo y el título */
+            margin-bottom: 20px;
+        }
+        .logo {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .title {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translate(-50%, 15%); /* Centra el título vertical y horizontalmente */
+            text-align: center;
+        }
+        .title h2, .title p {
+            margin: 0;
+        }
+        .divider {
+            border-bottom: 2px solid #000;
+            margin: 10px 0;
+        }
+        .divider-datos {
+            border-bottom: 1px solid #25232377;
+            margin: 10px 0;
+        }
+        .info-box {
+            display: flex;
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        .left-box {
+            width: 25%;
+            padding: 0px 5px 0px 0px;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+        .right-box {
+            width: 75%;
+            padding: 0px 10px 0px 10px;
+            font-size: 10.5px; /* Ligeramente reducido para dar más espacio si es necesario */
+        }
+        .saldo-pendiente {
+            border-radius: 10px;
+            background-color: rgb(207, 14, 14);
+            color: white;
+            padding: 10px 0 10px 0;
+            text-align: center;
+        }
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap; 
+            justify-content: space-between; 
+        }
+        .info-grid > div {
+            flex: 1; 
+            min-width: 250px; /* Aumentado para dar más espacio a los campos */
+            padding-right: 10px; 
+        }
+        .info-grid p {
+            margin: 0;
+            word-wrap: break-word; /* Para navegadores más antiguos */
+            word-break: break-all; /* Para romper cadenas largas sin espacios */
+        }
+        .label {
+            display: inline-block;
+            width: 100px; 
+            font-weight: bold;
+        }
+        .label-long { 
+            display: inline-block;
+            width: 120px; 
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 10px; /* Tamaño de fuente ligeramente más pequeño para la tabla */
+        }
+        thead {
+            background-color: rgb(207, 14, 14);
+            color: white;
+        }
+        thead th:first-child {
+            border-top-left-radius: 10px;
+        }
+        thead th:last-child {
+            border-top-right-radius: 10px;
+        }
+        tfoot td:first-child {
+            border-bottom-left-radius: 10px;
+        }
+        tfoot td:last-child {
+            border-bottom-right-radius: 10px;
+        }
+        th, td {
+            padding: 4px;
+            border-bottom: 1px solid #eee; 
+            vertical-align: top; /* Asegura que el contenido se alinee arriba si se envuelve */
+        }
+        
+        /* Ajuste de anchos y alineación para las columnas de la tabla de detalles */
+        th:nth-child(1), td:nth-child(1) { width: 8%; text-align: left; } /* Nro. Documento */
+        th:nth-child(2), td:nth-child(2) { width: 9%; text-align: left; } /* Fecha Emisión */
+        th:nth-child(3), td:nth-child(3) { width: 9%; text-align: left; } /* Fecha Vencimiento */
+        th:nth-child(4), td:nth-child(4) { 
+            width: 20%; 
+            text-align: left; 
+            word-break: break-word; /* Rompe palabras largas */
+            white-space: normal; /* Permite el envoltorio normal del texto */
+        } /* Detalle / Comentarios */
+        th:nth-child(5), td:nth-child(5) { width: 12%; text-align: left; } /* Vendedor */
+        th:nth-child(6), td:nth-child(6) { width: 8%; text-align: left; } /* Grupo */
+        th:nth-child(7), td:nth-child(7) { 
+            width: 11%; 
+            text-align: right; 
+            white-space: nowrap; /* Evita que los números se rompan */
+        } /* Total Documento */
+        th:nth-child(8), td:nth-child(8) { 
+            width: 11%; 
+            text-align: right; 
+            white-space: nowrap; /* Evita que los números se rompan */
+        } /* Pagado */
+        th:nth-child(9), td:nth-child(9) { 
+            width: 12%; /* Un poco más de espacio para el saldo final */
+            text-align: right; 
+            white-space: nowrap; /* Evita que los números se rompan */
+        } /* Saldo Pendiente */
+
+        .texto-rojo {
+            color: red;
+            font-weight: bold; /* Añadido bold para mayor énfasis */
+        }
+        .texto-verde {
+            color: green;
+        }
+        tfoot td {
+            font-weight: bold;
+            padding: 5px 4px; /* Un poco más de padding vertical para el pie */
+        }
+        tfoot td:first-child {
+            text-align: right; /* Alinea el texto "TOTAL SALDO DEUDOR" a la derecha */
+        }
+        tfoot td:last-child {
+            text-align: right; /* Asegura que el número del total esté a la derecha */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <img src="<%= staticBaseUrl %>/ifa_logo.png" alt="Laboratorios IFA Logo" style="max-width: 70px;">
+        </div>
+        <div class="title">
+            <h2>Reporte de Saldo Deudor</h2>
+            <p>al <%= data.fechaReporte %></p>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="info-box">
+        <div class="left-box">
+            <div class="saldo-pendiente">
+                <p><strong>Saldo Acumulado</strong></p>
+                <h2><strong>Bs <%= data.SaldoAcumulado %></strong></h2>
+            </div>
+        </div>
+    
+        <div class="right-box">
+            <div class="info-grid">
+                <div>
+                    <p><span class="label">Código Cliente:</span> <%= data.CardCode %></p>
+                    <p><span class="label">Cliente:</span> <%= data.CardName %></p>
+                    <p><span class="label">Razón Social:</span> <%= data.CardFName %></p>
+                    <p><span class="label">NIT/CI:</span> <%= data.LicTradNum || "No disponible" %></p>
+                </div>
+                <div>
+                    <p><span class="label">Teléfono:</span> <%= data.Phone1 || "No disponible" %></p>
+                    <p><span class="label">Celular:</span> <%= data.Cellular || "No disponible" %></p>
+                    <p><span class="label">Email:</span> <%= data.E_Mail || "No disponible" %></p>
+                    <p><span class="label">Dirección:</span> <%= data.Address || "No disponible" %></p>
+                </div>
+                <div>
+                    <p><span class="label">Condición Pago:</span> <%= data.PymntGroup || "No disponible" %></p>
+                    <p><span class="label">Grupo:</span> <%= data.GroupName || "No disponible" %></p>
+                    <p><span class="label">Vendedor:</span> <%= data.SlpNameCli || "No disponible" %></p>
+                    <p><span class="label">Sucursal:</span> <%= data.SucName || "No disponible" %></p>
+                </div>
+            </div>
+        </div>
+    </div>    
+
+    <div class="divider"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nro. Doc</th>
+                <th>Fecha Emisión</th>
+                <th>Fecha Vencimiento</th>
+                <th>Detalle / Comentarios</th>
+                <th>Vendedor</th>
+                <th>Grupo</th>
+                <th>Total Doc</th>
+                <th>Pagado</th>
+                <th>Saldo Pendiente</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% data.detalles.forEach(detalle => { %>
+                <% 
+                    let clasesTexto = '';
+                    const docDueDate = new Date(detalle.DocDueDate);
+                    // Usar la fecha actual de la ejecución del controlador para la comparación
+                    const currentDate = new Date(data.fechaActualParaComparacion); 
+                    
+                    if (parseFloat(detalle.TotalDue) > 0 && docDueDate < currentDate) {
+                        clasesTexto = 'texto-rojo'; // Vencido y con saldo
+                    } else if (parseFloat(detalle.TotalDue) === 0) {
+                        clasesTexto = 'texto-verde'; // Pagado completamente
+                    }
+                %>
+                <tr class="fila-borde">
+                    <td><%= detalle.NumAtCard %></td>
+                    <td><%= (detalle.DocDateReal || '').substring(0,10) %></td>
+                    <td><%= (detalle.DocDueDate || '').substring(0,10) %></td>
+                    <td><%= detalle.Comments || detalle.JrnlMemo || 'N/A' %></td>
+                    <td><%= detalle.SlpNameCli || 'N/A' %></td>
+                    <td><%= detalle.GroupName || 'N/A' %></td>
+                    <td class="<%= clasesTexto %>"><%= detalle.DocCur %> <%= detalle.DocTotal %></td>
+                    <td class="<%= clasesTexto %>"><%= detalle.DocCur %> <%= detalle.PaidToDate %></td>
+                    <td class="<%= clasesTexto %>"><%= detalle.DocCur %> <%= detalle.TotalDue %></td>
+                </tr>
+            <% }) %>
+        </tbody>        
+        <tfoot>
+            <tr style="border-top: 2px solid #000; background-color: rgb(207, 14, 14); color: white;">
+                <td colspan="6" style="text-align: right; font-weight: bold;">TOTAL SALDO DEUDOR</td>
+                <td></td> 
+                <td></td>
+                <td style="font-weight: bold;"><%= data.SaldoAcumulado %></td>
+            </tr>
+        </tfoot>
+    </table>
+</body>
+</html>

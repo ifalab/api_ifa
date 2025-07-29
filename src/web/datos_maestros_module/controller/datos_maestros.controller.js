@@ -23,9 +23,12 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     tipoByGroupCode,
     dmSearchClientes,
     findAllArticulos,
-    searchArticulos} = require("./hana.controller")
+    searchArticulos,
+    getItemsByLine,
+    getAllSublines
+} = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
-const { patchBusinessPartners, getBusinessPartners } = require("./sld.controller");
+const { patchBusinessPartners, getBusinessPartners, patchItems } = require("./sld.controller");
 const { validateDataExcel } = require('./helpers');
 
 const dmClientesController = async (req, res) => {
@@ -1024,6 +1027,79 @@ const cargarPreciosExcelController = async (req, res) => {
     }
 }
 
+const getItemsByLineController = async (req, res) => {
+    try {
+        const line = req.query.line
+        console.log({ line })
+        const response = await getItemsByLine(line)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getItemsByLineController: ${error.message || ''}` })
+    }
+}
+const getAllSublineasController = async (req, res) => {
+    try {
+        const response = await getAllSublines()
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getAllLineasController: ${error.message || ''}` })
+    }
+}
+
+
+const patchItemsController = async (req, res) => {
+    try {
+        // 1. Extraer datos del cuerpo de la petición del frontend
+        // El frontend envía: { ItemCode, NewLineItemCode, NewSubLineItemCode }
+        const { ItemCode, NewLineItemCode, NewSubLineItemCode } = req.body;
+
+        // 2. Validar que los datos requeridos existan
+        if (!ItemCode || NewLineItemCode === undefined || NewSubLineItemCode === undefined) {
+            console.error('Datos incompletos para la actualización del artículo:', req.body);
+            
+        }
+        
+
+        // 3. Preparar el payload que espera la función patchItems para SAP B1
+        // Recuerda que SAP espera LineItemCode y SubLineItemCode directamente
+        const payloadForSAP = {
+            U_LINEA: `${NewLineItemCode}`,       // <--- ¡Convertido a string! "9"
+            U_SUBLINEA: `${NewSubLineItemCode}`  // <--- ¡Convertido a string! "18"
+            // Aquí puedes añadir otros campos estándar o de usuario
+        };
+
+
+
+        // 4. Llamar a la función patchItems para interactuar con SAP B1 Service Layer
+        const result = await patchItems(ItemCode, payloadForSAP);
+
+        // 5. Enviar la respuesta al frontend
+        // Un status 204 (No Content) de B1S se traduce generalmente a un 200 OK para el frontend.
+        if (result.status >= 200 && result.status < 300) { // Esto incluye 200 OK, 204 No Content
+            res.status(200).json({ 
+                message: result.message || 'Artículo actualizado con éxito.', 
+                data: result.data || {} // Data podría estar vacía si B1S retorna 204
+            });
+        } else {
+            // Si hay un error de SAP B1, devolvemos el status y mensaje de error
+            res.status(result.status || 500).json({ 
+                message: result.message || 'Error al actualizar el artículo en SAP Business One.' 
+            });
+        }
+
+    } catch (error) {
+        // Manejo de errores a nivel del controlador
+        console.error('Error en patchItemsController:', error);
+        res.status(500).json({ 
+            message: 'Error interno del servidor al procesar la actualización del artículo.',
+            error: error.message // Puedes añadir más detalles del error si es útil para depurar
+        });
+    }
+};
+
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -1072,4 +1148,7 @@ module.exports = {
     dmSearchClientesController,
     findAllArticulosController,
     searchArticulosController,
+    getItemsByLineController,
+    getAllSublineasController,
+    patchItemsController
 }
