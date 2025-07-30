@@ -1044,7 +1044,7 @@ const cargarExcelMasivo = async (req, res) => {
 
         const detalles = filas.map((fila) => ({
             Agencia: fila['Agencia'] ?? '',
-            U_DocFuenteCod: fila['Documento_Fuente'] ?? '',
+            U_DocFuenteCod: String(fila['Documento_Fuente'] ?? ''),
             AccountName: fila['Cuenta_Nombre'] ?? '',
             AccountCode: String(fila['Cuenta'] ?? ''),
             ShortName: fila['Codigo_Socio'] ?? '',
