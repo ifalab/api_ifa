@@ -146,7 +146,7 @@ router.post('/ndc-by-date-range', [validarToken, validarCampos], ndcByDateRangeC
 router.get('/all-warehouse-plant', [validarToken, validarCampos], getAllWarehousePlantByParamsController)
 router.post('/kardex-plant', [validarToken, validarCampos], kardexPlantController)
 //!-------------------  KARDEX DE COMERCIAL
-router.get('/all-warehouse-commercial', [validarToken, validarCampos], getAllWarehouseCommercialByParamsController)
+router.post('/all-warehouse-commercial', [validarToken, validarCampos], getAllWarehouseCommercialByParamsController)
 router.post('/kardex-commercial', [validarToken, validarCampos], kardexCommercialController)
 
 router.get('/completar-habilitaciones', [validarToken, validarCampos], habilitacionesPorIduserController)
