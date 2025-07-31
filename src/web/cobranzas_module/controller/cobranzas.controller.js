@@ -1178,7 +1178,7 @@ const realizarCobroMultiController = async (req, res) => {
             // Validar PaymentInvoices
             if (!PaymentInvoices) {
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", 'Error: el PaymentInvoices es obligatorio', `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
-                
+
                 return {
                     success: false,
                     message: 'el PaymentInvoices es obligatorio',
@@ -1203,7 +1203,7 @@ const realizarCobroMultiController = async (req, res) => {
                     const errorMsg = `el total es diferente al TransferSum, total: ${total || 'no definido'} , TransferSum: ${TransferSum || 'no definido'}`;
 
                     grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", errorMsg, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
-                    
+
                     return {
                         success: false,
                         message: errorMsg,
@@ -1220,7 +1220,7 @@ const realizarCobroMultiController = async (req, res) => {
                     const errorMsg = `el total es diferente al CashSum, total: ${total || 'no definido'} , CashSum: ${CashSum || 'no definido'}`;
 
                     grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", errorMsg, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
-                    
+
                     return {
                         success: false,
                         message: errorMsg,
@@ -1242,7 +1242,7 @@ const realizarCobroMultiController = async (req, res) => {
                 }
 
                 grabarLog(usuario.USERCODE, usuario.USERNAME, "Cobranzas Saldo deudor", mensaje, `https://172.16.11.25:50000/b1s/v1/IncomingPayments`, "cobranza/realizar-cobro", process.env.PRD);
-                
+
                 return {
                     success: false,
                     message: mensaje,
@@ -1284,7 +1284,7 @@ const realizarCobroMultiController = async (req, res) => {
 
         // Procesar todos los pagos en paralelo con Promise.all
         const results = await Promise.all(
-            paymentsArray.map(paymentData => 
+            paymentsArray.map(paymentData =>
                 processSinglePayment(paymentData).catch(error => {
                     console.error("Error procesando pago:", error);
                     return {
@@ -2566,9 +2566,9 @@ const getSaldoDeudorClientePDF = async (req, res) => {
             console.error('Error al obtener datos de saldo deudor:', dataFacturas.error);
             return res.status(500).json({ mensaje: dataFacturas.error });
         }
-        
+
         // CAMBIO AQUÍ: Asegura que facturasDeudor sea un array, incluso si dataFacturas.response es null/undefined
-        const facturasDeudor = dataFacturas || []; 
+        const facturasDeudor = dataFacturas || [];
 
         if (!facturasDeudor || facturasDeudor.length === 0) { // Esta comprobación ahora es más robusta
             console.warn(`No se encontraron facturas pendientes para el cliente ${codCliente}.`);
@@ -2577,7 +2577,7 @@ const getSaldoDeudorClientePDF = async (req, res) => {
         // 2. Obtener los datos detallados del cliente
         const clienteDetalle = await getClienteById(codCliente);
 
-        
+
         if (!clienteDetalle || clienteDetalle.error) {
             console.error('Error al obtener datos del cliente:', clienteDetalle ? clienteDetalle.error : 'Cliente no encontrado');
             return res.status(404).json({ mensaje: "No se encontraron datos del cliente." });
@@ -2596,15 +2596,15 @@ const getSaldoDeudorClientePDF = async (req, res) => {
 
         console.log(`[DEBUG] Resultado de getClienteById:`, JSON.stringify(clienteDetalle, null, 2)); // Esto imprime el array
 
-        const clienteObj = (clienteDetalle && Array.isArray(clienteDetalle) && clienteDetalle.length > 0) 
-                           ? clienteDetalle[0] 
-                           : {}; 
+        const clienteObj = (clienteDetalle && Array.isArray(clienteDetalle) && clienteDetalle.length > 0)
+            ? clienteDetalle[0]
+            : {};
 
         // Verificación adicional de que clienteObj se ha extraído correctamente
         console.log(`[DEBUG] Objeto cliente extraído (clienteObj):`, JSON.stringify(clienteObj, null, 2));
 
         // Comprobación de que el objeto cliente no esté vacío antes de continuar
-        if (Object.keys(clienteObj).length === 0) { 
+        if (Object.keys(clienteObj).length === 0) {
             console.error('Error: Cliente no encontrado o datos vacíos para codCliente:', codCliente);
             return res.status(404).json({ mensaje: "No se encontraron datos del cliente." });
         }
@@ -2613,16 +2613,16 @@ const getSaldoDeudorClientePDF = async (req, res) => {
 
         const resultadoFinal = {
             SaldoAcumulado: saldoAcumulado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            
-            CardCode: clienteObj.CardCode || 'No disponible', 
+
+            CardCode: clienteObj.CardCode || 'No disponible',
             CardName: clienteObj.CardName || 'No disponible',
-            CardFName: clienteObj.CardFName || 'No disponible', 
-            LicTradNum: clienteObj.LicTradNum || 'No disponible', 
+            CardFName: clienteObj.CardFName || 'No disponible',
+            LicTradNum: clienteObj.LicTradNum || 'No disponible',
             Phone1: clienteObj.Phone1 || 'No disponible',
             Cellular: clienteObj.Cellular || 'No disponible',
             E_Mail: clienteObj.E_Mail || 'No disponible',
             Address: clienteObj.Address || 'No disponible',
-            PymntGroup: clienteObj.PymntGroup || 'No disponible', 
+            PymntGroup: clienteObj.PymntGroup || 'No disponible',
             GroupName: clienteObj.GroupName || 'No disponible',
             SucName: clienteObj.SucName || 'No disponible',
             AreaName: clienteObj.AreaName || 'No disponible',
@@ -2649,10 +2649,10 @@ const getSaldoDeudorClientePDF = async (req, res) => {
         };
         console.log(resultadoFinal);
         const ejs = require('ejs');
-        const filePath = path.join(__dirname, './pdf/template-saldo-deudor.ejs'); 
+        const filePath = path.join(__dirname, './pdf/template-saldo-deudor.ejs');
         const html = await ejs.renderFile(filePath, { data: resultadoFinal, staticBaseUrl: process.env.STATIC_BASE_URL });
 
-        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }); 
+        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
         const pdfBuffer = await page.pdf({
@@ -2681,7 +2681,7 @@ const getSaldoDeudorClientePDF = async (req, res) => {
 
         res.set({
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="saldo-deudor_${codCliente}.pdf"`, 
+            'Content-Disposition': `attachment; filename="saldo-deudor_${codCliente}.pdf"`,
         });
         res.end(pdfBuffer);
 
@@ -2938,94 +2938,161 @@ const excelReporte = async (req, res) => {
 
 const cobranzasSupervisorController = async (req, res) => {
     try {
-        const user = req.usuarioAutorizado
-        const userIdSap = user.ID_VENDEDOR_SAP || 0
-        const { sucursales, isMesAnterior } = req.body
-        const dateNow = new Date();
-        const dateMesAnterior = new Date(dateNow);
-        dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
-        let response = []
-        // for (const sucursal of sucursales) {
-
+        // const user = req.usuarioAutorizado
+        // const userIdSap = user.ID_VENDEDOR_SAP || 0
+        // const { isMesAnterior } = req.body
+        // const dateNow = new Date();
+        // const dateMesAnterior = new Date(dateNow);
+        // dateMesAnterior.setMonth(dateMesAnterior.getMonth() - 1);
+        // let response = []
+        // let response1
+        // if (isMesAnterior == true || isMesAnterior == 'true') {
+        //     console.log('is mes anterior')
+        //     response1 = await cobranzaPorZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, userIdSap)
+        // } else {
+        //     console.log('is mes actual')
+        //     response1 = await cobranzaPorZonaSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, userIdSap)
         // }
+        // response = [...response, ...response1]
+        // response = response.map((item)=>{
+        //     return {
+        //         ...item,
+        //         SlpCode:item.SalesPersonCode,
+        //         SlpName:item.SalesPerson
+        //     }
+        // })
+        // let SucCode = ''
+        // let totalQuotaBySuc = {};
+        // let totalCollectionBySuc = {};
 
-        let response1
-        if (isMesAnterior == true || isMesAnterior == 'true') {
-            console.log('is mes anterior')
-            response1 = await cobranzaPorZonaSupervisor(dateMesAnterior.getFullYear(), dateMesAnterior.getMonth() + 1, userIdSap)
-        } else {
-            console.log('is mes actual')
-            response1 = await cobranzaPorZonaSupervisor(dateNow.getFullYear(), dateNow.getMonth() + 1, userIdSap)
+        // const results = []
+        // response.forEach((r, index) => {
+        //     if (r.SucCode == SucCode) {
+        //         const res1 = r
+        //         res1.cumplimiento = +r.cumplimiento
+        //         res1.hide = true
+        //         results.push(res1)
+
+        //         totalQuotaBySuc[r.SucCode] += +r.Quota;
+        //         totalCollectionBySuc[r.SucCode] += +r.Collection;
+        //         if ((response.length - 1) == index) {
+        //             const res = {
+        //                 SucName: `Total ${r.SucName}`,
+        //                 Quota: +totalQuotaBySuc[r.SucCode],
+        //                 Collection: +totalCollectionBySuc[r.SucCode],
+        //                 cumplimiento: (+totalCollectionBySuc[r.SucCode] / +totalQuotaBySuc[r.SucCode]) * 100,
+        //                 isSubtotal: true,
+        //                 hide: false
+        //             }
+        //             results.push(res)
+        //         }
+        //     } else {
+        //         SucCode = r.SucCode;
+        //         totalQuotaBySuc[r.SucCode] = +r.Quota;
+        //         totalCollectionBySuc[r.SucCode] = +r.Collection;
+
+        //         if (index > 0) {
+        //             const res = {
+        //                 SucName: `Total ${response[index - 1].SucName}`,
+        //                 Quota: +totalQuotaBySuc[response[index - 1].SucCode],
+        //                 Collection: +totalCollectionBySuc[response[index - 1].SucCode],
+        //                 cumplimiento: (+totalCollectionBySuc[response[index - 1].SucCode] / +totalQuotaBySuc[response[index - 1].SucCode]) * 100,
+        //                 isSubtotal: true,
+        //                 hide: false
+        //             }
+        //             results.push(res)
+        //         }
+        //         const res1 = r
+        //         res1.cumplimiento = +r.cumplimiento
+        //         res1.hide = false
+        //         results.push(res1)
+
+        //         if ((response.length - 1) == index) {
+        //             const res = {
+        //                 SucName: `Total ${r.SucName}`,
+        //                 Quota: +totalQuotaBySuc[r.SucCode],
+        //                 Collection: +totalCollectionBySuc[r.SucCode],
+        //                 cumplimiento: (+totalCollectionBySuc[r.SucCode] / +totalQuotaBySuc[r.SucCode]) * 100,
+        //                 isSubtotal: true,
+        //                 hide: false
+        //             }
+        //             results.push(res)
+        //         }
+        //     }
+        // });
+        // return res.json(results)
+        //?------------------------------
+        const user = req.usuarioAutorizado;
+        const userIdSap = user.ID_VENDEDOR_SAP || 0;
+        const { isMesAnterior } = req.body;
+
+        const date = new Date();
+        if (isMesAnterior === true || isMesAnterior === 'true') {
+            date.setMonth(date.getMonth() - 1);
         }
-        response = [...response, ...response1]
-        response = response.map((item)=>{
-            return {
-                ...item,
-                SlpCode:item.SalesPersonCode,
-                SlpName:item.SalesPerson
+
+        const response = await cobranzaPorZonaSupervisor(date.getFullYear(), date.getMonth() + 1, userIdSap);
+
+        const groupedBySucursal = response.reduce((acc, item) => {
+            const sucCode = item.SucCode;
+            if (!acc[sucCode]) {
+                acc[sucCode] = [];
             }
-        })
-        // console.log({ response })
-        let SucCode = ''
-        let totalQuotaBySuc = {};
-        let totalCollectionBySuc = {};
+            acc[sucCode].push(item);
+            return acc;
+        }, {});
 
-        const results = []
-        response.forEach((r, index) => {
-            if (r.SucCode == SucCode) {
-                const res1 = r
-                res1.cumplimiento = +r.cumplimiento
-                res1.hide = true
-                results.push(res1)
+        const finalResults = [];
+        for (const sucCode in groupedBySucursal) {
 
-                totalQuotaBySuc[r.SucCode] += +r.Quota;
-                totalCollectionBySuc[r.SucCode] += +r.Collection;
-                if ((response.length - 1) == index) {
-                    const res = {
-                        SucName: `Total ${r.SucName}`,
-                        Quota: +totalQuotaBySuc[r.SucCode],
-                        Collection: +totalCollectionBySuc[r.SucCode],
-                        cumplimiento: (+totalCollectionBySuc[r.SucCode] / +totalQuotaBySuc[r.SucCode]) * 100,
-                        isSubtotal: true,
-                        hide: false
-                    }
-                    results.push(res)
+            const recordsInSucursal = groupedBySucursal[sucCode];
+
+            const groupedBySalesperson = recordsInSucursal.reduce((acc, record) => {
+                const spCode = record.SalesPersonCode;
+                if (!acc[spCode]) {
+                    acc[spCode] = {
+                        ...record,
+                        Quota: 0,
+                        Collection: 0,
+                        SlpCode: record.SalesPersonCode,
+                        SlpName: record.SalesPerson,
+                        detail: []
+                    };
                 }
-            } else {
-                SucCode = r.SucCode;
-                totalQuotaBySuc[r.SucCode] = +r.Quota;
-                totalCollectionBySuc[r.SucCode] = +r.Collection;
+                acc[spCode].Quota += parseFloat(record.Quota);
+                acc[spCode].Collection += parseFloat(record.Collection);
+                acc[spCode].detail.push(record);
+                return acc;
+            }, {});
 
-                if (index > 0) {
-                    const res = {
-                        SucName: `Total ${response[index - 1].SucName}`,
-                        Quota: +totalQuotaBySuc[response[index - 1].SucCode],
-                        Collection: +totalCollectionBySuc[response[index - 1].SucCode],
-                        cumplimiento: (+totalCollectionBySuc[response[index - 1].SucCode] / +totalQuotaBySuc[response[index - 1].SucCode]) * 100,
-                        isSubtotal: true,
-                        hide: false
-                    }
-                    results.push(res)
-                }
-                const res1 = r
-                res1.cumplimiento = +r.cumplimiento
-                res1.hide = false
-                results.push(res1)
+            const salespersonGroups = Object.values(groupedBySalesperson);
+            newRowspan = salespersonGroups.length;
 
-                if ((response.length - 1) == index) {
-                    const res = {
-                        SucName: `Total ${r.SucName}`,
-                        Quota: +totalQuotaBySuc[r.SucCode],
-                        Collection: +totalCollectionBySuc[r.SucCode],
-                        cumplimiento: (+totalCollectionBySuc[r.SucCode] / +totalQuotaBySuc[r.SucCode]) * 100,
-                        isSubtotal: true,
-                        hide: false
-                    }
-                    results.push(res)
-                }
-            }
-        });
-        return res.json(results)
+            const salespersonDetails = salespersonGroups.map((sp, index) => {
+                return {
+                    ...sp,
+                    cumplimiento: sp.Quota > 0 ? (sp.Collection / sp.Quota) * 100 : 0,
+                    hide: index !== 0,
+                    rowspan: newRowspan
+                };
+            });
+
+            finalResults.push(...salespersonDetails);
+
+            const totalSucursalQuota = salespersonDetails.reduce((sum, sp) => sum + sp.Quota, 0);
+            const totalSucursalCollection = salespersonDetails.reduce((sum, sp) => sum + sp.Collection, 0);
+
+            finalResults.push({
+                SucName: `Total ${recordsInSucursal[0].SucName}`,
+                Quota: totalSucursalQuota,
+                Collection: totalSucursalCollection,
+                cumplimiento: totalSucursalQuota > 0 ? (totalSucursalCollection / totalSucursalQuota) * 100 : 0,
+                isSubtotal: true,
+                hide: false
+            });
+        }
+
+        return res.json(finalResults);
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: `Error en el controlador cobranzasSupervisorController: ${error.message || ''}` })
@@ -3067,7 +3134,7 @@ const cobranzaDocNumPorDocEntryController = async (req = request, res = response
     }
 }
 
-const saldoDeudorGeneralExcel = async(req = request, res = response) => {
+const saldoDeudorGeneralExcel = async (req = request, res = response) => {
     let sucursales = req.body;
     console.log("Longitud Sucursales del Usuario:", sucursales.length);
 

@@ -6081,41 +6081,45 @@ const getAllWarehousePlantByParamsController = async (req, res) => {
 
 const getAllWarehouseCommercialByParamsController = async (req, res) => {
     try {
-        const parametro = req.query.parametro
-        console.log({ parametro })
-        if (parametro == undefined || parametro == null) {
-            return res.status(400).json({ mensaje: `No existe el parametro de busqueda` });
-        }
-        const response = await getAllWarehouseCommercialByParams(parametro)
-        const dataFilter = response.map((item) => {
-            const {
-                BusinessUnit,
-                WhsCode,
-                WhsName,
-                SucCode,
-                SucName,
-                County,
-                City,
-                createDate,
-                Address3,
-                Address2,
-                ...restDataItem
+        const { listSucCode } = req.body
 
-            } = item
-            return {
-                BusinessUnit,
-                WhsCode,
-                WhsName,
-                SucCode,
-                SucName,
-                County,
-                City,
-                createDate,
-                Address3,
-                Address2,
-            }
-        })
-        return res.json(dataFilter)
+        let result = []
+        for (const parametro of listSucCode) {
+            console.log({parametro})
+            const response = await getAllWarehouseCommercialByParams(parametro)
+            const dataFilter = response.map((item) => {
+                const {
+                    BusinessUnit,
+                    WhsCode,
+                    WhsName,
+                    SucCode,
+                    SucName,
+                    County,
+                    City,
+                    createDate,
+                    Address3,
+                    Address2,
+                    ...restDataItem
+
+                } = item
+                return {
+                    BusinessUnit,
+                    WhsCode,
+                    WhsName,
+                    SucCode,
+                    SucName,
+                    County,
+                    City,
+                    createDate,
+                    Address3,
+                    Address2,
+                }
+            })
+
+            result = [...result,...dataFilter]
+        }
+
+        return res.json(result)
     } catch (error) {
         return res.status(500).json({ mensaje: `Error en el controlador.`, error });
     }

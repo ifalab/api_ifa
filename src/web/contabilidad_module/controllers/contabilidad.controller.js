@@ -404,7 +404,7 @@ const cerrarCajaChicaController = async (req, res) => {
 
         const { id, glosa, montoBank, dataBankAccount, nroDeposito } = req.body
         console.log({ id, glosa, montoBank, dataBankAccount, nroDeposito })
-        // return res.status(400).json({id, glosa, montoBank, dataBankAccount, nroDeposito})
+        //  return res.status(400).json({id, glosa, montoBank, dataBankAccount, nroDeposito})
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         console.log({ id, glosa })
         const data = await dataCierreCaja(id)
@@ -444,9 +444,9 @@ const cerrarCajaChicaController = async (req, res) => {
                     AccountCode: `2110401`,
                     ShortName: `${dataAccount.AsociateCardCode}`,
                     Credit: 0,
-                    Debit: parseFloat(monto.toFixed(2)),
+                    Debit: Number(monto.toFixed(2)),
                     CreditSys: 0,
-                    DebitSys: parseFloat(newMontoRendcion.toFixed(2)),
+                    DebitSys: Number(newMontoRendcion.toFixed(2)),
                     ContraAccount: `${dataAccount.AsociateCardCode}`,
                     LineMemo: `${glosa}`,
                     Reference1: ``,
@@ -458,14 +458,6 @@ const cerrarCajaChicaController = async (req, res) => {
         }
 
         if (montoBank > 0) {
-            // if (parseFloat(montoAccount.toFixed(2)) !== parseFloat(montoBank.toFixed(2))) {
-            //     grabarLog(usuario.USERCODE, usuario.USERNAME, "Cerrar Caja Chica", `El monto de la Cuenta (${parseFloat(montoAccount.toFixed(2))}) no puede ser diferente que el Monto del Banco (${parseFloat(montoBank.toFixed(2))})`, ``, "contabilidad/cierre-caja-chica", process.env.PRD)
-            //     return res.status(400).json({
-            //         mensaje: `El monto de la Cuenta (${parseFloat(montoAccount.toFixed(2))}) no puede ser diferente que el Monto del Banco (${parseFloat(montoBank.toFixed(2))})`,
-            //         montoBanco: parseFloat(montoBank.toFixed(2)),
-            //         montoCuenta: parseFloat(montoAccount.toFixed(2))
-            //     })
-            // }
 
             let account = {
                 AccountCode: `${dataBankAccount}`,
@@ -510,12 +502,12 @@ const cerrarCajaChicaController = async (req, res) => {
         //? en caso de la diferencia del banco sea mayor
         if (diferencia > 0) {
 
-            const diferenciaDolar = diferencia / usd 
+            const diferenciaDolar = diferencia / usd
 
             let contraAccount = {
                 AccountCode: '4210102',
                 ShortName: '',
-                Credit:parseFloat(diferencia.toFixed(2)) ,
+                Credit: parseFloat(diferencia.toFixed(2)),
                 Debit: 0,
                 CreditSys: parseFloat(diferenciaDolar.toFixed(2)),
                 DebitSys: 0,
@@ -544,8 +536,18 @@ const cerrarCajaChicaController = async (req, res) => {
             return acc + haber
         }, 0)
 
-        totalDebe = JournalEntryLines.reduce((acc, item) => {
+        const totalDebe = JournalEntryLines.reduce((acc, item) => {
             const debe = Number(item.Debit)
+            return acc + debe
+        }, 0)
+
+        const totalHaberUSD = JournalEntryLines.reduce((acc, item) => {
+            const haber = Number(item.CreditSys)
+            return acc + haber
+        }, 0)
+
+        const totalDebeUSD = JournalEntryLines.reduce((acc, item) => {
+            const debe = Number(item.DebitSys)
             return acc + debe
         }, 0)
 
@@ -564,8 +566,23 @@ const cerrarCajaChicaController = async (req, res) => {
         }
         // return res.json({ postJournalEntry, dataAccount, dataBankAccount, dataRendiciones, totalDebe, totalHaber })
         console.log('data asiento cierre:')
-        console.log({ postJournalEntry })
-        // return res.json({ postJournalEntry })
+        console.log({ postJournalEntry, totalHaber, totalDebe })
+        //? validacion de diferencia entre total haber USD y total debe USD
+        if (totalDebeUSD !== totalHaberUSD) {
+            const diferenciaUSD = totalDebeUSD - totalHaberUSD
+            if (diferenciaUSD > 0) {
+                const { JournalEntryLines } = postJournalEntry
+                const creditLine = JournalEntryLines[JournalEntryLines.length - 1]
+                if(creditLine){
+                    creditLine.CreditSys = creditLine.CreditSys + diferenciaUSD
+                    JournalEntryLines[JournalEntryLines.length - 1] = creditLine
+                }
+            }
+
+        }
+        // return res.json({
+        //     postJournalEntry
+        // })
         const response = await asientoContable({
             ...postJournalEntry
         })
@@ -956,7 +973,7 @@ const actualizarEstadoCCController = async (req, res) => {
 
 const getCuentasController = async (req, res) => {
     try {
-        let  param = req.query.param
+        let param = req.query.param
         if (param && param.length > 20) {
             return res.status(400).json({
                 mensaje: 'El parámetro de búsqueda no puede contener más de 20 caracteres.'
@@ -968,7 +985,7 @@ const getCuentasController = async (req, res) => {
             return res.status(400).json({
                 mensaje: 'El parametro no se encontro.'
             });
-        } 
+        }
 
         const data = await cuentasPorCodigoNombre(param);
         return res.json(data)
@@ -1009,11 +1026,11 @@ const getMaestrosMayoresController = async (req, res) => {
 
 
         reporteData = result;
-        total = result.length; 
+        total = result.length;
 
         return res.status(200).json({
             ok: true,
-            reporte: reporteData, 
+            reporte: reporteData,
             meta: {
                 total
             }
@@ -1027,7 +1044,7 @@ const getMaestrosMayoresController = async (req, res) => {
             msg: 'Error interno del servidor al obtener datos del Libro Mayor.',
             error: error.message
         });
-}
+    }
 
 }
 const getBalanceAccountPrevController = async (req, res) => {
@@ -1036,7 +1053,7 @@ const getBalanceAccountPrevController = async (req, res) => {
         const { fechaInicio, accountCode } = req.body;
 
 
-        if (!fechaInicio  || !accountCode) {
+        if (!fechaInicio || !accountCode) {
             return res.status(400).json({
                 ok: false,
                 msg: 'Faltan parámetros requeridos: fechaInicio o accountCode.'
@@ -1064,17 +1081,17 @@ const getBalanceAccountPrevController = async (req, res) => {
             msg: 'Error interno del servidor al obtener datos del Libro Mayor.',
             error: error.message
         });
-}
+    }
 
 }
 
 const getBankingByDateController = async (req, res) => {
     try {
 
-        const { fechaInicio, fechaFin,  } = req.body;
+        const { fechaInicio, fechaFin, } = req.body;
 
 
-        if (!fechaInicio || !fechaFin ) {
+        if (!fechaInicio || !fechaFin) {
             return res.status(400).json({
                 ok: false,
                 msg: 'Faltan parámetros requeridos: fechaInicio, fechaFin.'
@@ -1094,11 +1111,11 @@ const getBankingByDateController = async (req, res) => {
 
 
         reporteData = result;
-        total = result.length; 
+        total = result.length;
 
         return res.status(200).json({
             ok: true,
-            reporte: reporteData, 
+            reporte: reporteData,
             meta: {
                 total
             }
@@ -1112,7 +1129,7 @@ const getBankingByDateController = async (req, res) => {
             msg: 'Error interno del servidor al obtener datos del Libro Mayor.',
             error: error.message
         });
-}
+    }
 
 }
 
