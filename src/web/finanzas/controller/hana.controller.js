@@ -392,7 +392,7 @@ const getGastosSAPHana = async (codigoDimensionA = 0) => {
                 YEAR("Date") AS "Año",
                 SUM("SalesNetTotal") AS "TotalVentasNetas",
                 SUM("SalesComercialCost") AS "CostoComercialTotal",
-                SUM("SalesNetTotal" - "SalesComercialCost") AS "UtilidadBruta",
+                (SUM("SalesNetTotal") - SUM("SalesComercialCost")) AS "UtilidadBruta",
                 CASE 
                     WHEN SUM("SalesNetTotal") = 0 THEN 0
                     ELSE (SUM("SalesNetTotal" - "SalesComercialCost") / SUM("SalesNetTotal")) * 100

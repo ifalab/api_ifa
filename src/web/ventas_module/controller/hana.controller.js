@@ -2524,6 +2524,39 @@ const selectionBatchByItemWhsCode = async (itemCode,whsCode) => {
     }
 }
 
+const clientesCreadosPorSucursal = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_COSTUMERS_BY_CREATE_DATE()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
+const ventasClientesPorSucursal = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_COSTUMERS_SALES_BY_BRANCH()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2643,4 +2676,6 @@ module.exports = {
     clientesBloqueadoByGroup,
     clientExpiryPolicy,
     selectionBatchByItemWhsCode,
+    clientesCreadosPorSucursal,
+    ventasClientesPorSucursal
 }
