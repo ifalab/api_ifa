@@ -60,7 +60,8 @@ const cobranzaPorSucursal = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA('','')`
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION()`
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaPorSucursal:', error.message);
