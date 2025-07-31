@@ -64,6 +64,30 @@ const getCabeceraImageController = async (req, res) => {
     }
 };
 
+/**
+ * Obtiene y muestra una imagen de cabecera
+ */
+const getAnexoCabeceraImageController = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            return res.status(400).json({
+                error: true,
+                message: 'ID de anexo inválido'
+            });
+        }
+        const result = await digitalizacionService.getAnexoImage(id);
+        res.set('Content-Type', result.contentType || 'image/jpeg');
+        res.status(200).send(result.data);
+    } catch (error) {
+        console.error('Error en getAnexoCabeceraImageController:', error);
+        res.status(error.statusCode || 500).json({
+            error: true,
+            message: error.message || 'Error al obtener imagen de anexo de cabecera'
+        });
+    }
+};
+
 
 /**
  * Obtiene y muestra una imagen de detalle
@@ -928,6 +952,324 @@ const createUserVisitaController = async (req, res) => {
     }
 }
 
+/**
+ * Obtiene la información de la cabecera y sus anexos para previsualización (por nro_asiento y prefijo)
+ */
+const previewCabeceraDataController = async (req, res) => {
+    try {
+        const { nroAsiento, prefijo } = req.params;
+        if (!nroAsiento || !prefijo) {
+            return res.status(400).json({
+                error: true,
+                message: 'nroAsiento y prefijo son requeridos'
+            });
+        }
+
+        // Llamar al service
+        const result = await digitalizacionService.previewCabeceraData(nroAsiento, prefijo);
+
+        // Devolver respuesta
+        res.status(200).json(result.data);
+    } catch (error) {
+        console.error('Error en previewCabeceraDataController:', error);
+        res.status(error.statusCode || 500).json({
+            error: true,
+            message: error.message || 'Error al obtener datos de cabecera'
+        });
+    }
+};
+
+
+/**
+ * Obtiene la información de la cabecera y sus anexos para previsualización por ID
+ */
+const getCabeceraYAnexosPreviewController = async (req, res) => {
+    try {
+        const { idCabecera } = req.params;
+        console.log('ID de cabecera recibido:', idCabecera);
+        if (!idCabecera || isNaN(idCabecera)) {
+            return res.status(400).json({
+                error: true,
+                message: 'ID de cabecera inválido'
+            });
+        }
+        const result = await digitalizacionService.getCabeceraYAnexosPreview(idCabecera);
+        res.status(200).json(
+            result.data
+        );
+    } catch (error) {
+        console.error('Error en getCabeceraYAnexosPreviewController:', error);
+        res.status(error.statusCode || 500).json({
+            error: true,
+            message: error.message || 'Error al obtener la previsualización de cabecera y anexos'
+        });
+    }
+};
+
+
+/**
+ * Actualiza imágenes de anexos existentes
+ * Este controlador requiere que el middleware multer (array) se haya ejecutado antes
+ */
+const updateAnexosImagesController = async (req, res) => {
+    try {
+        // Verificar que se hayan cargado archivos
+        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+            return res.status(400).json({
+                error: true,
+                message: 'No se ha proporcionado ningún archivo'
+            });
+        }
+
+        // Verificar que anexo_ids venga como array (puede ser string si solo uno)
+        let anexoIds = req.body.anexo_ids;
+        if (!anexoIds) {
+            return res.status(400).json({
+                error: true,
+                message: 'No se han proporcionado IDs de anexos a actualizar'
+            });
+        }
+        // Si sólo es uno puede venir como string, forzar array
+        if (!Array.isArray(anexoIds)) {
+            anexoIds = [anexoIds];
+        }
+        // Convertir a números
+        anexoIds = anexoIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+
+        if (anexoIds.length !== req.files.length) {
+            return res.status(400).json({
+                error: true,
+                message: 'La cantidad de archivos y de IDs de anexo no coincide'
+            });
+        }
+
+        // Obtener usuario para el log
+        const user = req.usuarioAutorizado;
+
+        // Opciones adicionales desde el body
+        const {
+            quality,
+            output_format,
+            target_size_kb,
+            grayscale,
+            save_locally,
+            save_to_share,
+            delete_previous
+        } = req.body;
+
+        // Construir options como en el service
+        const options = {
+            quality,
+            output_format,
+            target_size_kb,
+            grayscale,
+            save_locally,
+            save_to_share
+        };
+        // Siempre booleano
+        const deletePreviousOpt = delete_previous !== 'false';
+
+        // Procesar la solicitud
+        const result = await digitalizacionService.updateAnexosImages(
+            anexoIds,
+            req.files,
+            options,
+            deletePreviousOpt
+        );
+
+        console.log('req.files:', req.files.map(f => f.originalname));
+        console.log('req.body.anexo_ids:', req.body.anexo_ids);
+        console.log('req.body:', req.body);
+
+        // Registrar log de éxito (no bloquear respuesta)
+        if (user) {
+            try {
+                grabarLog(
+                    user.USERCODE || 'SYSTEM',
+                    user.USERNAME || 'SISTEMA',
+                    "Digitalización - Actualización Anexos",
+                    `Anexos actualizados exitosamente: ${anexoIds.join(', ')}`,
+                    JSON.stringify({
+                        anexo_ids: anexoIds,
+                        filenames: req.files.map(f => f.originalname),
+                        estados: result.data?.results?.map(r => ({
+                            anexo_id: r.anexo_id,
+                            status: r.status
+                        }))
+                    }),
+                    "digitalizacion/update/anexos",
+                    process.env.PRD || 'DEV'
+                ).catch(logError => {
+                    console.error('Error al grabar log de éxito:', logError);
+                });
+            } catch (logError) {
+                console.error('Error al intentar grabar log de éxito:', logError);
+            }
+        }
+
+        // Responder
+        res.status(200).json(result.data);
+    } catch (error) {
+        console.error('Error en updateAnexosImagesController:', error);
+
+        // Log de error (no bloquear respuesta)
+        const user = req.usuarioAutorizado;
+        if (user) {
+            try {
+                grabarLog(
+                    user.USERCODE || 'SYSTEM',
+                    user.USERNAME || 'SISTEMA',
+                    "Digitalización - Actualización Anexos",
+                    `Error al actualizar anexos: ${error.message || 'Error desconocido'}`,
+                    JSON.stringify({
+                        anexo_ids: anexoIds,
+                        filenames: req.files.map(f => f.originalname),
+                        estados: result.data?.results?.map(r => ({
+                            anexo_id: r.anexo_id,
+                            status: r.status
+                        }))
+                    }),
+                    "digitalizacion/update/anexos",
+                    process.env.PRD || 'DEV'
+                ).catch(logError => {
+                    console.error('Error al grabar log de error:', logError);
+                });
+            } catch (logError) {
+                console.error('Error al intentar grabar log de error:', logError);
+            }
+        }
+
+        res.status(error.statusCode || 500).json({
+            error: true,
+            message: error.message || 'Error al actualizar imágenes de anexos'
+        });
+    }
+};
+
+/**
+ * Elimina una cabecera y todos sus anexos asociados (archivos en red y registros en DB).
+ * @route DELETE /cabecera-anexos/eliminar-todo/:idCabecera
+ */
+const eliminarCabeceraYAnexosController = async (req, res) => {
+    const { idCabecera } = req.params;
+    const user = req.usuarioAutorizado;
+    try {
+        // Llama al service que hace el trabajo real
+        const result = await digitalizacionService.eliminarCabeceraYAnexos(Number(idCabecera));
+
+        // Log de éxito (no bloqueante)
+        if (user) {
+            grabarLog(
+                user.USERCODE || 'SYSTEM',
+                user.USERNAME || 'SISTEMA',
+                "Digitalización - Eliminación Cabecera y Anexos",
+                `Cabecera y anexos eliminados correctamente (Cabecera ID: ${idCabecera})`,
+                JSON.stringify({ cabecera_id: idCabecera }),
+                "digitalizacion/delete/cabecera-anexos",
+                process.env.PRD || 'DEV'
+            ).catch(logErr => {
+                console.error('Error al grabar log de éxito:', logErr);
+            });
+        }
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error en eliminarCabeceraYAnexosController:', error);
+
+        // Log de error (no bloqueante)
+        if (user) {
+            grabarLog(
+                user.USERCODE || 'SYSTEM',
+                user.USERNAME || 'SISTEMA',
+                "Digitalización - Eliminación Cabecera y Anexos",
+                `Error al eliminar cabecera y anexos: ${error.message || 'Error desconocido'}`,
+                JSON.stringify({ cabecera_id: idCabecera }),
+                "digitalizacion/delete/cabecera-anexos",
+                process.env.PRD || 'DEV'
+            ).catch(logErr => {
+                console.error('Error al grabar log de error:', logErr);
+            });
+        }
+
+        res.status(error.statusCode || 500).json({
+            error: true,
+            message: error.message || 'Error al eliminar cabecera y anexos'
+        });
+    }
+};
+
+
+const compressMultipleAnexosController = async (req, res) => {
+    try {
+        // Verificar que se hayan cargado archivos
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                error: true,
+                message: 'No se han proporcionado imágenes'
+            });
+        }
+
+        const user = req.usuarioAutorizado;
+
+        // Obtener los datos del formulario
+        const formData = {
+            ...req.body,
+            files: req.files
+        };
+
+        // Procesar la solicitud usando el nuevo servicio para anexos
+        const result = await digitalizacionService.processMultipleAnexos(formData, user);
+
+        // Registrar la operación exitosa en el log
+        if (user) {
+            await grabarLog(
+                user.USERCODE || 'SYSTEM',
+                user.USERNAME || 'SISTEMA',
+                "Digitalización - Carga Múltiple Anexos",
+                `Anexos procesados exitosamente - Cabecera ID: ${formData.id_cabecera || 'N/A'}, Anexos: ${result.data?.data?.anexos?.length || 0}`,
+                JSON.stringify({
+                    id_cabecera: formData.id_cabecera,
+                    prefijo: formData.prefijo,
+                    cantidad_imagenes: req.files.length
+                }),
+                "digitalizacion/multiple-anexos",
+                process.env.PRD || 'DEV'
+            );
+        }
+
+        // Devolver respuesta
+        res.status(200).json(result.data);
+    } catch (error) {
+        console.error('Error en compressMultipleAnexosController:', error);
+
+        // Registrar el error en el log
+        const user = req.usuarioAutorizado;
+        if (user) {
+            await grabarLog(
+                user.USERCODE || 'SYSTEM',
+                user.USERNAME || 'SISTEMA',
+                "Digitalización - Carga Múltiple Anexos",
+                `Error al procesar anexos: ${error.message || 'Error desconocido'}`,
+                JSON.stringify({
+                    id_cabecera: req.body.id_cabecera,
+                    prefijo: req.body.prefijo,
+                    cantidad_imagenes: req.files?.length || 0
+                }),
+                "digitalizacion/multiple-anexos",
+                process.env.PRD || 'DEV'
+            );
+        }
+
+        res.status(error.statusCode || 500).json({
+            error: true,
+            message: error.message || 'Error al procesar los anexos'
+        });
+    }
+};
+
+
+
+
 
 module.exports = {
     searchImagesController,
@@ -942,5 +1284,11 @@ module.exports = {
     getDeliveryDigitalizedController,
     excelEntregasDigitalizadasController,
     compressMultipleImagesController,
-    createUserVisitaController
+    createUserVisitaController,
+    previewCabeceraDataController,
+    getCabeceraYAnexosPreviewController,
+    getAnexoCabeceraImageController,
+    updateAnexosImagesController,
+    eliminarCabeceraYAnexosController,
+    compressMultipleAnexosController
 };

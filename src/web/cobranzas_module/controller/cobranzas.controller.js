@@ -27,6 +27,7 @@ const { syncBuiltinESMExports } = require('module');
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { aniadirDetalleVisita } = require('../../planificacion_module/controller/hana.controller');
 const formatData = require('../utils/formatEstadoCuenta');
+const { getSucursales } = require('../../datos_maestros_module/controller/hana.controller');
 
 
 const cobranzaGeneralController = async (req, res) => {
@@ -2551,6 +2552,156 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
         }
     }
 }
+const getSaldoDeudorClientePDF = async (req, res) => {
+    let browser;
+    try {
+        const { codCliente } = req.query;
+
+        // 1. Obtener los datos del saldo deudor (facturas pendientes)
+        const dataFacturas = await cobranzaSaldoDeudor('', codCliente);
+
+        console.log(dataFacturas)
+
+        if (dataFacturas && dataFacturas.error) {
+            console.error('Error al obtener datos de saldo deudor:', dataFacturas.error);
+            return res.status(500).json({ mensaje: dataFacturas.error });
+        }
+        
+        // CAMBIO AQUÍ: Asegura que facturasDeudor sea un array, incluso si dataFacturas.response es null/undefined
+        const facturasDeudor = dataFacturas || []; 
+
+        if (!facturasDeudor || facturasDeudor.length === 0) { // Esta comprobación ahora es más robusta
+            console.warn(`No se encontraron facturas pendientes para el cliente ${codCliente}.`);
+        }
+
+        // 2. Obtener los datos detallados del cliente
+        const clienteDetalle = await getClienteById(codCliente);
+
+        
+        if (!clienteDetalle || clienteDetalle.error) {
+            console.error('Error al obtener datos del cliente:', clienteDetalle ? clienteDetalle.error : 'Cliente no encontrado');
+            return res.status(404).json({ mensaje: "No se encontraron datos del cliente." });
+        }
+
+        // Calcular el Saldo Acumulado (ahora facturasDeudor está garantizado como un array)
+        const saldoAcumulado = facturasDeudor.reduce((sum, item) => {
+            return sum + parseFloat(item.TotalDue || '0');
+        }, 0);
+
+        // ... el resto de tu código es el mismo ...
+        const today = new Date();
+        const formattedDate = `${today.getDate()} de ${today.toLocaleString('es', { month: 'long' }, { timeZone: 'America/La_Paz' })} del ${today.getFullYear()}`;
+        const isoDateForComparison = today.toISOString(); // <-- AÑADE ESTA LÍNEA
+
+
+        console.log(`[DEBUG] Resultado de getClienteById:`, JSON.stringify(clienteDetalle, null, 2)); // Esto imprime el array
+
+        const clienteObj = (clienteDetalle && Array.isArray(clienteDetalle) && clienteDetalle.length > 0) 
+                           ? clienteDetalle[0] 
+                           : {}; 
+
+        // Verificación adicional de que clienteObj se ha extraído correctamente
+        console.log(`[DEBUG] Objeto cliente extraído (clienteObj):`, JSON.stringify(clienteObj, null, 2));
+
+        // Comprobación de que el objeto cliente no esté vacío antes de continuar
+        if (Object.keys(clienteObj).length === 0) { 
+            console.error('Error: Cliente no encontrado o datos vacíos para codCliente:', codCliente);
+            return res.status(404).json({ mensaje: "No se encontraron datos del cliente." });
+        }
+
+
+
+        const resultadoFinal = {
+            SaldoAcumulado: saldoAcumulado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            
+            CardCode: clienteObj.CardCode || 'No disponible', 
+            CardName: clienteObj.CardName || 'No disponible',
+            CardFName: clienteObj.CardFName || 'No disponible', 
+            LicTradNum: clienteObj.LicTradNum || 'No disponible', 
+            Phone1: clienteObj.Phone1 || 'No disponible',
+            Cellular: clienteObj.Cellular || 'No disponible',
+            E_Mail: clienteObj.E_Mail || 'No disponible',
+            Address: clienteObj.Address || 'No disponible',
+            PymntGroup: clienteObj.PymntGroup || 'No disponible', 
+            GroupName: clienteObj.GroupName || 'No disponible',
+            SucName: clienteObj.SucName || 'No disponible',
+            AreaName: clienteObj.AreaName || 'No disponible',
+            ZoneName: clienteObj.ZoneName || 'No disponible',
+            SlpNameCli: clienteObj.SlpNameCli || 'No disponible',
+
+            // Los detalles de la tabla (facturas pendientes)
+            detalles: facturasDeudor.map(item => ({
+                DocNum: item.DocNum,
+                DocDateReal: item.DocDateReal,
+                DocDueDate: item.DocDueDate,
+                JrnlMemo: item.JrnlMemo,
+                Comments: item.Comments,
+                DocCur: item.DocCur,
+                NumAtCard: item.NumAtCard,
+                DocTotal: parseFloat(item.DocTotal || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                PaidToDate: parseFloat(item.PaidToDate || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                TotalDue: parseFloat(item.TotalDue || '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                SlpNameCli: item.SlpNameCli,
+                GroupName: item.GroupName,
+            })),
+            fechaReporte: formattedDate,
+            fechaActualParaComparacion: isoDateForComparison
+        };
+        console.log(resultadoFinal);
+        const ejs = require('ejs');
+        const filePath = path.join(__dirname, './pdf/template-saldo-deudor.ejs'); 
+        const html = await ejs.renderFile(filePath, { data: resultadoFinal, staticBaseUrl: process.env.STATIC_BASE_URL });
+
+        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] }); 
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            displayHeaderFooter: true,
+            margin: {
+                bottom: '45px',
+                top: '40px',
+            },
+            headerTemplate: `<div></div>`,
+            footerTemplate: `
+                <div style="width: 100%; margin-left: 60px; margin-right: 20px; font-size: 10px; color: #555;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="width: 50%; text-align: left;">
+                            <p style="margin: 0;">Página <span class="pageNumber"></span> de <span class="totalPages"></span></p>
+                        </div>
+                        <div style="width: 50%; text-align: right;">
+                            <p>Impreso el <span class="date"></span></p>
+                        </div>
+                    </div>
+                </div>`,
+        });
+
+        await browser.close();
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="saldo-deudor_${codCliente}.pdf"`, 
+        });
+        res.end(pdfBuffer);
+
+    } catch (error) {
+        console.error('Error en getSaldoDeudorClientePDF:', error);
+        const mensaje = error.message || 'Error al generar el PDF de Saldo Deudor.';
+        return res.status(500).json({ mensaje });
+    } finally {
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (err) {
+                console.error("Error al cerrar el navegador en finally:", err.message);
+            }
+        }
+    }
+};
+
+
+
 
 const auditoriaSaldoDeudorController = async (req, res) => {
     try {
@@ -2916,8 +3067,30 @@ const cobranzaDocNumPorDocEntryController = async (req = request, res = response
     }
 }
 
+const saldoDeudorGeneralExcel = async(req = request, res = response) => {
+    let sucursales = req.body;
+    console.log("Longitud Sucursales del Usuario:", sucursales.length);
 
+    const datosMaestros = await getSucursales();
+    console.log("Longitud Sucursales del Sistema:", datosMaestros.data.length);
 
+    if (datosMaestros.data.length === sucursales.length) {
+        sucursales = null;
+    }
+
+    console.log(sucursales);
+
+    try {
+        return res.status(200).json({
+            mensaje: "Datos recuperados con exito",
+            data: sucursales
+        })
+    } catch (error) {
+        console.log('error en saldoDeudorGeneralExcel')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en saldoDeudorGeneralExcel'}` })
+    }
+}
 
 module.exports = {
     cobranzaGeneralController,
@@ -2981,5 +3154,7 @@ module.exports = {
     getBajasFacturasController, findClienteController,
     excelReporte, cobranzasSupervisorController, cobranzasPorZonasNoUserController,
     cobranzaDocNumPorDocEntryController,
-    realizarCobroMultiController
+    realizarCobroMultiController,
+    saldoDeudorGeneralExcel,
+    getSaldoDeudorClientePDF
 }

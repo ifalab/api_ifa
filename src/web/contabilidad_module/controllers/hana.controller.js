@@ -184,11 +184,130 @@ const rendicionesPorCaja = async (idCaja) => {
   return await executeQueryWithConnection(query);
 };
 
+
+
+
+
 const sociosNegocio = async () => {
   console.log('sociosNegocio EXECUTE');
   const query = `SELECT "CardCode", "CardName" FROM LAB_IFA_COM.PARTNERS`;
   return await executeQueryWithConnection(query);
 };
+
+const cuentasPorCodigoNombre = async (param) => {
+  console.log('cuentasPorCodigo EXECUTE');
+  const query = `CALL ${process.env.PRD}.ifasp_md_get_all_accounts_by_code_or_name('${param}');`;
+  console.log({query})
+  return await executeQueryWithConnection(query);
+};
+
+
+const getAccountLedgerData = async (fechaInicio, fechaFin, accountCode) => {
+  try {
+    console.log('getAccountLedgerData EXECUTE');
+
+    const formattedFechaInicio = fechaInicio.replace(/-/g, '');
+    const formattedFechaFin = fechaFin.replace(/-/g, '');
+    const safeAccountCode = accountCode ? accountCode.replace(/'/g, "''") : '';
+
+
+    const query = `CALL ${process.env.PRD}.IFASP_ACC_GET_ACCOUNT_LEDGER(
+      i_dateIni => '${formattedFechaInicio}',
+      i_dateFin => '${formattedFechaFin}',
+      i_account => '${safeAccountCode}'
+    );`;
+
+    console.log('Query a ejecutar:', query);
+
+    const rawResult = await executeQueryWithConnection(query); // <-- Resultado crudo de la DB
+
+    // --- ¡CORRECCIÓN CLAVE AQUÍ! ---
+    // Si executeQueryWithConnection retorna un array de objetos directamente (ej. [{...}, {...}])
+    // entonces 'rawResult' ya es el array de datos que necesitas.
+    // Solo necesitamos verificar que sea un array válido.
+    if (!rawResult || !Array.isArray(rawResult)) {
+        console.warn('executeQueryWithConnection no retornó un array o es nulo/indefinido:', rawResult);
+        return []; // Retorna un array vacío si el resultado no es el esperado
+    }
+
+    // Si llegamos aquí, 'rawResult' *es* el array de datos de la tabla.
+    return rawResult; // ¡Simplemente retorna el rawResult tal cual!
+
+  } catch (error) {
+    console.error('Error en getAccountLedgerData:', error);
+    throw new Error('Error al obtener datos del Libro Mayor');
+  }
+};
+
+const getAccountLedgerBalancePrev = async (fechaInicio, accountCode) => {
+  try {
+    console.log('getAccountLedgerBalancePrev EXECUTE');
+
+    const formattedFechaInicio = fechaInicio.replace(/-/g, '');
+    const safeAccountCode = accountCode ? accountCode.replace(/'/g, "''") : '';
+
+
+    const query = `CALL ${process.env.PRD}.IFASP_ACC_GET_ACCOUNT_LEDGER_PREV(
+      i_dateIni => '${formattedFechaInicio}',
+      i_account => '${safeAccountCode}'
+    );`;
+
+    console.log('Query a ejecutar:', query);
+
+    const rawResult = await executeQueryWithConnection(query); 
+
+    if (!rawResult || !Array.isArray(rawResult)) {
+        console.warn('executeQueryWithConnection no retornó un array o es nulo/indefinido:', rawResult);
+        return []; // Retorna un array vacío si el resultado no es el esperado
+    }
+
+    // Si llegamos aquí, 'rawResult' *es* el array de datos de la tabla.
+    return rawResult; // ¡Simplemente retorna el rawResult tal cual!
+
+  } catch (error) {
+    console.error('Error en getAccountLedgerData:', error);
+    throw new Error('Error al obtener datos del Libro Mayor');
+  }
+};
+
+
+
+const getBankingByDate = async (fechaInicio, fechaFin) => {
+  try {
+    console.log('getBankingByDate EXECUTE');
+
+    const formattedFechaInicio = fechaInicio.replace(/-/g, '');
+    const formattedFechaFin = fechaFin.replace(/-/g, '');
+
+
+    const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_BANKING_PURCHASES(
+      i_dateIni => '${formattedFechaInicio}',
+      i_dateFin => '${formattedFechaFin}'
+    );`;
+
+    console.log('Query a ejecutar:', query);
+
+    const rawResult = await executeQueryWithConnection(query); // <-- Resultado crudo de la DB
+
+
+    if (!rawResult || !Array.isArray(rawResult)) {
+        console.warn('executeQueryWithConnection no retornó un array o es nulo/indefinido:', rawResult);
+        return []; 
+    }
+
+
+    return rawResult; 
+
+  } catch (error) {
+    console.error('Error en getAccountLedgerData:', error);
+    throw new Error('Error al obtener datos del Libro Mayor');
+  }
+};
+
+
+
+
+
 module.exports = {
     tipoDeCambio,
     empleadosHana,
@@ -206,5 +325,9 @@ module.exports = {
     rendicionesPorCaja,
     asientosPreliminaresCC,
     asientosPreliminaresCCIds,
-    sociosNegocio
+    sociosNegocio,
+    cuentasPorCodigoNombre,
+    getAccountLedgerData,
+    getAccountLedgerBalancePrev,
+    getBankingByDate
 }

@@ -386,21 +386,23 @@ const saveEspecialidadCC = async (especialidad) => {
     }
 };
 
-const getAsientoCompletosDimensionados = async (transId) => {
+const getAsientoCompletosDimensionados = async (fechaInicio, fechaFin) => {
     try {
         const query = `
             SELECT * 
             FROM "LAB_IFA_COM"."IFA_CC_JOURNAL_DETAILS" 
-            WHERE "TransId" = ?;
+            WHERE "DueDate" BETWEEN ? AND ?;
         `;
-        const result = await executeQueryParamsWithConnection(query, [transId]);
 
-        return result; // o result[0] si solo esperas un resultado
+        const result = await executeQueryParamsWithConnection(query, [fechaInicio, fechaFin]);
+
+        return result;
     } catch (error) {
         console.error('Error en getAsientoCompletosDimensionados:', error);
         throw new Error(`Error en getAsientoCompletosDimensionados: ${error.message}`);
     }
 };
+
 
 const getAsientoCabecera = async () => {
     try {
@@ -474,6 +476,29 @@ const updateAgenciaHana = async (TransId, Line_ID, Agencia) => {
   }
 };
 
+const copyAsientoHana = async (TransId) => {
+  try {
+    const query = `
+      CALL LAB_IFA_COM.IFASP_COPY_ASIENTO_CC(
+        pTransId => ?
+      );
+    `;
+
+    const params = [TransId];
+
+    console.log('Ejecutando:', query, 'con params:', params);
+    const result = await executeQueryParamsWithConnection(query, params);
+
+    console.log(result);
+    // suponiendo que result es un array con el row retornado
+    const newId = result[0]?.TransId;
+
+    return newId;
+  } catch (error) {
+    console.error('Error en copyAsientoHana:', error);
+    throw new Error(`Error en copyAsientoHana: ${error.message}`);
+  }
+};
 
 module.exports = {
     ObtenerLibroMayor,
@@ -506,5 +531,6 @@ module.exports = {
     getAsientoCabecera,
     getLineasCCHana,
     getSubLineasCCHana,
-    updateAgenciaHana
+    updateAgenciaHana,
+    copyAsientoHana
 };

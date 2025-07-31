@@ -27,6 +27,10 @@ const { asientoContableController,
     actualizarEstadoCCController,
     guardarAsientoContablePreliminarCCController,
     actualizarAsientoContablePreliminarCCController,
+    getCuentasController,
+    getMaestrosMayoresController,
+    getBalanceAccountPrevController,
+    getBankingByDateController
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -53,7 +57,10 @@ router.get('/tipo-cliente', [validarToken, validarCampos], getTipoClienteCC);
 router.get('/sublineas', [validarToken, validarCampos], getSublineasCC);
 router.get('/rendiciones-por-caja', [validarToken, validarCampos], rendicionesPorCajaController);
 router.get('/socios-negocio', [validarToken, validarCampos], getSociosNegocio);
-
+router.get('/find-cuentas-by-param', [validarToken, validarCampos], getCuentasController);
+router.post('/get-maestros-mayores-data', [validarToken, validarCampos], getMaestrosMayoresController);
+router.post('/get-cuenta-saldo-prev', [validarToken, validarCampos], getBalanceAccountPrevController);
+router.post('/get-bancarizacion', [validarToken, validarCampos], getBankingByDateController);
 router.patch('/update-estado/cc/:id', actualizarEstadoCCController);
 
 module.exports = router

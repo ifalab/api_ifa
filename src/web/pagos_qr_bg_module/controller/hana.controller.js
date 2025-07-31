@@ -206,9 +206,9 @@ const registrarPagoBgMoludo = async (qrId, idSap, idUser, nombreModulo, isPaid) 
 
         const checkResult = await findQrModuloByIds(qrId);
 
-        if (checkResult && checkResult[0] && checkResult[0].TOTAL > 0) {
-            throw Error('Pago de QR ya registrado de modulo');
-        }
+        // if (checkResult && checkResult[0] && checkResult[0].TOTAL > 0) {
+        //     throw Error('Pago de QR ya registrado de modulo');
+        // }
 
         const insertQuery = `
             INSERT INTO "LAB_IFA_LAPP"."IFA_PAGO_QR_BG_MODULO" 
@@ -241,9 +241,9 @@ const actualizarPagoBgMoludo = async (qrId, transaccionId, payDate, isPaid) => {
 
         const checkResult = await findQrModuloByIds(qrId);
 
-        if (checkResult && checkResult[0] && checkResult[0].TOTAL < 0) {
-            throw Error('Pago de QR no se puede actualizar porque no existe');
-        }
+        // if (checkResult && checkResult[0] && checkResult[0].TOTAL < 0) {
+        //     throw Error('Pago de QR no se puede actualizar porque no existe');
+        // }
 
         const insertQuery = `
             UPDATE "LAB_IFA_LAPP"."IFA_PAGO_QR_BG_MODULO" 

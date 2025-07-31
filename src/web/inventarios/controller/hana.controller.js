@@ -1162,6 +1162,25 @@ const kardexCommercial = async (start, end, whsCode, itemCode) => {
     }
 }
 
+const habilitacionesPorIduser = async (iduser) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFASP_INV_CODE_CHANGE_PROCCES_STATUS_BY_USERID(${iduser})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en habilitacionesPorIduser:', error.message);
+        throw {
+            message: `Error al procesar habilitacionesPorIduser: ${error.message || ''}`
+        }
+    }
+}
+
+
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1221,4 +1240,5 @@ module.exports = {
     kardexPlant,
     getAllWarehouseCommercialByParams,
     kardexCommercial,
+    habilitacionesPorIduser
 }

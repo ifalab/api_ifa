@@ -137,14 +137,21 @@
         .glosa-row {
             font-style: italic;
             font-size: 10px;
-            text-align: left;
-            padding: 4px 8px;
         }
 
         .glosa-row td {
             padding: 4px 8px;
-            border-bottom: 1px dashed #ccc;
+            padding-left: 12px;
+            text-align: left;
+            border-bottom: 1px dashed #ddd;
+            border-right: 1px dashed #eee;
         }
+
+        .glosa-row td strong {
+            display: inline-block;
+            margin-right: 4px;
+        }
+
 
         .detalle-row {
             display: flex;
@@ -170,6 +177,14 @@
             border-left: 3px solid #ccc;
         }
 
+        table tbody tr:not(.glosa-row) td {
+            border-bottom: 1px dashed #ddd;
+            border-right: 1px dashed #eee;
+        }
+
+        table thead th {
+            border-right: 1px dashed #eee;
+        }
     </style>
 </head>
 <body>
@@ -178,7 +193,7 @@
 
     <p>FECHA CONTABLE: <%= data.RefDate?.split(' ')[0] %></p>
 
-    <h2>COMPROBANTE CONTABLE CENTRO DE COSTO Nº <%= data.Number %> - <%= data.Year %></h2>
+    <h2>COMPROBANTE CONTABLE CENTRO DE COSTO Nº <%= data.TransId %> - <%= data.Year %></h2>
 
     <!-- Detalle cabecera -->
     <div class="detalle-container">
@@ -198,50 +213,60 @@
     </div>
 
      <!-- Tabla de movimientos contables -->
-     <table>
-      <thead>
-        <tr>           
-          <th>Agencia</th>
-          <th>Cuenta</th>
-          <th>Nombre Cuenta</th>
-          <th>Debe BS.</th>
-          <th>Ref 1</th>
-          <th>Ref 2</th>
-          <th>Ref 3</th>
-          <th>Area</th>
-          <th>Tipo Cliente</th>
-          <th>Linea</th>
-          <th>Especialidad</th>
-          <th>Clasificación Gastos</th>
-          <th>Conceptos Comerciales</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% data.lines.forEach(function(line) { %>
-          <tr>
-            <td><%= line.Indicator %></td>
-            <td><%= line.Account %></td>
-            <td><%= line.AcctName %></td>
-            <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>
-            <td><%= line.Ref1Detail || '-' %></td>
-            <td><%= line.Ref2Detail || '-' %></td>
-            <td><%= line.Ref3Deatil || '-' %></td>
-            <td><%= line.Area || '-' %></td>
-            <td><%= line.Tipo_Cliente || '-' %></td>
-            <td><%= line.Linea || '-' %></td>
-            <td><%= line.Especialidad || '-' %></td>
-            <td><%= line.Clasificacion_Gastos || '-' %></td>
-            <td><%= line.Conceptos_Comerciales || '-' %></td>
-          </tr>
+    <% if (data.lines.length === 0) { %>
+        <p style="text-align: center; font-weight: bold; font-size: 16px; margin-top: 20px;">
+            No hay cuentas con código 6 para clasificación de gastos.
+        </p>
+        <% } else { %>
+        <table>
+            <thead>
+            <tr>
+                <th>Agencia</th>
+                <th>Cuenta</th>
+                <th>Nombre Cuenta</th>
+                <th>Ref 1</th>
+                <th>Ref 2</th>
+                <th>Ref 3</th>
+                <th>Debe BS.</th>
+                <th>Area</th>
+                <th>Tipo Cliente</th>
+                <th>Linea</th>
+                <th>Especialidad</th>
+                <th>Clasificación Gastos</th>
+                <th>Conceptos Comerciales</th>
+            </tr>
+            </thead>
+            <tbody>
+            <% data.lines.forEach(function(line) { %>
+                <tr>
+                <td><%= line.Indicator %></td>
+                <td><%= line.Account %></td>
+                <td><%= line.AcctName %></td>
+                <td><%= line.Ref1Detail || '-' %></td>
+                <td><%= line.Ref2Detail || '-' %></td>
+                <td><%= line.Ref3Deatil || '-' %></td>
+                <td><%= (Number(line.Debit) || 0).toFixed(2) %></td>
+                <td><%= line.Area || '-' %></td>
+                <td><%= line.Tipo_Cliente || '-' %></td>
+                <td><%= line.Linea || '-' %></td>
+                <td><%= line.Especialidad || '-' %></td>
+                <td><%= line.Clasificacion_Gastos || '-' %></td>
+                <td><%= line.Conceptos_Comerciales || '-' %></td>
+                </tr>
 
-          <tr class="glosa-row">
-            <td colspan="5">
-                <strong>Glosa:</strong> <%= line.LineMemo || '-' %>
-            </td>
-          </tr>
-        <% }); %>
-      </tbody>
-    </table>
+                <tr class="glosa-row">
+                <td colspan="6" style="padding-left: 8px;">
+                    <div style="text-align: left;">
+                    <strong>Glosa:</strong> <%= line.LineMemo || '-' %>
+                    </div>
+                </td>
+                <td colspan="7"></td>
+                </tr>
+            <% }); %>
+            </tbody>
+        </table>
+    <% } %>
+
     <div class="footer-signatures">
         <div>
             <div style="align-items: center;"> <%= data.nombre %></div> 

@@ -4,7 +4,7 @@ async function todosGastos() {
   try {
     const pool = await poolPromise;
 
-    const result = await pool.request().query('select * from hchGastosGestion');
+    const result = await pool.request().query('select * from hchGastosGestion WHERE Gestion >= 2024');
     console.log('Resultados:', result.recordset);
     return result.recordset
   } catch (err) {
@@ -40,8 +40,22 @@ async function gastosGestionAgencia(gestion, cod) {
   }
 }
 
+async function getAgencias() {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request().query('SELECT agencia, nombre FROM pam_agencia');
+
+    console.log('Resultados:', result.recordset);
+    return result.recordset;
+  } catch (error) {
+    console.error('Error en la consulta:', err); // Corrige eliminando "result"
+    throw err; // Lanza el error para manejarlo en el controlador
+  }
+}
+
 module.exports = {
   todosGastos,
   gastosXAgencia,
   gastosGestionAgencia,
+  getAgencias,
 }
