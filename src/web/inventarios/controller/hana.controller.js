@@ -1179,6 +1179,22 @@ const habilitacionesPorIduser = async (iduser) => {
     }
 }
 
+const getValoradosPorIdSap = async (idSap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `CALL ${process.env.PRD}.IFASP_INV_GET_VALUED_INVENTORY_CHANGES_BY_USER(${idSap}) `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getValoradosPorIdSap:', error.message);
+        throw {
+            message: `Error al procesar getValoradosPorIdSap: ${error.message || ''}`
+        }
+    }
+}
 
 
 module.exports = {
@@ -1240,5 +1256,6 @@ module.exports = {
     kardexPlant,
     getAllWarehouseCommercialByParams,
     kardexCommercial,
-    habilitacionesPorIduser
+    habilitacionesPorIduser,
+    getValoradosPorIdSap
 }

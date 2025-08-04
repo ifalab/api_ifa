@@ -111,7 +111,7 @@ const rendicionDetallada = async (id) => {
             await connectHANA();
         }
         console.log('rendicionDetallada EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_RENDICION_DETALLADA_BY_ID(${id})`
+        const query = `CALL ${process.env.LAPP}.LAPP_RENDICION_DETALLADA_BY_ID(${id})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -127,7 +127,7 @@ const rendicionByTransac = async (codTransac) => {
             await connectHANA();
         }
         console.log('rendicionDetallada EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_LISTA_REND_BY_TRANSID(${codTransac})`
+        const query = `CALL ${process.env.LAPP}.LAPP_LISTA_REND_BY_TRANSID(${codTransac})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -143,7 +143,7 @@ const crearRendicion = async (NEW_TransactionId, NEW_CodEmp, NEW_ESTADO, NEW_MES
             await connectHANA();
         }
         console.log('crearRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION('${NEW_TransactionId}','${NEW_CodEmp}','${NEW_ESTADO}',${NEW_MES},${NEW_YEAR},'${new_glosa}')`
+        const query = `CALL ${process.env.LAPP}.LAPP_CREAR_RENDICION('${NEW_TransactionId}','${NEW_CodEmp}','${NEW_ESTADO}',${NEW_MES},${NEW_YEAR},'${new_glosa}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -190,7 +190,7 @@ const crearGasto = async (
         }
         console.log('crearRendicion EXECUTE')
         ///query
-        const query = `CALL LAB_IFA_LAPP.LAPP_CREAR_RENDICION_GASTOS('${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'1',${idRendicion},${month},${year},'${new_comentario || ''}',${new_id_cuenta}, '${new_beneficiario}', '${new_cod_beneficiario}','${new_detalle_cuenta}','${new_cod_proveedor || ''}','${code||''}')`
+        const query = `CALL ${process.env.LAPP}.LAPP_CREAR_RENDICION_GASTOS('${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'1',${idRendicion},${month},${year},'${new_comentario || ''}',${new_id_cuenta}, '${new_beneficiario}', '${new_cod_beneficiario}','${new_detalle_cuenta}','${new_cod_proveedor || ''}','${code || ''}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -242,7 +242,7 @@ const actualizarGastos = async (
             await connectHANA();
         }
         console.log('actualizarGastos EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS(${ID},'${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'${new_estado}',${idRendicion},'${new_comentario || ''}',${new_id_cuenta}, '${new_beneficiario}', '${new_cod_beneficiario}','${new_detalle_cuenta}','${new_cod_proveedor}','${code}')`
+        const query = `CALL ${process.env.LAPP}.LAPP_ACTUALIZAR_RENDICION_GASTOS(${ID},'${new_nit}','${new_tipo}','${new_gasto}','${new_nroFactura}','${new_codAut}','${new_fecha}','${new_nombreRazon}','${new_glosa}',${new_importeTotal},${new_ice},${new_iehd},${new_ipj},${new_tasas},${new_otroNoSujeto},${new_exento},${new_tasaCero},${new_descuento},'${new_codControl}',${new_gifCard},'${new_estado}',${idRendicion},'${new_comentario || ''}',${new_id_cuenta}, '${new_beneficiario}', '${new_cod_beneficiario}','${new_detalle_cuenta}','${new_cod_proveedor}','${code}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -261,7 +261,7 @@ const cambiarEstadoRendicion = async (id, estado) => {
             await connectHANA();
         }
         console.log('cambiarEstadoRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_ESTADO_RENDICION(${id},'${estado}');`
+        const query = `CALL ${process.env.LAPP}.LAPP_ACTUALIZAR_ESTADO_RENDICION(${id},'${estado}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -279,7 +279,7 @@ const verRendicionesEnRevision = async () => {
             await connectHANA();
         }
         console.log('verRendicionesEnRevision EXECUTE')
-        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '2' OR ESTADO = '7'`
+        const query = `SELECT * FROM ${process.env.LAPP}.LAPP_RENDICION WHERE ESTADO = '2' OR ESTADO = '7'`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -297,7 +297,7 @@ const findAllRendiciones = async () => {
             await connectHANA();
         }
         console.log('findAllRendiciones EXECUTE')
-        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION`
+        const query = `SELECT * FROM ${process.env.LAPP}.LAPP_RENDICION`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -354,7 +354,7 @@ const actualizarEstadoComentario = async (id, estado, comentario) => {
             await connectHANA();
         }
         console.log('actualizarEstadoComentario EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS_ESTADO_COMENTARIO(${id},'${estado}','${comentario}');`
+        const query = `CALL ${process.env.LAPP}.LAPP_ACTUALIZAR_RENDICION_GASTOS_ESTADO_COMENTARIO(${id},'${estado}','${comentario}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -373,7 +373,7 @@ const actualizarEstadoRendicion = async (id, estado) => {
             await connectHANA();
         }
         console.log('actualizarEstadoRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_ESTADO_RENDICION(${id},'${estado}');`
+        const query = `CALL ${process.env.LAPP}.LAPP_ACTUALIZAR_ESTADO_RENDICION(${id},'${estado}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -392,7 +392,7 @@ const eliminarGastoID = async (idGasto) => {
             await connectHANA();
         }
         console.log('eliminarGastoID EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ELIMINAR_GASTO_ID(${idGasto});`
+        const query = `CALL ${process.env.LAPP}.LAPP_ELIMINAR_GASTO_ID(${idGasto});`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -566,7 +566,7 @@ const actualizarGlosaRendicion = async (idRend, new_glosa) => {
             await connectHANA();
         }
         console.log('actualizarGlosaRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_GLOSA_RENDICION(${idRend},'${new_glosa}');`
+        const query = `CALL ${process.env.LAPP}.LAPP_ACTUALIZAR_GLOSA_RENDICION(${idRend},'${new_glosa}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -586,7 +586,7 @@ const actualizarfechaContRendicion = async (idRend, new_date) => {
             await connectHANA();
         }
         console.log('actualizarGlosaRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_FECHACONT_RENDICION(${idRend},'${new_date}');`
+        const query = `CALL ${process.env.LAPP}.LAPP_ACTUALIZAR_FECHACONT_RENDICION(${idRend},'${new_date}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -605,7 +605,7 @@ const actualizarGlosaPRDGastos = async (id, new_glosa_prd) => {
             await connectHANA();
         }
         console.log('actualizarCCRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_RENDICION_GASTOS_GLOSA_PRD(${id},'${new_glosa_prd}');`
+        const query = `CALL ${process.env.LAPP}.LAPP_ACTUALIZAR_RENDICION_GASTOS_GLOSA_PRD(${id},'${new_glosa_prd}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -624,7 +624,7 @@ const actualizarCCRendicion = async (id, idRend, new_cuenta_cc) => {
             await connectHANA();
         }
         console.log('actualizarCCRendicion EXECUTE')
-        const query = `CALL LAB_IFA_LAPP.LAPP_ACTUALIZAR_CUENTA_CC(${id},${idRend},'${new_cuenta_cc}');`
+        const query = `CALL ${process.env.LAPP}.LAPP_ACTUALIZAR_CUENTA_CC(${id},${idRend},'${new_cuenta_cc}');`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -739,7 +739,7 @@ const idJournalPreliminar = async (glosa) => {
     }
 }
 
-const updateSendToAccounting = async(idRend)=>{
+const updateSendToAccounting = async (idRend) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -758,7 +758,6 @@ const updateSendToAccounting = async(idRend)=>{
     }
 }
 
-    
 const lineaDetalleCC = async (
     idCom,
     Line_ID,
@@ -888,8 +887,8 @@ const getRendicionesByEstado = async (estado) => {
             await connectHANA();
         }
         const query = `select * 
-from LAB_IFA_LAPP.lapp_rendicion lr 
-JOIN LAB_IFA_PRD.IFA_DM_EMPLEADOS le
+from ${process.env.LAPP}.lapp_rendicion lr 
+JOIN ${process.env.PRD}.IFA_DM_EMPLEADOS le
 on le."CardCode" = lr.CODEMP
 where  "ESTADO"=${estado}`
         console.log({ query })
@@ -908,7 +907,7 @@ const cambiarPreliminarRendicion = async (idRend) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_LAPP.LAPP_ACTUALIZAR_ESTADOS_RENDICION_GASTOS(${idRend})`
+        const query = `call ${process.env.LAPP}.LAPP_ACTUALIZAR_ESTADOS_RENDICION_GASTOS(${idRend})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -971,6 +970,25 @@ const importeByRend = async (idRend) => {
     }
 }
 
+const getPettyCashByEmployee = async (codEmp) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('idJournalPreliminar EXECUTE')
+        const query = `CALL ${process.env.PRD}.IFASP_ACC_GET_PETTY_CASH_BY_EMPLOYEE('${codEmp}')`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudo ejecutar getPettyCashByEmployee`
+        }
+
+    }
+}
+
 module.exports = {
     findAllAperturaCaja,
     findCajasEmpleado,
@@ -1013,5 +1031,6 @@ module.exports = {
     allGastosRange,
     detallePreliminarCC,
     importeByRend,
-    updateSendToAccounting
+    updateSendToAccounting,
+    getPettyCashByEmployee,
 }

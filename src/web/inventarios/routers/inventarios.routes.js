@@ -53,7 +53,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     getAllWarehouseCommercialByParamsController,
     kardexCommercialController,
     postEntregaPorOrderNumberController,
-    habilitacionesPorIduserController
+    habilitacionesPorIduserController,
+    getValoradosPorIdSapController
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -150,6 +151,8 @@ router.post('/all-warehouse-commercial', [validarToken, validarCampos], getAllWa
 router.post('/kardex-commercial', [validarToken, validarCampos], kardexCommercialController)
 
 router.get('/completar-habilitaciones', [validarToken, validarCampos], habilitacionesPorIduserController)
+router.post('/reporte-devolucion-valorados', [validarToken, validarCampos], reporteDevolucionValoradosController)
+router.get('/valorados-por-usuario', [validarToken, validarCampos], getValoradosPorIdSapController)
 
 
 

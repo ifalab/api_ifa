@@ -44,7 +44,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     kardexPlant,
     getAllWarehouseCommercialByParams,
     kardexCommercial,
-    habilitacionesPorIduser
+    habilitacionesPorIduser,
+    getValoradosPorIdSap
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -3580,7 +3581,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
             // AlmacenSalida, nuevosArticulos 
         } = req.body
         console.log(JSON.stringify({
-            facturas, id_sap, CardCode, AlmacenIngreso
+            facturas, id_sap, CardCode, AlmacenIngreso,Comentario
             // , AlmacenSalida, nuevosArticulos 
         }, null, 2))
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -3855,19 +3856,6 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
             facturasCompletadas.push(DocEntry)
         }
         devolucionFinished = true
-
-
-        const outputDir = path.join(__dirname, 'outputs');
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
-        }
-        const now = new Date();
-        const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-        // Generar el nombre del archivo con el timestamp
-        const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
-        fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
-        console.log(`Objeto allBodies guardado en ${fileNameJson}`);
 
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Exito en el return y credit note. Facturas realizadas: ${facturasCompletadas}`, ``, "inventario/dev-valorado-dif-art", process.env.PRD)
         return res.json({
@@ -4315,93 +4303,93 @@ const facturacionCambioValoradoController = async (req, res) => {
             }
             console.log({ response })
         }
+        //* Eliminando la reconciliacion:
+        // let diferencia = totalFacturas - totalDeLaEntrega
+        // let ReconcileAmountInv = +totalDeLaEntrega
+        // if (diferencia < 0) {
+        //     ReconcileAmountInv += +diferencia
+        // }
+        // const InternalReconciliationOpenTransRows = [
+        //     {
+        //         ShortName: CardCode,
+        //         TransId: invoiceResponse.TransNum,
+        //         TransRowId: 0,
+        //         SrcObjTyp: "13",
+        //         SrcObjAbs: invoiceResponse.idInvoice,
+        //         CreditOrDebit: "codDebit",
+        //         ReconcileAmount: ReconcileAmountInv,
+        //         CashDiscount: 0.0,
+        //         Selected: "tYES",
+        //     }
+        // ]
 
-        let diferencia = totalFacturas - totalDeLaEntrega
-        let ReconcileAmountInv = +totalDeLaEntrega
-        if (diferencia < 0) {
-            ReconcileAmountInv += +diferencia
-        }
-        const InternalReconciliationOpenTransRows = [
-            {
-                ShortName: CardCode,
-                TransId: invoiceResponse.TransNum,
-                TransRowId: 0,
-                SrcObjTyp: "13",
-                SrcObjAbs: invoiceResponse.idInvoice,
-                CreditOrDebit: "codDebit",
-                ReconcileAmount: ReconcileAmountInv,
-                CashDiscount: 0.0,
-                Selected: "tYES",
-            }
-        ]
+        // let numInternalRec = 0
+        //* Eliminando la reconciliacion:
+        // for (const creditNote of allResponseCreditNote) {
+        //     let ReconcileAmountCN = +totalesFactura[numInternalRec]
+        //     if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
+        //         ReconcileAmountCN -= +diferencia
+        //         diferencia = 0
+        //     }
+        //     const internalRecLine = {
+        //         ShortName: CardCode,
+        //         TransId: creditNote.TransNum,
+        //         TransRowId: 0,
+        //         SrcObjTyp: "14",
+        //         SrcObjAbs: creditNote.orderNumber,
+        //         CreditOrDebit: "codCredit",
+        //         ReconcileAmount: ReconcileAmountCN,
+        //         CashDiscount: 0.0,
+        //         Selected: "tYES",
+        //     }
 
-        let numInternalRec = 0
-        //* revisar problema:
-        for (const creditNote of allResponseCreditNote) {
-            let ReconcileAmountCN = +totalesFactura[numInternalRec]
-            if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
-                ReconcileAmountCN -= +diferencia
-                diferencia = 0
-            }
-            const internalRecLine = {
-                ShortName: CardCode,
-                TransId: creditNote.TransNum,
-                TransRowId: 0,
-                SrcObjTyp: "14",
-                SrcObjAbs: creditNote.orderNumber,
-                CreditOrDebit: "codCredit",
-                ReconcileAmount: ReconcileAmountCN,
-                CashDiscount: 0.0,
-                Selected: "tYES",
-            }
+        //     InternalReconciliationOpenTransRows.push(internalRecLine)
+        //     numInternalRec += 1
+        // }
 
-            InternalReconciliationOpenTransRows.push(internalRecLine)
-            numInternalRec += 1
-        }
-
-        const fechaFormater = new Date()
+        // const fechaFormater = new Date()
         // Extraer componentes de la fecha
-        const year = fechaFormater.getUTCFullYear();
-        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
-        const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+        // const year = fechaFormater.getUTCFullYear();
+        // const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+        // const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
 
-        let bodyReconciliacion = {
-            ReconDate: `${year}-${month}-${day}`,
-            CardOrAccount: "coaCard",
-            // ReconType: "rtManual",
-            // Total: totalFactura,
-            InternalReconciliationOpenTransRows,
-        }
+        // let bodyReconciliacion = {
+        //     ReconDate: `${year}-${month}-${day}`,
+        //     CardOrAccount: "coaCard",
+        //     // ReconType: "rtManual",
+        //     // Total: totalFactura,
+        //     InternalReconciliationOpenTransRows,
+        // }
 
-        console.log({ bodyReconciliacion })
-        let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
-        console.log({ responseReconciliacion })
+        // console.log({ bodyReconciliacion })
+        // let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
+        // console.log({ responseReconciliacion })
 
-        if (responseReconciliacion.status == 400) {
-            let mensaje = responseReconciliacion.errorMessage
-            if (typeof mensaje != 'string' && mensaje.lang) {
-                mensaje = mensaje.value
-            }
+        // if (responseReconciliacion.status == 400) {
+        //     let mensaje = responseReconciliacion.errorMessage
+        //     if (typeof mensaje != 'string' && mensaje.lang) {
+        //         mensaje = mensaje.value
+        //     }
 
-            mensaje = `Error en postReconciliacion: ${mensaje}.`
-            grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
-            return res.status(400).json({
-                mensaje,
-                bodyReconciliacion,
-                responseHanaB,
-                invoiceResponse,
-                cuf,
-                allResponseCreditNote,
-            })
-        }
+        //     mensaje = `Error en postReconciliacion: ${mensaje}.`
+        //     grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
+        //     return res.status(400).json({
+        //         mensaje,
+        //         bodyReconciliacion,
+        //         responseHanaB,
+        //         invoiceResponse,
+        //         cuf,
+        //         allResponseCreditNote,
+        //     })
+        // }
 
         grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Facturacion y Reconciliacion exitosa`, '', 'inventario/facturacion-cambio', process.env.PRD)
         return res.json({
-            bodyReconciliacion,
+            // bodyReconciliacion,
             invoiceResponse,
             responseHanaB,
             cuf,
-            responseReconciliacion
+            // responseReconciliacion
         })
     } catch (error) {
         console.log({ error })
@@ -6085,7 +6073,7 @@ const getAllWarehouseCommercialByParamsController = async (req, res) => {
 
         let result = []
         for (const parametro of listSucCode) {
-            console.log({parametro})
+            console.log({ parametro })
             const response = await getAllWarehouseCommercialByParams(parametro)
             const dataFilter = response.map((item) => {
                 const {
@@ -6116,7 +6104,7 @@ const getAllWarehouseCommercialByParamsController = async (req, res) => {
                 }
             })
 
-            result = [...result,...dataFilter]
+            result = [...result, ...dataFilter]
         }
 
         return res.json(result)
@@ -6298,6 +6286,22 @@ const habilitacionesPorIduserController = async (req, res) => {
     }
 };
 
+const getValoradosPorIdSapController = async (req, res) => {
+    try {
+        const user = req.usuarioAutorizado
+        const idSap = user.ID_SAP
+        if(!idSap){
+            return res.status(401).json({ mensaje: `el usuario no tiene ID SAP` })
+        }
+        const response = await getValoradosPorIdSap(idSap)
+        console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getValoradosPorIdSapController  : ${error.message || 'No definido'}` })
+    }
+}
+
 
 module.exports = {
     clientePorDimensionUnoController,
@@ -6375,5 +6379,6 @@ module.exports = {
     getAllWarehouseCommercialByParamsController,
     kardexCommercialController,
     postEntregaPorOrderNumberController,
-    habilitacionesPorIduserController
+    habilitacionesPorIduserController,
+    getValoradosPorIdSapController,
 }
