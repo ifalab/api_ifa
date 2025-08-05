@@ -3895,10 +3895,9 @@ const reportePendienteCadenasController = async (req, res) => {
                     grouped[key][header] = { Quantity: null, Total: null };
                 });
             }
-
             grouped[key][monthKey] = {
-                Quantity: parseFloat(item.Quantity),
-                Total: parseFloat(item.Total)
+                Quantity: parseFloat(item.PendingQuantity),
+                Total: parseFloat(item.PendingAmount)
             };
         }
 
