@@ -2265,6 +2265,7 @@ const searchClientesCadenasParent = async (parametro) => {
     }
 }
 
+
 const reportePendienteCadenas = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent) => {
     try {
         if (!connection) {
@@ -2277,13 +2278,13 @@ const reportePendienteCadenas = async (fechaInicial, fechaFinal, tipo, groupCode
         const paramFechaFinal = formatParam(fechaFinal)
         const paramHeaderParent = formatParam(headerParent)
 
-        const query = `call ${process.env.PRD}.ifa_lapp_obtener_ofertas_cadena_pendientes_agrupado(
-        fecha1 => ${paramFechaInicial},
-        fecha2 => ${paramFechaFinal},
-        tipo =>${paramTipo},
-        groupcode => ${paramGroupCode},
-        cardcode =>  ${paramCardCode},
-        padre =>${paramHeaderParent})`
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
+        i_date_from => ${paramFechaInicial},
+        i_date_to => ${paramFechaFinal},
+        i_document_type =>${paramTipo},
+        i_group_code => ${paramGroupCode},
+        i_card_code =>  ${paramCardCode},
+        i_parent_name =>${paramHeaderParent})`
 
         console.log({ query })
 
@@ -2524,6 +2525,39 @@ const selectionBatchByItemWhsCode = async (itemCode,whsCode) => {
     }
 }
 
+const clientesCreadosPorSucursal = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_COSTUMERS_BY_CREATE_DATE()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
+const ventasClientesPorSucursal = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_COSTUMERS_SALES_BY_BRANCH()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2643,4 +2677,6 @@ module.exports = {
     clientesBloqueadoByGroup,
     clientExpiryPolicy,
     selectionBatchByItemWhsCode,
+    clientesCreadosPorSucursal,
+    ventasClientesPorSucursal
 }

@@ -115,7 +115,10 @@ const {
     clientesVendedorBloqueadosController,
     clientesVendedorBloqueadosExcelController,
     clientExpiryPolicyController,
-    selectionBatchByItemWhsCodeController
+    selectionBatchByItemWhsCodeController,
+    clientesCreadosPorSucursalController,
+    ventasClientesPorSucursalController,
+    ventasEfectividadPorSucursalController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -262,4 +265,11 @@ router.get('/cliente-expiry-policy', [validarToken, validarCampos], clientExpiry
 //! END
 router.get('/selection-batch-item-whs', [validarToken, validarCampos], selectionBatchByItemWhsCodeController)
 
+router.get('/clients-by-branch', [validarToken, validarCampos], clientesCreadosPorSucursalController)
+
+router.get('/sales-by-clients-by-branch', [validarToken, validarCampos], ventasClientesPorSucursalController)
+router.get('/sales-by-clients-by-branch-graphic', [validarToken, validarCampos], ventasEfectividadPorSucursalController)
+
+
+ventasEfectividadPorSucursalController
 module.exports = router

@@ -60,7 +60,13 @@ const cobranzaPorSucursal = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA('','')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},NULL)`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaPorSucursal:', error.message);
@@ -73,7 +79,13 @@ const cobranzaNormales = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB('','NORMALES')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'NORMALES')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaNormales:', error.message);
@@ -86,7 +98,13 @@ const cobranzaCadenas = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB('','CADENAS')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'CADENAS')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaCadenas:', error.message);
@@ -99,7 +117,13 @@ const cobranzaIfavet = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB('','IFAVET')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'IFAVET')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaIfavet:', error.message);
@@ -112,7 +136,13 @@ const cobranzaMasivo = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB('','MASIVOS')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'MASIVOS')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaMasivo:', error.message);
@@ -125,7 +155,13 @@ const cobranzaInstituciones = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB('','INSTITUCIONES')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'INSTITUCIONES')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaInstituciones:', error.message);
@@ -138,7 +174,13 @@ const cobranzaPorSucursalMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_ANT('','')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},NULL)`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaPorSucursal:', error.message);
@@ -151,7 +193,13 @@ const cobranzaNormalesMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','NORMALES')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'NORMALES')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaNormales:', error.message);
@@ -164,7 +212,13 @@ const cobranzaCadenasMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','CADENAS')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'CADENAS')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaCadenas:', error.message);
@@ -177,7 +231,13 @@ const cobranzaIfavetMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','IFAVET')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'IFAVET')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaIfavet:', error.message);
@@ -190,7 +250,13 @@ const cobranzaMasivoMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','MASIVOS')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'MASIVOS')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaMasivoMesAnterior:', error.message);
@@ -203,7 +269,13 @@ const cobranzaInstitucionesMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call "LAB_IFA_DATA".COB_GROUPBY_DIMA_FIL_DIMB_ANT('','INSTITUCIONES')`
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        const query = `CALL LAB_IFA_DATA.IFASP_COL_CALCULATE_BRANCH_COLLECTION_BY_DIVISION(${year}, ${month},'INSTITUCIONES')`;
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en cobranzaInstitucionesMesAnterior:', error.message);

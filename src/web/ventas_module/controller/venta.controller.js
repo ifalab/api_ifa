@@ -114,7 +114,9 @@ const {
     clientesVendedorBloqueados,
     clientesBloqueadoByGroup,
     clientExpiryPolicy,
-    selectionBatchByItemWhsCode
+    selectionBatchByItemWhsCode,
+    clientesCreadosPorSucursal,
+    ventasClientesPorSucursal
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -3901,10 +3903,9 @@ const reportePendienteCadenasController = async (req, res) => {
                     grouped[key][header] = { Quantity: null, Total: null };
                 });
             }
-
             grouped[key][monthKey] = {
-                Quantity: parseFloat(item.Quantity),
-                Total: parseFloat(item.Total)
+                Quantity: parseFloat(item.PendingQuantity),
+                Total: parseFloat(item.PendingAmount)
             };
         }
 
@@ -4392,6 +4393,223 @@ const clientExpiryPolicyController = async (req, res) => {
     }
 }
 
+const clientesCreadosPorSucursalController = async (req, res) => {
+    try {
+        const response = await clientesCreadosPorSucursal()
+        if (response.length == 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false })
+        }
+        return res.json(response)
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en clientesCreadosPorSucursalController ${error.message || 'No definido'}` });
+    }
+}
+const ventasClientesPorSucursalController = async (req, res) => {
+    try {
+        const rawData = await ventasClientesPorSucursal(); // Esta es la función que ejecuta tu SQL y devuelve los datos verticales
+        
+        if (rawData.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false });
+        }
+
+        const filteredData = rawData.filter(row => row.ClientesVendidosMes !== 0);
+
+        if (filteredData.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos con ventas', goToExpiry: false });
+        }
+        
+        const pivotedData = {}; // Objeto para almacenar los datos pivotados
+
+        // Paso 1: Inicializar la estructura de datos para cada sucursal y cada métrica
+        // También podemos recopilar todos los años y meses únicos para las cabeceras
+        const allMonths = new Set();
+        const allYears = new Set();
+
+        filteredData.forEach(row => {
+            const { SucName, Year, Month } = row;
+            const monthYearKey = `${Year}-${String(Month).padStart(2, '0')}`; // Formato "YYYY-MM" para ordenar y usar como clave
+
+            allYears.add(Year);
+            allMonths.add(monthYearKey); // Añadir al conjunto de meses/años únicos
+
+            if (!pivotedData[SucName]) {
+                pivotedData[SucName] = {
+                    REGION: SucName,
+                    "Total Clientes": {},
+                    "#_CLIENTE_VENTA": {},
+                    "#_CLIENTE_NO_VENTA": {},
+                    "%_VENTA_EFECTIVA": {}
+                };
+            }
+        });
+
+        const sortedMonths = Array.from(allMonths).sort(); // Ordenar los meses cronológicamente
+        const sortedYears = Array.from(allYears).sort(); // Ordenar los años
+
+        // Paso 2: Rellenar los datos pivotados
+        filteredData.forEach(row => {
+            const {
+                SucName,
+                Year,
+                Month,
+                CLIENTESACUMULADOS,
+                ClientesVendidosMes,
+                ClientesNoVendidosMes,
+                PorcentajeEfectividadVentas
+            } = row;
+
+            const monthYearKey = `${Year}-${String(Month).padStart(2, '0')}`;
+
+            pivotedData[SucName]["Total Clientes"][monthYearKey] = CLIENTESACUMULADOS;
+            pivotedData[SucName]["#_CLIENTE_VENTA"][monthYearKey] = ClientesVendidosMes;
+            pivotedData[SucName]["#_CLIENTE_NO_VENTA"][monthYearKey] = ClientesNoVendidosMes;
+            pivotedData[SucName]["%_VENTA_EFECTIVA"][monthYearKey] = parseFloat(PorcentajeEfectividadVentas).toFixed(2); // Formatear a 2 decimales
+        });
+
+        // Paso 3: Transformar el objeto pivotado en un array de filas para la respuesta
+        const responseData = [];
+        for (const regionName in pivotedData) {
+            const regionData = pivotedData[regionName];
+
+            // Crear una fila por cada métrica para la región
+            const totalClientesRow = { REGION: regionData.REGION, METRIC: "Total Clientes" };
+            const clientesVentaRow = { REGION: regionData.REGION, METRIC: "#_CLIENTE_VENTA" };
+            const clientesNoVentaRow = { REGION: regionData.REGION, METRIC: "#_CLIENTE_NO_VENTA" };
+            const porcentajeEfectivaRow = { REGION: regionData.REGION, METRIC: "%_VENTA_EFECTIVA" };
+
+            let totalClientesTotal = 0; // Para la columna 'Total'
+            let clientesVentaTotal = 0;
+            let clientesNoVentaTotal = 0;
+            let totalMesesConVentasParaPromedioEfectividad = 0;
+            let sumaPorcentajeEfectividad = 0;
+
+
+            sortedMonths.forEach(monthKey => {
+                // Rellenar con los valores, si no existen, usar 0 o null según convenga (aquí 0 para números)
+                totalClientesRow[monthKey] = regionData["Total Clientes"][monthKey] || 0;
+                clientesVentaRow[monthKey] = regionData["#_CLIENTE_VENTA"][monthKey] || 0;
+                clientesNoVentaRow[monthKey] = regionData["#_CLIENTE_NO_VENTA"][monthKey] || 0;
+                porcentajeEfectivaRow[monthKey] = regionData["%_VENTA_EFECTIVA"][monthKey] || "0.00"; // Usar string para porcentaje
+
+                // Acumular para los totales
+                totalClientesTotal += totalClientesRow[monthKey];
+                clientesVentaTotal += clientesVentaRow[monthKey];
+                clientesNoVentaTotal += clientesNoVentaRow[monthKey];
+
+                if (regionData["%_VENTA_EFECTIVA"][monthKey] !== undefined && parseFloat(regionData["%_VENTA_EFECTIVA"][monthKey]) !== 0) {
+                     sumaPorcentajeEfectividad += parseFloat(regionData["%_VENTA_EFECTIVA"][monthKey]);
+                     totalMesesConVentasParaPromedioEfectividad++;
+                }
+
+            });
+
+            // Añadir las columnas 'Total'
+            totalClientesRow.Total = totalClientesTotal;
+            clientesVentaRow.Total = clientesVentaTotal;
+            clientesNoVentaRow.Total = clientesNoVentaTotal;
+            porcentajeEfectivaRow.Total = totalMesesConVentasParaPromedioEfectividad > 0
+                ? (sumaPorcentajeEfectividad / totalMesesConVentasParaPromedioEfectividad).toFixed(2)
+                : "0.00";
+
+
+            responseData.push(totalClientesRow);
+            responseData.push(clientesVentaRow);
+            responseData.push(clientesNoVentaRow);
+            responseData.push(porcentajeEfectivaRow);
+        }
+
+        // Si necesitas los encabezados de las columnas (años y meses) por separado para el frontend
+        // Puedes enviarlos junto con los datos.
+        const headers = ["REGION", "METRIC", ...sortedMonths, "Total"];
+
+        return res.json({
+            headers: headers, // Los nombres de las columnas en orden
+            data: responseData // Las filas pivotadas
+        });
+
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: `Error en ventasClientesPorSucursalController ${error.message || 'No definido'}` });
+    }
+};
+const ventasEfectividadPorSucursalController = async (req, res) => {
+    try {
+        const sucursal = req.query.sucursal;
+
+        if (!sucursal) {
+            return res.status(400).json({ mensaje: 'Debe proporcionar el nombre de la sucursal', goToExpiry: false });
+        }
+        const rawData = await ventasClientesPorSucursal();
+        const filtered = rawData.filter(row =>
+            row.Year >= 2024 &&
+            row.CLIENTESACUMULADOS !== null &&
+            row.ClientesVendidosMes !== null &&
+            row.CLIENTESACUMULADOS !== 0 &&
+            row.ClientesVendidosMes !== 0 
+        );
+        if (sucursal !== "TODAS") {
+            const sucursalData = filtered.filter(row => row.SucName === sucursal);
+
+            if (sucursalData.length === 0) {
+                return res.status(404).json({ mensaje: 'No se encontraron datos para esa sucursal desde 2024 con ventas.', goToExpiry: false });
+            }
+            const sorted = sucursalData.sort((a, b) => {
+                if (a.Year !== b.Year) {
+                    return a.Year - b.Year;
+                }
+                return a.Month - b.Month;
+            });
+            const labels = sorted.map(row => `${row.Year}-${String(row.Month).padStart(2, '0')}`);
+            const series = sorted.map(row => parseFloat(((row.ClientesVendidosMes / row.CLIENTESACUMULADOS) * 100).toFixed(2)));
+
+            const detalle = sorted.map(row => ({
+                total: row.CLIENTESACUMULADOS,
+                vendidos: row.ClientesVendidosMes,
+                noVendidos: row.CLIENTESACUMULADOS - row.ClientesVendidosMes
+            }));
+
+            return res.json({ sucursal, labels, series, detalle });
+        }
+
+        const agrupado = {};
+
+        for (const row of filtered) {
+            const mes = `${row.Year}-${String(row.Month).padStart(2, '0')}`;
+            if (!agrupado[mes]) {
+                agrupado[mes] = {
+                    total: 0,
+                    vendidos: 0,
+                    vendidosno: 0,
+                };
+            }
+
+            agrupado[mes].total += row.CLIENTESACUMULADOS;
+            agrupado[mes].vendidos += row.ClientesVendidosMes;
+            agrupado[mes].vendidosno += row.ClientesNoVendidosMes; // Suma ClientesNoVendidosMes directamente
+        }
+
+        const labels = Object.keys(agrupado).sort();
+        const series = [];
+        const detalle = [];
+        for (const mes of labels) {
+            const { total, vendidos, vendidosno } = agrupado[mes];
+            const porcentaje = total > 0 ? parseFloat(((vendidos / total) * 100).toFixed(2)) : 0.00;
+            series.push(porcentaje);
+            detalle.push({ total, vendidos, noVendidos: vendidosno }); 
+        }
+        return res.json({ sucursal: 'TODAS', labels, series, detalle });
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({ mensaje: `Error en ventasEfectividadPorSucursalController: ${error.message || 'No definido'}` });
+    }
+};
+
+
+
+
+
 const selectionBatchByItemWhsCodeController = async (req, res) => {
     try {
         let itemCode = req.query.itemCode
@@ -4524,5 +4742,8 @@ module.exports = {
     reportePendienteByItemController,
     ventasPendienteByItemController,
     clientExpiryPolicyController,
-    selectionBatchByItemWhsCodeController
+    selectionBatchByItemWhsCodeController,
+    clientesCreadosPorSucursalController,
+    ventasClientesPorSucursalController,
+    ventasEfectividadPorSucursalController
 };
