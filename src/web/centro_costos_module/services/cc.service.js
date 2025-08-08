@@ -29,7 +29,7 @@ const sapService = {
     },
     async crearPlantilla(body, userSign) {
         try {
-            const { account, lineid, dimensiones, fechaContabilizacion, transId, debe, SourceID } = body.body;
+            const { account, lineid, dimensiones, fechaContabilizacion, transId, debe, SourceID } = body;
 
             // Log de control opcional
             console.log({ account, lineid, dimensiones,fechaContabilizacion });

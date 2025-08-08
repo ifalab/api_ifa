@@ -185,6 +185,26 @@ const getSucursales = async () => {
     }
 }
 
+const getSucursalesCode = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `SELECT "SucCode" FROM ${process.env.PRD}.ifa_dm_sucursales where "SucCode">99`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en getSucursales:', error.message);
+        return {
+            status: 400,
+            message: `Error en getSucursales: ${error.message || ''}`
+        }
+    }
+}
+
 const sucursalBySucCode = async (sucCode) => {
     try {
         if (!connection) {
@@ -383,6 +403,25 @@ const getAllLineas = async () => {
         }
 
         const query = `select * from LAB_IFA_PRD.ifa_dm_lineas`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllLineas:', error);
+        throw {
+            status: 400,
+            message: `Error en getAllLineas: ${error.message || ''}`
+        }
+    }
+}
+
+const getAllLineasCode = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select "LineItemCode" from LAB_IFA_PRD.ifa_dm_lineas`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -930,6 +969,24 @@ const getAllTipos = async () => {
     }
 }
 
+const getAllTiposCode = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `select "GroupCode" from ${process.env.PRD}.ifa_dm_tipos`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllTipos:', error);
+        throw {
+            status: 400,
+            message: `Error en getAllTipos: ${error.message || ''}`
+        }
+    }
+}
+
 const getZonas = async () => {
     try {
         if (!connection) {
@@ -1221,5 +1278,8 @@ module.exports = {
     searchArticulos,
     clientByCardCode,
     getItemsByLine,
-    getAllSublines
+    getAllSublines,
+    getSucursalesCode,
+    getAllLineasCode,
+    getAllTiposCode
 }

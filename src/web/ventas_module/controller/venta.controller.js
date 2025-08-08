@@ -2816,23 +2816,31 @@ const ventasPresupuestoSubLineaAnterior = async (req, res) => {
                 grupoA.data.push(grupoB);
             }
 
-            // Nivel C1 dentro de B
-            let grupoC = grupoB.data.find(c => c.DimensionC1Code === DimensionC1Code);
+             let grupoC = grupoB.data.find(c => c.DimensionCCode === DimensionCCode);
             if (!grupoC) {
                 grupoC = {
                     DimensionC,
                     DimensionCCode,
-                    DimensionC1Code,
-                    DimensionC1,
-                    Sales: 0,
-                    Quota: 0
+                    children: []
                 };
                 grupoB.data.push(grupoC);
             }
 
+            // Nivel C1 dentro de C
+            let grupoC1 = grupoC.children.find(c1 => c1.DimensionC1Code === DimensionC1Code);
+            if (!grupoC1) {
+                grupoC1 = {
+                    DimensionC1,
+                    DimensionC1Code,
+                    Sales: 0,
+                    Quota: 0
+                };
+                grupoC.children.push(grupoC1);
+            }
+
             // Sumar valores
-            grupoC.Sales += parseFloat(Sales);
-            grupoC.Quota += parseFloat(Quota);
+            grupoC1.Sales += parseFloat(Sales);
+            grupoC1.Quota += parseFloat(Quota);
         }
         return res.status(200).json(resultado);
     } catch (error) {
