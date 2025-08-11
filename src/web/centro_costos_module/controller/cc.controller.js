@@ -7,7 +7,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, getAsientoCompletosDimensionados, getAsientoCabecera, getLineasCCHana, getSubLineasCCHana, updateAgenciaHana, copyAsientoHana } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, getAsientoCompletosDimensionados, getAsientoCabecera, getLineasCCHana, getSubLineasCCHana, updateAgenciaHana, copyAsientoHana, getEtiquetasFuentesHana } = require('./hana.controller');
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const { validateExcelDimensionado } = require('../utils/validateExcelMasivoDimensionado');
 const { parseCommaSeparatedNumbers } = require('../utils/parseCommaSepararedNumbers');
@@ -1665,6 +1665,26 @@ const postExcelDimensionadoController = async (req, res) => {
   }
 };
 
+const getEtiquetasFuentes = async (req, res) => {
+    try {
+        const data = await getEtiquetasFuentesHana()
+
+        console.log(data)
+        res.status(200).json({
+            status: true,
+            mensaje: 'Etiquetas obtenidas correctamente.',
+            data: data,
+        });
+    } catch (error) {
+        console.error('Error al obtener las etiquetas fuentes:', error);
+        res.status(500).json({
+        status: false,
+        mensaje: 'Error al obtener las etiquetas fuentes',
+        error: error.message,
+        });
+    }
+}
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -1701,5 +1721,6 @@ module.exports = {
     updateAgenciaController,
     copyAsientoController,
     getExcelAsientoController,
-    postExcelDimensionadoController
+    postExcelDimensionadoController,
+    getEtiquetasFuentes
 }
