@@ -482,12 +482,13 @@ const createOrdersBatchDetails = async (
     i_BatchNum,
     i_Quantity,
     i_ItemCode,
-    i_OrderNum) => {
+    i_OrderNum,
+    i_QuantitySelectedUser) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `CALL ${process.env.PRD}.IFASP_SAL_CREATE_ORDERS_BATCH_DETAILS(${i_LineNum},${i_BaseEntry},${i_BaseLine},'${i_BatchNum}',${i_Quantity},'${i_ItemCode}','${i_OrderNum}')`;
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_CREATE_ORDERS_BATCH_DETAILS(${i_LineNum},${i_BaseEntry},${i_BaseLine},'${i_BatchNum}',${i_Quantity},'${i_ItemCode}','${i_OrderNum}',${i_QuantitySelectedUser})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result

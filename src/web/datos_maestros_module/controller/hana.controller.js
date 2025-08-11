@@ -1222,9 +1222,119 @@ const getAllSublines = async () => {
     }
 }
 
+const getDiscountByItem = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
 
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_DISCOUNT_BY_ITEM()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDiscountByItem:', error);
+        throw {
+            status: 400,
+            message: `Error en getDiscountByItem: ${error.message || ''}`
+        }
+    }
+}
 
+const getDiscountByClientSpecial = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
 
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_DISCOUNT_BY_CLIENT_SPECIAL_ITEM()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDiscountByClientSpecial:', error);
+        throw {
+            status: 400,
+            message: `Error en getDiscountByClientSpecial: ${error.message || ''}`
+        }
+    }
+}
+
+const getDiscountBySpecialQuotation = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_DISCOUNT_BY_SPECIAL_QUOTATIONS()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDiscountBySpecialQuotation:', error);
+        throw {
+            status: 400,
+            message: `Error en getDiscountBySpecialQuotation: ${error.message || ''}`
+        }
+    }
+}
+
+const getDiscountByShortExpiration = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_DISCOUNT_BY_SHORT_EXPIRATION()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDiscountByShortExpiration:', error);
+        throw {
+            status: 400,
+            message: `Error en getDiscountByShortExpiration: ${error.message || ''}`
+        }
+    }
+}
+
+const getDiscountByConditional = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_DISCOUNT_BY_CONDITIONAL()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDiscountByConditional:', error);
+        throw {
+            status: 400,
+            message: `Error en getDiscountByConditional: ${error.message || ''}`
+        }
+    }
+}
+
+const getDiscountByLine = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_DISCOUNT_BY_LINE()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDiscountByLine:', error);
+        throw {
+            status: 400,
+            message: `Error en getDiscountByLine: ${error.message || ''}`
+        }
+    }
+}
 
 module.exports = {
     dmClientes,
@@ -1281,5 +1391,11 @@ module.exports = {
     getAllSublines,
     getSucursalesCode,
     getAllLineasCode,
-    getAllTiposCode
+    getAllTiposCode,
+    getDiscountByItem,
+    getDiscountByClientSpecial,
+    getDiscountBySpecialQuotation,
+    getDiscountByShortExpiration,
+    getDiscountByConditional,
+    getDiscountByLine,
 }

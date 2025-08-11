@@ -839,8 +839,14 @@ const crearOrderCadenaController = async (req, res) => {
 
                 for (const element of batchList) {
 
+                    /**
+                     * @alias ginimessersmith
+                     * @argument quantitySelected es la que fue seleccionada por el usuario al elegir los lotes
+                     * 
+                    */
                     const batchNum = element.BatchNum
                     const quantity = element.Quantity
+                    const quantitySelected = element.QuantitySelected || 0
 
                     const createBatchDetails = await createOrdersBatchDetails(
                         lineNum,
@@ -849,7 +855,8 @@ const crearOrderCadenaController = async (req, res) => {
                         batchNum,
                         +quantity,
                         itemCode,
-                        orderNumber
+                        orderNumber,
+                        quantitySelected
                     )
 
                     console.log({ createBatchDetails })
