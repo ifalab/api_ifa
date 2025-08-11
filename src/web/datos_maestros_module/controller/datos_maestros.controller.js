@@ -18,14 +18,20 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getIdDescuentosCortoCantidad,
     getDescuentosCantidadCorto,
     setDescuentoOfertasPorCantidadCortoVencimiento,
-    lineaByCode, 
+    lineaByCode,
     sucursalBySucCode,
     tipoByGroupCode,
     dmSearchClientes,
     findAllArticulos,
     searchArticulos,
     getItemsByLine,
-    getAllSublines
+    getAllSublines,
+    getDiscountByItem,
+    getDiscountByClientSpecial,
+    getDiscountBySpecialQuotation,
+    getDiscountByShortExpiration,
+    getDiscountByConditional,
+    getDiscountByLine
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners, patchItems } = require("./sld.controller");
@@ -53,8 +59,8 @@ const dmClientesController = async (req, res) => {
 const dmSearchClientesController = async (req, res) => {
     try {
         let search = req.query.search
-        if(search == undefined || search == null){
-            console.log({search})
+        if (search == undefined || search == null) {
+            console.log({ search })
             return res.status(400).json({ mensaje: 'debe existir un parametro de busqueda' })
         }
         search = search.toUpperCase()
@@ -227,7 +233,7 @@ const getSucursalesController = async (req, res) => {
 const sucursalBySucCodeController = async (req, res) => {
     try {
         const sucCode = req.query.sucCode
-        if(!sucCode || sucCode ==0){
+        if (!sucCode || sucCode == 0) {
             return res.status(400).json({ mensaje: `el codigo de sucursal es obligatorio` })
         }
         const response = await sucursalBySucCode(sucCode)
@@ -236,7 +242,7 @@ const sucursalBySucCodeController = async (req, res) => {
         }
         const data = response.data
 
-        if(data.length==0){
+        if (data.length == 0) {
             return res.status(400).json({ mensaje: `No se encontro la sucursal` })
         }
         const sucursal = data[0]
@@ -415,7 +421,7 @@ const lineasByLineCodeController = async (req, res) => {
             return res.status(400).json({ mensaje: `El codigo de linea es obligatorio` })
         }
         const response = await lineaByCode(lineCode)
-        if(response.length == 0){
+        if (response.length == 0) {
             return res.status(400).json({ mensaje: `No se encontro la linea` })
         }
         const linea = response[0]
@@ -451,7 +457,7 @@ const searchArticulosController = async (req, res) => {
 
 const findAllArticulosController = async (req, res) => {
     try {
-        
+
         const response = await findAllArticulos()
         return res.json(response)
     } catch (error) {
@@ -706,7 +712,7 @@ const tipoByGroupCodeController = async (req, res) => {
             return res.status(400).json({ mensaje: `El codigo de tipo de cliente es obligatorio` })
         }
         const response = await tipoByGroupCode(groupCode)
-        if(response.length == 0){
+        if (response.length == 0) {
             return res.status(400).json({ mensaje: `No se encontro el tipo de cliente` })
         }
         const tipo = response[0]
@@ -1058,9 +1064,9 @@ const patchItemsController = async (req, res) => {
         // 2. Validar que los datos requeridos existan
         if (!ItemCode || NewLineItemCode === undefined || NewSubLineItemCode === undefined) {
             console.error('Datos incompletos para la actualización del artículo:', req.body);
-            
+
         }
-        
+
 
         // 3. Preparar el payload que espera la función patchItems para SAP B1
         // Recuerda que SAP espera LineItemCode y SubLineItemCode directamente
@@ -1078,27 +1084,71 @@ const patchItemsController = async (req, res) => {
         // 5. Enviar la respuesta al frontend
         // Un status 204 (No Content) de B1S se traduce generalmente a un 200 OK para el frontend.
         if (result.status >= 200 && result.status < 300) { // Esto incluye 200 OK, 204 No Content
-            res.status(200).json({ 
-                message: result.message || 'Artículo actualizado con éxito.', 
+            res.status(200).json({
+                message: result.message || 'Artículo actualizado con éxito.',
                 data: result.data || {} // Data podría estar vacía si B1S retorna 204
             });
         } else {
             // Si hay un error de SAP B1, devolvemos el status y mensaje de error
-            res.status(result.status || 500).json({ 
-                message: result.message || 'Error al actualizar el artículo en SAP Business One.' 
+            res.status(result.status || 500).json({
+                message: result.message || 'Error al actualizar el artículo en SAP Business One.'
             });
         }
 
     } catch (error) {
         // Manejo de errores a nivel del controlador
         console.error('Error en patchItemsController:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Error interno del servidor al procesar la actualización del artículo.',
             error: error.message // Puedes añadir más detalles del error si es útil para depurar
         });
     }
 };
 
+
+const getDiscountController = async (req, res) => {
+    try {
+        const type = req.query.type
+        let response = []
+        /**
+        getDiscountByItem, type == 1
+        getDiscountByClientSpecial, type == 2
+        getDiscountBySpecialQuotation,type == 3
+        getDiscountByShortExpiration,type == 4
+        getDiscountByConditional,type == 5
+        getDiscountByLine,type == 6
+        
+        **/
+        console.log({ type })
+        if (type === '1') {
+            response = await getDiscountByItem()
+        }
+
+        if (type === '2') {
+            response = await getDiscountByClientSpecial()
+        }
+
+        if (type === '3') {
+            response = await getDiscountBySpecialQuotation()
+        }
+
+        if (type === '4') {
+            response = await getDiscountByShortExpiration()
+        }
+
+        if (type === '5') {
+            response = await getDiscountByConditional()
+        }
+
+        if (type === '6') {
+            response = await getDiscountByLine()
+        }
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getDiscountController: ${error.message || ''}` })
+    }
+}
 
 module.exports = {
     dmClientesController,
@@ -1150,5 +1200,6 @@ module.exports = {
     searchArticulosController,
     getItemsByLineController,
     getAllSublineasController,
-    patchItemsController
+    patchItemsController,
+    getDiscountController
 }
