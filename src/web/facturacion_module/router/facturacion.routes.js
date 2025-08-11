@@ -28,7 +28,9 @@ const { facturacionController, facturacionStatusController, noteEntregaControlle
     setStatusFacturaController,
     facturacionAllStatusListController,
     actualizarEstadoPedidoController,
-    cancelToProsinNDCController
+    cancelToProsinNDCController,
+    getUnpaidFromPreviousMonthsController,
+    processUnpaidController
 } = require('../controller/facturacion.controller')
 const router = Router()
 
@@ -78,5 +80,7 @@ router.get('/pedidos-exportacion', [validarToken, validarCampos], pedidosExporta
 router.get('/facturar-exportacion', [validarToken, validarCampos], facturarExportacionController)
 router.get('/get-cliente', [validarToken, validarCampos], getClienteByCardCodeController)
 router.get('/set-status-factura', [validarToken, validarCampos], setStatusFacturaController)
+router.get('/get-unpaid-from-previous-months', [validarToken, validarCampos], getUnpaidFromPreviousMonthsController)
+router.post('/process-unpaid', [validarToken, validarCampos], processUnpaidController)
 
 module.exports = router

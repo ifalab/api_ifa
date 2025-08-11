@@ -36,7 +36,9 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     stockByItemCodeBatchNumWhsCode,
     getBatchDetailByOrderNum,
     fefoMinExpiry,
-    baseEntryByDetailsNDC } = require("./hana.controller")
+    baseEntryByDetailsNDC,
+    getUnpaidFromPreviousMonths,
+    getPaidDeliveryDetails, } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations,
     cancelCreditNotes,
@@ -1586,7 +1588,7 @@ const cancelToProsinNDCController = async (req, res) => {
         ///? return 
         let responseProsin = {}
         let endTime = Date.now();
-        
+
         console.log({ user })
         if (!cuf || cuf == '') {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
@@ -4538,6 +4540,75 @@ const getClienteByCardCodeController = async (req, res) => {
     }
 }
 
+const getUnpaidFromPreviousMonthsController = async (req, res) => {
+    try {
+        const data = await getUnpaidFromPreviousMonths()
+        return res.json(data)
+    } catch (error) {
+        console.log('error en getUnpaidFromPreviousMonthsController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const processUnpaidController = async (req, res) => {
+    try {
+        const { DocEntry, Cuf, CardCode, LicTradNum, CardFName, } = req.body
+        const user = req.usuarioAutorizado
+        const idSap = user.ID_SAP || 0
+        if (!DocEntry) {
+            return res.status(404).json({ mensaje: 'no existe el Doc Entry en la peticion' })
+        }
+        const details = await getPaidDeliveryDetails(DocEntry);
+        if (details.length == 0) {
+            return res.status(404).json({ mensaje: 'no se encontraron detalles de la entrega' })
+        }
+
+        if (idSap == 0) {
+            return res.status(401).json({ mensaje: 'El usuario no esta autorizado a realizar esta operacion ya que no tiene ID SAP' })
+        }
+
+        const firtsDelivery = details[0]
+        const bodyReturns = {
+            CardCode,
+            U_NIT: LicTradNum,
+            U_RAZSOC: CardFName,
+            U_B_cufd: Cuf,
+            U_TIPODOC: 6,
+            U_UserCode: 1,
+            // firtsDelivery,
+            DocumentLines: []
+        }
+        const documentLines = []
+        let idx = 0
+        for (const element of details) {
+            const { ItemCode, Quantity, NumPerMsr, UnitPrice, Price, WhsCode } = element
+            const TaxCode = 'IVA_NC'
+            const AccountCode = '6210103'
+            const grossTotal = Number(Quantity) * Number(UnitPrice)
+            const data = {
+                LineNum: idx,
+                ItemCode,
+                Quantity: +Quantity,
+                TaxCode,
+                AccountCode,
+                WarehouseCode: WhsCode,
+                GrossTotal: Number(grossTotal.toFixed(2)),
+                BatchNumbers: [],
+            }
+            documentLines.push(data)
+            idx++
+        }
+
+        bodyReturns.DocumentLines = documentLines
+        return res.json({ bodyReturns })
+    } catch (error) {
+        console.log('error en processUnpaidController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -4578,4 +4649,6 @@ module.exports = {
     facturacionAllStatusListController,
     actualizarEstadoPedidoController,
     cancelToProsinNDCController,
+    getUnpaidFromPreviousMonthsController,
+    processUnpaidController,
 }
