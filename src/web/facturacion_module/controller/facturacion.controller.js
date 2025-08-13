@@ -298,7 +298,8 @@ const facturacionController = async (req, res) => {
                             ...data,
                             ItemCode,
                             WarehouseCode,
-                            Quantity: new_quantity / UnitsOfMeasurment,
+                            // Quantity: new_quantity / UnitsOfMeasurment,
+                            Quantity: new_quantity ,
                             LineNum,
                             ...restLine,
                             BatchNumbers: batchNumbers
