@@ -500,6 +500,38 @@ const copyAsientoHana = async (TransId) => {
   }
 };
 
+const deleteProjectDimension = async (transId) => {
+  const results = {};
+
+  try {
+    const query1 = `CALL LAB_IFA_COM.IFA_CC_DELETE_COST_CENTER_PROJECT(${transId})`;
+    results.deleteCostCenter = await executeQueryParamsWithConnection(query1);
+  } catch (error) {
+    console.error('Fallo al borrar centro de costo:', error.message);
+  }
+
+  try {
+    const query2 = `CALL LAB_IFA_COM.IFA_CC_DELETE_ASIENTO_PRELIMINAR(${transId})`;
+    results.deleteAsiento = await executeQueryParamsWithConnection(query2);
+  } catch (error) {
+    console.error('Fallo al borrar asiento preliminar:', error.message);
+  }
+
+  return results;
+};
+
+const getEtiquetasFuentesHana = async () => {
+    try {
+        console.log('getEtiquetasFuentes EXECUTE');
+        const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_ETIQUETAS_FUENTES`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw new Error(`error en getEtiquetasFuentes, ${error}`);
+    }
+};
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -532,5 +564,7 @@ module.exports = {
     getLineasCCHana,
     getSubLineasCCHana,
     updateAgenciaHana,
-    copyAsientoHana
+    copyAsientoHana,
+    deleteProjectDimension,
+    getEtiquetasFuentesHana
 };

@@ -7,8 +7,11 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, saveAreaCC, saveTipoClienteCC, saveLineaCC, saveClasificacionCC, saveConceptosComCC, saveEspecialidadCC, getAsientoCompletosDimensionados, getAsientoCabecera, getLineasCCHana, getSubLineasCCHana, updateAgenciaHana, copyAsientoHana } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, getAsientoCompletosDimensionados, getAsientoCabecera, getLineasCCHana, getSubLineasCCHana, updateAgenciaHana, copyAsientoHana, getEtiquetasFuentesHana } = require('./hana.controller');
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
+const { validateExcelDimensionado } = require('../utils/validateExcelMasivoDimensionado');
+const { parseCommaSeparatedNumbers } = require('../utils/parseCommaSepararedNumbers');
+const { getSucursales, getAllLineas, getAllTipos, getSucursalesCode, getAllLineasCode, getAllTiposCode } = require('../../datos_maestros_module/controller/hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -521,10 +524,11 @@ const cargarPlantillaDimensiones = async (req, res) => {
         const userId = Number(user.ID)
         const data = req.body;
         console.log(data);
-        const result = await sapService.crearPlantilla(data, userId);
+        const result = await sapService.crearPlantilla(data.body, userId);
 
         const response = result
         return res.status(200).json(response)
+        // return res.status(200)
     } catch (error) {
         console.error({ error });
         return res.status(500).json({ mensaje: `Error obtiendo la plantilla para estas dimensiones ${error}` });
@@ -1037,10 +1041,10 @@ const cargarExcelMasivo = async (req, res) => {
             });
         }
 
-       const roundTo6 = (num) =>
-            typeof num === 'number' && !isNaN(num)
-                ? Math.round(num * 1e6) / 1e6
-                : 0;
+        const roundTo6 = (num) =>
+                typeof num === 'number' && !isNaN(num)
+                    ? Math.round(num * 1e6) / 1e6
+                    : 0;
 
         const detalles = filas.map((fila) => ({
             Agencia: fila['Agencia'] ?? '',
@@ -1457,8 +1461,229 @@ const getExcelAsientoController = async (req, res) => {
   }
 };
 
-module.exports = { getExcelAsientoController };
+const postExcelDimensionadoController = async (req, res) => {
+  let transId = 0;
 
+  try {
+    const file = req.file; // archivo Excel
+    const { fechaContabilizacion, glosa, fechaCreacion } = req.body; // otros datos
+
+    const user = req.usuarioAutorizado
+    const userId = Number(user.ID)
+
+    if (!file) {
+      return res.status(400).json({
+        status: false,
+        mensaje: 'No se recibió archivo Excel',
+      });
+    }
+
+    let errores = validateExcelDimensionado(file);
+    console.log(errores);
+
+    if (errores.length > 0) {
+      return res.status(400).json({
+        status: false,
+        mensaje: 'Errores de validación en el Excel',
+        errores
+      });
+    }
+
+    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const dataPlano = xlsx.utils.sheet_to_json(worksheet, { defval: '' });
+
+    const sucursalData = await getSucursalesCode();
+    const lineaData = await getAllLineasCode();
+    const tipoData = await getAllTiposCode();
+
+    const sucursalesValidas = new Set(sucursalData.map(item => item.SucCode));
+    const lineasValidas = new Set(lineaData.map(item => item.LineItemCode));
+    const tiposValidas = new Set(tipoData.map(item => item.GroupCode));
+
+    const erroresPorFila = [];
+
+    const dataFormateada = dataPlano.map((row, index) => {
+        errores = [];
+
+        const fila = index + 2;
+        const sucursales  = parseCommaSeparatedNumbers(row['SucCode'] || '');
+        const tipoClientes  = parseCommaSeparatedNumbers(row['DivisionCode'] || '');
+        const lineas = parseCommaSeparatedNumbers(row['LineCode'] || '').map(String);
+
+        console.log(sucursales)
+
+        const sucNoValidas = sucursales.filter(suc => !sucursalesValidas.has(String(suc)));
+        if (sucNoValidas.length > 0) {
+            errores.push(`Sucursales no válidas: ${sucNoValidas.join(', ')}`);
+        }
+
+        // Validar tipos
+        const tiposNoValidos = tipoClientes.filter(tipo => !tiposValidas.has(tipo));
+        if (tiposNoValidos.length > 0) {
+            errores.push(`Tipos de cliente no válidos: ${tiposNoValidos.join(', ')}`);
+        }
+
+        // Validar líneas
+        const lineasNoValidas = lineas.filter(linea => !lineasValidas.has(linea));
+        if (lineasNoValidas.length > 0) {
+            errores.push(`Líneas no válidas: ${lineasNoValidas.join(', ')}`);
+        }
+
+
+        // Si hay errores, los acumulamos por fila
+        if (errores.length > 0) {
+            erroresPorFila.push({
+            fila,
+            errores
+            });
+        }
+
+        return {
+            ...row,
+            dimensiones: {
+            sucursales,
+            tipoClientes,
+            lineas,
+            sublineas: []
+            }
+        };
+    });
+
+    if (erroresPorFila.length > 0) {
+        return res.status(400).json({
+            status: false,
+            mensaje: 'Errores de validación en las dimensiones del Excel',
+            errores: erroresPorFila
+        });
+    }
+
+    const roundTo6 = (num) =>
+            typeof num === 'number' && !isNaN(num)
+                ? Math.round(num * 1e6) / 1e6
+                : 0;
+
+    const detallesCentroCosto = dataFormateada.map((item, index) => ({
+        Agencia: item.SucName || '',
+        TransId: item.transId || undefined,
+        LineId: item.lineId || undefined,
+        U_DocFuenteCod: item.Documento_Fuente || '',
+        AccountCode: item.Cuenta?.toString() || '',
+        AccountName: item.Nombre_Cuenta || '',
+        ShortName: item.Codigo_Socio || '',
+        CardName: item.Socio || '',
+        Credit: roundTo6(parseFloat(item.Haber)),
+        Debit: roundTo6(parseFloat(item.Debe)),
+        ContraAccount: '',
+        LineMemo: item.Glosa || '',
+        GastoId: item.Id_Concepto_Comercial || undefined,
+        U_Area: item.Area || '',
+        U_Tipo: item.Tipo || '',
+        U_Linea: item.Linea || '',
+        U_Especialidad: item.Especialidad || '',
+        U_Clasif_Gastos: item.Clasificacion_Gastos || '',
+        U_ConcepComercial: item.Conceptos_Comerciales || '',
+        Ref1: item.Referencia_1 || '',
+        Ref2: item.Referencia_2 || '',
+        Ref3: item.Referencia_3 || '',
+        U_BenefCode: item.Codigo_Beneficiario || '',
+        SourceID: 0,
+    }));
+
+    const fechaContabilizacionISO = fixToISODate(fechaContabilizacion);
+    const fechaCreacionISO = fixToISODate(fechaCreacion);
+
+    const cargarDetailsCentroCostoDto = {
+        detalles: detallesCentroCosto,
+        fechaContabilizacion: fechaContabilizacionISO,
+        fechaCreacion: fechaCreacionISO,
+        glosa,
+    };
+
+    const result = await sapService.cargarExcelCC(cargarDetailsCentroCostoDto);
+
+    console.log(result);
+    if(result.statusCode !== 201) {
+        throw new Error(result.data.mensaje || 'Error al cargar el Excel en SAP');
+    }
+
+    transId = result.data.transId;
+
+    const crearPlantillaDtos = dataFormateada.reduce((acc, item, index) => {
+        if (item.Cuenta?.toString().startsWith('6')) {
+            acc.push({
+            userSign: userId,
+            fechaContabilizacion: new Date(fechaContabilizacion).toISOString(),
+            account: item.Cuenta.toString(),
+            debe: item.Debe,
+            transId: transId,
+            lineid: +index,  // índice original + 1
+            SourceID: 0,
+            dimensiones: item.dimensiones
+            });
+        }
+        return acc;
+    }, []);
+
+    
+    for (const plantillaDto of crearPlantillaDtos) {
+        try {
+            console.log(plantillaDto);
+            const result = await sapService.crearPlantilla(plantillaDto, userId);
+
+            // console.log(result);
+
+            if (result.statusCode !== 201) {
+            console.error('Error en asiento:', result.mensaje);
+            throw new Error(result.mensaje || 'Error al crear asiento en SAP');
+            }
+
+        } catch (error) {
+            console.error('Error al enviar plantilla a SAP:', error);
+            // Aquí puedes decidir si detienes todo o continúas con el siguiente
+            throw new Error('Falló la creación de un asiento contable.');
+        }
+    }
+
+    res.status(200).json({
+      status: true,
+      mensaje: 'Archivo Excel procesado correctamente.',
+      data: dataFormateada,
+    });
+
+  } catch (error) {
+    if (transId != 0) {
+        await deleteProjectDimension(transId);
+    }
+
+    console.error('Error al guardar el Excel:', error);
+    res.status(500).json({
+      status: false,
+      mensaje: 'Error al guardar el Excel',
+      error: error.message,
+    });
+  }
+};
+
+const getEtiquetasFuentes = async (req, res) => {
+    try {
+        const data = await getEtiquetasFuentesHana()
+
+        console.log(data)
+        res.status(200).json({
+            status: true,
+            mensaje: 'Etiquetas obtenidas correctamente.',
+            data: data,
+        });
+    } catch (error) {
+        console.error('Error al obtener las etiquetas fuentes:', error);
+        res.status(500).json({
+        status: false,
+        mensaje: 'Error al obtener las etiquetas fuentes',
+        error: error.message,
+        });
+    }
+}
 
 module.exports = {
     postInventoryEntriesController,
@@ -1495,5 +1720,7 @@ module.exports = {
     getSubLineasCC,
     updateAgenciaController,
     copyAsientoController,
-    getExcelAsientoController
+    getExcelAsientoController,
+    postExcelDimensionadoController,
+    getEtiquetasFuentes
 }

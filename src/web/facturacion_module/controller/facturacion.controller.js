@@ -273,7 +273,7 @@ const facturacionController = async (req, res) => {
                         // console.log({new_quantity, UnitsOfMeasurment})
                         let new_quantity = 0
                         batchData.map((item) => {
-                            new_quantity += Number(item.Quantity)
+                            new_quantity += Number(item.QuantitySelectedUser)
                         })
 
                         batchNumbers = batchData.map(batch => {
@@ -281,7 +281,7 @@ const facturacionController = async (req, res) => {
                             const newBatch = {
                                 BaseLineNumber: LineNum,
                                 BatchNumber: batch.BatchNum,
-                                Quantity: batch.Quantity * UnitsOfMeasurment,
+                                Quantity: batch.QuantitySelectedUser * UnitsOfMeasurment,
                                 ItemCode: batch.ItemCode
                             }
 
