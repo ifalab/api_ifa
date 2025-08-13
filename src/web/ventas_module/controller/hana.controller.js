@@ -2556,6 +2556,137 @@ const ventasClientesPorSucursal = async () => {
     }
 }
 
+const clientesAcumuladosPorSucursalGrupo = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_LIST_CLIENTES_ACUMULADOS()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
+const consulta1 = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_UNIQUE_SALES_CLIENTS_BY_GROUP_ZONE()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
+const consulta2 = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_UNIQUE_SALES_CLIENTS_BY_GROUP_ZONE_VENDOR()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
+const consulta3 = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_GET_ASSIGNED_CLIENTS_REPORT()`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+        }
+    }
+}
+
+
+const getSucursales = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_SUCURSALES`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getSucursales: ${error.message || ''}`
+        }
+    }
+}
+
+const getTiposClientes = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES_TIPOS`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getTiposClientes: ${error.message || ''}`
+        }
+    }
+}
+
+const getZonas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_ZONAS`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getZonas: ${error.message || ''}`
+        }
+    }
+}
+
+const getVendedores = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_DM_VENDEDORES`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getVendedores: ${error.message || ''}`
+        }
+    }
+}
+
+
+
 
 module.exports = {
     ventaPorSucursal,
@@ -2677,5 +2808,13 @@ module.exports = {
     clientExpiryPolicy,
     selectionBatchByItemWhsCode,
     clientesCreadosPorSucursal,
-    ventasClientesPorSucursal
+    ventasClientesPorSucursal,
+    clientesAcumuladosPorSucursalGrupo,
+    consulta1,
+    consulta2,
+    consulta3,
+    getVendedores,
+    getZonas,
+    getSucursales,
+    getTiposClientes
 }

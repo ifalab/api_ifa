@@ -53,7 +53,9 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     getAllWarehouseCommercialByParamsController,
     kardexCommercialController,
     postEntregaPorOrderNumberController,
-    habilitacionesPorIduserController
+    habilitacionesPorIduserController,
+    getBatchNumberDetailsController,
+    patchBatchNumberDetailsController
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -150,6 +152,13 @@ router.post('/all-warehouse-commercial', [validarToken, validarCampos], getAllWa
 router.post('/kardex-commercial', [validarToken, validarCampos], kardexCommercialController)
 
 router.get('/completar-habilitaciones', [validarToken, validarCampos], habilitacionesPorIduserController)
+
+router.get('/get-batch-details', [validarToken, validarCampos], getBatchNumberDetailsController)
+
+router.post('/patch-batch-details', [validarToken, validarCampos], patchBatchNumberDetailsController)
+
+
+
 
 
 

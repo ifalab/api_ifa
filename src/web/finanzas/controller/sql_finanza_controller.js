@@ -23,6 +23,10 @@ async function gastosXAgencia(cod) {
   }
 }
 
+
+
+
+
 async function gastosGestionAgencia(gestion, cod) {
 
   try {

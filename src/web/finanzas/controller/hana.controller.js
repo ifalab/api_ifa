@@ -380,6 +380,41 @@ const getCommercialBankAccounts = async () => {
     }
 }
 
+const getGastosGenesis = async () => {
+    try {
+        const query = `call "LAB_IFA_PRD"."IFASP_ACC_GET_COMMERCIAL_BANK_ACCOUNT"`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.error('Error in getCommercialBankAccounts:', error);
+        throw new Error(`Error in getCommercialBankAccounts: ${error.message}`);
+    }
+}
+
+const getGastosDB = async (SucCode) => {
+    try {
+        const query = `call ${process.env.PRD}.IFASP_GET_EXPENSES_BY_SUC('${SucCode}')`
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.error('Error in getGastosDB:', error);
+        throw new Error(`Error in getGastosDB: ${error.message}`);
+    }
+}
+
+const getGastosHanna = async (SucCode) => {
+    try {
+        const query = `call ${process.env.PRD}.IFASP_GET_EXPENSES_BY_SUC('${SucCode}')`
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.error('Error in getGastosHanna:', error);
+        throw new Error(`Error in getGastosHanna: ${error.message}`);
+    }
+}
+
+
+
 const getGastosSAPHana = async (codigoDimensionA = 0) => {
     console.log(codigoDimensionA);
     try {
@@ -498,5 +533,7 @@ module.exports = {
     getReportBankMajor,
     getCommercialBankAccounts,
     getGastosSAPHana,
-    getGastosAgenciaxGestionSAPHana
+    getGastosAgenciaxGestionSAPHana,
+    getGastosDB,
+    getGastosHanna
 }
