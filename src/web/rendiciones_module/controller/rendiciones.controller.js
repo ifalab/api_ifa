@@ -1770,6 +1770,8 @@ const journalEntryValoradoController = async (req, res) => {
                 CreditSys: (Credit == 0) ? 0 : Number(creditSys.toFixed(2)),
             }
         })
+        // return res.json({ ...restBody,
+        //     JournalEntryLines,})
         const response = await asientoContable({
             ...restBody,
             JournalEntryLines,
@@ -1784,6 +1786,10 @@ const journalEntryValoradoController = async (req, res) => {
                 body
             })
         }
+        // "response": {
+        //     "status": 204,
+        //     "orderNumber": "1415876"
+        // }
         console.log({ response })
         return res.json({
             response

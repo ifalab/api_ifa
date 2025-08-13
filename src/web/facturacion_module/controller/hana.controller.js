@@ -1,4 +1,5 @@
 const hana = require('@sap/hana-client');
+const { formattParam } = require('../../../helpers/formattParams.helpers');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -727,6 +728,39 @@ const getPaidEntryDetails = async (docEntry) => {
     }
 }
 
+const setSyncSalesReturnProcess = async (
+    i_SalesDocEntry,
+    i_ReturnDocEntry,
+    i_CreditNoteDocEntry,
+    i_ReconciliationID,
+) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        /**
+    IN i_SalesDocEntry        INTEGER,
+    IN i_ReturnDocEntry       INTEGER DEFAULT NULL,
+    IN i_CreditNoteDocEntry   INTEGER DEFAULT NULL,
+    IN i_ReconciliationID     INTEGER DEFAULT NULL
+**/
+        const formattReturnDocEntry = formattParam(i_ReturnDocEntry)
+        const formattCreditNoteDocEntry = formattParam(i_CreditNoteDocEntry)
+        const formattReconliationId = formattParam(i_ReconciliationID)
+        const query = `call ${process.env.PRD}.IFASP_SIS_SYNC_SALES_RETURN_PROCESS(
+        i_SalesDocEntry  => ${i_SalesDocEntry},
+        i_ReturnDocEntry  => ${formattReturnDocEntry},
+        i_CreditNoteDocEntry  => ${formattCreditNoteDocEntry},
+        i_ReconciliationID  => ${formattReconliationId})`
+        console.log({ query })
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de setSyncSalesReturnProcess: ${error.message}`)
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -771,4 +805,5 @@ module.exports = {
     getUnpaidFromPreviousMonths,
     getPaidDeliveryDetails,
     getPaidEntryDetails,
+    setSyncSalesReturnProcess,
 }

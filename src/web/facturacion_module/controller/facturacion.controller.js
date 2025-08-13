@@ -7,7 +7,7 @@ const pdfFonts = require('pdfmake/build/vfs_fonts');
 const puppeteer = require('puppeteer');
 const PdfPrinter = require('pdfmake');
 const fs = require('fs');
-const { entregaDetallerFactura, pedidoDetallerFactura, clientesPorDimensionUno } = require("../../inventarios/controller/hana.controller")
+const { entregaDetallerFactura, pedidoDetallerFactura, clientesPorDimensionUno, obtenerDevolucionDetalle } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion, facturacionExportacionProsin } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
@@ -38,7 +38,9 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     fefoMinExpiry,
     baseEntryByDetailsNDC,
     getUnpaidFromPreviousMonths,
-    getPaidDeliveryDetails, } = require("./hana.controller")
+    getPaidDeliveryDetails,
+    setSyncSalesReturnProcess,
+    getPaidEntryDetails, } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations,
     cancelCreditNotes,
@@ -54,6 +56,10 @@ const { getDocDueDate } = require('../../../controllers/hanaController');
 const { postOrden } = require('../../../movil/ventas_module/controller/sld.controller');
 const { tipoDeCambioByFecha, tipoDeCambio } = require('../../contabilidad_module/controllers/hana.controller');
 const { clientExpiryPolicy } = require('../../ventas_module/controller/hana.controller');
+const { groupBatchesByLineNum } = require('../helpers/groupBatchesByLineNum');
+const { buildBodyReturn } = require('../helpers/buildBodyReturn');
+const { postCreditNotes } = require('../../service/sapService');
+const { buildBodyCreditNotes } = require('../helpers/buildBodyCreditNote');
 
 const facturacionController = async (req, res) => {
     let body = {}
@@ -4554,60 +4560,74 @@ const getUnpaidFromPreviousMonthsController = async (req, res) => {
 const processUnpaidController = async (req, res) => {
     try {
         const { DocEntry, Cuf, CardCode, LicTradNum, CardFName, } = req.body
+        let { SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, ReconciliationID } = req.body
+
         const user = req.usuarioAutorizado
         const idSap = user.ID_SAP || 0
+
         if (!DocEntry) {
             return res.status(404).json({ mensaje: 'no existe el Doc Entry en la peticion' })
-        }
-        const details = await getPaidDeliveryDetails(DocEntry);
-        if (details.length == 0) {
-            return res.status(404).json({ mensaje: 'no se encontraron detalles de la entrega' })
         }
 
         if (idSap == 0) {
             return res.status(401).json({ mensaje: 'El usuario no esta autorizado a realizar esta operacion ya que no tiene ID SAP' })
         }
 
-        const firtsDelivery = details[0]
-        const bodyReturns = {
-            CardCode,
-            U_NIT: LicTradNum,
-            U_RAZSOC: CardFName,
-            U_B_cufd: Cuf,
-            U_TIPODOC: 6,
-            U_UserCode: 1,
-            // firtsDelivery,
-            DocumentLines: []
-        }
-        const documentLines = []
-        let idx = 0
-        for (const element of details) {
-            const { ItemCode, Quantity, NumPerMsr, UnitPrice, Price, WhsCode } = element
-            const TaxCode = 'IVA_NC'
-            const AccountCode = '6210103'
-            const grossTotal = Number(Quantity) * Number(UnitPrice)
-            const data = {
-                LineNum: idx,
-                ItemCode,
-                Quantity: +Quantity,
-                TaxCode,
-                AccountCode,
-                WarehouseCode: WhsCode,
-                GrossTotal: Number(grossTotal.toFixed(2)),
-                BatchNumbers: [],
+        if (!ReturnDocEntry) {
+            const details = await getPaidDeliveryDetails(DocEntry);
+            if (details.length == 0) {
+                return res.status(404).json({ mensaje: 'no se encontraron detalles de la entrega' })
             }
-            documentLines.push(data)
-            idx++
+            const newDetails = groupBatchesByLineNum(details)
+            const bodyReturns = buildBodyReturn(CardCode, LicTradNum, CardFName, Cuf, newDetails)
+            const responseReturn = await postReturn(bodyReturns)
+
+            if (responseReturn.status > 300) {
+                console.log({ errorMessage: responseReturn.errorMessage })
+                let mensaje = responseReturn.errorMessage || 'Mensaje no definido'
+                if (mensaje.value)
+                    mensaje = mensaje.value
+                return res.status(400).json({
+                    mensaje: `Error en postReturn: ${mensaje}`, bodyReturns
+                })
+            }
+            ReturnDocEntry = responseReturn.orderNumber
+            await setSyncSalesReturnProcess(DocEntry, ReturnDocEntry, null, null)
         }
 
-        bodyReturns.DocumentLines = documentLines
-        return res.json({ bodyReturns })
+        if (!CreditNoteDocEntry) {
+            const devolucionDetalle = await obtenerDevolucionDetalle(ReturnDocEntry)
+            const bodyCreditNotes = buildBodyCreditNotes(ReturnDocEntry, DocEntry, devolucionDetalle)
+            // return res.json({ bodyCreditNotes })
+            const responseCreditNote = await postCreditNotes(bodyCreditNotes)
+            if (responseCreditNote.status > 299) {
+                let mensaje = responseCreditNote.errorMessage
+                if (typeof mensaje != 'string' && mensaje.lang) {
+                    mensaje = mensaje.value
+                }
+                mensaje = `Error en creditNote: ${mensaje}. Factura Nro: ${ReturnDocEntry}`
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario DEvolucion Valorado`, mensaje, 'postCreditNotes', `inventario/dev-valorado-dif-art`, process.env.PRD)
+                return res.status(400).json({
+                    mensaje,
+                    bodyCreditNotes,
+                    ReturnDocEntry,
+                })
+            }
+            const { orderNumber: CreditNoteDocEntry, TransNum } = responseCreditNote
+            await setSyncSalesReturnProcess(DocEntry, ReturnDocEntry, CreditNoteDocEntry, null)
+            return res.json({ responseCreditNote, bodyCreditNotes })
+        }
+
+
+        return res.json({ SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, ReconciliationID })
+
     } catch (error) {
         console.log('error en processUnpaidController')
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
+
 
 module.exports = {
     facturacionController,

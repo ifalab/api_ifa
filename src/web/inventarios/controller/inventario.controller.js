@@ -6294,7 +6294,7 @@ const getValoradosPorIdSapController = async (req, res) => {
             return res.status(401).json({ mensaje: `el usuario no tiene ID SAP` })
         }
         const response = await getValoradosPorIdSap(idSap)
-        console.log({ response })
+        // console.log({ response })
         return res.json(response)
     } catch (error) {
         console.log({ error })
