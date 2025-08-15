@@ -4414,31 +4414,32 @@ const clientesCreadosPorSucursalController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en clientesCreadosPorSucursalController ${error.message || 'No definido'}` });
     }
 };
-const procesarReporte = (
+
+const procesarReporteFinalV3 = (
     datosAcumulados,
     datosVentas,
-    datosAsignados,
     vendedores,
     zonas,
     sucursales,
     tiposClientes
 ) => {
-    // 1. Crear mapas de lookup para una búsqueda rápida, con un fallback a un array vacío
+    // 1. Crear mapas de lookup para una búsqueda rápida
     const mapVendedores = new Map((vendedores || []).map(item => [item.SlpCode, item.SlpName]));
     const mapZonas = new Map((zonas || []).map(item => [item.ZoneCode, item.ZoneName]));
-    const mapSucursales = new Map((sucursales || []).map(item => [item.SucCode, item.SucName]));
+    const mapSucursales = new Map((sucursales || []).map(item => [String(item.SucCode), item.SucName]));
     const mapGrupos = new Map((tiposClientes || []).map(item => [item.GroupCode, item.GroupName]));
 
     const reporteFinal = {};
 
-    // 2. Procesar datos acumulados (clientes asignados) para el nivel superior del reporte
+    // 2. Procesar datos acumulados para el nivel de grupo (Sucursal-Grupo)
     datosAcumulados.filter(item => item.Año >= 2024).forEach(item => {
         const {
-            SucCode,
-            GroupCode,
-            Year,
-            Month,
-            ClientesAsignados
+            "Sucursal Código": SucCode,
+            "Grupo Código": GroupCode,
+            "Año": Year,
+            "Mes": Month,
+            "Clientes Vendidos": ClientesVendidos,
+            "Clientes Asignados": ClientesAsignados
         } = item;
 
         const claveGrupo = `${SucCode}-${GroupCode}-${Year}-${Month}`;
@@ -4446,7 +4447,7 @@ const procesarReporte = (
         if (!reporteFinal[claveGrupo]) {
             reporteFinal[claveGrupo] = {
                 SucCode,
-                SucName: mapSucursales.get(SucCode),
+                SucName: mapSucursales.get(String(SucCode)),
                 GroupCode,
                 GroupName: mapGrupos.get(GroupCode),
                 Year,
@@ -4458,27 +4459,26 @@ const procesarReporte = (
             };
         }
         reporteFinal[claveGrupo].ClientesAcumulados += ClientesAsignados;
+        reporteFinal[claveGrupo].ClientesVendidos += ClientesVendidos;
     });
 
-    // 3. Procesar datos de ventas para añadir los clientes vendidos
+    // 3. Procesar datos de ventas para el nivel de vendedores y zonas
     datosVentas.filter(item => item.Año >= 2024).forEach(item => {
         const {
-            SucCode,
-            GroupCode,
-            SlpCode,
-            ZoneCode,
-            Year,
-            Month,
-            ClientesVendidos
+            "Sucursal Código": SucCode,
+            "Grupo Código": GroupCode,
+            "Vendedor Código": SlpCode,
+            "Zona Código": ZoneCode,
+            "Año": Year,
+            "Mes": Month,
+            "Clientes Vendidos": ClientesVendidos,
+            "Clientes Asignados": ClientesAsignados
         } = item;
 
         const claveGrupo = `${SucCode}-${GroupCode}-${Year}-${Month}`;
         const grupo = reporteFinal[claveGrupo];
 
         if (grupo) {
-            // Sumar al total del grupo
-            grupo.ClientesVendidos += ClientesVendidos;
-
             if (!grupo.Vendedores[SlpCode]) {
                 grupo.Vendedores[SlpCode] = {
                     SlpCode,
@@ -4491,53 +4491,7 @@ const procesarReporte = (
             }
             const vendedor = grupo.Vendedores[SlpCode];
 
-            // Sumar al total del vendedor
             vendedor.ClientesVendidos += ClientesVendidos;
-
-            if (!vendedor.Zonas[ZoneCode]) {
-                vendedor.Zonas[ZoneCode] = {
-                    ZoneCode,
-                    ZoneName: mapZonas.get(ZoneCode),
-                    ClientesVendidos: 0,
-                    ClientesAsignados: 0,
-                };
-            }
-            const zona = vendedor.Zonas[ZoneCode];
-
-            // Sumar a la zona
-            zona.ClientesVendidos += ClientesVendidos;
-        }
-    });
-
-    // 4. Procesar datos de asignados para añadir a vendedores y zonas
-    datosAsignados.filter(item => item.Año >= 2024).forEach(item => {
-        const {
-            SucCode,
-            GroupCode,
-            SlpCode,
-            ZoneCode,
-            Year,
-            Month,
-            ClientesAsignados
-        } = item;
-
-        const claveGrupo = `${SucCode}-${GroupCode}-${Year}-${Month}`;
-        const grupo = reporteFinal[claveGrupo];
-
-        if (grupo) {
-            if (!grupo.Vendedores[SlpCode]) {
-                grupo.Vendedores[SlpCode] = {
-                    SlpCode,
-                    SlpName: mapVendedores.get(SlpCode),
-                    ClientesVendidos: 0,
-                    ClientesAsignados: 0,
-                    EfectividadVentas: "0.00",
-                    Zonas: {}
-                };
-            }
-            const vendedor = grupo.Vendedores[SlpCode];
-
-            // Sumar al total del vendedor
             vendedor.ClientesAsignados += ClientesAsignados;
 
             if (!vendedor.Zonas[ZoneCode]) {
@@ -4546,16 +4500,17 @@ const procesarReporte = (
                     ZoneName: mapZonas.get(ZoneCode),
                     ClientesVendidos: 0,
                     ClientesAsignados: 0,
+                    EfectividadVentas: "0.00" // Añadimos la propiedad de efectividad por zona
                 };
             }
             const zona = vendedor.Zonas[ZoneCode];
 
-            // Sumar a la zona
+            zona.ClientesVendidos += ClientesVendidos;
             zona.ClientesAsignados += ClientesAsignados;
         }
     });
 
-    // 5. Calcular la efectividad y limpiar la estructura
+    // 4. Calcular la efectividad y limpiar la estructura
     Object.values(reporteFinal).forEach(grupo => {
         if (grupo.ClientesAcumulados > 0) {
             const efectividad = (grupo.ClientesVendidos / grupo.ClientesAcumulados) * 100;
@@ -4567,13 +4522,24 @@ const procesarReporte = (
                 const efectividadVendedor = (vendedor.ClientesVendidos / vendedor.ClientesAsignados) * 100;
                 vendedor.EfectividadVentas = efectividadVendedor.toFixed(2);
             }
-            vendedor.Zonas = Object.values(vendedor.Zonas);
+
+            // Calcular efectividad por zona
+            vendedor.Zonas = Object.values(vendedor.Zonas).map(zona => {
+                if (zona.ClientesAsignados > 0) {
+                    const efectividadZona = (zona.ClientesVendidos / zona.ClientesAsignados) * 100;
+                    zona.EfectividadVentas = efectividadZona.toFixed(2);
+                }
+                return zona;
+            });
             return vendedor;
         });
     });
 
-    return Object.values(reporteFinal);
+    return {
+        data: Object.values(reporteFinal)
+    };
 };
+
 // ---
 // 
 const ventasClientesPorSucursalController = async (req, res) => {
@@ -4581,10 +4547,13 @@ const ventasClientesPorSucursalController = async (req, res) => {
         // Asumiendo que estas funciones llaman a los procedimientos almacenados de HANA
         const datosAcumulados = await consulta1(); 
         const datosVentas = await consulta2(); 
-            
+
         const vendedores = await getVendedores();
+
         const zonas = await getZonas();
         const sucursales = await getSucursales();
+
+
         const tiposClientes = await getTiposClientes();
 
 
@@ -4593,7 +4562,7 @@ const ventasClientesPorSucursalController = async (req, res) => {
             return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false });
         }
     
-        const groupedData = procesarReporte(datosAcumulados, datosVentas, vendedores, zonas, sucursales, tiposClientes);
+        const groupedData = procesarReporteFinalV3 (datosAcumulados, datosVentas, vendedores, zonas, sucursales, tiposClientes);
     
         return res.json({
             data: groupedData

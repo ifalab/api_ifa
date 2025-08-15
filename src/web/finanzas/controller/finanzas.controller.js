@@ -1,6 +1,6 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana, getGastosDB, getGastosHanna } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana, getGastosDB, getGastosHanna, getBalanceGeneral } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia, getAgencias } = require('./sql_finanza_controller')
 const ExcelJS = require('exceljs');
 
@@ -1502,8 +1502,7 @@ const gastosGestionAgenciaController = async (req, res) => {
     
     // 1. Agrupa y estandariza los datos de Genesis (base de datos local)
     const agrupado = agruparPorMes(responseGenesis);
-    const gastosHanna = await getGastosHanna();
-    return res.json(gastosHanna);
+    const gastosHanna = await getGastosHanna(+gestion);
     const monthMap = {
       1: 'JANUARY', 2: 'FEBRUARY', 3: 'MARCH', 4: 'APRIL', 5: 'MAY', 6: 'JUNE', 
       7: 'JULY', 8: 'AUGUST', 9: 'SEPTEMBER', 10: 'OCTOBER', 11: 'NOVEMBER', 12: 'DECEMBER'
@@ -2044,6 +2043,84 @@ const getAgenciasGenesis = async(req, res) => {
   }
 }
 
+const obtenerBalanceGeneral = async(req, res) => {
+    try {
+
+          const fechaInicio = req.query.fechaInicio;
+          const fechaFin = req.query.fechaFin;
+        console.log(fechaInicio, fechaFin);
+
+        const rawData = await getBalanceGeneral(fechaInicio, fechaFin);
+
+        // Mapeamos las propiedades con tildes a propiedades sin tildes
+        const data = rawData.map(item => ({
+            ...item,
+            Debito: item['Débito'],
+            Credito: item['Crédito'],
+        }));
+
+        const dataEstructurada = estructurarBalanceParaTree(data);
+        return res.status(200).json({
+            status: true,
+            mensaje: 'Balance obtenido correctamente',
+            data: dataEstructurada
+        });
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[obtenerBalanceGeneral] Error al obtener el balance general: ${error.message}`,
+            data: []
+        });
+    }
+}
+
+const estructurarBalanceParaTree = (dataPlano) => {
+  const mapNivel1 = new Map();
+
+  for (const item of dataPlano) {
+
+    const nivel1Key = `${item['Nombre Nivel 1']}`;
+    const nivel2Key = `${item['Nivel 2']} - ${item['Nombre Nivel 2']}`;
+    const nivel3Key = `${item['Nivel 3']} - ${item['Nombre Nivel 3']}`;
+    const nivel4Key = `${item['Nivel 4']} - ${item['Nombre Nivel 4']}`;
+
+    if (!mapNivel1.has(nivel1Key)) {
+      mapNivel1.set(nivel1Key, { name: nivel1Key, children: [] });
+    }
+    const nivel1Node = mapNivel1.get(nivel1Key);
+
+    let nivel2Node = nivel1Node.children.find(c => c.name === nivel2Key);
+    if (!nivel2Node) {
+      nivel2Node = { name: nivel2Key, children: [] };
+      nivel1Node.children.push(nivel2Node);
+    }
+
+    let nivel3Node = nivel2Node.children.find(c => c.name === nivel3Key);
+    if (!nivel3Node) {
+      nivel3Node = { name: nivel3Key, children: [] };
+      nivel2Node.children.push(nivel3Node);
+    }
+
+    let nivel4Node = nivel3Node.children.find(c => c.name === nivel4Key);
+    if (!nivel4Node) {
+      nivel4Node = { name: nivel4Key, items: [] };
+      nivel3Node.children.push(nivel4Node);
+    }
+
+    nivel4Node.items.push({
+      Cuenta: item['Cuenta'],
+      NombreCuenta: item['Nombre de la Cuenta'],
+      Debito: parseFloat(item['Debito']),
+      Credito: parseFloat(item['Credito']),
+      Saldo: parseFloat(item['Saldo']),
+      Fecha: item['RefDate'],
+    });
+  }
+
+  return Array.from(mapNivel1.values());
+};
+
 
 module.exports = {
   parteDiaroController,
@@ -2069,5 +2146,6 @@ module.exports = {
   getReportBankMajorController,
   getCommercialBankAccountsController,
   excelBankMajorController,
-  getAgenciasGenesis
+  getAgenciasGenesis,
+  obtenerBalanceGeneral
 }

@@ -414,6 +414,21 @@ const getGastosHanna = async (SucCode) => {
 }
 
 
+const getBalanceGeneral = async(fechaInicio, fechaFin) => {
+    try {
+        console.log('getBalanceGeneral EXECUTE');
+        const query = `call ${process.env.PRD}.IFASP_FIN_BALANCE_BY_DATE('${fechaInicio}','${fechaFin}')`
+        console.log(query);
+        return await executeQueryWithConnection(query);
+    } catch (error) {
+        console.error({ error });
+        throw new Error(`Error en getBalanceGeneral: ${error.message}`);
+    }
+}
+
+
+
+
 
 const getGastosSAPHana = async (codigoDimensionA = 0) => {
     console.log(codigoDimensionA);
@@ -535,5 +550,6 @@ module.exports = {
     getGastosSAPHana,
     getGastosAgenciaxGestionSAPHana,
     getGastosDB,
-    getGastosHanna
+    getGastosHanna,
+    getBalanceGeneral
 }
