@@ -12,7 +12,7 @@ const validateExcelDimensionado = (file) => {
     const fila = index + 2; // fila real en Excel
     const errores = [];
 
-    const cuenta = (row['Cuenta'] || '').toString().trim();
+    const cuenta = (row['Cuenta'] ?? '').toString().trim();
     const camposSucursal = ['SucCode', 'SucName'];
     const camposDivisionLinea = ['DivisionCode', 'DivisionName', 'LineCode', 'LineName'];
 
@@ -29,12 +29,13 @@ const validateExcelDimensionado = (file) => {
         }
       }
     }
-
     // Validación 3: si hay Division/Line, debe haber Sucursal
+    const sucCodeValor = (row['SucCode'] ?? '').toString().trim();
+    console.log(sucCodeValor);
     const tieneDivisionOLinea = camposDivisionLinea.some(campo => (row[campo] || '').toString().trim() !== '');
     const faltaSucursal = camposSucursal.some(campo => (row[campo] || '').toString().trim() === '');
 
-    if (tieneDivisionOLinea && faltaSucursal) {
+    if (tieneDivisionOLinea && sucCodeValor !== '0' && faltaSucursal) {
       errores.push('Si hay datos en división o línea, los campos "SucCode" y "SucName" son obligatorios.');
     }
 

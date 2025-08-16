@@ -350,11 +350,46 @@ const insertInventarioEntrada = async (data) => {
         console.log(result);
         return result;
     } catch (error) {
-        console.log({ error })
+        console.error({ error })
         throw new Error(`Error en insercion de inventario`)
     }
 }
 
+const getClientsCode = async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `SELECT "CardCode", "AddID" FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "validFor" = 'Y'`;
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        // console.log(result);
+        return result;
+    } catch (error) {
+        console.error({ error })
+        throw new Error(`Error al obtener los codigos de los clientes`)
+    }
+}
+
+const getSellersCode = async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `SELECT "SlpCode", "SlpName" FROM ${process.env.PRD}.IFA_DM_VENDEDORES WHERE "Active" = 'Y'`;
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        // console.log(result);
+        return result;
+    } catch (error) {
+        console.error({ error })
+        throw new Error(`Error al obtener los codigos de los clientes`)
+    }
+}
 
 module.exports = {
   insertDataLabVenCuotasDetalle,
@@ -368,5 +403,7 @@ module.exports = {
   obtenerEmpleados,
   insertLabUsuarios,
   obtenerInventarioEntrada,
-  insertInventarioEntrada
+  insertInventarioEntrada,
+  getClientsCode,
+  getSellersCode,
 }
