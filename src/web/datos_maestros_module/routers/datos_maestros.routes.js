@@ -29,7 +29,9 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getItemsByLineController,
     getAllSublineasController,
     patchItemsController,
-    getDiscountController
+    getDiscountController,
+    getListaPreciosCostoComercialCadenasController,
+    setPrecioCostoComercialController
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
@@ -97,5 +99,10 @@ router.post('/actualizar-articulo', [validarToken, validarCampos], patchItemsCon
 router.post('/cargar-xsl-precios', [validarToken, validarCampos, upload.any(), validarArchivoExcel,], cargarPreciosExcelController)
 
 router.get('/get-discount', [validarToken, validarCampos], getDiscountController)
+
+router.get('/precios-costo-comercial-cadena', [validarToken, validarCampos], getListaPreciosCostoComercialCadenasController)
+
+router.post('/set-precio-item-costo-comercial', [validarToken, validarCampos], setPrecioCostoComercialController)
+
 
 module.exports = router

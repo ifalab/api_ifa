@@ -8,6 +8,9 @@ const agent = new https.Agent({ rejectUnauthorized: false });
 // Variable para almacenar el estado de la sesión
 let session = null;
 
+
+const REQUEST_TIMEOUT = 30000; 
+
 // Función para conectar y obtener la sesión
 const connectSLD = async () => {
   try {
@@ -147,6 +150,100 @@ const postEntradaHabilitacion = async (data) => {
   }
 };
 
+
+
+const patchBatchNumberDetails = async (batchNumberId, payload) => {
+    try {
+        // 1. Obtiene la sesión actual
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        // 2. Define los encabezados
+        const headers = {
+            'Content-Type': 'application/json',
+            'Cookie': `B1SESSION=${sessionSldId}`,
+            'Prefer': 'return-no-content'
+        };
+        
+        // 3. Define la URL para el PATCH
+        // La URL debe apuntar a la entidad BatchNumberDetails usando el ID del lote
+        const url = `https://srvhana:50000/b1s/v1/BatchNumberDetails(${batchNumberId})`;
+
+        console.log(`Intentando PATCH al lote con ID: ${batchNumberId} con payload:`, payload);
+
+        // 4. Realiza la petición PATCH con axios
+        const sapResponse = await axios.patch(url, payload, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT // Asegúrate de que esta constante esté definida
+        });
+
+        console.log('Respuesta de SAP B1 Service Layer (PATCH):', sapResponse.status);
+
+        // 5. Retorna la respuesta
+        return {
+            status: sapResponse.status, 
+            message: 'Lote actualizado con éxito en SAP Business One.'
+        };
+
+    } catch (error) {
+        // 6. Manejo de errores
+        const errorMessage = error.response?.data?.error?.message?.value || error.message || 'Error desconocido al actualizar el lote.';
+        console.error('Error en la solicitud PATCH para el lote:', error.response?.data || error.message);
+        return {
+            status: error.response?.status || 500,
+            message: errorMessage
+        };
+    }
+};
+
+
+const getBatchNumberDetails = async () => {
+    try {
+        // 1. Verifica o genera una sesión de SAP
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        // 2. Define la URL del endpoint
+        const url = 'https://srvhana:50000/b1s/v1/BatchNumberDetails';
+
+        // 3. Configura los encabezados, incluyendo la cookie de sesión
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`
+        };
+
+        console.log('Intentando obtener la lista de BatchNumberDetails...');
+
+        // 4. Realiza la solicitud GET con axios
+        const response = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers
+        });
+
+        console.log(`Solicitud GET exitosa. Status: ${response.status}`);
+        
+        // 5. La respuesta de SAP B1 es un objeto con una propiedad 'value' que contiene el arreglo de datos.
+        const batchNumberDetails = response.data.value;
+
+        // 6. Retorna el arreglo de los detalles de los lotes
+        return batchNumberDetails;
+
+    } catch (error) {
+        // Manejo de errores centralizado
+        const errorMessage = error.response?.data?.error?.message?.value || error.message || 'Error desconocido en la solicitud GET para BatchNumberDetails.';
+        console.error('Error al obtener los detalles de lotes:', errorMessage);
+        
+        // Retorna un objeto de error para ser manejado por el controller
+        return {
+            error: true,
+            status: error.response?.status || 500,
+            message: errorMessage
+        };
+    }
+};
+
+
+
 const postReturn = async (data) => {
   try {
     // Verifica o genera una sesión
@@ -159,7 +256,8 @@ const postReturn = async (data) => {
     // Configura los encabezados para la solicitud
     const headers = {
       Cookie: `B1SESSION=${sessionSldId}`,
-      Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+      Prefer: 'return-no-content', // Si deseas que la respuesta no incluya contenido
+      timeout: REQUEST_TIMEOUT
     };
     // Realiza la solicitud POST
     data.Series = process.env.SAP_SERIES_RETURN
@@ -586,5 +684,6 @@ module.exports = {
   postReconciliacion,
   cancelReturn, cancelEntrega, cancelCreditNotes,
   getReturns,
-  cancelReconciliacion, cancelInvoice
+  cancelReconciliacion, cancelInvoice,
+  patchBatchNumberDetails,getBatchNumberDetails
 };

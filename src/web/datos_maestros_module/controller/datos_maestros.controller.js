@@ -31,7 +31,9 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getDiscountBySpecialQuotation,
     getDiscountByShortExpiration,
     getDiscountByConditional,
-    getDiscountByLine
+    getDiscountByLine,
+    getListaPreciosCostoComercialByIdCadenas,
+    setPrecioCostoComercial
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners, patchItems } = require("./sld.controller");
@@ -214,6 +216,31 @@ const setPrecioOficialController = async (req, res) => {
     }
 }
 
+const setPrecioCostoComercialController = async (req, res) => {
+    try {
+        const body = req.body
+        console.log({ body })
+        // return res.json({body})
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        let lista = [];
+        for (const line of body.items) {
+            const response = await setPrecioCostoComercial(line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa)
+            if (response.status != 200) {
+                grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error: ${response.message || 'setPrecioOficial()'} `, `call ifa_dm_agregar_precio_oficial()`, "datos-maestros/set-precio-item", process.env.PRD)
+                return res.status(400).json({ mensaje: `${response.message || 'Error en setPrecioOficial'}` })
+            }
+            lista.push(response.data)
+        }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Precios oficiales grabados con exito`, ``, "datos-maestros/set-precio-item", process.env.PRD)
+        return res.json(lista)
+    } catch (error) {
+        console.log({ error })
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error en el controlador setPrecioOficialController: ${error.message || ''} `, `catch del controller`, "datos-maestros/set-precio-item", process.env.PRD)
+        return res.status(500).json({ mensaje: `Error en el controlador setPrecioOficialController: ${error.message || ''}` })
+    }
+}
+
 const getSucursalesController = async (req, res) => {
     try {
         const sucursales = await getSucursales()
@@ -304,6 +331,22 @@ const getListaPreciosByIdCadenasController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosByIdCadenasController: ${error.message || ''}` })
     }
 }
+
+
+
+const getListaPreciosCostoComercialCadenasController = async (req, res) => {
+    try {
+        const lista = await getListaPreciosCostoComercialByIdCadenas()
+        if (lista.status != 200) {
+            return res.status(400).json({ mensaje: `${lista.message || 'Error en getListaPreciosCostoComercialByIdCadenas'}` })
+        }
+        return res.json({ precios: lista.data })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosCostoComercialByIdCadenasController: ${error.message || ''}` })
+    }
+}
+
 
 const setPrecioCadenaController = async (req, res) => {
     try {
@@ -1201,5 +1244,7 @@ module.exports = {
     getItemsByLineController,
     getAllSublineasController,
     patchItemsController,
-    getDiscountController
+    getDiscountController,
+    getListaPreciosCostoComercialCadenasController,
+    setPrecioCostoComercialController
 }

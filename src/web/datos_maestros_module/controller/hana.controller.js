@@ -162,6 +162,30 @@ const setPrecioOficial = async (itemCode, precio, id_vend_sap, glosa) => {
     }
 }
 
+
+
+const setPrecioCostoComercial = async (itemCode, precio, id_vend_sap, glosa) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.ifa_dm_agregar_precio_oficial('${itemCode}',${precio},${id_vend_sap},'${glosa}');`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        console.error('Error en setPrecioOficial:', error);
+        return {
+            status: 400,
+            message: `Error en setPrecioOficial: ${error.message || ''}`
+        }
+    }
+}
+
+
 const getSucursales = async () => {
     try {
         if (!connection) {
@@ -344,6 +368,29 @@ const getListaPreciosByIdCadenas = async (id) => {
         }
     }
 }
+
+
+const getListaPreciosCostoComercialByIdCadenas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_DATA.IFASP_INV_GET_PLANT_COSTS()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        console.error('Error en getListaPreciosByIdCadenas:', error);
+        return {
+            status: 400,
+            message: `Error en getListaPreciosByIdCadenas: ${error.message || ''}`
+        }
+    }
+}
+
 
 const setPrecioCadena = async (listCode, itemCode, precio, id_vend_sap, glosa) => {
     try {
@@ -1418,5 +1465,7 @@ module.exports = {
     getDiscountByShortExpiration,
     getDiscountByConditional,
     getDiscountByLine,
+    getListaPreciosCostoComercialByIdCadenas,
+    setPrecioCostoComercial,
     getNewSucursales,
 }
