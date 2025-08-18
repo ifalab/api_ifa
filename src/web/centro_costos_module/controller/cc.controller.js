@@ -7,7 +7,7 @@ const ExcelJS = require('exceljs');
 const { postInventoryEntries } = require("./sld.controller")
 
 const sapService = require("../services/cc.service");
-const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, getAsientoCompletosDimensionados, getAsientoCabecera, getLineasCCHana, getSubLineasCCHana, updateAgenciaHana, copyAsientoHana, getEtiquetasFuentesHana } = require('./hana.controller');
+const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlantillas, getClasificacionGastos, postDocFuente, asientosContablesCCById, getIdReserva, getBeneficiarios, ObtenerLibroMayorFiltrado, getAsientosSAP, ejecutarInsertSAP, updateAsientoContabilizado, asientoContableCC, postAnularAsientoCC, postDescontabilizarAsientoCC, getBalanceGeneralCC, getobtenerAsientoCompletos, saveClasificacionGastosHana, getAsientoCompletosDimensionados, getAsientoCabecera, getLineasCCHana, getSubLineasCCHana, updateAgenciaHana, copyAsientoHana, getEtiquetasFuentesHana, deleteProjectDimension } = require('./hana.controller');
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const { validateExcelDimensionado } = require('../utils/validateExcelMasivoDimensionado');
 const { parseCommaSeparatedNumbers } = require('../utils/parseCommaSepararedNumbers');
@@ -531,7 +531,7 @@ const cargarPlantillaDimensiones = async (req, res) => {
         // return res.status(200)
     } catch (error) {
         console.error({ error });
-        return res.status(500).json({ mensaje: `Error obtiendo la plantilla para estas dimensiones ${error}` });
+        return res.status(500).json({ mensaje: `Error obtiendo la plantilla para estas dimensiones ${error.message.error}` });
     }
 } 
 
