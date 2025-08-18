@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { processExcel, compareExcel, obtenerCodigos, leerEmpleados, leerInventarioEntrada } = require('../controllers/excel.controller');
+const { processExcel, compareExcel, obtenerCodigos, leerEmpleados, leerInventarioEntrada, processExcelPlanificacion } = require('../controllers/excel.controller');
 
 const router = express.Router();
 
@@ -20,5 +20,7 @@ router.get('/inventario/entrada', leerInventarioEntrada);
 // Ruta para cargar el archivo Excel
 router.post('/upload', upload.single('file'), processExcel);
 router.post('/merge', upload.fields([{name: 'excel1'}, {name: 'excel2'}]), compareExcel);
+
+router.post('/planificacion', upload.single('file'), processExcelPlanificacion)
 
 module.exports = router;

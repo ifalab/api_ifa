@@ -11,7 +11,7 @@ const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlanti
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const { validateExcelDimensionado } = require('../utils/validateExcelMasivoDimensionado');
 const { parseCommaSeparatedNumbers } = require('../utils/parseCommaSepararedNumbers');
-const { getSucursales, getAllLineas, getAllTipos, getSucursalesCode, getAllLineasCode, getAllTiposCode } = require('../../datos_maestros_module/controller/hana.controller');
+const { getSucursales, getAllLineas, getAllTipos, getSucursalesCode, getAllLineasCode, getAllTiposCode, getNewSucursales } = require('../../datos_maestros_module/controller/hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -1513,7 +1513,11 @@ const postExcelDimensionadoController = async (req, res) => {
 
         console.log(sucursales)
 
-        const sucNoValidas = sucursales.filter(suc => !sucursalesValidas.has(String(suc)));
+        // Nota: sucursal 0 significa "todas las sucursales", no se valida contra la lista
+        const sucNoValidas = sucursales.filter(
+            suc => suc !== 0 && !sucursalesValidas.has(String(suc))
+        );
+
         if (sucNoValidas.length > 0) {
             errores.push(`Sucursales no válidas: ${sucNoValidas.join(', ')}`);
         }
@@ -1685,6 +1689,45 @@ const getEtiquetasFuentes = async (req, res) => {
     }
 }
 
+const getCodigosExcel = async(req, res) => {
+    try {
+        const sucursales = await getNewSucursales();
+        const lineas = await getAllLineas();
+        const tipos = await getAllTipos();
+
+        // Crear libro
+        const workbook = new ExcelJS.Workbook();
+
+        // Función para crear hoja
+        const agregarHoja = (nombre, columnas, datos) => {
+            console.log(datos);
+            const worksheet = workbook.addWorksheet(nombre);
+            worksheet.columns = columnas.map(col => ({ header: col, key: col, width: 20 }));
+            worksheet.addRows(datos);
+        };
+
+        // Agregar hojas
+        agregarHoja('Sucursales', ['SucCode', 'SucName'], sucursales);
+        agregarHoja('Lineas', ['LineItemCode', 'LineItemName'], lineas);
+        agregarHoja('TiposClientes', ['GroupCode', 'GroupName'], tipos);
+
+        // Enviar como descarga
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="codigos.xlsx"');
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error('Error al obtener los codigos en Excel:', error);
+        res.status(500).json({
+        status: false,
+        mensaje: 'Error al obtener los codigos en Excel',
+        error: error.message,
+        });
+    }
+}
+
 module.exports = {
     postInventoryEntriesController,
     actualizarAsientoContablePreliminarCCController,
@@ -1722,5 +1765,6 @@ module.exports = {
     copyAsientoController,
     getExcelAsientoController,
     postExcelDimensionadoController,
-    getEtiquetasFuentes
+    getEtiquetasFuentes,
+    getCodigosExcel
 }

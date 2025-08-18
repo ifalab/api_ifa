@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const multer = require('multer');
-const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC, descontabilizarAsientoCC, obtenerBalanceGeneral, obtenerAsientoCompletos, obtenerExcelAsientos, saveClasificacionGastos, cargarExcelMasivo, obtenerAsientoCompletosDimensionados, obtenerAsientoCabecera, obtenerAsientoCompletosDimensionadosExcel, getLineasCC, getSubLineasCC, updateAgenciaController, copyAsientoController, getExcelAsientoController, postExcelDimensionadoController, getEtiquetasFuentes } = require('../controller/cc.controller')
+const { postInventoryEntriesController, actualizarAsientoContablePreliminarCCController, getPDFAsientoContableCC, getCuentasCC, getLibroMayor, excelLibroMayor, docFuentes, cargarPlantillaDimensiones, recuperarPlantillaDimensiones, clasificacionGastos, saveDocFuentes, getAsientoContableCCById, cargarPlantillaMasivaDimensiones, reservarAsientoId, beneficiarios, getLibroMayorFiltrado, asientosContadoSAP, cargarAsientoSAP, actualizarAsientoContabilizado, getAsientoContableCC, anularAsientoCC, descontabilizarAsientoCC, obtenerBalanceGeneral, obtenerAsientoCompletos, obtenerExcelAsientos, saveClasificacionGastos, cargarExcelMasivo, obtenerAsientoCompletosDimensionados, obtenerAsientoCabecera, obtenerAsientoCompletosDimensionadosExcel, getLineasCC, getSubLineasCC, updateAgenciaController, copyAsientoController, getExcelAsientoController, postExcelDimensionadoController, getEtiquetasFuentes, getCodigosExcel } = require('../controller/cc.controller')
 const checkToken = require('../../../middleware/authMiddleware')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware');
@@ -56,5 +56,5 @@ router.post('/get-excel-asiento', [validarToken, validarCampos], getExcelAsiento
 
 router.post('/excel-dimensionado', [validarToken, upload.single('file'), validarCampos], postExcelDimensionadoController)
 router.get('/etiquetas', [validarToken, validarCampos], getEtiquetasFuentes)
-
+router.get('/obtener-codigos', [validarToken, validarCampos], getCodigosExcel)
 module.exports = router

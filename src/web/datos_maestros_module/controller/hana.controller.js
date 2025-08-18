@@ -242,6 +242,26 @@ const getSucursales = async () => {
     }
 }
 
+const getNewSucursales = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_sucursales where "SucCode">99`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en getSucursales:', error.message);
+        return {
+            status: 400,
+            message: `Error en getSucursales: ${error.message || ''}`
+        }
+    }
+}
+
 const getSucursalesCode = async () => {
     try {
         if (!connection) {
@@ -1480,5 +1500,6 @@ module.exports = {
     getDiscountByLine,
     getListaPreciosCostoComercialByIdCadenas,
     setPrecioCostoComercial,
+    getNewSucursales,
     deletePrecioCostoComercial
 }
