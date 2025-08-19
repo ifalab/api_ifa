@@ -11,7 +11,7 @@ const { ObtenerLibroMayor, cuentasCC, getNombreUsuario, getDocFuentes, getPlanti
 const { estructurarBalanceParaTree } = require('../utils/estructurarBalance');
 const { validateExcelDimensionado } = require('../utils/validateExcelMasivoDimensionado');
 const { parseCommaSeparatedNumbers } = require('../utils/parseCommaSepararedNumbers');
-const { getSucursales, getAllLineas, getAllTipos, getSucursalesCode, getAllLineasCode, getAllTiposCode, getNewSucursales } = require('../../datos_maestros_module/controller/hana.controller');
+const { getSucursales, getAllLineas, getAllTipos, getSucursalesCode, getAllLineasCode, getAllTiposCode, getNewSucursales, getAllSublines, getAllSublinesCode } = require('../../datos_maestros_module/controller/hana.controller');
 const postInventoryEntriesController = async (req, res) => {
     try {
         const { data } = req.body
@@ -1495,10 +1495,12 @@ const postExcelDimensionadoController = async (req, res) => {
 
     const sucursalData = await getSucursalesCode();
     const lineaData = await getAllLineasCode();
+    const subLineData = await getAllSublinesCode();
     const tipoData = await getAllTiposCode();
 
     const sucursalesValidas = new Set(sucursalData.map(item => item.SucCode));
     const lineasValidas = new Set(lineaData.map(item => item.LineItemCode));
+    const sublineasValidas = new Set(subLineData.map(item => item.SubLineItemCode));
     const tiposValidas = new Set(tipoData.map(item => item.GroupCode));
 
     const erroresPorFila = [];
@@ -1510,8 +1512,9 @@ const postExcelDimensionadoController = async (req, res) => {
         const sucursales  = parseCommaSeparatedNumbers(row['SucCode'] || '');
         const tipoClientes  = parseCommaSeparatedNumbers(row['DivisionCode'] || '');
         const lineas = parseCommaSeparatedNumbers(row['LineCode'] || '').map(String);
+        const sublineas = parseCommaSeparatedNumbers(row['SubLineCode'] || '');
 
-        console.log(sucursales)
+        // console.log(sucursales)
 
         // Nota: sucursal 0 significa "todas las sucursales", no se valida contra la lista
         const sucNoValidas = sucursales.filter(
@@ -1534,6 +1537,13 @@ const postExcelDimensionadoController = async (req, res) => {
             errores.push(`Líneas no válidas: ${lineasNoValidas.join(', ')}`);
         }
 
+        console.log(subLineData)
+        console.log(sublineas)
+        const subLineasNoValidas = sublineas.filter(sublinea => !sublineasValidas.has(sublinea));
+        if (subLineasNoValidas.length > 0) {
+            errores.push(`SubLíneas no válidas: ${subLineasNoValidas.join(', ')}`);
+        }
+
 
         // Si hay errores, los acumulamos por fila
         if (errores.length > 0) {
@@ -1549,7 +1559,7 @@ const postExcelDimensionadoController = async (req, res) => {
             sucursales,
             tipoClientes,
             lineas,
-            sublineas: []
+            sublineas,
             }
         };
     });
@@ -1694,6 +1704,7 @@ const getCodigosExcel = async(req, res) => {
         const sucursales = await getNewSucursales();
         const lineas = await getAllLineas();
         const tipos = await getAllTipos();
+        const subLineas = await getAllSublines();
 
         // Crear libro
         const workbook = new ExcelJS.Workbook();
@@ -1709,6 +1720,7 @@ const getCodigosExcel = async(req, res) => {
         // Agregar hojas
         agregarHoja('Sucursales', ['SucCode', 'SucName'], sucursales);
         agregarHoja('Lineas', ['LineItemCode', 'LineItemName'], lineas);
+        agregarHoja('SubLineas', ['SubLineItemCode', 'SubLineItemName'], subLineas);
         agregarHoja('TiposClientes', ['GroupCode', 'GroupName'], tipos);
 
         // Enviar como descarga
