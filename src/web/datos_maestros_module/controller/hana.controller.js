@@ -162,6 +162,63 @@ const setPrecioOficial = async (itemCode, precio, id_vend_sap, glosa) => {
     }
 }
 
+
+const setPrecioCostoComercial = async (itemCode, precio, id_vend_sap, glosa) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        
+        // Define los parámetros para el nuevo procedimiento almacenado
+        const costType = ''; 
+        const validFrom = new Date().toISOString().split('T')[0];
+        
+        // La consulta con el valor vacío
+        const query = `call LAB_IFA_DATA.IFASP_INV_CREATE_PLANT_COSTS('${itemCode}', '${costType}', ${precio}, '${validFrom}', '${id_vend_sap}', '${glosa}');`;
+        
+        console.log({ query });
+        const result = await executeQuery(query);
+
+        return {
+            status: 200,
+            data: result
+        };
+    } catch (error) {
+        console.error('Error en setPrecioCostoComercial:', error);
+        return {
+            status: 400,
+            message: `Error en setPrecioCostoComercial: ${error.message || ''}`
+        };
+    }
+};
+
+const deletePrecioCostoComercial = async (UUID) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        
+        const query = `call LAB_IFA_DATA.IFASP_INV_DELETE_PLANT_COSTS('${UUID}');`;
+        
+        console.log({ query });
+        const result = await executeQuery(query);
+
+        return {
+            status: 200,
+            data: result
+        };
+    } catch (error) {
+        console.error('Error en deletePrecioCostoComercial:', error);
+        return {
+            status: 400,
+            message: `Error en deletePrecioCostoComercial: ${error.message || ''}`
+        };
+    }
+};
+
+
+
+
 const getSucursales = async () => {
     try {
         if (!connection) {
@@ -175,6 +232,26 @@ const getSucursales = async () => {
             status: 200,
             data: result
         }
+    } catch (error) {
+        console.log({ error })
+        console.error('Error en getSucursales:', error.message);
+        return {
+            status: 400,
+            message: `Error en getSucursales: ${error.message || ''}`
+        }
+    }
+}
+
+const getNewSucursales = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `SELECT * FROM ${process.env.PRD}.ifa_dm_sucursales where "SucCode">99`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
     } catch (error) {
         console.log({ error })
         console.error('Error en getSucursales:', error.message);
@@ -324,6 +401,29 @@ const getListaPreciosByIdCadenas = async (id) => {
         }
     }
 }
+
+
+const getListaPreciosCostoComercialByIdCadenas = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_DATA.IFASP_INV_GET_PLANT_COSTS()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return {
+            status: 200,
+            data: result
+        }
+    } catch (error) {
+        console.error('Error en getListaPreciosByIdCadenas:', error);
+        return {
+            status: 400,
+            message: `Error en getListaPreciosByIdCadenas: ${error.message || ''}`
+        }
+    }
+}
+
 
 const setPrecioCadena = async (listCode, itemCode, precio, id_vend_sap, glosa) => {
     try {
@@ -1222,6 +1322,25 @@ const getAllSublines = async () => {
     }
 }
 
+const getAllSublinesCode = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select "SubLineItemCode" from LAB_IFA_PRD.IFA_DM_SUBLINEAS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllLineas:', error);
+        throw {
+            status: 400,
+            message: `Error en getAllLineas: ${error.message || ''}`
+        }
+    }
+}
+
 const getDiscountByItem = async () => {
     try {
         if (!connection) {
@@ -1398,4 +1517,9 @@ module.exports = {
     getDiscountByShortExpiration,
     getDiscountByConditional,
     getDiscountByLine,
+    getListaPreciosCostoComercialByIdCadenas,
+    setPrecioCostoComercial,
+    getNewSucursales,
+    deletePrecioCostoComercial,
+    getAllSublinesCode
 }

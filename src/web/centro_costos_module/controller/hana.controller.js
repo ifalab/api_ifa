@@ -520,6 +520,18 @@ const deleteProjectDimension = async (transId) => {
   return results;
 };
 
+const getEtiquetasFuentesHana = async () => {
+    try {
+        console.log('getEtiquetasFuentes EXECUTE');
+        const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_ETIQUETAS_FUENTES`;
+        const result = await executeQueryWithConnection(query);
+        return result;
+    } catch (error) {
+        console.log({ error });
+        throw new Error(`error en getEtiquetasFuentes, ${error}`);
+    }
+};
+
 module.exports = {
     ObtenerLibroMayor,
     cuentasCC,
@@ -553,5 +565,6 @@ module.exports = {
     getSubLineasCCHana,
     updateAgenciaHana,
     copyAsientoHana,
-    deleteProjectDimension
+    deleteProjectDimension,
+    getEtiquetasFuentesHana
 };

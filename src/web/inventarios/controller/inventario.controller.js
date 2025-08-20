@@ -44,11 +44,13 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     kardexPlant,
     getAllWarehouseCommercialByParams,
     kardexCommercial,
-    habilitacionesPorIduser
+    habilitacionesPorIduser,
+    getLotesExpDate
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
-    cancelReconciliacion, cancelInvoice } = require("./sld.controller")
+    cancelReconciliacion, cancelInvoice, 
+patchBatchNumberDetails, getBatchNumberDetails } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega } = require("../../facturacion_module/controller/hana.controller")
@@ -6299,6 +6301,88 @@ const habilitacionesPorIduserController = async (req, res) => {
 };
 
 
+const patchBatchNumberDetailsController = async (req, res) => {
+    try {
+        // 1. Extraer datos del cuerpo de la petición del frontend
+        // El frontend envía: { batchNumberId, ExpirationDate }
+        const { batchNumberId, ExpirationDate } = req.body;
+
+        // 2. Validar que los datos requeridos existan
+        if (!batchNumberId || !ExpirationDate) {
+            const errorMessage = 'Datos incompletos para la actualización del lote. Se requiere el ID del lote y la fecha de expiración.';
+            console.error(errorMessage, req.body);
+            return res.status(400).json({ message: errorMessage });
+        }
+        
+        // 3. Preparar el payload que espera la función para SAP B1
+        const payloadForSAP = {
+            // El nombre de la propiedad debe coincidir con el campo de SAP
+            "ExpirationDate": ExpirationDate 
+        };
+
+        // 4. Llamar a la función patchBatchNumberDetails para interactuar con SAP B1
+        const result = await patchBatchNumberDetails(batchNumberId, payloadForSAP);
+
+        // 5. Enviar la respuesta al frontend
+        if (result.status >= 200 && result.status < 300) {
+            res.status(200).json({ 
+                message: result.message || 'Lote actualizado con éxito.',
+                status: result.status 
+            });
+        } else {
+            res.status(result.status || 500).json({ 
+                message: result.message || 'Error al actualizar el lote en SAP Business One.'
+            });
+        }
+
+    } catch (error) {
+        // Manejo de errores a nivel del controlador
+        console.error('Error en patchBatchNumberDetailsController:', error);
+        res.status(500).json({ 
+            message: 'Error interno del servidor al procesar la actualización del lote.',
+            error: error.message
+        });
+    }
+};
+
+
+const getBatchNumberDetailsController = async (req, res) => {
+    try {
+        console.log('Iniciando la obtención de los detalles de todos los lotes...');
+        
+        // 1. Llama a la función que interactúa con SAP B1
+        const result = await getLotesExpDate();
+
+        // 2. Verifica si la respuesta contiene un error
+        if (result.error) {
+            // Si la función devolvió un error, lo enviamos al cliente
+            console.error('Error en el controlador:', result.message);
+            return res.status(result.status || 500).json({ 
+                message: result.message || 'Error al obtener los detalles de los lotes desde SAP Business One.'
+            });
+        }
+        
+        // 3. Si no hay error, enviamos el arreglo de datos al cliente
+        // El status 200 OK indica que la operación fue exitosa
+        console.log('Se obtuvieron los detalles de los lotes con éxito.');
+        res.status(200).json({
+            message: 'Detalles de lotes obtenidos con éxito.',
+            data: result
+        });
+
+    } catch (error) {
+        // Manejo de errores a nivel de controlador
+        console.error('Error interno en getBatchNumberDetailsController:', error);
+        res.status(500).json({
+            message: 'Error interno del servidor al procesar la solicitud.',
+            error: error.message
+        });
+    }
+};
+
+
+
+
 module.exports = {
     clientePorDimensionUnoController,
     almacenesPorDimensionUnoController,
@@ -6375,5 +6459,7 @@ module.exports = {
     getAllWarehouseCommercialByParamsController,
     kardexCommercialController,
     postEntregaPorOrderNumberController,
-    habilitacionesPorIduserController
+    habilitacionesPorIduserController,
+    patchBatchNumberDetailsController,
+    getBatchNumberDetailsController
 }

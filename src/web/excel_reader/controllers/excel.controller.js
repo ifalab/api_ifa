@@ -2,7 +2,8 @@ const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 
-const { insertDataLabVenCuotasDetalle, obtenerCodigoLineas, obtenerCodigoAreas, obtenerCodigosTipos, obtenerCodigosEspecialidades, obtenerCodigosClasificacion, obtenerCodigosConceptos, insertDataIfaConceptosComerciales, obtenerEmpleados, insertLabUsuarios, obtenerInventarioEntrada, insertInventarioEntrada } = require('./hana.controller');
+const { insertDataLabVenCuotasDetalle, obtenerCodigoLineas, obtenerCodigoAreas, obtenerCodigosTipos, obtenerCodigosEspecialidades, obtenerCodigosClasificacion, obtenerCodigosConceptos, insertDataIfaConceptosComerciales, obtenerEmpleados, insertLabUsuarios, obtenerInventarioEntrada, insertInventarioEntrada, getSellersCode, getClientsCode } = require('./hana.controller');
+const { insertarCabeceraVisita, insertarDetalleVisita } = require('../../planificacion_module/controller/hana.controller');
 
 // Función para procesar el archivo Excel y hacer los inserts
 const processExcel = async (req, res) => {
@@ -262,4 +263,139 @@ const leerInventarioEntrada = async (req, res) => {
     }
 };
 
-module.exports = { processExcel, compareExcel, obtenerCodigos, leerEmpleados, leerInventarioEntrada };
+const processExcelPlanificacion = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se envió ningún archivo' });
+    }
+
+    const vendedores = await getSellersCode();
+    const clients = await getClientsCode();
+
+    const mapVendedores = new Map();
+    vendedores.forEach(v => {
+      mapVendedores.set(v.SlpName.trim(), v.SlpCode);
+    });
+
+    const mapClientes = new Map();
+    clients.forEach(c => {
+      mapClientes.set(c.AddID, c.CardCode);
+    });
+
+    const workbook = XLSX.readFile(req.file.path);
+
+    const fechaBase = new Date(2025, 7, 4);
+    const columnasFechas = [];
+    let fechaTemp = new Date(fechaBase);
+
+    while (columnasFechas.length < 20) { // 4 semanas * 5 días
+      const diaSemana = fechaTemp.getDay();
+      if (diaSemana !== 0 && diaSemana !== 6) {
+        columnasFechas.push(new Date(fechaTemp));
+      }
+      fechaTemp.setDate(fechaTemp.getDate() + 1);
+    }
+    // 1. Leer todo el Excel y agrupar por vendedor
+    const vendedoresMap = new Map();
+
+    for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName];
+        const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        for (let [index, row] of data.slice(2).entries()) {
+            let vendedorNombre = (row[3] || '').toString().trim();
+            let clienteGenesis = (row[4] || '').toString().trim();
+
+            if (!vendedorNombre) continue;
+
+            const slpCode = mapVendedores.get(vendedorNombre);
+            const cardCode = mapClientes.get(clienteGenesis);
+
+            for (let [idx, fecha] of columnasFechas.entries()) {
+            const colExcel = 13 + idx;
+            const valor = row[colExcel];
+
+            if (valor && !isNaN(valor)) {
+                if (!vendedoresMap.has(vendedorNombre)) {
+                vendedoresMap.set(vendedorNombre, {
+                    slpCode,
+                    nombre: vendedorNombre,
+                    planificacion: [],
+                    faltantes: []
+                });
+                }
+
+                const vendedorData = vendedoresMap.get(vendedorNombre);
+
+                if (slpCode === undefined || cardCode === undefined) {
+                vendedorData.faltantes.push({
+                    sheet: sheetName,
+                    vendedorNombre,
+                    slpCode: slpCode ?? -1,
+                    codCliGenesis: clienteGenesis,
+                    cardCode: cardCode ?? null,
+                    cliente: row[5],
+                    fecha: fecha.toISOString().split('T')[0],
+                    hora: '06:00 - 12:00',
+                    comentario: 'Planificación',
+                    filaExcel: index + 3,
+                });
+                } else {
+                vendedorData.planificacion.push({
+                    cardCode,
+                    cliente: row[5],
+                    planVisitDate: fecha.toISOString().slice(0, 10).replace(/-/g, ''),
+                    planVisitTimeFrom: 6,
+                    planVisitTimeTo: 12,
+                    comments: 'Planificación masiva',
+                    createdBy: 538
+                });
+                }
+            }
+            }
+        }
+    }
+
+    for (const [nombreVendedor, vendedorData] of vendedoresMap) {
+        // Crear cabecera para este vendedor
+        const responseCabecera = await insertarCabeceraVisita(
+            'Planificación Masiva',
+            vendedorData.slpCode, // otros parámetros que tengas
+            nombreVendedor,
+            538, // o 0 si no aplica
+            '20250801', // inicio
+            '20250831'  // fin
+        );
+
+        const cabecera_id = responseCabecera[0].PlanId;
+
+        // Insertar detalles
+        for (const visita of vendedorData.planificacion) {
+            await insertarDetalleVisita(
+            cabecera_id,
+            visita.cardCode,
+            visita.cliente,
+            visita.planVisitDate,
+            visita.planVisitTimeFrom,
+            visita.planVisitTimeTo,
+            vendedorData.slpCode,
+            nombreVendedor,
+            visita.comments,
+            visita.createdBy
+            );
+        }
+    }
+    fs.unlinkSync(req.file.path);
+
+    const faltantesTotales = {};
+    for (const [nombreVendedor, data] of vendedoresMap) {
+        faltantesTotales[nombreVendedor] = data.faltantes;
+    }
+    res.status(200).json({ faltantes: faltantesTotales });
+  } catch (error) {
+    console.error('Error procesando processExcelPlanificacion:', error);
+    res.status(500).json({ error: 'Error al procesar processExcelPlanificacion' });
+  }
+};
+
+module.exports = { processExcel, compareExcel, obtenerCodigos, leerEmpleados, leerInventarioEntrada, processExcelPlanificacion };

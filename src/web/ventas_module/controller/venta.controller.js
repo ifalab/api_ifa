@@ -116,7 +116,15 @@ const {
     clientExpiryPolicy,
     selectionBatchByItemWhsCode,
     clientesCreadosPorSucursal,
-    ventasClientesPorSucursal
+    ventasClientesPorSucursal,
+    clientesAcumuladosPorSucursalGrupo,
+    consulta1,
+    consulta2,
+    consulta3,
+    getVendedores,
+    getZonas,
+    getSucursales,
+    getTiposClientes
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -4405,135 +4413,169 @@ const clientesCreadosPorSucursalController = async (req, res) => {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en clientesCreadosPorSucursalController ${error.message || 'No definido'}` });
     }
-}
-const ventasClientesPorSucursalController = async (req, res) => {
-    try {
-        const rawData = await ventasClientesPorSucursal(); // Esta es la función que ejecuta tu SQL y devuelve los datos verticales
-        
-        if (rawData.length === 0) {
-            return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false });
-        }
+};
 
-        const filteredData = rawData.filter(row => row.ClientesVendidosMes !== 0);
+const procesarReporteFinalV3 = (
+    datosAcumulados,
+    datosVentas,
+    vendedores,
+    zonas,
+    sucursales,
+    tiposClientes
+) => {
+    // 1. Crear mapas de lookup para una búsqueda rápida
+    const mapVendedores = new Map((vendedores || []).map(item => [item.SlpCode, item.SlpName]));
+    const mapZonas = new Map((zonas || []).map(item => [item.ZoneCode, item.ZoneName]));
+    const mapSucursales = new Map((sucursales || []).map(item => [String(item.SucCode), item.SucName]));
+    const mapGrupos = new Map((tiposClientes || []).map(item => [item.GroupCode, item.GroupName]));
 
-        if (filteredData.length === 0) {
-            return res.status(404).json({ mensaje: 'No se encontraron datos con ventas', goToExpiry: false });
-        }
-        
-        const pivotedData = {}; // Objeto para almacenar los datos pivotados
+    const reporteFinal = {};
 
-        // Paso 1: Inicializar la estructura de datos para cada sucursal y cada métrica
-        // También podemos recopilar todos los años y meses únicos para las cabeceras
-        const allMonths = new Set();
-        const allYears = new Set();
+    // 2. Procesar datos acumulados para el nivel de grupo (Sucursal-Grupo)
+    datosAcumulados.filter(item => item.Año >= 2024).forEach(item => {
+        const {
+            "Sucursal Código": SucCode,
+            "Grupo Código": GroupCode,
+            "Año": Year,
+            "Mes": Month,
+            "Clientes Vendidos": ClientesVendidos,
+            "Clientes Asignados": ClientesAsignados
+        } = item;
 
-        filteredData.forEach(row => {
-            const { SucName, Year, Month } = row;
-            const monthYearKey = `${Year}-${String(Month).padStart(2, '0')}`; // Formato "YYYY-MM" para ordenar y usar como clave
+        const claveGrupo = `${SucCode}-${GroupCode}-${Year}-${Month}`;
 
-            allYears.add(Year);
-            allMonths.add(monthYearKey); // Añadir al conjunto de meses/años únicos
-
-            if (!pivotedData[SucName]) {
-                pivotedData[SucName] = {
-                    REGION: SucName,
-                    "Total Clientes": {},
-                    "#_CLIENTE_VENTA": {},
-                    "#_CLIENTE_NO_VENTA": {},
-                    "%_VENTA_EFECTIVA": {}
-                };
-            }
-        });
-
-        const sortedMonths = Array.from(allMonths).sort(); // Ordenar los meses cronológicamente
-        const sortedYears = Array.from(allYears).sort(); // Ordenar los años
-
-        // Paso 2: Rellenar los datos pivotados
-        filteredData.forEach(row => {
-            const {
-                SucName,
+        if (!reporteFinal[claveGrupo]) {
+            reporteFinal[claveGrupo] = {
+                SucCode,
+                SucName: mapSucursales.get(String(SucCode)),
+                GroupCode,
+                GroupName: mapGrupos.get(GroupCode),
                 Year,
                 Month,
-                CLIENTESACUMULADOS,
-                ClientesVendidosMes,
-                ClientesNoVendidosMes,
-                PorcentajeEfectividadVentas
-            } = row;
+                ClientesAcumulados: 0,
+                ClientesVendidos: 0,
+                EfectividadTotal: "0.00",
+                Vendedores: {}
+            };
+        }
+        reporteFinal[claveGrupo].ClientesAcumulados += ClientesAsignados;
+        reporteFinal[claveGrupo].ClientesVendidos += ClientesVendidos;
+    });
 
-            const monthYearKey = `${Year}-${String(Month).padStart(2, '0')}`;
+    // 3. Procesar datos de ventas para el nivel de vendedores y zonas
+    datosVentas.filter(item => item.Año >= 2024).forEach(item => {
+        const {
+            "Sucursal Código": SucCode,
+            "Grupo Código": GroupCode,
+            "Vendedor Código": SlpCode,
+            "Zona Código": ZoneCode,
+            "Año": Year,
+            "Mes": Month,
+            "Clientes Vendidos": ClientesVendidos,
+            "Clientes Asignados": ClientesAsignados
+        } = item;
 
-            pivotedData[SucName]["Total Clientes"][monthYearKey] = CLIENTESACUMULADOS;
-            pivotedData[SucName]["#_CLIENTE_VENTA"][monthYearKey] = ClientesVendidosMes;
-            pivotedData[SucName]["#_CLIENTE_NO_VENTA"][monthYearKey] = ClientesNoVendidosMes;
-            pivotedData[SucName]["%_VENTA_EFECTIVA"][monthYearKey] = parseFloat(PorcentajeEfectividadVentas).toFixed(2); // Formatear a 2 decimales
-        });
+        const claveGrupo = `${SucCode}-${GroupCode}-${Year}-${Month}`;
+        const grupo = reporteFinal[claveGrupo];
 
-        // Paso 3: Transformar el objeto pivotado en un array de filas para la respuesta
-        const responseData = [];
-        for (const regionName in pivotedData) {
-            const regionData = pivotedData[regionName];
+        if (grupo) {
+            if (!grupo.Vendedores[SlpCode]) {
+                grupo.Vendedores[SlpCode] = {
+                    SlpCode,
+                    SlpName: mapVendedores.get(SlpCode),
+                    ClientesVendidos: 0,
+                    ClientesAsignados: 0,
+                    EfectividadVentas: "0.00",
+                    Zonas: {}
+                };
+            }
+            const vendedor = grupo.Vendedores[SlpCode];
 
-            // Crear una fila por cada métrica para la región
-            const totalClientesRow = { REGION: regionData.REGION, METRIC: "Total Clientes" };
-            const clientesVentaRow = { REGION: regionData.REGION, METRIC: "#_CLIENTE_VENTA" };
-            const clientesNoVentaRow = { REGION: regionData.REGION, METRIC: "#_CLIENTE_NO_VENTA" };
-            const porcentajeEfectivaRow = { REGION: regionData.REGION, METRIC: "%_VENTA_EFECTIVA" };
+            vendedor.ClientesVendidos += ClientesVendidos;
+            vendedor.ClientesAsignados += ClientesAsignados;
 
-            let totalClientesTotal = 0; // Para la columna 'Total'
-            let clientesVentaTotal = 0;
-            let clientesNoVentaTotal = 0;
-            let totalMesesConVentasParaPromedioEfectividad = 0;
-            let sumaPorcentajeEfectividad = 0;
+            if (!vendedor.Zonas[ZoneCode]) {
+                vendedor.Zonas[ZoneCode] = {
+                    ZoneCode,
+                    ZoneName: mapZonas.get(ZoneCode),
+                    ClientesVendidos: 0,
+                    ClientesAsignados: 0,
+                    EfectividadVentas: "0.00" // Añadimos la propiedad de efectividad por zona
+                };
+            }
+            const zona = vendedor.Zonas[ZoneCode];
 
+            zona.ClientesVendidos += ClientesVendidos;
+            zona.ClientesAsignados += ClientesAsignados;
+        }
+    });
 
-            sortedMonths.forEach(monthKey => {
-                // Rellenar con los valores, si no existen, usar 0 o null según convenga (aquí 0 para números)
-                totalClientesRow[monthKey] = regionData["Total Clientes"][monthKey] || 0;
-                clientesVentaRow[monthKey] = regionData["#_CLIENTE_VENTA"][monthKey] || 0;
-                clientesNoVentaRow[monthKey] = regionData["#_CLIENTE_NO_VENTA"][monthKey] || 0;
-                porcentajeEfectivaRow[monthKey] = regionData["%_VENTA_EFECTIVA"][monthKey] || "0.00"; // Usar string para porcentaje
-
-                // Acumular para los totales
-                totalClientesTotal += totalClientesRow[monthKey];
-                clientesVentaTotal += clientesVentaRow[monthKey];
-                clientesNoVentaTotal += clientesNoVentaRow[monthKey];
-
-                if (regionData["%_VENTA_EFECTIVA"][monthKey] !== undefined && parseFloat(regionData["%_VENTA_EFECTIVA"][monthKey]) !== 0) {
-                     sumaPorcentajeEfectividad += parseFloat(regionData["%_VENTA_EFECTIVA"][monthKey]);
-                     totalMesesConVentasParaPromedioEfectividad++;
-                }
-
-            });
-
-            // Añadir las columnas 'Total'
-            totalClientesRow.Total = totalClientesTotal;
-            clientesVentaRow.Total = clientesVentaTotal;
-            clientesNoVentaRow.Total = clientesNoVentaTotal;
-            porcentajeEfectivaRow.Total = totalMesesConVentasParaPromedioEfectividad > 0
-                ? (sumaPorcentajeEfectividad / totalMesesConVentasParaPromedioEfectividad).toFixed(2)
-                : "0.00";
-
-
-            responseData.push(totalClientesRow);
-            responseData.push(clientesVentaRow);
-            responseData.push(clientesNoVentaRow);
-            responseData.push(porcentajeEfectivaRow);
+    // 4. Calcular la efectividad y limpiar la estructura
+    Object.values(reporteFinal).forEach(grupo => {
+        if (grupo.ClientesAcumulados > 0) {
+            const efectividad = (grupo.ClientesVendidos / grupo.ClientesAcumulados) * 100;
+            grupo.EfectividadTotal = efectividad.toFixed(2);
         }
 
-        // Si necesitas los encabezados de las columnas (años y meses) por separado para el frontend
-        // Puedes enviarlos junto con los datos.
-        const headers = ["REGION", "METRIC", ...sortedMonths, "Total"];
+        grupo.Vendedores = Object.values(grupo.Vendedores).map(vendedor => {
+            if (vendedor.ClientesAsignados > 0) {
+                const efectividadVendedor = (vendedor.ClientesVendidos / vendedor.ClientesAsignados) * 100;
+                vendedor.EfectividadVentas = efectividadVendedor.toFixed(2);
+            }
 
-        return res.json({
-            headers: headers, // Los nombres de las columnas en orden
-            data: responseData // Las filas pivotadas
+            // Calcular efectividad por zona
+            vendedor.Zonas = Object.values(vendedor.Zonas).map(zona => {
+                if (zona.ClientesAsignados > 0) {
+                    const efectividadZona = (zona.ClientesVendidos / zona.ClientesAsignados) * 100;
+                    zona.EfectividadVentas = efectividadZona.toFixed(2);
+                }
+                return zona;
+            });
+            return vendedor;
         });
+    });
 
+    return {
+        data: Object.values(reporteFinal)
+    };
+};
+
+// ---
+// 
+const ventasClientesPorSucursalController = async (req, res) => {
+    try {
+        // Asumiendo que estas funciones llaman a los procedimientos almacenados de HANA
+        const datosAcumulados = await consulta1(); 
+        const datosVentas = await consulta2(); 
+
+        const vendedores = await getVendedores();
+
+        const zonas = await getZonas();
+        const sucursales = await getSucursales();
+
+
+        const tiposClientes = await getTiposClientes();
+
+
+    
+        if (datosAcumulados.length === 0 && datosVentas.length === 0 && datosAsignados.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false });
+        }
+    
+        const groupedData = procesarReporteFinalV3 (datosAcumulados, datosVentas, vendedores, zonas, sucursales, tiposClientes);
+    
+        return res.json({
+            data: groupedData
+        });
+    
     } catch (error) {
         console.error({ error });
-        return res.status(500).json({ mensaje: `Error en ventasClientesPorSucursalController ${error.message || 'No definido'}` });
+        return res.status(500).json({ mensaje: `Error en ventasClientesPorSucursalController: ${error.message || 'No definido'}` });
     }
 };
+    
+
+
 const ventasEfectividadPorSucursalController = async (req, res) => {
     try {
         const sucursal = req.query.sucursal;
@@ -4542,6 +4584,8 @@ const ventasEfectividadPorSucursalController = async (req, res) => {
             return res.status(400).json({ mensaje: 'Debe proporcionar el nombre de la sucursal', goToExpiry: false });
         }
         const rawData = await ventasClientesPorSucursal();
+
+        
         const filtered = rawData.filter(row =>
             row.Year >= 2024 &&
             row.CLIENTESACUMULADOS !== null &&

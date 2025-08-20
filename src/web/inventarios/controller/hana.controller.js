@@ -1179,6 +1179,24 @@ const habilitacionesPorIduser = async (iduser) => {
     }
 }
 
+const getLotesExpDate = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFASP_GET_BRANCHES()`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getLotesExpDate:', error.message);
+        throw {
+            message: `Error al procesar getLotesExpDate: ${error.message || ''}`
+        }
+    }
+}
+
+
 
 
 module.exports = {
@@ -1240,5 +1258,6 @@ module.exports = {
     kardexPlant,
     getAllWarehouseCommercialByParams,
     kardexCommercial,
-    habilitacionesPorIduser
+    habilitacionesPorIduser,
+    getLotesExpDate
 }

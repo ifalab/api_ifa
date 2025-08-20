@@ -1,6 +1,6 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana, getGastosDB, getGastosHanna, getBalanceGeneral } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia, getAgencias } = require('./sql_finanza_controller')
 const ExcelJS = require('exceljs');
 
@@ -1216,7 +1216,6 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
 
         // 1. Obtener todos los gastos de tu fuente interna (Genesis)
         const rawInternalGastos = await gastosXAgencia(codigo);
-        // Normalización de los nombres de grupo (se mantiene igual, es el primer paso)
         const allInternalGastos = rawInternalGastos.map(gasto => {
             let desc_grupo_normalizado = gasto.desc_grupo.trim();
             if (desc_grupo_normalizado === 'COSTOS') {
@@ -1230,11 +1229,26 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
         // 2. Obtener los gastos de SAP
         const allSapGastos = await getGastosSAPHana(codigo);
         console.log('Gastos SAP: ', allSapGastos);
-        
+
+        // 3. Obtener los datos históricos de la tabla DB y procesarlos
+        const gastosDB = await getGastosDB(codigo);
+        const historicalData = gastosDB
+            .filter(item => !isNaN(new Date(item.Date)))
+            .map(item => {
+                const normalizedAmount = parseFloat(String(item.Amount));
+                const year = parseInt(item.Date.split('-')[0]);
+                return {
+                    year: year,
+                    desc_grupo: item.GroupName.trim(),
+                    monto: normalizedAmount
+                };
+            });
+        console.log('Datos Históricos de la tabla DB:', historicalData);
+
         const TRANSITION_YEAR = 2024;
         const consolidatedFinancialsByYear = {};
 
-        // 1. Inicializar con datos de SAP (para tener todos los años presentes y sus ceros si no hay datos)
+        // 1. Inicializar con datos de SAP
         allSapGastos.forEach(sapItem => {
             const year = sapItem.Año;
             consolidatedFinancialsByYear[year] = {
@@ -1245,42 +1259,46 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
                 margenPorcentual: null
             };
         });
-        // 2. Aplicar/Sumar datos de Genesis
-        allInternalGastos.forEach(gasto => {
-            const year = gasto.Gestion;
-            // Solo consideramos los gastos de Genesis que son Ventas Netas o Costo Comercial
-            if (gasto.desc_grupo === 'VENTAS NETAS' || gasto.desc_grupo === 'COSTO COMERCIAL') {
-                // Asegurarse de que el año exista en consolidatedFinancialsByYear
-                if (!consolidatedFinancialsByYear[year]) {
-                    consolidatedFinancialsByYear[year] = {
-                        year: year,
-                        ventasNetas: 0,
-                        costoComercial: 0,
-                        utilidadBruta: 0,
-                        margenPorcentual: null
-                    };
-                }
-                if (year === TRANSITION_YEAR) {
-                    // Para el año de transición (2024), SUMAR ambos.
+
+        // 2. Unir todas las fuentes de gastos en un solo array
+        const allSourcesGastos = [...allInternalGastos, ...historicalData];
+        const allSourcesYears = new Set(allSourcesGastos.map(gasto => gasto.Gestion || gasto.year));
+
+        allSourcesYears.forEach(year => {
+            if (!consolidatedFinancialsByYear[year]) {
+                consolidatedFinancialsByYear[year] = {
+                    year: year,
+                    ventasNetas: 0,
+                    costoComercial: 0,
+                    utilidadBruta: 0,
+                    margenPorcentual: null
+                };
+            }
+
+            // Para años ANTERIORES a la transición, usar EXCLUSIVAMENTE los datos históricos.
+            if (year < TRANSITION_YEAR) {
+                const historicalYearData = historicalData.filter(g => g.year === year);
+                historicalYearData.forEach(gasto => {
+                    if (gasto.desc_grupo === 'VENTAS NETAS') {
+                        consolidatedFinancialsByYear[year].ventasNetas = gasto.monto;
+                    } else if (gasto.desc_grupo === 'COSTO COMERCIAL') {
+                        consolidatedFinancialsByYear[year].costoComercial = gasto.monto;
+                    }
+                });
+            }
+            // Para el año de transición (2024), SUMAR los datos de Genesis y SAP.
+            else if (year === TRANSITION_YEAR) {
+                const genesisYearData = allInternalGastos.filter(g => g.Gestion === year);
+                genesisYearData.forEach(gasto => {
                     if (gasto.desc_grupo === 'VENTAS NETAS') {
                         consolidatedFinancialsByYear[year].ventasNetas += gasto.monto;
                     } else if (gasto.desc_grupo === 'COSTO COMERCIAL') {
                         consolidatedFinancialsByYear[year].costoComercial += gasto.monto;
                     }
-                } else if (year < TRANSITION_YEAR) {
-                    // Para años ANTERIORES a la transición (ej. 2018, 2022),
-                    // usar EXCLUSIVAMENTE los datos de Genesis (sobrescribe lo de SAP si lo había)
-                    if (gasto.desc_grupo === 'VENTAS NETAS') {
-                        consolidatedFinancialsByYear[year].ventasNetas += gasto.monto;
-                    } else if (gasto.desc_grupo === 'COSTO COMERCIAL') {
-                        consolidatedFinancialsByYear[year].costoComercial += gasto.monto;
-                    }
-                }
-                // Para años > TRANSITION_YEAR (como 2025), no se hace nada con los datos de Genesis aquí.
-                // Se mantienen los valores inicializados desde SAP.
+                });
             }
         });
-        // 3. Calcular Utilidad Bruta y Margen Porcentual para cada año consolidado
+
         Object.values(consolidatedFinancialsByYear).forEach(item => {
             item.utilidadBruta = item.ventasNetas - item.costoComercial;
             if (item.ventasNetas !== 0) {
@@ -1289,21 +1307,24 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
                 item.margenPorcentual = null;
             }
         });
-
-        // Convertir el objeto a un array si necesitas iterar sobre él en orden
         const finalConsolidatedFinancials = Object.values(consolidatedFinancialsByYear).sort((a, b) => a.year - b.year);
-        console.log('Datos financieros consolidados por año (después de ajustar 2025):', JSON.stringify(finalConsolidatedFinancials, null, 2));
-        const genesisGastosForProcessing = allInternalGastos.filter(gasto => {
-            const descGrupoTrimmed = gasto.desc_grupo.trim();
-            // Solo incluimos en esta lista los gastos que NO son Ventas Netas ni Costo Comercial
-            return descGrupoTrimmed !== 'VENTAS NETAS' && descGrupoTrimmed !== 'COSTO COMERCIAL';
+
+        const allNonFinancialGastos = allSourcesGastos.filter(gasto => {
+            const descGrupoTrimmed = (gasto.desc_grupo || '').trim();
+            return descGrupoTrimmed !== 'VENTAS NETAS' &&
+                   descGrupoTrimmed !== 'COSTO COMERCIAL' &&
+                   descGrupoTrimmed !== 'UTILIDAD BRUTA' &&
+                   descGrupoTrimmed !== 'TOTAL GASTOS';
         });
-        const datosProcesados = procesarGastos(genesisGastosForProcessing);
+
+        const datosProcesados = procesarGastos(allNonFinancialGastos);
         const data = calcularPorcentajes(datosProcesados);
+        
         const totalGastosInternosByYear = Object.entries(data.totalByYear).map(([year, total]) => ({
             date: year,
             monto: total,
         }));
+        
         const processData = data.datosConPorcentajes.map((item) => {
             const { desc_grupo, montos, porcentajes, ...rest } = item;
             const montosArray = Object.entries(montos).map(([year, monto]) => ({ year, monto }));
@@ -1315,39 +1336,35 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
                 ...rest,
             };
         });
-        // --- 3. Identificar todos los años únicos de ambas fuentes (incluyendo los de la consolidación) ---
-        const yearsFromInternalGastos = new Set(genesisGastosForProcessing.map(g => g.Gestion)); // Aquí también se usan los gastos ya filtrados
+
+        const yearsFromInternalGastos = new Set(allNonFinancialGastos.map(g => g.Gestion || g.year));
         const yearsFromConsolidated = new Set(finalConsolidatedFinancials.map(f => f.year));
         const allYears = Array.from(new Set([...yearsFromInternalGastos, ...yearsFromConsolidated]))
-                              .sort((a, b) => a - b);
-        // --- 4. Crear una estructura base para cada año único ---
+                                     .sort((a, b) => a - b);
+
         let combinedFormattedData = allYears.map(year => ({
             date: String(year),
             detalle: []
         }));
-        // --- 5. Rellenar los detalles de cada año ---
+
         processData.forEach(item => {
             item.montos.forEach(montoItem => {
-                const yearIndex = combinedFormattedData.findIndex(d => d.date === montoItem.year);
+                const yearIndex = combinedFormattedData.findIndex(d => d.date === String(montoItem.year));
                 if (yearIndex !== -1) {
-                    const porcentajeObj = item.porcentajes.find(p => p.year === montoItem.year);
+                    const porcentajeObj = item.porcentajes.find(p => p.year === String(montoItem.year));
                     combinedFormattedData[yearIndex].detalle.push({
                         desc_grupo: item.desc_grupo,
                         monto: montoItem.monto,
-                        porcentaje: porcentajeObj ? porcentajeObj.porcentaje : null
+                        porcentaje: porcentajeObj ? parseFloat(porcentajeObj.porcentaje) : null
                     });
                 }
             });
         });
-        // Segundo, añadir las métricas financieras consolidadas y el TOTAL GASTOS
-        // Estas son las ÚNICAS entradas para VENTAS NETAS, COSTO COMERCIAL y UTILIDAD BRUTA.
+
         combinedFormattedData.forEach((item) => {
             const year = Number(item.date);
             const consolidatedData = finalConsolidatedFinancials.find((c) => c.year === year);
-
-            // Obtener el total de gastos internos para este año
             const totalGastosParaEsteAno = totalGastosInternosByYear.find(g => Number(g.date) === year)?.monto ?? 0;
-
             item.detalle.push(
                 {
                     desc_grupo: 'TOTAL GASTOS',
@@ -1371,7 +1388,7 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
                 }
             );
         });
-        // --- 6. Agregamos el objeto "Total" consolidado ---
+
         const totalPorGrupo = {};
         combinedFormattedData.forEach(({ detalle }) => {
             detalle.forEach(({ desc_grupo, monto }) => {
@@ -1383,7 +1400,6 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
         });
         const detalleTotal = Object.entries(totalPorGrupo).map(([desc_grupo, monto]) => {
             let porcentaje = null;
-            // Recalcular el porcentaje de Utilidad Bruta para el Total
             if (desc_grupo === 'UTILIDAD BRUTA') {
                 const totalVentasNetas = totalPorGrupo['VENTAS NETAS'] || 0;
                 if (totalVentasNetas !== 0) {
@@ -1402,45 +1418,33 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
             detalle: detalleTotal,
         });
 
-        // --- 7. Calculamos la diferencia por año (Consolidated Utilidad Bruta - Gastos Internos) ---
         const resultadoDiferenciaByYearArray = allYears.map(year => {
             const consolidatedData = finalConsolidatedFinancials.find((c) => c.year === year);
             const totalGastos = totalGastosInternosByYear.find(g => Number(g.date) === year)?.monto ?? 0;
             const utilidadBruta = consolidatedData ? consolidatedData.utilidadBruta : 0;
             const diferencia = utilidadBruta - totalGastos;
-
             return {
                 date: String(year),
                 monto: diferencia,
             };
         });
 
-        // --- 8. Ordenamos los detalles de cada año según el orden personalizado ---
         const ordenPersonalizado = [
-            'VENTAS NETAS',
-            'COSTO COMERCIAL',
-            'UTILIDAD BRUTA',
-            'TOTAL GASTOS', // Este es el total de los gastos internos *sin* ventas/costo comercial
-            'DEVOLUCIONES',
-            'GASTOS ADMINISTRATIVOS',
-            'GASTOS COMERCIALES',
-            'PARTIDAS QUE NO MUEVEN EFECTIVO',
-            'RECURSOS HUMANOS',
-            // Puedes añadir más si hay otras categorías de gastos internos aquí
+            'VENTAS NETAS', 'COSTO COMERCIAL', 'UTILIDAD BRUTA', 'TOTAL GASTOS', 'DEVOLUCIONES',
+            'GASTOS ADMINISTRATIVOS', 'GASTOS COMERCIALES', 'PARTIDAS QUE NO MUEVEN EFECTIVO', 'RECURSOS HUMANOS',
         ];
 
         combinedFormattedData.forEach((item) => {
             item.detalle.sort((a, b) => {
                 const indexA = ordenPersonalizado.indexOf(a.desc_grupo);
                 const indexB = ordenPersonalizado.indexOf(b.desc_grupo);
-
                 if (indexA === -1 && indexB === -1) return 0;
                 if (indexA === -1) return 1;
                 if (indexB === -1) return -1;
                 return indexA - indexB;
             });
         });
-
+        
         console.log("Combined Formatted Data Final:", JSON.stringify(combinedFormattedData, null, 2));
         console.log("Diferencia por Año Final:", JSON.stringify(resultadoDiferenciaByYearArray, null, 2));
 
@@ -1452,43 +1456,32 @@ const findXAgenciaSimpleGastosController = async (req, res) => {
     }
 };
 
-
 const procesarGastos = (gastos) => {
   const resultado = {};
-
-  // Agrupar por desc_grupo
   gastos.forEach((gasto) => {
-    const { Gestion, desc_grupo, monto } = gasto;
+    const year = gasto.Gestion || gasto.year;
+    const { desc_grupo, monto } = gasto;
     if (!resultado[desc_grupo]) {
       resultado[desc_grupo] = { desc_grupo, montos: {}, total: 0 };
     }
-    // Agregar monto por año (Gestion)
-    resultado[desc_grupo].montos[Gestion] =
-      (resultado[desc_grupo].montos[Gestion] || 0) + monto;
-
-    // Sumar al total
+    resultado[desc_grupo].montos[year] = (resultado[desc_grupo].montos[year] || 0) + monto;
     resultado[desc_grupo].total += monto;
   });
-
-  // Formatear el resultado en un array para mayor flexibilidad
   return Object.values(resultado);
 };
 
 const calcularPorcentajes = (datosProcesados) => {
-  // Calcular el total general por año
   const totalByYear = {};
-
   datosProcesados.forEach((grupo) => {
     Object.entries(grupo.montos).forEach(([year, monto]) => {
       totalByYear[year] = (totalByYear[year] || 0) + monto;
     });
   });
 
-  // Agregar porcentajes al resultado
   const datosConPorcentajes = datosProcesados.map((grupo) => {
     const porcentajes = {};
     Object.entries(grupo.montos).forEach(([year, monto]) => {
-      porcentajes[year] = ((monto / totalByYear[year]) * 100).toFixed(2); // Formatear a 2 decimales
+      porcentajes[year] = ((monto / totalByYear[year]) * 100).toFixed(2);
     });
     return {
       ...grupo,
@@ -1504,91 +1497,85 @@ const gastosGestionAgenciaController = async (req, res) => {
     const gestion = req.query.gestion;
     const codigo = req.query.codigo;
 
-    const response = await gastosGestionAgencia(+gestion, +codigo);
+    const responseGenesis = await gastosGestionAgencia(+gestion, +codigo);
     const responseHana = await getGastosAgenciaxGestionSAPHana(+gestion, +codigo);
-    const agrupado = agruparPorMes(response);
-
+    
+    // 1. Agrupa y estandariza los datos de Genesis (base de datos local)
+    const agrupado = agruparPorMes(responseGenesis);
+    const gastosHanna = await getGastosHanna(+gestion);
     const monthMap = {
-      1: 'JANUARY',
-      2: 'FEBRUARY',
-      3: 'MARCH',
-      4: 'APRIL',
-      5: 'MAY',
-      6: 'JUNE',
-      7: 'JULY',
-      8: 'AUGUST',
-      9: 'SEPTEMBER',
-      10: 'OCTOBER',
-      11: 'NOVEMBER',
-      12: 'DECEMBER'
+      1: 'JANUARY', 2: 'FEBRUARY', 3: 'MARCH', 4: 'APRIL', 5: 'MAY', 6: 'JUNE', 
+      7: 'JULY', 8: 'AUGUST', 9: 'SEPTEMBER', 10: 'OCTOBER', 11: 'NOVEMBER', 12: 'DECEMBER'
     };
-
+    
     const ordenPersonalizado = [
-      'VENTAS NETAS',
-      'COSTO COMERCIAL',
-      'UTILIDAD BRUTA',
-      'DEVOLUCIONES',
-      'GASTOS ADMINISTRATIVOS',
-      'GASTOS COMERCIALES',
-      'PARTIDAS QUE NO MUEVEN EFECTIVO',
-      'RECURSOS HUMANOS',
-      'TOTAL GASTOS'
+      'VENTAS NETAS', 'COSTO COMERCIAL', 'UTILIDAD BRUTA', 'DEVOLUCIONES',
+      'GASTOS ADMINISTRATIVOS', 'GASTOS COMERCIALES', 'PARTIDAS QUE NO MUEVEN EFECTIVO',
+      'RECURSOS HUMANOS', 'TOTAL GASTOS'
     ];
 
-    // Agregamos datos de HANA a agrupado
+    // 2. Recorre los datos de HANA y los fusiona con los de Genesis
     responseHana.forEach((hanaItem) => {
       const monthName = monthMap[+hanaItem.Mes];
-      const mesEncontrado = agrupado.find((g) => g.date === monthName);
+      let mesEncontrado = agrupado.find((g) => g.date === monthName);
+
+      if (!mesEncontrado) {
+        mesEncontrado = { date: monthName, detalle: [] };
+        agrupado.push(mesEncontrado);
+      }
 
       const infoHanaDetalle = [
-        {
-          desc_grupo: 'UTILIDAD BRUTA',
-          monto: parseFloat(hanaItem.UtilidadBruta)
-        },
-        {
-          desc_grupo: 'VENTAS NETAS',
-          monto: parseFloat(hanaItem.TotalVentasNetas)
-        },
-        {
-          desc_grupo: 'COSTO COMERCIAL',
-          monto: parseFloat(hanaItem.CostoComercialTotal)
-        },
-        {
-          desc_grupo: 'MARGEN %',
-          monto: parseFloat(hanaItem.MargenPorcentual)
-        }
+        { desc_grupo: 'VENTAS NETAS', monto: parseFloat(hanaItem.TotalVentasNetas) },
+        { desc_grupo: 'COSTO COMERCIAL', monto: parseFloat(hanaItem.CostoComercialTotal) },
+        { desc_grupo: 'UTILIDAD BRUTA', monto: parseFloat(hanaItem.UtilidadBruta) },
       ];
 
-      if (mesEncontrado) {
-        mesEncontrado.detalle.unshift(...infoHanaDetalle.reverse());
-      } else {
-        agrupado.push({
-          date: monthName,
-          detalle: [...infoHanaDetalle]
-        });
-      }
+      infoHanaDetalle.forEach(hanaDetalle => {
+        const detalleExistente = mesEncontrado.detalle.find(d => d.desc_grupo === hanaDetalle.desc_grupo);
+        if (detalleExistente) {
+          // Si el grupo ya existe (de Genesis), suma el valor de HANA
+          detalleExistente.monto += hanaDetalle.monto;
+        } else {
+          // Si no existe, lo agrega
+          mesEncontrado.detalle.push(hanaDetalle);
+        }
+      });
     });
 
-    // Aseguramos que todos los meses tengan todos los grupos del ordenPersonalizado
+    // 3. Itera sobre los meses agrupados para hacer los cálculos finales
     for (const mes of agrupado) {
+      // Rellena los campos faltantes con 0
       const descsActuales = mes.detalle.map(d => d.desc_grupo);
-
-      // Añadimos los grupos faltantes con monto 0
       ordenPersonalizado.forEach((desc) => {
         if (!descsActuales.includes(desc)) {
           mes.detalle.push({ desc_grupo: desc, monto: 0 });
         }
       });
+      
+      // Si la utilidad bruta es 0 o no existe, la calcula (útil para meses solo con Genesis)
+      const ventasNetasItem = mes.detalle.find(d => d.desc_grupo === 'VENTAS NETAS');
+      const costoComercialItem = mes.detalle.find(d => d.desc_grupo === 'COSTO COMERCIAL');
+      const utilidadBrutaItem = mes.detalle.find(d => d.desc_grupo === 'UTILIDAD BRUTA');
 
+      if ((utilidadBrutaItem && utilidadBrutaItem.monto === 0) || !utilidadBrutaItem) {
+        if (ventasNetasItem && costoComercialItem) {
+          const utilidadBrutaCalculada = parseFloat(ventasNetasItem.monto) - parseFloat(costoComercialItem.monto);
+          if (utilidadBrutaItem) {
+            utilidadBrutaItem.monto = utilidadBrutaCalculada;
+          } else {
+            mes.detalle.push({ desc_grupo: 'UTILIDAD BRUTA', monto: utilidadBrutaCalculada });
+          }
+        }
+      }
+
+      // 4. Calcula TOTAL GASTOS
       mes.detalle = mes.detalle.filter(d => d.desc_grupo !== 'MARGEN %');
-
       const totalGastos = mes.detalle
         .filter(d =>
           !['VENTAS NETAS', 'COSTO COMERCIAL', 'UTILIDAD BRUTA', 'TOTAL GASTOS'].includes(d.desc_grupo)
         )
         .reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
-
-      // Reemplazar o insertar TOTAL GASTOS
+      
       const idxTotal = mes.detalle.findIndex(d => d.desc_grupo === 'TOTAL GASTOS');
       if (idxTotal >= 0) {
         mes.detalle[idxTotal].monto = totalGastos;
@@ -1596,7 +1583,7 @@ const gastosGestionAgenciaController = async (req, res) => {
         mes.detalle.push({ desc_grupo: 'TOTAL GASTOS', monto: totalGastos });
       }
 
-      // Ordenar detalle según orden personalizado
+      // 5. Ordena el detalle según el orden personalizado
       mes.detalle.sort((a, b) => {
         const idxA = ordenPersonalizado.indexOf(a.desc_grupo);
         const idxB = ordenPersonalizado.indexOf(b.desc_grupo);
@@ -1611,39 +1598,51 @@ const gastosGestionAgenciaController = async (req, res) => {
     return res.status(500).json({ mensaje: 'error en el controlador' });
   }
 };
-
-
 function agruparPorMes(data) {
-  const resultado = data.reduce((acumulador, item) => {
-    const mes = item.mes.trim(); // Asegúrate de eliminar espacios
-    const desc_grupo = item.desc_grupo.trim(); // Asegúrate de eliminar espacios
+  const spanishToEnglishMonthMap = {
+    'ENERO': 'JANUARY', 'FEBRERO': 'FEBRUARY', 'MARZO': 'MARCH', 'ABRIL': 'APRIL', 
+    'MAYO': 'MAY', 'JUNIO': 'JUNE', 'JULIO': 'JULY', 'AGOSTO': 'AUGUST', 
+    'SEPTIEMBRE': 'SEPTEMBER', 'OCTUBRE': 'OCTOBER', 'NOVIEMBRE': 'NOVEMBER', 'DICIEMBRE': 'DECEMBER'
+  };
 
-    // Busca si el mes ya existe en el acumulador
+  const descGroupMap = {
+    'VENTAS': 'VENTAS NETAS',
+    'COSTOS': 'COSTO COMERCIAL'
+  };
+
+  const resultado = data.reduce((acumulador, item) => {
+    if (!item || !item.mes || !item.desc_grupo) {
+      return acumulador;
+    }
+
+    const desc_grupo_original = item.desc_grupo.trim().toUpperCase();
+    const desc_grupo = descGroupMap[desc_grupo_original] || desc_grupo_original;
+    
+    const mes_original = item.mes.trim().toUpperCase();
+    const mes = spanishToEnglishMonthMap[mes_original] || mes_original;
+
     let entradaMes = acumulador.find((entrada) => entrada.date === mes);
 
     if (!entradaMes) {
-      // Si el mes no existe, inicialízalo
       entradaMes = { date: mes, detalle: [] };
       acumulador.push(entradaMes);
     }
 
-    // Busca si el desc_grupo ya existe en el detalle de este mes
     let entradaGrupo = entradaMes.detalle.find((detalle) => detalle.desc_grupo === desc_grupo);
 
     if (!entradaGrupo) {
-      // Si el grupo no existe, inicialízalo
-      entradaGrupo = { desc_grupo: desc_grupo, monto: 0 };
+      entradaGrupo = { desc_grupo: desc_grupo, monto: parseFloat(item.monto) || 0 };
       entradaMes.detalle.push(entradaGrupo);
+    } else {
+      entradaGrupo.monto += parseFloat(item.monto) || 0;
     }
-
-    // Suma el monto al grupo
-    entradaGrupo.monto += parseFloat(item.monto);
 
     return acumulador;
   }, []);
 
   return resultado;
 }
+
 
 const reporteArticulosPendientesController = async (req, res) => {
   try {
@@ -2044,6 +2043,84 @@ const getAgenciasGenesis = async(req, res) => {
   }
 }
 
+const obtenerBalanceGeneral = async(req, res) => {
+    try {
+
+          const fechaInicio = req.query.fechaInicio;
+          const fechaFin = req.query.fechaFin;
+        console.log(fechaInicio, fechaFin);
+
+        const rawData = await getBalanceGeneral(fechaInicio, fechaFin);
+
+        // Mapeamos las propiedades con tildes a propiedades sin tildes
+        const data = rawData.map(item => ({
+            ...item,
+            Debito: item['Débito'],
+            Credito: item['Crédito'],
+        }));
+
+        const dataEstructurada = estructurarBalanceParaTree(data);
+        return res.status(200).json({
+            status: true,
+            mensaje: 'Balance obtenido correctamente',
+            data: dataEstructurada
+        });
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `[obtenerBalanceGeneral] Error al obtener el balance general: ${error.message}`,
+            data: []
+        });
+    }
+}
+
+const estructurarBalanceParaTree = (dataPlano) => {
+  const mapNivel1 = new Map();
+
+  for (const item of dataPlano) {
+
+    const nivel1Key = `${item['Nombre Nivel 1']}`;
+    const nivel2Key = `${item['Nivel 2']} - ${item['Nombre Nivel 2']}`;
+    const nivel3Key = `${item['Nivel 3']} - ${item['Nombre Nivel 3']}`;
+    const nivel4Key = `${item['Nivel 4']} - ${item['Nombre Nivel 4']}`;
+
+    if (!mapNivel1.has(nivel1Key)) {
+      mapNivel1.set(nivel1Key, { name: nivel1Key, children: [] });
+    }
+    const nivel1Node = mapNivel1.get(nivel1Key);
+
+    let nivel2Node = nivel1Node.children.find(c => c.name === nivel2Key);
+    if (!nivel2Node) {
+      nivel2Node = { name: nivel2Key, children: [] };
+      nivel1Node.children.push(nivel2Node);
+    }
+
+    let nivel3Node = nivel2Node.children.find(c => c.name === nivel3Key);
+    if (!nivel3Node) {
+      nivel3Node = { name: nivel3Key, children: [] };
+      nivel2Node.children.push(nivel3Node);
+    }
+
+    let nivel4Node = nivel3Node.children.find(c => c.name === nivel4Key);
+    if (!nivel4Node) {
+      nivel4Node = { name: nivel4Key, items: [] };
+      nivel3Node.children.push(nivel4Node);
+    }
+
+    nivel4Node.items.push({
+      Cuenta: item['Cuenta'],
+      NombreCuenta: item['Nombre de la Cuenta'],
+      Debito: parseFloat(item['Debito']),
+      Credito: parseFloat(item['Credito']),
+      Saldo: parseFloat(item['Saldo']),
+      Fecha: item['RefDate'],
+    });
+  }
+
+  return Array.from(mapNivel1.values());
+};
+
 
 module.exports = {
   parteDiaroController,
@@ -2069,5 +2146,6 @@ module.exports = {
   getReportBankMajorController,
   getCommercialBankAccountsController,
   excelBankMajorController,
-  getAgenciasGenesis
+  getAgenciasGenesis,
+  obtenerBalanceGeneral
 }

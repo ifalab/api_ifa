@@ -31,7 +31,10 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getDiscountBySpecialQuotation,
     getDiscountByShortExpiration,
     getDiscountByConditional,
-    getDiscountByLine
+    getDiscountByLine,
+    getListaPreciosCostoComercialByIdCadenas,
+    setPrecioCostoComercial,
+    deletePrecioCostoComercial
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners, patchItems } = require("./sld.controller");
@@ -214,6 +217,46 @@ const setPrecioOficialController = async (req, res) => {
     }
 }
 
+const setPrecioCostoComercialController = async (req, res) => {
+    try {
+        const body = req.body;
+        console.log({ body });
+        
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+        let lista = [];
+
+        for (const line of body.items) {
+            let response;
+            if (line.Price === 0) {
+                // Si el precio es 0, llama a la función de eliminación.
+                response = await deletePrecioCostoComercial(line.UUID);
+                if (response.status !== 200) {
+                    grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Eliminar Precios Oficiales", `Error: ${response.message || 'deletePrecioCostoComercial()'}`, `call ifa_dm_delete_precio_oficial()`, "datos-maestros/delete-precio-item", process.env.PRD);
+                    return res.status(400).json({ mensaje: `${response.message || 'Error al eliminar precio'}` });
+                }
+            } else {
+                // Si el precio no es 0, llama a la función de actualización.
+                response = await setPrecioCostoComercial(line.ItemCode, line.Price, body.IdVendedorSap, body.Glosa);
+                if (response.status !== 200) {
+                    grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar Precios Oficiales", `Error: ${response.message || 'setPrecioCostoComercial()'}`, `call ifa_dm_agregar_precio_oficial()`, "datos-maestros/set-precio-item", process.env.PRD);
+                    return res.status(400).json({ mensaje: `${response.message || 'Error en setPrecioCostoComercial'}` });
+                }
+            }
+            lista.push(response.data);
+        }
+
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar/Eliminar Precios Oficiales", `Operación de precios completada con éxito.`, ``, "datos-maestros/set-precio-item", process.env.PRD);
+        return res.json(lista);
+    } catch (error) {
+        console.log({ error });
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "DM Cambiar/Eliminar Precios Oficiales", `Error en el controlador setPrecioCostoComercialController: ${error.message || ''}`, `catch del controller`, "datos-maestros/set-precio-item", process.env.PRD);
+        return res.status(500).json({ mensaje: `Error en el controlador setPrecioCostoComercialController: ${error.message || ''}` });
+    }
+};
+
+
+
 const getSucursalesController = async (req, res) => {
     try {
         const sucursales = await getSucursales()
@@ -304,6 +347,22 @@ const getListaPreciosByIdCadenasController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosByIdCadenasController: ${error.message || ''}` })
     }
 }
+
+
+
+const getListaPreciosCostoComercialCadenasController = async (req, res) => {
+    try {
+        const lista = await getListaPreciosCostoComercialByIdCadenas()
+        if (lista.status != 200) {
+            return res.status(400).json({ mensaje: `${lista.message || 'Error en getListaPreciosCostoComercialByIdCadenas'}` })
+        }
+        return res.json({ precios: lista.data })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getListaPreciosCostoComercialByIdCadenasController: ${error.message || ''}` })
+    }
+}
+
 
 const setPrecioCadenaController = async (req, res) => {
     try {
@@ -1033,6 +1092,142 @@ const cargarPreciosExcelController = async (req, res) => {
     }
 }
 
+const cargarPreciosCostoComercialExcelController = async (req, res) => {
+    try {
+        const { comment } = req.body;
+        const usuario = req.usuarioAutorizado || { ID_SAP: 'Desconocido', USERNAME: 'Desconocido' };
+        let listErrors = [];
+        const processedItemCodes = new Set();
+
+        if (!req.archivo) {
+            return res.status(400).json({
+                mensaje: 'Archivo no obtenido.'
+            });
+        }
+        
+        const { path } = req.archivo;
+        const filePath = path;
+        const workbook = XLSX.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Se añade el UUID a los headers requeridos para la validación
+        const requiredHeaders = ['UUID', 'Código de Ítem', 'Precio Comercial'];
+
+        const headers = [
+            worksheet['A1']?.v, // UUID
+            worksheet['B1']?.v, // Código de Ítem
+            worksheet['D1']?.v, // Precio Comercial
+        ];
+
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+        
+        if (missingHeaders.length > 0) {
+            fs.unlinkSync(filePath);
+            return res.status(400).json({
+                mensaje: `Formato de Excel incorrecto. Las siguientes cabeceras están faltando o son incorrectas: ${missingHeaders.join(', ')}`
+            });
+        }
+
+        for (const element of jsonData) {
+            const { 'UUID': UUID, 'Código de Ítem': ItemCode, 'Precio Comercial': Precio } = element;
+
+            if (processedItemCodes.has(ItemCode)) {
+                listErrors.push({
+                    'Código de Ítem': ItemCode,
+                    'Precio Comercial': Precio,
+                    error: `El artículo con código ${ItemCode} está duplicado en el archivo.`
+                });
+            } else {
+                processedItemCodes.add(ItemCode);
+
+                if (!ItemCode || Precio === undefined || Precio === null || isNaN(Precio)) {
+                    listErrors.push({
+                        'Código de Ítem': ItemCode,
+                        'Precio Comercial': Precio,
+                        error: `Los campos 'Código de Ítem' o 'Precio Comercial' no son válidos en la fila.`
+                    });
+                    continue;
+                }
+
+                try {
+                    let result;
+                    if (Precio === 0) {
+                        // Llama a la función de eliminación si el precio es 0
+                        if (!UUID) {
+                             listErrors.push({
+                                'Código de Ítem': ItemCode,
+                                'Precio Comercial': Precio,
+                                error: `Para eliminar el precio del artículo ${ItemCode}, el campo 'UUID' no puede estar vacío.`
+                            });
+                            continue;
+                        }
+                        result = await deletePrecioCostoComercial(UUID);
+                    } else {
+                        // Llama a la función de actualización si el precio no es 0
+                        const response = await articuloByItemCode(ItemCode);
+                        if (!response.result || response.result.length === 0) {
+                            listErrors.push({
+                                'Código de Ítem': ItemCode,
+                                'Precio Comercial': Precio,
+                                error: `El artículo con código ${ItemCode} no existe en la base de datos.`
+                            });
+                            continue;
+                        }
+                        result = await setPrecioCostoComercial(ItemCode, Precio, usuario.ID_SAP, comment);
+                    }
+
+                    if (result.status !== 200) {
+                        listErrors.push({
+                            'Código de Ítem': ItemCode,
+                            'Precio Comercial': Precio,
+                            error: `Error al procesar el precio para el artículo ${ItemCode}.`
+                        });
+                    }
+                } catch (dbError) {
+                    listErrors.push({
+                        'Código de Ítem': ItemCode,
+                        'Precio Comercial': Precio,
+                        error: `Error de conexión o base de datos para el artículo ${ItemCode}.`
+                    });
+                }
+            }
+        }
+        
+        fs.unlinkSync(filePath);
+
+        const listaActualizada = await getListaPreciosCostoComercialByIdCadenas(); // <-- Llama a tu función para obtener la lista
+
+
+        if (listErrors.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(listErrors);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Errores');
+            const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+            res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.set('Content-Disposition', 'attachment; filename=errores.xlsx');
+            return res.status(200).end(excelBuffer);
+        } else {
+            return res.status(200).json({
+                mensaje: 'Archivo procesado correctamente, todos los precios fueron actualizados.',
+                lista: listaActualizada.precios 
+
+            });
+        }
+
+    } catch (error) {
+        console.error('Error en el controlador:', error);
+        if (req.archivo && fs.existsSync(req.archivo.path)) {
+            fs.unlinkSync(req.archivo.path);
+        }
+        return res.status(500).json({
+            mensaje: 'Error en el controlador',
+            error: error.message || error
+        });
+    }
+}
+
 const getItemsByLineController = async (req, res) => {
     try {
         const line = req.query.line
@@ -1201,5 +1396,8 @@ module.exports = {
     getItemsByLineController,
     getAllSublineasController,
     patchItemsController,
-    getDiscountController
+    getDiscountController,
+    getListaPreciosCostoComercialCadenasController,
+    setPrecioCostoComercialController,
+    cargarPreciosCostoComercialExcelController
 }

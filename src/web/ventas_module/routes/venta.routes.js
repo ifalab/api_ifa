@@ -271,5 +271,5 @@ router.get('/sales-by-clients-by-branch', [validarToken, validarCampos], ventasC
 router.get('/sales-by-clients-by-branch-graphic', [validarToken, validarCampos], ventasEfectividadPorSucursalController)
 
 
-ventasEfectividadPorSucursalController
+
 module.exports = router
