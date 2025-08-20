@@ -30,7 +30,8 @@ const { asientoContableController,
     getCuentasController,
     getMaestrosMayoresController,
     getBalanceAccountPrevController,
-    getBankingByDateController
+    getBankingByDateController,
+    createAsientoContableInventarioController
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -39,6 +40,7 @@ router.post('/asiento-contable', [validarToken, validarCampos], asientoContableC
 router.get('/find-asiento-by-id/:id', [validarToken, validarCampos], findByIdAsientoController)
 router.post('/asiento-contable-cc', [validarToken, validarCampos], asientoContableCC_Controller)
 router.post('/create-asiento-contable', [validarToken, validarCampos], createAsientoContableController)
+router.post('/create-asiento-contable-inventario', [validarToken, validarCampos], createAsientoContableInventarioController)
 router.post('/create-asiento-contable-sap', [validarToken, validarCampos], createAsientoContableSAPController)
 router.get('/empleados', [validarToken, validarCampos], empleadosController)
 router.get('/empleado-by-code/:code', [validarToken, validarCampos], empleadosByCodeController)

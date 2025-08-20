@@ -2948,6 +2948,8 @@ const cancelarParaRefacturarController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
         }
+        // const groupCode1 = await obtenerGroupCode('C000023')
+        console.log({groupCode1})
         const estadoFacturaResponse = await spEstadoFactura(cuf)
         if (estadoFacturaResponse.message) {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
@@ -2982,18 +2984,18 @@ const cancelarParaRefacturarController = async (req, res) => {
         }
         const reponseInvoice = await cancelInvoice(docEntry)
         if (reponseInvoice.value && !reponseInvoice.value.includes('Document is already closed')) {
-            const outputDir = path.join(__dirname, 'outputsAnulacion');
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir);
-            }
-            const now = new Date();
-            const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-            const fileNameJson = path.join(outputDir, `reponseInvoiceAnulacion_${timestamp}.json`);
-            fs.writeFileSync(fileNameJson, JSON.stringify(docEntry, null, 2), 'utf8');
-            console.log(`Objeto reponseInvoice guardado en ${fileNameJson}`);
+            // const outputDir = path.join(__dirname, 'outputsAnulacion');
+            // if (!fs.existsSync(outputDir)) {
+            //     fs.mkdirSync(outputDir);
+            // }
+            // const now = new Date();
+            // const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+            // const fileNameJson = path.join(outputDir, `reponseInvoiceAnulacion_${timestamp}.json`);
+            // fs.writeFileSync(fileNameJson, JSON.stringify(docEntry, null, 2), 'utf8');
+            // console.log(`Objeto reponseInvoice guardado en ${fileNameJson}`);
 
             endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, `https://srvhana:50000/b1s/v1/Invoices(id)/Cancel, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, `https://srvhana:50000/b1s/v1/Invoices(id)/Cancel, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-refacturar", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en cancel invoice: ${reponseInvoice.value || ''}` })
         }
 
@@ -3010,7 +3012,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         }
         if (responseEntregas.message) {
             endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id) [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id) [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-refacturar", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}` })
         }
         // return res.json({responseEntregas})
@@ -3127,7 +3129,8 @@ const cancelarParaRefacturarController = async (req, res) => {
 
         let orderNumber = responsePedido[0].BaseEntry
         console.log({ orderNumberDespues: orderNumber })
-
+        const groupCode = await obtenerGroupCode(CardCode)
+        
         const responseOferta = await ofertaDelPedido(orderNumber)
 
         const resCancelOrden = await cancelOrder(orderNumber)
@@ -3139,7 +3142,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         //------------------------------------------------CLOSE OFERTA
 
         let resCancelOferta
-        const groupCode = await obtenerGroupCode(CardCode)
+        
         if (groupCode.GroupCode == 100) {
             if (responseOferta.length > 0) {
                 const idOferta = responseOferta[0].BaseEntry
@@ -4615,11 +4618,11 @@ const processUnpaidController = async (req, res) => {
             }
             const { orderNumber: CreditNoteDocEntry, TransNum } = responseCreditNote
             await setSyncSalesReturnProcess(DocEntry, ReturnDocEntry, CreditNoteDocEntry, null)
-            return res.json({ responseCreditNote, bodyCreditNotes })
+            // return res.json({ responseCreditNote, bodyCreditNotes })
         }
 
 
-        return res.json({ SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, ReconciliationID })
+        return res.json({ mensaje: 'Proceso concluido con exito', SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, })
 
     } catch (error) {
         console.log('error en processUnpaidController')

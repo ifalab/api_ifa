@@ -761,6 +761,21 @@ const setSyncSalesReturnProcess = async (
     }
 }
 
+const createReferenceCreditNotesAndDelivery = async (creditNoteID, deliveryID) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_INV_CREATE_REFERENCE_CREDIT_NOTES_AND_DELIVERY(creditNoteID  => '${creditNoteID}',deliveryID  => '${deliveryID}')`
+        console.log({ query })
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de createReferenceCreditNotesAndDelivery: ${error.message}`)
+    }
+}
+
 module.exports = {
     lotesArticuloAlmacenCantidad,
     obtenerEntregaDetalle,
@@ -806,4 +821,5 @@ module.exports = {
     getPaidDeliveryDetails,
     getPaidEntryDetails,
     setSyncSalesReturnProcess,
+    createReferenceCreditNotesAndDelivery,
 }

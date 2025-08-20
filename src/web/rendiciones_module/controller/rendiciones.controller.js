@@ -1,5 +1,6 @@
 const { tipoDeCambio, tipoDeCambioByFecha, } = require("../../contabilidad_module/controllers/hana.controller")
 const { asientoContable } = require("../../contabilidad_module/controllers/sld.controller")
+const { postReconciliacion } = require("../../service/sapService")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
@@ -1790,6 +1791,82 @@ const journalEntryValoradoController = async (req, res) => {
         //     "status": 204,
         //     "orderNumber": "1415876"
         // }
+        //TODO ------------------------------RECONCILIACION:
+        let diferencia = totalFacturas - totalDeLaEntrega
+        let ReconcileAmountInv = +totalDeLaEntrega
+        if (diferencia < 0) {
+            ReconcileAmountInv += +diferencia
+        }
+        const InternalReconciliationOpenTransRows = [
+            {
+                ShortName: CardCode,
+                TransId: invoiceResponse.TransNum,
+                TransRowId: 0,
+                SrcObjTyp: "13",
+                SrcObjAbs: invoiceResponse.idInvoice,
+                CreditOrDebit: "codDebit",
+                ReconcileAmount: ReconcileAmountInv,
+                CashDiscount: 0.0,
+                Selected: "tYES",
+            }
+        ]
+
+        let numInternalRec = 0
+        // * Eliminando la reconciliacion:
+        for (const creditNote of allResponseCreditNote) {
+            let ReconcileAmountCN = +totalesFactura[numInternalRec]
+            if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
+                ReconcileAmountCN -= +diferencia
+                diferencia = 0
+            }
+            const internalRecLine = {
+                ShortName: CardCode,
+                TransId: creditNote.TransNum,
+                TransRowId: 0,
+                SrcObjTyp: "14",
+                SrcObjAbs: creditNote.orderNumber,
+                CreditOrDebit: "codCredit",
+                ReconcileAmount: ReconcileAmountCN,
+                CashDiscount: 0.0,
+                Selected: "tYES",
+            }
+
+            InternalReconciliationOpenTransRows.push(internalRecLine)
+            numInternalRec += 1
+        }
+
+        const fechaFormater = new Date()
+        // Extraer componentes de la fecha
+        const year = fechaFormater.getUTCFullYear();
+        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+        const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+
+        let bodyReconciliacion = {
+            ReconDate: `${year}-${month}-${day}`,
+            CardOrAccount: "coaCard",
+            // ReconType: "rtManual",
+            // Total: totalFactura,
+            InternalReconciliationOpenTransRows,
+        }
+
+        console.log({ bodyReconciliacion })
+        let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
+        console.log({ responseReconciliacion })
+
+        if (responseReconciliacion.status == 400) {
+            let mensaje = responseReconciliacion.errorMessage
+            if (typeof mensaje != 'string' && mensaje.lang) {
+                mensaje = mensaje.value
+            }
+
+            mensaje = `Error en postReconciliacion: ${mensaje}.`
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
+            return res.status(400).json({
+                mensaje,
+                bodyReconciliacion,
+            })
+        }
+        //TODO ------------------------------RECONCILIACION:
         console.log({ response })
         return res.json({
             response

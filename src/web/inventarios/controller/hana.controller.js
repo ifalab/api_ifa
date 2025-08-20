@@ -1196,6 +1196,23 @@ const getValoradosPorIdSap = async (idSap) => {
     }
 }
 
+const getReturnValuesProcess = async (idSap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `CALL ${process.env.PRD}.IFASP_SAL_GET_RETURN_VALUE_PROCESS(${idSap}) `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getReturnValuesProcess:', error.message);
+        throw {
+            message: `Error al procesar getReturnValuesProcess: ${error.message || ''}`
+        }
+    }
+}
+
 
 module.exports = {
     clientesPorDimensionUno,
@@ -1257,5 +1274,6 @@ module.exports = {
     getAllWarehouseCommercialByParams,
     kardexCommercial,
     habilitacionesPorIduser,
-    getValoradosPorIdSap
+    getValoradosPorIdSap,
+    getReturnValuesProcess,
 }
