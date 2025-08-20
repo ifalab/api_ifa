@@ -307,7 +307,7 @@ const facturacionController = async (req, res) => {
                             ItemCode,
                             WarehouseCode,
                             // Quantity: new_quantity / UnitsOfMeasurment,
-                            Quantity: new_quantity ,
+                            Quantity: new_quantity,
                             LineNum,
                             ...restLine,
                             BatchNumbers: batchNumbers
@@ -2950,7 +2950,7 @@ const cancelarParaRefacturarController = async (req, res) => {
             return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
         }
         // const groupCode1 = await obtenerGroupCode('C000023')
-        console.log({groupCode1})
+        console.log({ groupCode1 })
         const estadoFacturaResponse = await spEstadoFactura(cuf)
         if (estadoFacturaResponse.message) {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
@@ -3131,7 +3131,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         let orderNumber = responsePedido[0].BaseEntry
         console.log({ orderNumberDespues: orderNumber })
         const groupCode = await obtenerGroupCode(CardCode)
-        
+
         const responseOferta = await ofertaDelPedido(orderNumber)
 
         const resCancelOrden = await cancelOrder(orderNumber)
@@ -3143,7 +3143,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         //------------------------------------------------CLOSE OFERTA
 
         let resCancelOferta
-        
+
         if (groupCode.GroupCode == 100) {
             if (responseOferta.length > 0) {
                 const idOferta = responseOferta[0].BaseEntry
@@ -4602,7 +4602,7 @@ const processUnpaidController = async (req, res) => {
         if (!CreditNoteDocEntry) {
             const devolucionDetalle = await obtenerDevolucionDetalle(ReturnDocEntry)
             const bodyCreditNotes = buildBodyCreditNotes(ReturnDocEntry, DocEntry, devolucionDetalle)
-            // return res.json({ bodyCreditNotes })
+            console.log(JSON.stringify({ bodyCreditNotes }, null, 2))
             const responseCreditNote = await postCreditNotes(bodyCreditNotes)
             if (responseCreditNote.status > 299) {
                 let mensaje = responseCreditNote.errorMessage
