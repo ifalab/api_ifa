@@ -4563,9 +4563,11 @@ const ventasClientesPorSucursalController = async (req, res) => {
         }
     
         const groupedData = procesarReporteFinalV3 (datosAcumulados, datosVentas, vendedores, zonas, sucursales, tiposClientes);
-    
+        
+        const transformedData = transformarDatosVentas(groupedData.data);
+        
         return res.json({
-            data: groupedData
+            data: transformedData
         });
     
     } catch (error) {
@@ -4574,6 +4576,127 @@ const ventasClientesPorSucursalController = async (req, res) => {
     }
 };
     
+
+const transformarDatosVentas = (monthlyDataArray) => {
+    // Usamos un Map para agrupar eficientemente los datos por Sucursal y Grupo.
+    const groupedMap = new Map();
+
+    // Iteramos sobre cada objeto de datos en el array de entrada (cada uno representa un mes).
+    monthlyDataArray.forEach(data => {
+        // Creamos una clave única para identificar la combinación de sucursal y grupo.
+        const key = `${data.SucCode}-${data.GroupCode}`;
+        
+        // Si la clave no existe en el mapa, inicializamos la estructura para ese grupo/sucursal.
+        if (!groupedMap.has(key)) {
+            groupedMap.set(key, {
+                Grupo: data.GroupName,
+                Sucursal: data.SucName,
+                isExpanded: false,
+                monthlyData: {},
+                nestedMetrics: []
+            });
+        }
+
+        const groupEntry = groupedMap.get(key);
+        const monthKey = `${data.Year}-${String(data.Month).padStart(2, '0')}`;
+
+        // Llenamos el objeto monthlyData para la métrica principal (Efectividad Total).
+        groupEntry.monthlyData[monthKey] = data.EfectividadTotal;
+
+        // Definimos las métricas que se mostrarán en el primer nivel (bajo Sucursal/Grupo).
+        const mainMetrics = [
+            { name: "Clientes Acumulados", value: data.ClientesAcumulados },
+            { name: "Clientes Vendidos", value: data.ClientesVendidos },
+            { name: "Efectividad Total", value: data.EfectividadTotal },
+            { name: "Clientes No Vendidos", value: data.ClientesAcumulados - data.ClientesVendidos }
+        ];
+
+        // Recorremos las métricas principales para agregarlas a la estructura de salida.
+        mainMetrics.forEach(metric => {
+            let existingMetric = groupEntry.nestedMetrics.find(m => m.nombre === metric.name);
+            if (!existingMetric) {
+                existingMetric = { nombre: metric.name, monthlyData: {}, nested: [] };
+                groupEntry.nestedMetrics.push(existingMetric);
+            }
+            existingMetric.monthlyData[monthKey] = metric.value;
+        });
+
+        // Ahora, recorremos el array de vendedores para agregar sus datos.
+        data.Vendedores.forEach(vendedor => {
+            // Buscamos si el vendedor ya existe en el array nestedMetrics.
+            let existingSeller = groupEntry.nestedMetrics.find(m => m.nombre === vendedor.SlpName);
+            if (!existingSeller) {
+                // Si no existe, creamos una nueva entrada para el vendedor.
+                existingSeller = {
+                    nombre: vendedor.SlpName,
+                    monthlyData: {},
+                    nested: []
+                };
+                groupEntry.nestedMetrics.push(existingSeller);
+            }
+            // Agregamos la efectividad de ventas del vendedor para el mes actual.
+            existingSeller.monthlyData[monthKey] = vendedor.EfectividadVentas;
+
+            // Definimos las métricas que se mostrarán bajo el vendedor.
+            const sellerMetrics = [
+                { name: "Clientes Vendidos", value: vendedor.ClientesVendidos },
+                { name: "Clientes Asignados", value: vendedor.ClientesAsignados },
+                { name: "Efectividad Ventas", value: vendedor.EfectividadVentas },
+                { name: "Clientes No Vendidos", value: vendedor.ClientesAsignados - vendedor.ClientesVendidos }
+            ];
+
+            // Recorremos las métricas del vendedor para agregarlas.
+            sellerMetrics.forEach(metric => {
+                let existingSellerMetric = existingSeller.nested.find(m => m.nombre === metric.name);
+                if (!existingSellerMetric) {
+                    existingSellerMetric = { nombre: metric.name, monthlyData: {}, nested: [] };
+                    existingSeller.nested.push(existingSellerMetric);
+                }
+                existingSellerMetric.monthlyData[monthKey] = metric.value;
+            });
+
+
+            // Recorremos el array de zonas dentro del vendedor.
+            vendedor.Zonas.forEach(zona => {
+                // Buscamos si la zona ya existe en el array nested del vendedor.
+                let existingZone = existingSeller.nested.find(m => m.nombre === zona.ZoneName);
+                if (!existingZone) {
+                    // Si no existe, creamos una nueva entrada para la zona.
+                    existingZone = {
+                        nombre: zona.ZoneName,
+                        monthlyData: {},
+                        // Nuevo array nested para las métricas de la zona
+                        nested: []
+                    };
+                    existingSeller.nested.push(existingZone);
+                }
+                // Agregamos la efectividad de ventas de la zona para el mes actual.
+                existingZone.monthlyData[monthKey] = zona.EfectividadVentas;
+
+                // AHORA se agregan las métricas anidadas a la zona
+                const zoneMetrics = [
+                    { name: "Clientes Vendidos", value: zona.ClientesVendidos },
+                    { name: "Clientes Asignados", value: zona.ClientesAsignados },
+                    { name: "Efectividad Ventas", value: zona.EfectividadVentas },
+                    { name: "Clientes No Vendidos", value: zona.ClientesAsignados - zona.ClientesVendidos }
+                ];
+                
+                zoneMetrics.forEach(metric => {
+                    let existingZoneMetric = existingZone.nested.find(m => m.nombre === metric.name);
+                    if (!existingZoneMetric) {
+                        existingZoneMetric = { nombre: metric.name, monthlyData: {}, nested: [] };
+                        existingZone.nested.push(existingZoneMetric);
+                    }
+                    existingZoneMetric.monthlyData[monthKey] = metric.value;
+                });
+            });
+        });
+    });
+
+    // Convertimos el Map en un array para el resultado final.
+    return Array.from(groupedMap.values());
+};
+
 
 
 const ventasEfectividadPorSucursalController = async (req, res) => {

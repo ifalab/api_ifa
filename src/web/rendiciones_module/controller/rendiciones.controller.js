@@ -19,7 +19,13 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     allGastosRange,
     importeByRend,
     updateSendToAccounting,
+    verRendicionesEnConcluido,
+    getRendTransID
 } = require("./hana.controller")
+
+
+const { cancelJournalEntry } = require("./sld.controller")
+
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -614,32 +620,47 @@ const cambiarEstadoRendicionController = async (req, res) => {
 }
 
 const verRendicionesEnRevisionController = async (req, res) => {
-    try {
-        const response = await verRendicionesEnRevision()
-        const listaRendiciones = []
+    try {
+        const parametro = req.query.parametro;
+        console.log('Estado', req.query.parametro);
 
-        await Promise.all(response.map(async (item) => {
-            const { CODEMP, ...rest } = item
-            Empleado = await employedByCardCode(CODEMP)
-            if (Empleado && Empleado[0]) {
-                listaRendiciones.push({
-                    ...rest,
-                    Empleado: Empleado[0]
-                })
-            } else {
-                listaRendiciones.push({
-                    ...rest,
-                    Empleado: null
-                })
-            }
+        // ✅ CAMBIO CLAVE: Declara la variable 'response' fuera del if/else.
+        let response;
 
-        }))
+        if (parametro == 0) {
+            console.log('entrando a revision');
+            response = await verRendicionesEnRevision();
+        } else {
+            console.log('entrando a concluido');
+            response = await verRendicionesEnConcluido();
+        }
 
-        return res.json({ listaRendiciones })
-    } catch (error) {
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
-    }
-}
+        const listaRendiciones = [];
+
+        await Promise.all(response.map(async (item) => {
+            const { CODEMP, ...rest } = item;
+            const Empleado = await employedByCardCode(CODEMP);
+            if (Empleado && Empleado[0]) {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: Empleado[0]
+                });
+            } else {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: null
+                });
+            }
+        }));
+
+        return res.json({ listaRendiciones });
+    } catch (error) {
+        console.error(error); // ✅ Agrega esto para depurar
+        return res.status(500).json({ mensaje: 'Error en el controlador' });
+    }
+};
+
+
 
 
 const sendToSapController = async (req, res) => {
@@ -1729,6 +1750,29 @@ const updateSenToAccountingController = async (req, res) => {
     }
 }
 
+
+const cancelRevisionCajaController = async (req, res) => {
+    try {
+        const id = req.query.id
+        const response = await getRendTransID(id);
+        const rendicionTransId = response[0]?.RendicionTransId;
+        const result = await cancelJournalEntry(rendicionTransId);
+        if (result.status >= 200 && result.status < 300) {
+            const respuesta = await actualizarEstadoRendicion(id, '2');
+            return res.json({respuesta});
+        } else {
+            res.status(result.status || 500).json({ 
+                message: result.message || 'Error al cancelar el JournalEntry.'
+            });
+        }
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1765,5 +1809,6 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
-    updateSenToAccountingController
+    updateSenToAccountingController,
+    cancelRevisionCajaController
 }
