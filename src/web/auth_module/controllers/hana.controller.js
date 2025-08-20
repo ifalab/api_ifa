@@ -117,7 +117,7 @@ const createUser = async (
             new_superuser,
             new_etiqueta,
         })
-        const query = `call LAB_IFA_LAPP.LAPP_CREAR_USUARIO('${new_usercode}', '${new_username}','${new_codemp}','${new_pass}',${new_superuser},${new_externalClient},'${new_etiqueta}')`;
+        const query = `call ${process.env.LAPP}.LAPP_CREAR_USUARIO('${new_usercode}', '${new_username}','${new_codemp}','${new_pass}',${new_superuser},${new_externalClient},'${new_etiqueta}')`;
         console.log({ query });
         const result = await executeQuery(query);
         console.log('hana')
@@ -134,7 +134,7 @@ const findUserByUsercode = async (usercode) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_LAPP.LAPP_USER_BY_USERCODE('${usercode}')`
+        const query = `call ${process.env.LAPP}.LAPP_USER_BY_USERCODE('${usercode}')`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -149,7 +149,7 @@ const findUserById = async (id) => {
             await connectHANA();
         }
         console.log(id)
-        const query = `call LAB_IFA_LAPP.LAPP_USER_BY_ID('${id}')`
+        const query = `call ${process.env.LAPP}.LAPP_USER_BY_ID('${id}')`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -164,7 +164,7 @@ const findAllUser = async () => {
             await connectHANA();
         }
         console.log('find all user execute')
-        const query = `call LAB_IFA_LAPP.LAPP_USUARIO_TODOS()`
+        const query = `call ${process.env.LAPP}.LAPP_USUARIO_TODOS()`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -187,7 +187,7 @@ const updateUser = async (
             await connectHANA();
         }
         console.log('update User execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ACTUALIZAR_USUARIO(${id_user},'${new_usercode}','${new_username}','${new_codemp}',${new_superuser},${new_isactive},'${new_etiqueta}')`
+        const query = `call ${process.env.LAPP}.LAPP_ACTUALIZAR_USUARIO(${id_user},'${new_usercode}','${new_username}','${new_codemp}',${new_superuser},${new_isactive},'${new_etiqueta}')`
         const result = await executeQuery(query)
         console.log({query})
         // console.log({result})
@@ -204,7 +204,7 @@ const desactiveUser = async (id_user,) => {
             await connectHANA();
         }
         console.log('desactiveUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_DESACTIVAR_USUARIO(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_DESACTIVAR_USUARIO(${id_user})`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -219,7 +219,7 @@ const activeUser = async (id_user,) => {
             await connectHANA();
         }
         console.log('activeUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ACTIVAR_USUARIO(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_ACTIVAR_USUARIO(${id_user})`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -236,11 +236,11 @@ const findDimension = async (dimension) => {
         console.log('findDimension execute')
         let query = ``
 
-        if (dimension == 1) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONUNO`
+        if (dimension == 1) query = `SELECT * FROM ${process.env.LAPP}.LAPP_DIMENSIONUNO`
         // if (dimension == 2) query = `SELECT * FROM ${process.env.PRD}.IFA_DM_CLIENTES_TIPOS`
-        if (dimension == 2) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONDOS`
+        if (dimension == 2) query = `SELECT * FROM ${process.env.LAPP}.LAPP_DIMENSIONDOS`
         // if (dimension == 3) query = `SELECT "LineItemCode" as "ID", "LineItemName" as "DIMROLE" FROM ${process.env.PRD}.IFA_DM_LINEAS`
-        if (dimension == 3) query = `SELECT * FROM LAB_IFA_LAPP.LAPP_DIMENSIONTRES`
+        if (dimension == 3) query = `SELECT * FROM ${process.env.LAPP}.LAPP_DIMENSIONTRES`
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -255,7 +255,7 @@ const addUsuarioDimensionUno = async (id_user, id_dimension) => {
             await connectHANA();
         }
         console.log('addUsuarioDimensionUno execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ADD_USUARIO_DIMENSION_UNO(${id_user},${id_dimension})`
+        const query = `call ${process.env.LAPP}.LAPP_ADD_USUARIO_DIMENSION_UNO(${id_user},${id_dimension})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -271,7 +271,7 @@ const addUsuarioDimensionDos = async (id_user, id_dimension) => {
             await connectHANA();
         }
         console.log('addUsuarioDimensionDos execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ADD_USUARIO_DIMENSION_DOS(${id_user},${id_dimension})`
+        const query = `call ${process.env.LAPP}.LAPP_ADD_USUARIO_DIMENSION_DOS(${id_user},${id_dimension})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -287,7 +287,7 @@ const addUsuarioDimensionTres = async (id_user, id_dimension) => {
             await connectHANA();
         }
         console.log('addUsuarioDimensionTres execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ADD_USUARIO_DIMENSION_TRES(${id_user},${id_dimension})`
+        const query = `call ${process.env.LAPP}.LAPP_ADD_USUARIO_DIMENSION_TRES(${id_user},${id_dimension})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -304,7 +304,7 @@ const addUsuarioDimensionSublinea = async (id_user, id_dimension) => {
             await connectHANA();
         }
         console.log('addUsuarioDimensionSublinea execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ADD_USUARIO_DIMENSION_SUBLINEA(${id_user},${id_dimension})`
+        const query = `call ${process.env.LAPP}.LAPP_ADD_USUARIO_DIMENSION_SUBLINEA(${id_user},${id_dimension})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -320,7 +320,7 @@ const rollBackDimensionUnoByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('rollBackDimensionUnoByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ROLLBACK_DIMENSION_UNO_BY_USER(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_ROLLBACK_DIMENSION_UNO_BY_USER(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -336,7 +336,7 @@ const rollBackDimensionDosByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('rollBackDimensionDosByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ROLLBACK_DIMENSION_DOS_BY_USER(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_ROLLBACK_DIMENSION_DOS_BY_USER(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -352,7 +352,7 @@ const rollBackDimensionTresByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('rollBackDimensionTresByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ROLLBACK_DIMENSION_TRES_BY_USER(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_ROLLBACK_DIMENSION_TRES_BY_USER(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -368,7 +368,7 @@ const rollBackDimensionSublineaByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('rollBackDimensionSublineaByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ROLLBACK_DIMENSION_SUBLINEA_BY_USER(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_ROLLBACK_DIMENSION_SUBLINEA_BY_USER(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -384,7 +384,7 @@ const dimensionUnoByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('dimensionUnoByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_DIMENSION_UNO_X_USUARIO(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_DIMENSION_UNO_X_USUARIO(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -400,7 +400,7 @@ const dimensionDosByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('dimensionDosByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_DIMENSION_DOS_X_USUARIO(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_DIMENSION_DOS_X_USUARIO(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -416,7 +416,7 @@ const dimensionTresByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('dimensionTresByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_DIMENSION_TRES_X_USUARIO(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_DIMENSION_TRES_X_USUARIO(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -432,7 +432,7 @@ const dimensionSublineaByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('dimensionSublineaByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_DIMENSION_SUBLINEA_X_USUARIO(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_DIMENSION_SUBLINEA_X_USUARIO(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -448,7 +448,7 @@ const roleByUser = async (id_user) => {
             await connectHANA();
         }
         console.log('roleByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ROL_X_USUARIO(${id_user})`
+        const query = `call ${process.env.LAPP}.LAPP_ROL_X_USUARIO(${id_user})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -464,7 +464,7 @@ const updatePasswordByUser = async (id_user,pass) => {
             await connectHANA();
         }
         console.log('updatePasswordByUser execute')
-        const query = `call LAB_IFA_LAPP.LAPP_ACTUALIZAR_PASS(${id_user},'${pass}')`
+        const query = `call ${process.env.LAPP}.LAPP_ACTUALIZAR_PASS(${id_user},'${pass}')`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -480,7 +480,7 @@ const addRolUser = async (id_user, id_rol) => {
             await connectHANA();
         }
         console.log('addRolUser execute')
-        const query = `CALL "LAB_IFA_LAPP".LAPP_ADD_USUARIO_ROL(${id_user},${id_rol});`
+        const query = `CALL "${process.env.LAPP}".LAPP_ADD_USUARIO_ROL(${id_user},${id_rol});`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -496,7 +496,7 @@ const userVendedor = async () => {
             await connectHANA();
         }
         console.log('userVendedor execute')
-        const query = `SELECT ID FROM "LAB_IFA_LAPP"."LAPP_USUARIO" WHERE USERCODE LIKE '%123%'`
+        const query = `SELECT ID FROM "${process.env.LAPP}"."LAPP_USUARIO" WHERE USERCODE LIKE '%123%'`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -513,7 +513,7 @@ const deleteRolUser = async(id_user)=>{
         }
 
         console.log('deleteRolUser execute')
-        const query = `CALL "LAB_IFA_LAPP".LAPP_DELETE_USUARIO_ROL(${id_user});`
+        const query = `CALL "${process.env.LAPP}".LAPP_DELETE_USUARIO_ROL(${id_user});`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -532,7 +532,7 @@ const deleteOneRolUser = async(id_user,id_rol)=>{
         }
 
         console.log('deleteOneRolUser execute')
-        const query = `CALL "LAB_IFA_LAPP".LAPP_DELETE_UN_ROL_USUARIO(${id_user},${id_rol});`
+        const query = `CALL "${process.env.LAPP}".LAPP_DELETE_UN_ROL_USUARIO(${id_user},${id_rol});`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -551,7 +551,7 @@ const findAllRoles = async()=>{
         }
 
         console.log('findAllRoles execute')
-        const query = `SELECT * FROM "LAB_IFA_LAPP".LAPP_ROL;`
+        const query = `SELECT * FROM "${process.env.LAPP}".LAPP_ROL;`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -758,7 +758,7 @@ const happyBirthday = async (username,message) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_LAPP.HAPPY_BIRTHDAY_GO('${username}','${message}');`
+        const query = `call ${process.env.LAPP}.HAPPY_BIRTHDAY_GO('${username}','${message}');`
         console.log({query})
         const result = await executeQuery(query)
         return {

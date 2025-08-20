@@ -1,4 +1,6 @@
-const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module/controllers/hana.controller")
+const { tipoDeCambio, tipoDeCambioByFecha, } = require("../../contabilidad_module/controllers/hana.controller")
+const { asientoContable } = require("../../contabilidad_module/controllers/sld.controller")
+const { postReconciliacion } = require("../../service/sapService")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
@@ -19,6 +21,7 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     allGastosRange,
     importeByRend,
     updateSendToAccounting,
+    getPettyCashByEmployee,
 } = require("./hana.controller")
 
 const findAllAperturaController = async (req, res) => {
@@ -677,7 +680,7 @@ const sendToSapController = async (req, res) => {
         }, null, 2))
         for (const iterator of listaGastos) {
             if (iterator.new_estado !== '2') {
-                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error Todas las filas deben estar EN REVISION`,'', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
+                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error Todas las filas deben estar EN REVISION`, '', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Todas las filas deben estar EN REVISION' });
                 break
             }
@@ -714,7 +717,7 @@ const sendToSapController = async (req, res) => {
             listRecibos,
             listFacturasND
         })
-        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Send to Sap ejecutado`, '',"Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Send to Sap ejecutado`, '', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
         const { statusCode, data } = await sapService.sendRendiciones({
             usd,
             idSap,
@@ -730,7 +733,7 @@ const sendToSapController = async (req, res) => {
         });
         console.log({ data, statusCode })
         if (data.status >= 400) {
-            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Hubo un Error al Enviar las Rendiciones. ${data.message || 'Error no definido'}`,'', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Hubo un Error al Enviar las Rendiciones. ${data.message || 'Error no definido'}`, '', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
                 const responseSap = await actualizarEstadoComentario(id_gasto, 2, `No se pudo contabilizar, error del SAP. ${data.message || ''}`)
@@ -1269,7 +1272,7 @@ const sendToSapController = async (req, res) => {
         estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
         console.error({ data })
         if (error.message.error?.message) {
-            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`,'', `rendicion/send-to-sap`, process.env.PRD)
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, '', `rendicion/send-to-sap`, process.env.PRD)
             return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, estadoRend });
         }
         if (error.response) {
@@ -1295,7 +1298,7 @@ const sendToSapController = async (req, res) => {
 
         }
         console.log({ data, listResSap, estadoRend })
-        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''}`,'', `rendicion/send-to-sap`, process.env.PRD)
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''}`, '', `rendicion/send-to-sap`, process.env.PRD)
         return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion`, data, listResSap, estadoRend, listErrores });
     }
 }
@@ -1718,11 +1721,156 @@ const allGastosRangeController = async (req, res) => {
     }
 }
 
-const updateSenToAccountingController = async (req, res) => {
+const updateSendToAccountingController = async (req, res) => {
     try {
         const idRend = req.query.idRend
         const response = await updateSendToAccounting(idRend)
         return res.json({ response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const getPettyCashByEmployeeController = async (req, res) => {
+    try {
+        const codEmp = req.query.codEmp
+        if (!codEmp || codEmp == '') {
+            return res.status(400).json({ mensaje: 'El codigo de empleado (codEmp) es obligatorio' })
+        }
+        const response = await getPettyCashByEmployee(codEmp)
+        const data = response.map((item) => {
+            const { FondoFijo, ...restItem } = item
+            return {
+                ...restItem,
+                FondoFijo: +FondoFijo
+            }
+        })
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const journalEntryValoradoController = async (req, res) => {
+    try {
+        let { JournalEntryLines, ...restBody } = req.body
+        const tipoCambio = await tipoDeCambio()
+        if (tipoCambio.length == 0) {
+            return res.status(400).json({ mensaje: 'No se pudo encontrar el tipo de cambio' })
+        }
+        const usd = tipoCambio[0].Rate
+        JournalEntryLines = JournalEntryLines.map((item) => {
+            const { Debit, Credit } = item
+            const debitSys = Debit / usd
+            const creditSys = Credit / usd
+            return {
+                ...item,
+                DebitSys: (Debit == 0) ? 0 : Number(debitSys.toFixed(2)),
+                CreditSys: (Credit == 0) ? 0 : Number(creditSys.toFixed(2)),
+            }
+        })
+        // return res.json({ ...restBody,
+        //     JournalEntryLines,})
+        const response = await asientoContable({
+            ...restBody,
+            JournalEntryLines,
+        })
+        const body = {
+            ...restBody,
+            JournalEntryLines,
+        }
+        if (response.lang) {
+            return res.status(400).json({
+                mensaje: `Error de SAP. ${response.value || 'No definido'}`,
+                body
+            })
+        }
+        // "response": {
+        //     "status": 204,
+        //     "orderNumber": "1415876"
+        // }
+        //TODO ------------------------------RECONCILIACION:
+        let diferencia = totalFacturas - totalDeLaEntrega
+        let ReconcileAmountInv = +totalDeLaEntrega
+        if (diferencia < 0) {
+            ReconcileAmountInv += +diferencia
+        }
+        const InternalReconciliationOpenTransRows = [
+            {
+                ShortName: CardCode,
+                TransId: invoiceResponse.TransNum,
+                TransRowId: 0,
+                SrcObjTyp: "13",
+                SrcObjAbs: invoiceResponse.idInvoice,
+                CreditOrDebit: "codDebit",
+                ReconcileAmount: ReconcileAmountInv,
+                CashDiscount: 0.0,
+                Selected: "tYES",
+            }
+        ]
+
+        let numInternalRec = 0
+        // * Eliminando la reconciliacion:
+        for (const creditNote of allResponseCreditNote) {
+            let ReconcileAmountCN = +totalesFactura[numInternalRec]
+            if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
+                ReconcileAmountCN -= +diferencia
+                diferencia = 0
+            }
+            const internalRecLine = {
+                ShortName: CardCode,
+                TransId: creditNote.TransNum,
+                TransRowId: 0,
+                SrcObjTyp: "14",
+                SrcObjAbs: creditNote.orderNumber,
+                CreditOrDebit: "codCredit",
+                ReconcileAmount: ReconcileAmountCN,
+                CashDiscount: 0.0,
+                Selected: "tYES",
+            }
+
+            InternalReconciliationOpenTransRows.push(internalRecLine)
+            numInternalRec += 1
+        }
+
+        const fechaFormater = new Date()
+        // Extraer componentes de la fecha
+        const year = fechaFormater.getUTCFullYear();
+        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+        const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+
+        let bodyReconciliacion = {
+            ReconDate: `${year}-${month}-${day}`,
+            CardOrAccount: "coaCard",
+            // ReconType: "rtManual",
+            // Total: totalFactura,
+            InternalReconciliationOpenTransRows,
+        }
+
+        console.log({ bodyReconciliacion })
+        let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
+        console.log({ responseReconciliacion })
+
+        if (responseReconciliacion.status == 400) {
+            let mensaje = responseReconciliacion.errorMessage
+            if (typeof mensaje != 'string' && mensaje.lang) {
+                mensaje = mensaje.value
+            }
+
+            mensaje = `Error en postReconciliacion: ${mensaje}.`
+            grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
+            return res.status(400).json({
+                mensaje,
+                bodyReconciliacion,
+            })
+        }
+        //TODO ------------------------------RECONCILIACION:
+        console.log({ response })
+        return res.json({
+            response
+        })
     } catch (error) {
         console.log({ error })
         return res.status(500).json({ mensaje: 'Error en el controlador' })
@@ -1765,5 +1913,7 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
-    updateSenToAccountingController
+    updateSendToAccountingController,
+    getPettyCashByEmployeeController,
+    journalEntryValoradoController,
 }

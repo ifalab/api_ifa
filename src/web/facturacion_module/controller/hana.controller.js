@@ -1,4 +1,5 @@
 const hana = require('@sap/hana-client');
+const { formattParam } = require('../../../helpers/formattParams.helpers');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -102,7 +103,7 @@ const obtenerEntregaDetalle = async (id) => {
 
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_DETALLE(${id})`;
         const result = await executeQuery(query)
-        console.log({query})
+        console.log({ query })
         return result
 
     } catch (error) {
@@ -119,7 +120,7 @@ const obtenerEntregaDetalleExportacion = async (id) => {
 
         const query = `CALL ${process.env.PRD}.IFA_LAPP_VEN_OBTENER_ENTREGA_EXP_DETALLE(${id})`;
         const result = await executeQuery(query)
-        console.log({query})
+        console.log({ query })
         return result
 
     } catch (error) {
@@ -241,7 +242,7 @@ const facturaPedidoTodos = async () => {
     }
 }
 
-const actualizarEstadoPedido = async (docNum,estado) => {
+const actualizarEstadoPedido = async (docNum, estado) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -535,7 +536,7 @@ const intercom = async () => {
             await connectHANA();
         }
         const query = `SELECT * FROM ${process.env.PRD}.INCOTERM`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -565,7 +566,7 @@ const reabrirOferta = async (id_oferta) => {
             await connectHANA();
         }
         const query = `call ${process.env.PRD}.ifa_sis_open_oferta_venta(${id_oferta})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -574,13 +575,13 @@ const reabrirOferta = async (id_oferta) => {
     }
 }
 
-const obtenerDetallePedidoAnulado = async(id_pedido) => {
+const obtenerDetallePedidoAnulado = async (id_pedido) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         const query = `select * from ${process.env.PRD}."IFA_VEN_PEDIDOS_DETALLE_ANULADOS" where "DocEntry" = ${id_pedido}`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -595,7 +596,7 @@ const reabrirLineas = async (id_linea, doc_lin) => {
             await connectHANA();
         }
         const query = `call ${process.env.PRD}.ifa_sis_open_lines_oferta_venta_con_orden(${id_linea}, ${doc_lin})`
-        console.log({query})
+        console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
@@ -612,7 +613,7 @@ const getClienteByCardCode = async (cardCode) => {
         const query = `SELECT 
         *
         FROM ${process.env.PRD}.IFA_DM_CLIENTES WHERE "CardCode"='${cardCode}'`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -621,13 +622,13 @@ const getClienteByCardCode = async (cardCode) => {
     }
 }
 
-const getOrdersById = async(id)=>{
+const getOrdersById = async (id) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.getOrderByDocEntry(${id})`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -636,13 +637,13 @@ const getOrdersById = async(id)=>{
     }
 }
 
-const setOrderState= async(id,state)=>{
+const setOrderState = async (id, state) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.setOrderState(${id},'${state}')`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -652,13 +653,13 @@ const setOrderState= async(id,state)=>{
 }
 
 
-const getBatchDetailByOrderNum = async(orderNum, baseEntry,baseLine)=>{
+const getBatchDetailByOrderNum = async (orderNum, baseEntry, baseLine) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFASP_SAL_GET_BATCH_DETAIL_FROM_ORDER_WITH_ID_ORDER(${orderNum},${baseEntry},${baseLine})`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
@@ -667,18 +668,111 @@ const getBatchDetailByOrderNum = async(orderNum, baseEntry,baseLine)=>{
     }
 }
 
-const baseEntryByDetailsNDC = async(docEntry)=>{
+const baseEntryByDetailsNDC = async (docEntry) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const query = `call ${process.env.PRD}.IFAP_SAL_GET_DETAILS_BY_NDC(${docEntry})`
-        console.log({query})
+        console.log({ query })
         const result = executeQuery(query)
         return result
     } catch (error) {
         console.log({ error })
         throw new Error(`Error de baseEntryByDetailsNDC: ${error.message}`)
+    }
+}
+
+const getUnpaidFromPreviousMonths = async () => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_GET_UNPAID_SALES_FROM_PREVIOUS_MONTHS()`
+        console.log({ query })
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getUnpaidFromPreviousMonths: ${error.message}`)
+    }
+}
+
+const getPaidDeliveryDetails = async (targetEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_GET_SALE_DELIVERY_DETAILS(targetEntry  => ${targetEntry})`
+        console.log({ query })
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getPaidDeliveryDetails: ${error.message}`)
+    }
+}
+
+const getPaidEntryDetails = async (docEntry) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_SAL_GET_SALE_ENTRY_DETAILS(docEntry  => ${docEntry})`
+        console.log({ query })
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de getPaidEntryDetails: ${error.message}`)
+    }
+}
+
+const setSyncSalesReturnProcess = async (
+    i_SalesDocEntry,
+    i_ReturnDocEntry,
+    i_CreditNoteDocEntry,
+    i_ReconciliationID,
+) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        /**
+    IN i_SalesDocEntry        INTEGER,
+    IN i_ReturnDocEntry       INTEGER DEFAULT NULL,
+    IN i_CreditNoteDocEntry   INTEGER DEFAULT NULL,
+    IN i_ReconciliationID     INTEGER DEFAULT NULL
+**/
+        const formattReturnDocEntry = formattParam(i_ReturnDocEntry)
+        const formattCreditNoteDocEntry = formattParam(i_CreditNoteDocEntry)
+        const formattReconliationId = formattParam(i_ReconciliationID)
+        const query = `call ${process.env.PRD}.IFASP_SIS_SYNC_SALES_RETURN_PROCESS(
+        i_SalesDocEntry  => ${i_SalesDocEntry},
+        i_ReturnDocEntry  => ${formattReturnDocEntry},
+        i_CreditNoteDocEntry  => ${formattCreditNoteDocEntry},
+        i_ReconciliationID  => ${formattReconliationId})`
+        console.log({ query })
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de setSyncSalesReturnProcess: ${error.message}`)
+    }
+}
+
+const createReferenceCreditNotesAndDelivery = async (creditNoteID, deliveryID) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const query = `call ${process.env.PRD}.IFASP_INV_CREATE_REFERENCE_CREDIT_NOTES_AND_DELIVERY(creditNoteID  => '${creditNoteID}',deliveryID  => '${deliveryID}')`
+        console.log({ query })
+        const result = executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error de createReferenceCreditNotesAndDelivery: ${error.message}`)
     }
 }
 
@@ -723,4 +817,9 @@ module.exports = {
     getBatchDetailByOrderNum,
     fefoMinExpiry,
     baseEntryByDetailsNDC,
+    getUnpaidFromPreviousMonths,
+    getPaidDeliveryDetails,
+    getPaidEntryDetails,
+    setSyncSalesReturnProcess,
+    createReferenceCreditNotesAndDelivery,
 }

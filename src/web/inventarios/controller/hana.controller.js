@@ -1197,6 +1197,39 @@ const getLotesExpDate = async () => {
 }
 
 
+const getValoradosPorIdSap = async (idSap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `CALL ${process.env.PRD}.IFASP_INV_GET_VALUED_INVENTORY_CHANGES_BY_USER(${idSap}) `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getValoradosPorIdSap:', error.message);
+        throw {
+            message: `Error al procesar getValoradosPorIdSap: ${error.message || ''}`
+        }
+    }
+}
+
+const getReturnValuesProcess = async (idSap) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `CALL ${process.env.PRD}.IFASP_SAL_GET_RETURN_VALUE_PROCESS(${idSap}) `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getReturnValuesProcess:', error.message);
+        throw {
+            message: `Error al procesar getReturnValuesProcess: ${error.message || ''}`
+        }
+    }
+}
 
 
 module.exports = {
@@ -1259,5 +1292,7 @@ module.exports = {
     getAllWarehouseCommercialByParams,
     kardexCommercial,
     habilitacionesPorIduser,
+    getValoradosPorIdSap,
+    getReturnValuesProcess,,
     getLotesExpDate
 }

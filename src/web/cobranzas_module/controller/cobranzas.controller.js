@@ -1161,6 +1161,7 @@ const realizarCobroMultiController = async (req, res) => {
     try {
         // Verificar si el body es un array
         const paymentsArray = Array.isArray(req.body) ? req.body : [req.body];
+        // let listBody = []
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
 
         console.log({ usuario, paymentsCount: paymentsArray.length, paymentsArray });
@@ -1232,7 +1233,7 @@ const realizarCobroMultiController = async (req, res) => {
             // Procesar el pago con SAP
             body.DocDate = null;
             console.log({ body });
-
+            // listBody.push({body})
             const responseSap = await postIncommingPayments(body);
 
             if (responseSap.status !== 200) {
@@ -1281,7 +1282,7 @@ const realizarCobroMultiController = async (req, res) => {
                 body: body
             };
         };
-
+        // return res.json({listBody,paymentsArray})
         // Procesar todos los pagos en paralelo con Promise.all
         const results = await Promise.all(
             paymentsArray.map(paymentData =>
