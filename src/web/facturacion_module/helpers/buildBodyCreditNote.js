@@ -1,4 +1,4 @@
-const buildBodyCreditNotes = (DocEntry, ReturnDocEntry, devolucionDetalle) => {
+const buildBodyCreditNotes = (ReturnDocEntry, DocEntry, devolucionDetalle) => {
     const cabeceraCN = []
     const DocumentLinesCN = []
     let DocumentAdditionalExpenses = []
