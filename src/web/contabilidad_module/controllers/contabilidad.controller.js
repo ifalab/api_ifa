@@ -196,7 +196,9 @@ const createAsientoContableController = async (req, res) => {
             reference,
             voucher,
             cuenta,
-            rendiciones
+            rendiciones,
+            additionalReference,
+            cardCode
         } = req.body
 
         const user = req.usuarioAutorizado
@@ -258,7 +260,9 @@ const createAsientoContableController = async (req, res) => {
             }
             console.log('sin rendicion')
             console.log({ ...data })
-
+            if (additionalReference) {
+                data.Reference3 = additionalReference
+            }
         } else {
             //?
             let JournalEntryLines = []
@@ -338,7 +342,6 @@ const createAsientoContableController = async (req, res) => {
 
             console.log('con rendicion')
             console.log({ ...data })
-
         }
         // return res.json({ data })
         const response = await asientoContable({
@@ -573,7 +576,7 @@ const cerrarCajaChicaController = async (req, res) => {
             if (diferenciaUSD > 0) {
                 const { JournalEntryLines } = postJournalEntry
                 const creditLine = JournalEntryLines[JournalEntryLines.length - 1]
-                if(creditLine){
+                if (creditLine) {
                     creditLine.CreditSys = creditLine.CreditSys + diferenciaUSD
                     JournalEntryLines[JournalEntryLines.length - 1] = creditLine
                 }
@@ -1133,6 +1136,104 @@ const getBankingByDateController = async (req, res) => {
 
 }
 
+const createAsientoContableInventarioController = async (req, res) => {
+    try {
+        const {
+            codEmp,
+            date,
+            monto,
+            banckAccount,
+            glosa,
+            cheque,
+            indicador,
+            reference,
+            voucher,
+            cuenta,
+            rendiciones,
+            additionalReference,
+            cardCode
+        } = req.body
+
+        const user = req.usuarioAutorizado
+        const idSap = user.ID_SAP || 0
+        const tipoCambio = await tipoDeCambio()
+        const usdRate = tipoCambio[0]
+        let data = {}
+        const usd = +usdRate.Rate
+        if (monto == 0) return res.status(400).json({ mensaje: 'El monto no puede ser cero' })
+        if (usd == 0) return res.status(400).json({ mensaje: 'El tipo de cambio no puede ser cero' })
+        const newValue = +monto / usd
+
+        let firstAccount = {
+            AccountCode: `${cuenta}`,
+            ShortName: `${cuenta}`,
+            Credit: monto,
+            Debit: 0,
+            CreditSys: parseFloat(newValue.toFixed(2)),
+            DebitSys:0 ,
+            ContraAccount: `${cardCode}`,
+            LineMemo: `${glosa}`,
+            Reference1: `${reference}`,
+            Reference2: ''
+        }
+        if (voucher || voucher == '') {
+            firstAccount.AdditionalReference = voucher
+        }
+        let contraAccount = {
+            AccountCode: `${banckAccount}`,
+            ShortName: `${cardCode}`,
+            Credit: 0,
+            Debit: monto,
+            CreditSys: 0,
+            DebitSys:parseFloat(newValue.toFixed(2)),
+            ContraAccount: `${cuenta}`,
+            LineMemo: glosa,
+            Reference1: ``,
+            Reference2: '',
+        }
+        if (voucher || voucher == '') {
+            contraAccount.AdditionalReference = voucher
+        }
+
+        if (cheque || cheque == '') {
+            contraAccount.AdditionalReference = cheque
+        }
+
+        let JournalEntryLines = []
+        JournalEntryLines.push(firstAccount)
+        JournalEntryLines.push(contraAccount)
+        data = {
+            U_UserCode: idSap,
+            ReferenceDate: date,
+            Memo: glosa,
+            Indicator: indicador,
+            Reference: reference,
+            Reference3: cheque,
+            JournalEntryLines
+        }
+        console.log('sin rendicion')
+        console.log({ ...data })
+        if (additionalReference) {
+            data.Reference3 = additionalReference
+        }
+
+        // return res.json({ data })
+        const response = await asientoContable({
+            ...data
+        })
+        if (response.value) {
+            return res.status(400).json({ mensaje: `Hubo un error al crear la apertura de caja. Sap Error: ${response.value || 'No definido'}`, data })
+        }
+        console.log('respuesta: ')
+        console.log({ response })
+        return res.json({ mensaje: 'Apertura de Caja creado con exito' })
+
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'error en createAsientoContableInventarioController' })
+    }
+}
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -1159,5 +1260,6 @@ module.exports = {
     getCuentasController,
     getMaestrosMayoresController,
     getBalanceAccountPrevController,
-    getBankingByDateController
+    getBankingByDateController,
+    createAsientoContableInventarioController,
 }

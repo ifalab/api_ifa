@@ -45,6 +45,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getAllWarehouseCommercialByParams,
     kardexCommercial,
     habilitacionesPorIduser,
+    getValoradosPorIdSap,
+    getReturnValuesProcess,
     getLotesExpDate
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
@@ -53,7 +55,7 @@ const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditN
 patchBatchNumberDetails, getBatchNumberDetails } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega } = require("../../facturacion_module/controller/hana.controller")
+const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega, createReferenceCreditNotesAndDelivery } = require("../../facturacion_module/controller/hana.controller")
 const { spObtenerCUF, spDetalleNDC } = require("../../facturacion_module/controller/sql_genesis.controller")
 const { notaDebitoCredito } = require("../../facturacion_module/service/apiFacturacionProsin")
 const path = require('path');
@@ -61,6 +63,7 @@ const fs = require('fs');
 const { facturacionProsin } = require("../../facturacion_module/service/apiFacturacionProsin")
 const { getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("./sql_genesis.controller");
 const { postInventoryTransferRequests, patchInventoryTransferRequests, postStockTransfer } = require("../../service/sapService");
+const { postIncommingPayments } = require("../../cobranzas_module/controller/sld.controller");
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -1231,12 +1234,14 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             idReturnHecho
         })
 
-        // const detailNDCw = await spDetalleNDC('4661A21FEE5FD111BA79A103C86598C1013D037841868FD6B569E1F74')
-        // const product = detailNDCw.find((item) => item.producto == '101-005-010')
-        // return res.json({ detailNDCw, product })
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const idSapUsuario = user.ID_SAP || 0
         if (!docEntry || docEntry <= 0) {
             return res.status(400).json({ mensaje: 'no hay DocEntry en la solicitud' })
+        }
+
+        if (idSapUsuario == 0) {
+            return res.status(400).json({ mensaje: 'El Usuario no tiene ID SAP' })
         }
 
         const fechaFormater = new Date(DocDate)
@@ -1273,12 +1278,15 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             let numRet = 0
             for (const line of entregas) {
                 const detalle = Detalle.find((item) => item.ItemCode == line.ItemCode)
+                console.log('detalle:------------------------------------------------')
+                console.log({ detalle })
                 if (detalle) {
                     const { cantidad } = detalle
                     const { ItemCode, WarehouseCode, Quantity, UnitsOfMeasurment, LineNum, BaseLine: base1, BaseType: base2, LineStatus, BaseEntry: base3, TaxCode, AccountCode, DocTotal: DocTotalEntr, GrossTotal: GrossTotalEntr, ...restLine } = line;
 
                     const batchData = batchEntrega.filter((item) => item.ItemCode == ItemCode)
-                    console.log({ batch: batchData })
+                    console.log('batchData:------------------------------------------------')
+                    console.log({ batchData })
                     if (batchData && batchData.length > 0) {
                         let cantidaUnit = cantidad * Number(UnitsOfMeasurment)
                         let batchNumbers = []
@@ -1341,12 +1349,12 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 U_RAZSOC,
                 U_B_cufd: U_B_cuf,
                 U_TIPODOC: '6',
-                U_UserCode: id_sap,
+                U_UserCode: idSapUsuario,
                 DocumentLines: newDocumentLines,
             }
 
             finalDataEntrega = finalData
-            // return res.json(finalDataEntrega)
+            // return res.json({ finalDataEntrega, batchEntrega, docEntry })
             //*--------------------------------------------------- POST RETURN 
             const responceReturn = await postReturn(finalDataEntrega)
             // return res.json({responceReturn, finalDataEntrega, newDocumentLines})
@@ -1370,7 +1378,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             idReturn = idReturnHecho
         }
         //*------------------------------------------------ DETALLE TO PROSIN
-        // return res.json({idReturn})
+        // return res.json({ idReturn })
 
         console.log({ idReturn })
         const entregasFromProsin = await entregaDetalleToProsin(idReturn)
@@ -3582,7 +3590,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
             // AlmacenSalida, nuevosArticulos 
         } = req.body
         console.log(JSON.stringify({
-            facturas, id_sap, CardCode, AlmacenIngreso
+            facturas, id_sap, CardCode, AlmacenIngreso, Comentario
             // , AlmacenSalida, nuevosArticulos 
         }, null, 2))
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -3858,19 +3866,6 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         }
         devolucionFinished = true
 
-
-        const outputDir = path.join(__dirname, 'outputs');
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
-        }
-        const now = new Date();
-        const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-
-        // Generar el nombre del archivo con el timestamp
-        const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
-        fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
-        console.log(`Objeto allBodies guardado en ${fileNameJson}`);
-
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Exito en el return y credit note. Facturas realizadas: ${facturasCompletadas}`, ``, "inventario/dev-valorado-dif-art", process.env.PRD)
         return res.json({
             allResponseReturn,
@@ -3914,11 +3909,19 @@ const entregaCambioValoradoController = async (req, res) => {
     let responseEntrega
     let bodyEntrega
     try {
-        const { nuevosArticulos, AlmacenSalida, CardCode, id_sap, Comentario } = req.body
+        const { nuevosArticulos, AlmacenSalida, CardCode, id_sap, Comentario, CreditNotes } = req.body
         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
         ///////////////////////// Entregas
         let newDocumentLinesEntrega = []
         let numLines = 0
+        // return res.status(400).json({
+        //     nuevosArticulos,
+        //     AlmacenSalida,
+        //     CardCode,
+        //     id_sap,
+        //     Comentario,
+        //     CreditNotes,
+        // })
         for (const nuevoArticulo of nuevosArticulos) {
             const {
                 ItemCode,
@@ -3988,6 +3991,15 @@ const entregaCambioValoradoController = async (req, res) => {
         const allBodies = { bodyEntrega }
 
         //? ----------------------------------------------------------------      entrega .
+        // return res.status(400).json({
+        //     nuevosArticulos,
+        //     AlmacenSalida,
+        //     CardCode,
+        //     id_sap,
+        //     Comentario,
+        //     CreditNotes,
+        //     bodyEntrega
+        // })
         responseEntrega = await postEntrega(bodyEntrega)
         if (responseEntrega.lang) {
             const outputDir = path.join(__dirname, 'outputs');
@@ -4010,7 +4022,10 @@ const entregaCambioValoradoController = async (req, res) => {
         }
 
         entregaFinished = true
-
+        deliveryNumber = responseEntrega.deliveryN44umber
+        for (const element of CreditNotes) {
+            await createReferenceCreditNotesAndDelivery(element.orderNumber, deliveryNumber)
+        }
         grabarLog(user.USERCODE, user.USERNAME, "Inventario Entrega Valorado", `Entrega de sap exitosa`, ``, "inventario/dev-valorado-dif-art", process.env.PRD)
         return res.json({
             responseEntrega, entregaFinished,
@@ -4317,93 +4332,93 @@ const facturacionCambioValoradoController = async (req, res) => {
             }
             console.log({ response })
         }
+        //* Eliminando la reconciliacion:
+        // let diferencia = totalFacturas - totalDeLaEntrega
+        // let ReconcileAmountInv = +totalDeLaEntrega
+        // if (diferencia < 0) {
+        //     ReconcileAmountInv += +diferencia
+        // }
+        // const InternalReconciliationOpenTransRows = [
+        //     {
+        //         ShortName: CardCode,
+        //         TransId: invoiceResponse.TransNum,
+        //         TransRowId: 0,
+        //         SrcObjTyp: "13",
+        //         SrcObjAbs: invoiceResponse.idInvoice,
+        //         CreditOrDebit: "codDebit",
+        //         ReconcileAmount: ReconcileAmountInv,
+        //         CashDiscount: 0.0,
+        //         Selected: "tYES",
+        //     }
+        // ]
 
-        let diferencia = totalFacturas - totalDeLaEntrega
-        let ReconcileAmountInv = +totalDeLaEntrega
-        if (diferencia < 0) {
-            ReconcileAmountInv += +diferencia
-        }
-        const InternalReconciliationOpenTransRows = [
-            {
-                ShortName: CardCode,
-                TransId: invoiceResponse.TransNum,
-                TransRowId: 0,
-                SrcObjTyp: "13",
-                SrcObjAbs: invoiceResponse.idInvoice,
-                CreditOrDebit: "codDebit",
-                ReconcileAmount: ReconcileAmountInv,
-                CashDiscount: 0.0,
-                Selected: "tYES",
-            }
-        ]
+        // let numInternalRec = 0
+        //* Eliminando la reconciliacion:
+        // for (const creditNote of allResponseCreditNote) {
+        //     let ReconcileAmountCN = +totalesFactura[numInternalRec]
+        //     if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
+        //         ReconcileAmountCN -= +diferencia
+        //         diferencia = 0
+        //     }
+        //     const internalRecLine = {
+        //         ShortName: CardCode,
+        //         TransId: creditNote.TransNum,
+        //         TransRowId: 0,
+        //         SrcObjTyp: "14",
+        //         SrcObjAbs: creditNote.orderNumber,
+        //         CreditOrDebit: "codCredit",
+        //         ReconcileAmount: ReconcileAmountCN,
+        //         CashDiscount: 0.0,
+        //         Selected: "tYES",
+        //     }
 
-        let numInternalRec = 0
-        //* revisar problema:
-        for (const creditNote of allResponseCreditNote) {
-            let ReconcileAmountCN = +totalesFactura[numInternalRec]
-            if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
-                ReconcileAmountCN -= +diferencia
-                diferencia = 0
-            }
-            const internalRecLine = {
-                ShortName: CardCode,
-                TransId: creditNote.TransNum,
-                TransRowId: 0,
-                SrcObjTyp: "14",
-                SrcObjAbs: creditNote.orderNumber,
-                CreditOrDebit: "codCredit",
-                ReconcileAmount: ReconcileAmountCN,
-                CashDiscount: 0.0,
-                Selected: "tYES",
-            }
+        //     InternalReconciliationOpenTransRows.push(internalRecLine)
+        //     numInternalRec += 1
+        // }
 
-            InternalReconciliationOpenTransRows.push(internalRecLine)
-            numInternalRec += 1
-        }
-
-        const fechaFormater = new Date()
+        // const fechaFormater = new Date()
         // Extraer componentes de la fecha
-        const year = fechaFormater.getUTCFullYear();
-        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
-        const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+        // const year = fechaFormater.getUTCFullYear();
+        // const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
+        // const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
 
-        let bodyReconciliacion = {
-            ReconDate: `${year}-${month}-${day}`,
-            CardOrAccount: "coaCard",
-            // ReconType: "rtManual",
-            // Total: totalFactura,
-            InternalReconciliationOpenTransRows,
-        }
+        // let bodyReconciliacion = {
+        //     ReconDate: `${year}-${month}-${day}`,
+        //     CardOrAccount: "coaCard",
+        //     // ReconType: "rtManual",
+        //     // Total: totalFactura,
+        //     InternalReconciliationOpenTransRows,
+        // }
 
-        console.log({ bodyReconciliacion })
-        let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
-        console.log({ responseReconciliacion })
+        // console.log({ bodyReconciliacion })
+        // let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
+        // console.log({ responseReconciliacion })
 
-        if (responseReconciliacion.status == 400) {
-            let mensaje = responseReconciliacion.errorMessage
-            if (typeof mensaje != 'string' && mensaje.lang) {
-                mensaje = mensaje.value
-            }
+        // if (responseReconciliacion.status == 400) {
+        //     let mensaje = responseReconciliacion.errorMessage
+        //     if (typeof mensaje != 'string' && mensaje.lang) {
+        //         mensaje = mensaje.value
+        //     }
 
-            mensaje = `Error en postReconciliacion: ${mensaje}.`
-            grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
-            return res.status(400).json({
-                mensaje,
-                bodyReconciliacion,
-                responseHanaB,
-                invoiceResponse,
-                cuf,
-                allResponseCreditNote,
-            })
-        }
+        //     mensaje = `Error en postReconciliacion: ${mensaje}.`
+        //     grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
+        //     return res.status(400).json({
+        //         mensaje,
+        //         bodyReconciliacion,
+        //         responseHanaB,
+        //         invoiceResponse,
+        //         cuf,
+        //         allResponseCreditNote,
+        //     })
+        // }
 
         grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, `Facturacion y Reconciliacion exitosa`, '', 'inventario/facturacion-cambio', process.env.PRD)
         return res.json({
-            bodyReconciliacion,
+            // bodyReconciliacion,
             invoiceResponse,
             responseHanaB,
             cuf,
-            responseReconciliacion
+            // responseReconciliacion
         })
     } catch (error) {
         console.log({ error })
@@ -6087,7 +6102,7 @@ const getAllWarehouseCommercialByParamsController = async (req, res) => {
 
         let result = []
         for (const parametro of listSucCode) {
-            console.log({parametro})
+            console.log({ parametro })
             const response = await getAllWarehouseCommercialByParams(parametro)
             const dataFilter = response.map((item) => {
                 const {
@@ -6118,7 +6133,7 @@ const getAllWarehouseCommercialByParamsController = async (req, res) => {
                 }
             })
 
-            result = [...result,...dataFilter]
+            result = [...result, ...dataFilter]
         }
 
         return res.json(result)
@@ -6380,6 +6395,242 @@ const getBatchNumberDetailsController = async (req, res) => {
     }
 };
 
+const getReturnValuesProcessController = async (req, res) => {
+    try {
+        const user = req.usuarioAutorizado
+        const idSap = user.ID_SAP
+        if (!idSap) {
+            return res.status(401).json({ mensaje: `el usuario no tiene ID SAP` })
+        }
+        const response = await getReturnValuesProcess(idSap)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getReturnValuesProcessController  : ${error.message || 'No definido'}` })
+    }
+}
+
+const processIncommingPaymentsController = async (req, res) => {
+    try {
+        //TODO BODY GENERICO PARA INCOMMING PAYMENTS
+        // "CashAccount": "1110104",
+        // "CashSum": 1000,// doc total
+        // "TransferAccount": null,
+        // "CheckAccount": null,
+        // "TransferSum": 0,
+        // "TransferDate": null,
+        // "TransferReference": null,
+        // "CardCode": "C000925",
+        // "Remarks": "Cobrador BLANCO RODRIGUEZ SARAH ESTEFANI",
+        // "JournalRemarks": "19/08 COB WEB C000925 - EFECTIVO",
+        // "Series": 321,
+        // "U_OSLP_ID": 16,// id vendedor sap
+        // "U_ORIGIN": "SAP",
+        // "U_UserCode":"id sap",// id  sap
+        // "PaymentInvoices": [
+        //     {
+        //         "LineNum": 0,
+        //         "DocEntry": 515369,//DocEntryInv
+        //         "SumApplied": 1000,// doc total
+        //         "InvoiceType": "it_Invoice"
+        //     }
+        // ],
+        //TODO ------------------------------------
+        const { DocTotalInv, CardCode, CommentsRet, DocEntryInv } = req.body
+        const user = req.usuarioAutorizado
+        const idSap = user.ID_SAP || 0
+        const idVendedorSap = user.ID_VENDEDOR_SAP || 0
+        const docTotal = +DocTotalInv
+        if (idSap == 0 || idVendedorSap == 0) {
+            return res.status(400).json({
+                mensaje: 'El usuario no tiene Id Sap o Id Vendedor Sap'
+            })
+        }
+
+        if (docTotal == 0 || docTotal == undefined) {
+            return res.status(400).json({
+                mensaje: 'El total no existe o es cero'
+            })
+        }
+
+        const incommingPaymentsBody = {
+            CashAccount: "1110104",
+            CashSum: +DocTotalInv,
+            TransferAccount: null,
+            CheckAccount: null,
+            TransferSum: 0,
+            TransferDate: null,
+            TransferReference: null,
+            CardCode,
+            Remarks: CommentsRet,
+            JournalRemarks: CommentsRet,
+            U_OSLP_ID: idVendedorSap,
+            U_ORIGIN: "SAP",
+            U_UserCode: idSap,
+            PaymentInvoices: [],
+        }
+
+        const paymentInvoice = {
+            LineNum: 0,
+            DocEntry: DocEntryInv,
+            SumApplied: +DocTotalInv,
+            InvoiceType: "it_Invoice",
+        }
+
+        incommingPaymentsBody.PaymentInvoices.push(paymentInvoice)
+        // return res.json(incommingPaymentsBody)
+        console.log(JSON.stringify({ incommingPaymentsBody }, null, 2,))
+        const responseIncommingPayment = await postIncommingPayments(incommingPaymentsBody)
+
+        if (responseIncommingPayment.status !== 200) {
+            const { errorMessage } = responseIncommingPayment
+            return res.status(400).json({
+                mensaje: `Hubo un error de Sap. ${errorMessage.value || 'No definido'}`,
+                incommingPaymentsBody
+            })
+        }
+
+        return res.json(responseIncommingPayment)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en processIncommingPaymentsController  : ${error.message || 'No definido'}` })
+    }
+}
+
+
+
+const processReconciliationController = async (req, res) => {
+    try {
+        const { ID_SAP, ID_VENDEDOR_SAP } = req.usuarioAutorizado
+        const {
+            CreditNoteListToRecon,
+            TransIdNC,
+            DocTotalNCs,
+            DocTotalNC,
+            DocTotalInv,
+            DocEntryInv,
+            TransIdInv,
+            DocNumInv,
+            CardCode } = req.body
+
+        const creditNoteReconSplit = CreditNoteListToRecon.split(',')
+        const transIdSplit = TransIdNC.split(',')
+        const DocTotal = Number(DocTotalNCs)
+        const docTotalNCSplit = DocTotalNC.split(',')
+        let diferencia = 0
+
+        // let diferencia = totalFacturas - totalDeLaEntrega
+        let ReconcileAmountCN = (DocTotalInv <= DocTotal) ? DocTotalInv : DocTotal
+        // if (DocTotalInv <= DocTotal) {
+        //     ReconcileAmountCN = DocTotalInv
+        // } else {
+        //     diferencia = DocTotal - Number(DocTotalInv)
+        // }
+
+        // let ReconcileAmountInv = +DocTotal
+        // if (diferencia < 0) {
+        //     ReconcileAmountInv += +diferencia
+        // }
+        const InternalReconciliationOpenTransRows = [
+            {
+                ShortName: CardCode,
+                TransId: TransIdInv,
+                TransRowId: 0,
+                SrcObjTyp: "13",
+                SrcObjAbs: DocEntryInv,
+                CreditOrDebit: "codDebit",
+                ReconcileAmount: Number(ReconcileAmountCN),
+                CashDiscount: 0.0,
+                Selected: "tYES",
+            }
+        ]
+
+        let numInternalRec = 0
+
+        for (const creditNoteOrderNumber of creditNoteReconSplit) {
+            // let ReconcileAmountCN = +
+            // let ReconcileAmountCN = +DocTotalInv
+            // if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
+            //     ReconcileAmountCN -= +diferencia
+            //     diferencia = 0
+            // }
+            const amount = docTotalNCSplit[numInternalRec]
+            const creditTransNum = transIdSplit[numInternalRec]
+            const internalRecLine = {
+                ShortName: CardCode,
+                TransId: creditTransNum,
+                TransRowId: 0,
+                SrcObjTyp: "14",
+                SrcObjAbs: creditNoteOrderNumber,
+                CreditOrDebit: "codCredit",
+                ReconcileAmount: Number(amount),
+                CashDiscount: 0.0,
+                Selected: "tYES",
+            }
+
+            InternalReconciliationOpenTransRows.push(internalRecLine)
+            numInternalRec += 1
+        }
+
+
+        const fechaFormater = new Date()
+        const year = fechaFormater.getUTCFullYear();
+        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(fechaFormater.getUTCDate()).padStart(2, '0');
+
+        let bodyReconciliacion = {
+            ReconDate: `${year}-${month}-${day}`,
+            CardOrAccount: "coaCard",
+            // ReconType: "rtManual",
+            // Total: totalFactura,
+            InternalReconciliationOpenTransRows,
+        }
+
+        console.log(JSON.stringify({ bodyReconciliacion },null,2))
+        // return res.json({
+        //     diferencia,
+        //     bodyReconciliacion
+        // })
+
+        let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
+        console.log({ responseReconciliacion })
+
+        if (responseReconciliacion.status == 400) {
+            let mensaje = responseReconciliacion.errorMessage
+            if (typeof mensaje != 'string' && mensaje.lang) {
+                mensaje = mensaje.value
+            }
+
+            mensaje = `Error en postReconciliacion: ${mensaje}.`
+            // grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
+            return res.status(400).json({
+                mensaje,
+                bodyReconciliacion,
+            })
+        }
+
+        return res.json({ ...responseReconciliacion })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en processIncommingPaymentsController  : ${error.message || 'No definido'}` })
+    }
+}
+
+const getValoradosPorIdSapController = async (req, res) => {
+    try {
+        const user = req.usuarioAutorizado
+        const idSap = user.ID_SAP
+        if (!idSap) {
+            return res.status(401).json({ mensaje: `el usuario no tiene ID SAP` })
+        }
+        const response = await getValoradosPorIdSap(idSap)
+        // console.log({ response })
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getValoradosPorIdSapController  : ${error.message || 'No definido'}` })
+    }
+}
 
 
 
@@ -6461,5 +6712,9 @@ module.exports = {
     postEntregaPorOrderNumberController,
     habilitacionesPorIduserController,
     patchBatchNumberDetailsController,
-    getBatchNumberDetailsController
+    getBatchNumberDetailsController,
+    getValoradosPorIdSapController,
+    getReturnValuesProcessController,
+    processIncommingPaymentsController,
+    processReconciliationController
 }

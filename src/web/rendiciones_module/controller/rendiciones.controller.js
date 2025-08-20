@@ -1,4 +1,6 @@
-const { tipoDeCambio, tipoDeCambioByFecha } = require("../../contabilidad_module/controllers/hana.controller")
+const { tipoDeCambio, tipoDeCambioByFecha, } = require("../../contabilidad_module/controllers/hana.controller")
+const { asientoContable } = require("../../contabilidad_module/controllers/sld.controller")
+const { postReconciliacion } = require("../../service/sapService")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const sapService = require("../services/sap.service")
 const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByTransac, crearRendicion, crearGasto, actualizarGastos, cambiarEstadoRendicion, verRendicionesEnRevision, employedByCardCode, actualizarEstadoComentario, actualizarEstadoRendicion, eliminarGastoID, costoComercialAreas, costoComercialTipoCliente, costoComercialLineas, costoComercialEspecialidades, costoComercialClasificaciones, costoComercialConceptos, costoComercialCuenta, filtroCC, actualizarGlosaRendicion, actualizarfechaContRendicion,
@@ -19,8 +21,6 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     allGastosRange,
     importeByRend,
     updateSendToAccounting,
-    verRendicionesEnConcluido,
-    getRendTransID
 } = require("./hana.controller")
 
 
@@ -698,7 +698,7 @@ const sendToSapController = async (req, res) => {
         }, null, 2))
         for (const iterator of listaGastos) {
             if (iterator.new_estado !== '2') {
-                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error Todas las filas deben estar EN REVISION`,'', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
+                await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error Todas las filas deben estar EN REVISION`, '', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
                 return res.status(400).json({ mensaje: 'Todas las filas deben estar EN REVISION' });
                 break
             }
@@ -735,7 +735,7 @@ const sendToSapController = async (req, res) => {
             listRecibos,
             listFacturasND
         })
-        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Send to Sap ejecutado`, '',"Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Send to Sap ejecutado`, '', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
         const { statusCode, data } = await sapService.sendRendiciones({
             usd,
             idSap,
@@ -751,7 +751,7 @@ const sendToSapController = async (req, res) => {
         });
         console.log({ data, statusCode })
         if (data.status >= 400) {
-            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Hubo un Error al Enviar las Rendiciones. ${data.message || 'Error no definido'}`,'', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Hubo un Error al Enviar las Rendiciones. ${data.message || 'Error no definido'}`, '', "Rendicion/send-to-sap SapService/lapp/rendicion", process.env.PRD)
             await Promise.all(listFacturas.map(async (item) => {
                 const { id_gasto } = item
                 const responseSap = await actualizarEstadoComentario(id_gasto, 2, `No se pudo contabilizar, error del SAP. ${data.message || ''}`)
@@ -1290,7 +1290,7 @@ const sendToSapController = async (req, res) => {
         estadoRend = await actualizarEstadoRendicion(idRendicion, '2')
         console.error({ data })
         if (error.message.error?.message) {
-            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`,'', `rendicion/send-to-sap`, process.env.PRD)
+            await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, '', `rendicion/send-to-sap`, process.env.PRD)
             return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion. ${data || ''} ${error.message.error?.message || ''}`, estadoRend });
         }
         if (error.response) {
@@ -1316,7 +1316,7 @@ const sendToSapController = async (req, res) => {
 
         }
         console.log({ data, listResSap, estadoRend })
-        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''}`,'', `rendicion/send-to-sap`, process.env.PRD)
+        await grabarLog(user.USERCODE, user.USERNAME, "Rendicion", `Error No se pudo crear la rendicion. ${data || ''}`, '', `rendicion/send-to-sap`, process.env.PRD)
         return res.status(statusCode).json({ mensaje: `No se pudo crear la rendicion`, data, listResSap, estadoRend, listErrores });
     }
 }
@@ -1739,7 +1739,7 @@ const allGastosRangeController = async (req, res) => {
     }
 }
 
-const updateSenToAccountingController = async (req, res) => {
+const updateSendToAccountingController = async (req, res) => {
     try {
         const idRend = req.query.idRend
         const response = await updateSendToAccounting(idRend)
@@ -1749,29 +1749,6 @@ const updateSenToAccountingController = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el controlador' })
     }
 }
-
-
-const cancelRevisionCajaController = async (req, res) => {
-    try {
-        const id = req.query.id
-        const response = await getRendTransID(id);
-        const rendicionTransId = response[0]?.RendicionTransId;
-        const result = await cancelJournalEntry(rendicionTransId);
-        if (result.status >= 200 && result.status < 300) {
-            const respuesta = await actualizarEstadoRendicion(id, '2');
-            return res.json({respuesta});
-        } else {
-            res.status(result.status || 500).json({ 
-                message: result.message || 'Error al cancelar el JournalEntry.'
-            });
-        }
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
-    }
-}
-
-
 
 module.exports = {
     findAllAperturaController,
@@ -1809,6 +1786,5 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
-    updateSenToAccountingController,
-    cancelRevisionCajaController
+    updateSenToAccountingController
 }

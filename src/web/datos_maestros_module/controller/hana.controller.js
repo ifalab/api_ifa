@@ -1322,6 +1322,25 @@ const getAllSublines = async () => {
     }
 }
 
+const getAllSublinesCode = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `select "SubLineItemCode" from LAB_IFA_PRD.IFA_DM_SUBLINEAS`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getAllLineas:', error);
+        throw {
+            status: 400,
+            message: `Error en getAllLineas: ${error.message || ''}`
+        }
+    }
+}
+
 const getDiscountByItem = async () => {
     try {
         if (!connection) {
@@ -1501,5 +1520,6 @@ module.exports = {
     getListaPreciosCostoComercialByIdCadenas,
     setPrecioCostoComercial,
     getNewSucursales,
-    deletePrecioCostoComercial
+    deletePrecioCostoComercial,
+    getAllSublinesCode
 }
