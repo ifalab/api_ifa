@@ -1293,6 +1293,6 @@ module.exports = {
     kardexCommercial,
     habilitacionesPorIduser,
     getValoradosPorIdSap,
-    getReturnValuesProcess,,
-    getLotesExpDate
+    getReturnValuesProcess,
+    getLotesExpDate,
 }
