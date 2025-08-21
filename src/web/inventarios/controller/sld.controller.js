@@ -30,6 +30,7 @@ const connectSLD = async () => {
     return response.data;
   } catch (error) {
     // Manejo de errores
+    console.log({error})
     console.error('Error de logueo al SLD', error.message);
     throw new Error('Error de logueo al SLD');
   }

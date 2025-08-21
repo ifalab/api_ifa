@@ -4565,7 +4565,8 @@ const processUnpaidController = async (req, res) => {
     try {
         const { DocEntry, Cuf, CardCode, LicTradNum, CardFName, } = req.body
         let { SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, ReconciliationID } = req.body
-
+        let responseReturn = {}
+        let responseCreditNotes = {}
         const user = req.usuarioAutorizado
         const idSap = user.ID_SAP || 0
 
@@ -4584,7 +4585,8 @@ const processUnpaidController = async (req, res) => {
             }
             const newDetails = groupBatchesByLineNum(details)
             const bodyReturns = buildBodyReturn(CardCode, LicTradNum, CardFName, Cuf, newDetails)
-            const responseReturn = await postReturn(bodyReturns)
+            
+            responseReturn = await postReturn(bodyReturns)
 
             if (responseReturn.status > 300) {
                 console.log({ errorMessage: responseReturn.errorMessage })
@@ -4597,15 +4599,16 @@ const processUnpaidController = async (req, res) => {
             }
             ReturnDocEntry = responseReturn.orderNumber
             await setSyncSalesReturnProcess(DocEntry, ReturnDocEntry, null, null)
+            return res.json({responseReturn,bodyReturns})
         }
 
         if (!CreditNoteDocEntry) {
             const devolucionDetalle = await obtenerDevolucionDetalle(ReturnDocEntry)
             const bodyCreditNotes = buildBodyCreditNotes(ReturnDocEntry, DocEntry, devolucionDetalle)
             console.log(JSON.stringify({ bodyCreditNotes }, null, 2))
-            const responseCreditNote = await postCreditNotes(bodyCreditNotes)
-            if (responseCreditNote.status > 299) {
-                let mensaje = responseCreditNote.errorMessage
+            responseCreditNotes = await postCreditNotes(bodyCreditNotes)
+            if (responseCreditNotes.status > 299) {
+                let mensaje = responseCreditNotes.errorMessage
                 if (typeof mensaje != 'string' && mensaje.lang) {
                     mensaje = mensaje.value
                 }
@@ -4617,13 +4620,12 @@ const processUnpaidController = async (req, res) => {
                     ReturnDocEntry,
                 })
             }
-            const { orderNumber: CreditNoteDocEntry, TransNum } = responseCreditNote
+            const { orderNumber: CreditNoteDocEntry, TransNum } = responseCreditNotes
             await setSyncSalesReturnProcess(DocEntry, ReturnDocEntry, CreditNoteDocEntry, null)
-            // return res.json({ responseCreditNote, bodyCreditNotes })
         }
 
 
-        return res.json({ mensaje: 'Proceso concluido con exito', SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, })
+        return res.json({ mensaje: 'Proceso concluido con exito', SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, responseReturn,responseCreditNotes})
 
     } catch (error) {
         console.log('error en processUnpaidController')
