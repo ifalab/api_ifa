@@ -291,6 +291,47 @@ const verRendicionesEnRevision = async () => {
     }
 }
 
+
+
+
+
+const getRendTransID = async (ID) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('getRendTransID EXECUTE')
+        const query = `call LAB_IFA_DEV.IFASP_RW_GET_REND_TRANSID_BY_ID(${ID})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudieron traer las rendiciones desde la base de datos`
+        }
+    }
+}
+
+
+const verRendicionesEnConcluido = async () => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        console.log('verRendicionesEnConcluido EXECUTE')
+        const query = `SELECT * FROM LAB_IFA_LAPP.LAPP_RENDICION WHERE ESTADO = '3' `
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        return {
+            error: `No se pudieron traer las rendiciones desde la base de datos`
+        }
+    }
+}
+
 const findAllRendiciones = async () => {
     try {
         if (!connection) {
@@ -1033,4 +1074,6 @@ module.exports = {
     importeByRend,
     updateSendToAccounting,
     getPettyCashByEmployee,
+    verRendicionesEnConcluido,
+    getRendTransID
 }

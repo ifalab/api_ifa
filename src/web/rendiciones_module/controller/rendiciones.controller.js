@@ -21,8 +21,11 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     allGastosRange,
     importeByRend,
     updateSendToAccounting,
-    getPettyCashByEmployee,
 } = require("./hana.controller")
+
+
+const { cancelJournalEntry } = require("./sld.controller")
+
 
 const findAllAperturaController = async (req, res) => {
     try {
@@ -617,32 +620,47 @@ const cambiarEstadoRendicionController = async (req, res) => {
 }
 
 const verRendicionesEnRevisionController = async (req, res) => {
-    try {
-        const response = await verRendicionesEnRevision()
-        const listaRendiciones = []
+    try {
+        const parametro = req.query.parametro;
+        console.log('Estado', req.query.parametro);
 
-        await Promise.all(response.map(async (item) => {
-            const { CODEMP, ...rest } = item
-            Empleado = await employedByCardCode(CODEMP)
-            if (Empleado && Empleado[0]) {
-                listaRendiciones.push({
-                    ...rest,
-                    Empleado: Empleado[0]
-                })
-            } else {
-                listaRendiciones.push({
-                    ...rest,
-                    Empleado: null
-                })
-            }
+        // ✅ CAMBIO CLAVE: Declara la variable 'response' fuera del if/else.
+        let response;
 
-        }))
+        if (parametro == 0) {
+            console.log('entrando a revision');
+            response = await verRendicionesEnRevision();
+        } else {
+            console.log('entrando a concluido');
+            response = await verRendicionesEnConcluido();
+        }
 
-        return res.json({ listaRendiciones })
-    } catch (error) {
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
-    }
-}
+        const listaRendiciones = [];
+
+        await Promise.all(response.map(async (item) => {
+            const { CODEMP, ...rest } = item;
+            const Empleado = await employedByCardCode(CODEMP);
+            if (Empleado && Empleado[0]) {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: Empleado[0]
+                });
+            } else {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: null
+                });
+            }
+        }));
+
+        return res.json({ listaRendiciones });
+    } catch (error) {
+        console.error(error); // ✅ Agrega esto para depurar
+        return res.status(500).json({ mensaje: 'Error en el controlador' });
+    }
+};
+
+
 
 
 const sendToSapController = async (req, res) => {
@@ -1732,151 +1750,6 @@ const updateSendToAccountingController = async (req, res) => {
     }
 }
 
-const getPettyCashByEmployeeController = async (req, res) => {
-    try {
-        const codEmp = req.query.codEmp
-        if (!codEmp || codEmp == '') {
-            return res.status(400).json({ mensaje: 'El codigo de empleado (codEmp) es obligatorio' })
-        }
-        const response = await getPettyCashByEmployee(codEmp)
-        const data = response.map((item) => {
-            const { FondoFijo, ...restItem } = item
-            return {
-                ...restItem,
-                FondoFijo: +FondoFijo
-            }
-        })
-        return res.json(data)
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
-    }
-}
-
-const journalEntryValoradoController = async (req, res) => {
-    try {
-        let { JournalEntryLines, ...restBody } = req.body
-        const tipoCambio = await tipoDeCambio()
-        if (tipoCambio.length == 0) {
-            return res.status(400).json({ mensaje: 'No se pudo encontrar el tipo de cambio' })
-        }
-        const usd = tipoCambio[0].Rate
-        JournalEntryLines = JournalEntryLines.map((item) => {
-            const { Debit, Credit } = item
-            const debitSys = Debit / usd
-            const creditSys = Credit / usd
-            return {
-                ...item,
-                DebitSys: (Debit == 0) ? 0 : Number(debitSys.toFixed(2)),
-                CreditSys: (Credit == 0) ? 0 : Number(creditSys.toFixed(2)),
-            }
-        })
-        // return res.json({ ...restBody,
-        //     JournalEntryLines,})
-        const response = await asientoContable({
-            ...restBody,
-            JournalEntryLines,
-        })
-        const body = {
-            ...restBody,
-            JournalEntryLines,
-        }
-        if (response.lang) {
-            return res.status(400).json({
-                mensaje: `Error de SAP. ${response.value || 'No definido'}`,
-                body
-            })
-        }
-        // "response": {
-        //     "status": 204,
-        //     "orderNumber": "1415876"
-        // }
-        //TODO ------------------------------RECONCILIACION:
-        let diferencia = totalFacturas - totalDeLaEntrega
-        let ReconcileAmountInv = +totalDeLaEntrega
-        if (diferencia < 0) {
-            ReconcileAmountInv += +diferencia
-        }
-        const InternalReconciliationOpenTransRows = [
-            {
-                ShortName: CardCode,
-                TransId: invoiceResponse.TransNum,
-                TransRowId: 0,
-                SrcObjTyp: "13",
-                SrcObjAbs: invoiceResponse.idInvoice,
-                CreditOrDebit: "codDebit",
-                ReconcileAmount: ReconcileAmountInv,
-                CashDiscount: 0.0,
-                Selected: "tYES",
-            }
-        ]
-
-        let numInternalRec = 0
-        // * Eliminando la reconciliacion:
-        for (const creditNote of allResponseCreditNote) {
-            let ReconcileAmountCN = +totalesFactura[numInternalRec]
-            if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
-                ReconcileAmountCN -= +diferencia
-                diferencia = 0
-            }
-            const internalRecLine = {
-                ShortName: CardCode,
-                TransId: creditNote.TransNum,
-                TransRowId: 0,
-                SrcObjTyp: "14",
-                SrcObjAbs: creditNote.orderNumber,
-                CreditOrDebit: "codCredit",
-                ReconcileAmount: ReconcileAmountCN,
-                CashDiscount: 0.0,
-                Selected: "tYES",
-            }
-
-            InternalReconciliationOpenTransRows.push(internalRecLine)
-            numInternalRec += 1
-        }
-
-        const fechaFormater = new Date()
-        // Extraer componentes de la fecha
-        const year = fechaFormater.getUTCFullYear();
-        const month = String(fechaFormater.getUTCMonth() + 1).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
-        const day = String(fechaFormater.getUTCDate()).padStart(2, '0'); // Asegurarse de que sea 2 dígitos
-
-        let bodyReconciliacion = {
-            ReconDate: `${year}-${month}-${day}`,
-            CardOrAccount: "coaCard",
-            // ReconType: "rtManual",
-            // Total: totalFactura,
-            InternalReconciliationOpenTransRows,
-        }
-
-        console.log({ bodyReconciliacion })
-        let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
-        console.log({ responseReconciliacion })
-
-        if (responseReconciliacion.status == 400) {
-            let mensaje = responseReconciliacion.errorMessage
-            if (typeof mensaje != 'string' && mensaje.lang) {
-                mensaje = mensaje.value
-            }
-
-            mensaje = `Error en postReconciliacion: ${mensaje}.`
-            grabarLog(user.USERCODE, user.USERNAME, `Inventario Facturacion Cambio Valorado`, mensaje, 'postReconciliacion', 'inventario/facturacion-cambio', process.env.PRD)
-            return res.status(400).json({
-                mensaje,
-                bodyReconciliacion,
-            })
-        }
-        //TODO ------------------------------RECONCILIACION:
-        console.log({ response })
-        return res.json({
-            response
-        })
-    } catch (error) {
-        console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
-    }
-}
-
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1913,7 +1786,5 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
-    updateSendToAccountingController,
-    getPettyCashByEmployeeController,
-    journalEntryValoradoController,
+    updateSenToAccountingController
 }
