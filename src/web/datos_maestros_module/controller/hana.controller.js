@@ -174,7 +174,7 @@ const setPrecioCostoComercial = async (itemCode, precio, id_vend_sap, glosa) => 
         const validFrom = new Date().toISOString().split('T')[0];
         
         // La consulta con el valor vacío
-        const query = `call LAB_IFA_DATA.IFASP_INV_CREATE_PLANT_COSTS_TEST('${itemCode}', '${costType}', ${precio}, '${validFrom}', '${id_vend_sap}', '${glosa}');`;
+        const query = `call LAB_IFA_DATA.IFASP_INV_CREATE_PLANT_COSTS('${itemCode}', '${costType}', ${precio}, '${validFrom}', '${id_vend_sap}', '${glosa}');`;
         
         console.log({ query });
         const result = await executeQuery(query);
@@ -198,7 +198,7 @@ const deletePrecioCostoComercial = async (UUID) => {
             await connectHANA();
         }
         
-        const query = `call LAB_IFA_DATA.IFASP_INV_DELETE_PLANT_COSTS_TEST('${UUID}');`;
+        const query = `call LAB_IFA_DATA.IFASP_INV_DELETE_PLANT_COSTS('${UUID}');`;
         
         console.log({ query });
         const result = await executeQuery(query);
@@ -408,7 +408,7 @@ const getListaPreciosCostoComercialByIdCadenas = async () => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call LAB_IFA_DATA.IFASP_INV_GET_PLANT_COSTS_TEST()`;
+        const query = `call LAB_IFA_DATA.IFASP_INV_GET_PLANT_COSTS()`;
         console.log({ query })
         const result = await executeQuery(query)
         return {

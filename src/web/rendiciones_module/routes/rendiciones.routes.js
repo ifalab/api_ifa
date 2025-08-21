@@ -60,7 +60,11 @@ router.get('/find-all-rendiciones', [validarToken, validarCampos], findAllRendic
 router.get('/empleados-con-cajas-chicas', [validarToken, validarCampos], empleadoConCajaChicasController)
 router.get('/lista-rendiciones-by-codemp', [validarToken, validarCampos], listaRendicionesByCodEmpController)
 router.get('/all-gastos-range', [validarToken, validarCampos], allGastosRangeController)
+<<<<<<< HEAD
 router.get('/update-send-to-accounting', [validarToken, validarCampos], updateSendToAccountingController)
+=======
+// router.get('/update-send-to-accounting', [validarToken, validarCampos], updateSendToAccountingController)
+>>>>>>> 826e882d157cf05e278ca36af14c15678285d7c9
 // router.get('/petty-cash-by-employee', [validarToken, validarCampos], getPettyCashByEmployeeController)
 // router.post('/journal-entry-valorado', [validarToken, validarCampos], journalEntryValoradoController)
 
