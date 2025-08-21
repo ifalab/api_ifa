@@ -20,7 +20,7 @@ router.get('/autenticar', autenticarController);
 // Para estas rutas, primero verificamos que tengamos token del banco
 router.post('/generar-qr', [verificarTokenDelBanco, validarToken], generarQRController);
 router.post('/anular-qr', [verificarTokenDelBanco, validarToken], anularQRController);
-router.post('/listar-ordenes', [verificarTokenDelBanco, validarToken], listarOrdenesController);
+router.post('/listar-ordenes', [verificarTokenDelBanco], listarOrdenesController);
 router.post('/estado-qr', [verificarTokenDelBanco, validarToken], consultarEstadoController);
 
 router.post('/registrar-pago', [validarToken], registrarPagoModuloController);
