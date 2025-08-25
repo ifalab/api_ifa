@@ -49,12 +49,14 @@ router.post('/delete-one-role-user', [validarToken, validarCampos], deleteOneRol
 router.patch('/update-role-user', [validarToken, validarCampos], updateRolesByUserController)
 router.get('/find-all-rol', [validarToken, validarCampos], findAllRolesController)
 router.get('/find-all-sublines', [validarToken, validarCampos], findAllSublineasController)
+//------------------AUTORIZACION DE ALMACENES
 router.get('/get-users', [validarToken, validarCampos], getDmUsersController)
 router.get('/get-almacenes', [validarToken, validarCampos], getAllAlmacenesController)
 router.get('/get-user-by-id', [validarToken, validarCampos], getDmUserByIdController)
 router.get('/get-almacenes-by-user', [validarToken, validarCampos], getAlmacenesByUserController)
 router.post('/add-almacen-user', [validarToken, validarCampos], addAlmacenUsuarioController)
 router.post('/delete-almacen-user', [validarToken, validarCampos], deleteAlmacenUsuarioController)
+//------------------AUTORIZACION DE ALMACENES
 router.get('/get-rutas-libres-despachador', [validarToken, validarCampos], getRutasLibresPorDespachadorController)
 router.get('/get-rutas-por-despachador', [validarToken, validarCampos], getRutasAsignadasPorDespachadorController)
 router.post('/add-ruta-despachador', [validarToken, validarCampos], addRutasDespachadoresController)

@@ -51,8 +51,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
-    cancelReconciliacion, cancelInvoice, 
-patchBatchNumberDetails, getBatchNumberDetails } = require("./sld.controller")
+    cancelReconciliacion, cancelInvoice,
+    patchBatchNumberDetails, getBatchNumberDetails } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega, createReferenceCreditNotesAndDelivery } = require("../../facturacion_module/controller/hana.controller")
@@ -6328,11 +6328,11 @@ const patchBatchNumberDetailsController = async (req, res) => {
             console.error(errorMessage, req.body);
             return res.status(400).json({ message: errorMessage });
         }
-        
+
         // 3. Preparar el payload que espera la función para SAP B1
         const payloadForSAP = {
             // El nombre de la propiedad debe coincidir con el campo de SAP
-            "ExpirationDate": ExpirationDate 
+            "ExpirationDate": ExpirationDate
         };
 
         // 4. Llamar a la función patchBatchNumberDetails para interactuar con SAP B1
@@ -6340,12 +6340,12 @@ const patchBatchNumberDetailsController = async (req, res) => {
 
         // 5. Enviar la respuesta al frontend
         if (result.status >= 200 && result.status < 300) {
-            res.status(200).json({ 
+            res.status(200).json({
                 message: result.message || 'Lote actualizado con éxito.',
-                status: result.status 
+                status: result.status
             });
         } else {
-            res.status(result.status || 500).json({ 
+            res.status(result.status || 500).json({
                 message: result.message || 'Error al actualizar el lote en SAP Business One.'
             });
         }
@@ -6353,7 +6353,7 @@ const patchBatchNumberDetailsController = async (req, res) => {
     } catch (error) {
         // Manejo de errores a nivel del controlador
         console.error('Error en patchBatchNumberDetailsController:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Error interno del servidor al procesar la actualización del lote.',
             error: error.message
         });
@@ -6364,7 +6364,7 @@ const patchBatchNumberDetailsController = async (req, res) => {
 const getBatchNumberDetailsController = async (req, res) => {
     try {
         console.log('Iniciando la obtención de los detalles de todos los lotes...');
-        
+
         // 1. Llama a la función que interactúa con SAP B1
         const result = await getLotesExpDate();
 
@@ -6372,11 +6372,11 @@ const getBatchNumberDetailsController = async (req, res) => {
         if (result.error) {
             // Si la función devolvió un error, lo enviamos al cliente
             console.error('Error en el controlador:', result.message);
-            return res.status(result.status || 500).json({ 
+            return res.status(result.status || 500).json({
                 message: result.message || 'Error al obtener los detalles de los lotes desde SAP Business One.'
             });
         }
-        
+
         // 3. Si no hay error, enviamos el arreglo de datos al cliente
         // El status 200 OK indica que la operación fue exitosa
         console.log('Se obtuvieron los detalles de los lotes con éxito.');
@@ -6508,36 +6508,28 @@ const processReconciliationController = async (req, res) => {
             DocTotalNCs,
             DocTotalNC,
             DocTotalInv,
+            TransIdCaja,
             DocEntryInv,
             TransIdInv,
             DocNumInv,
+            AmountCaja,
             CardCode } = req.body
 
         const creditNoteReconSplit = CreditNoteListToRecon.split(',')
         const transIdSplit = TransIdNC.split(',')
         const DocTotal = Number(DocTotalNCs)
         const docTotalNCSplit = DocTotalNC.split(',')
-        let diferencia = 0
+        let diferencia = Number(AmountCaja) - DocTotal
 
-        // let diferencia = totalFacturas - totalDeLaEntrega
-        let ReconcileAmountCN = (DocTotalInv <= DocTotal) ? DocTotalInv : DocTotal
-        // if (DocTotalInv <= DocTotal) {
-        //     ReconcileAmountCN = DocTotalInv
-        // } else {
-        //     diferencia = DocTotal - Number(DocTotalInv)
-        // }
+        let ReconcileAmountCN = (Number(AmountCaja) <= DocTotal) ? Number(AmountCaja) : DocTotal
 
-        // let ReconcileAmountInv = +DocTotal
-        // if (diferencia < 0) {
-        //     ReconcileAmountInv += +diferencia
-        // }
         const InternalReconciliationOpenTransRows = [
             {
                 ShortName: CardCode,
-                TransId: TransIdInv,
-                TransRowId: 0,
-                SrcObjTyp: "13",
-                SrcObjAbs: DocEntryInv,
+                TransId: TransIdCaja,
+                TransRowId: 1,
+                SrcObjTyp: "30",
+                SrcObjAbs: TransIdCaja,
                 CreditOrDebit: "codDebit",
                 ReconcileAmount: Number(ReconcileAmountCN),
                 CashDiscount: 0.0,
@@ -6548,12 +6540,7 @@ const processReconciliationController = async (req, res) => {
         let numInternalRec = 0
 
         for (const creditNoteOrderNumber of creditNoteReconSplit) {
-            // let ReconcileAmountCN = +
-            // let ReconcileAmountCN = +DocTotalInv
-            // if (diferencia > 0 && (ReconcileAmountCN - diferencia) > 0) {
-            //     ReconcileAmountCN -= +diferencia
-            //     diferencia = 0
-            // }
+
             const amount = docTotalNCSplit[numInternalRec]
             const creditTransNum = transIdSplit[numInternalRec]
             const internalRecLine = {
@@ -6572,6 +6559,10 @@ const processReconciliationController = async (req, res) => {
             numInternalRec += 1
         }
 
+        const reconciliationFinal = InternalReconciliationOpenTransRows[InternalReconciliationOpenTransRows.length - 1];
+        if (diferencia < 0) {
+            reconciliationFinal.ReconcileAmount -= diferencia * -1
+        }
 
         const fechaFormater = new Date()
         const year = fechaFormater.getUTCFullYear();
@@ -6581,17 +6572,10 @@ const processReconciliationController = async (req, res) => {
         let bodyReconciliacion = {
             ReconDate: `${year}-${month}-${day}`,
             CardOrAccount: "coaCard",
-            // ReconType: "rtManual",
-            // Total: totalFactura,
             InternalReconciliationOpenTransRows,
         }
 
-        console.log(JSON.stringify({ bodyReconciliacion },null,2))
-        // return res.json({
-        //     diferencia,
-        //     bodyReconciliacion
-        // })
-
+        console.log(JSON.stringify({ bodyReconciliacion }, null, 2))
         let responseReconciliacion = await postReconciliacion(bodyReconciliacion)
         console.log({ responseReconciliacion })
 
