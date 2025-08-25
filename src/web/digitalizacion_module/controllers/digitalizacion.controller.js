@@ -6,6 +6,11 @@ const {
 
 const ExcelJS = require('exceljs');
 
+const path = require('path');
+const puppeteer = require('puppeteer');
+const { PDFDocument } = require('pdf-lib');
+const ejs = require('ejs');
+
 /**
  * Busca imágenes según criterios proporcionados
  */
@@ -845,6 +850,73 @@ const excelEntregasDigitalizadasController = async (req, res) => {
     }
 };
 
+
+const pdfEntregasDigitalizadasController = async (req, res) => {
+    try {
+        const { data, fechaInicio, fechaFin } = req.body;
+
+        // Fecha y hora actual para el pie del PDF
+        const fechaActual = new Date();
+        const dateStr = fechaActual.toLocaleString('es-ES', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        // Calcular total general
+        const totalGeneral = data && data.length > 0
+            ? data.reduce((acc, item) => acc + (parseFloat(item.DocTotal) || 0), 0)
+            : 0;
+
+        // Renderizar el HTML con EJS
+        const filePath = path.join(__dirname, './pdf/template-entregas-digitalizadas.ejs');
+        const html = await ejs.renderFile(filePath, {
+            data: data || [],
+            fechaInicio,
+            fechaFin,
+            fechaActual: dateStr,
+            totalGeneral
+        });
+
+        // Crear PDF con Puppeteer
+        const browser = await puppeteer.launch({ headless: 'new' });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            displayHeaderFooter: true,
+            margin: { top: '40px', bottom: '45px', left: '20px', right: '20px' },
+            headerTemplate: `<div></div>`,
+            footerTemplate: `
+                <div style="width: 100%; font-size: 10px; color: #555; margin-left: 60px; margin-right: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="width: 50%; text-align: left;">
+                            <p style="margin: 0;">Página <span class="pageNumber"></span> de <span class="totalPages"></span></p>
+                        </div>
+                    </div>
+                </div>`,
+        });
+
+        await browser.close();
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="entregas_digitalizadas.pdf"',
+        });
+        return res.end(pdfBuffer);
+
+    } catch (error) {
+        console.error('Error generando PDF:', error);
+        return res.status(500).json({
+            mensaje: `Error al generar el PDF: ${error.message || 'Error desconocido'}`
+        });
+    }
+};
+
+
+
+
 // Función auxiliar para aplicar formato a todas las celdas de una fila
 function applyFormatToRow(row, isTotal = false) {
     // Determinar el estilo de borde que se usará
@@ -1290,5 +1362,6 @@ module.exports = {
     getAnexoCabeceraImageController,
     updateAnexosImagesController,
     eliminarCabeceraYAnexosController,
-    compressMultipleAnexosController
+    compressMultipleAnexosController,
+    pdfEntregasDigitalizadasController
 };

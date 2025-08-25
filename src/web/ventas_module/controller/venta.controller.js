@@ -124,7 +124,8 @@ const {
     getVendedores,
     getZonas,
     getSucursales,
-    getTiposClientes
+    getTiposClientes,
+    reportePendienteUngroupByItem
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -2826,7 +2827,7 @@ const ventasPresupuestoSubLineaAnterior = async (req, res) => {
                 grupoA.data.push(grupoB);
             }
 
-             let grupoC = grupoB.data.find(c => c.DimensionCCode === DimensionCCode);
+            let grupoC = grupoB.data.find(c => c.DimensionCCode === DimensionCCode);
             if (!grupoC) {
                 grupoC = {
                     DimensionC,
@@ -2897,7 +2898,7 @@ const getVendedorByCodeController = async (req, res) => {
 
 const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
     try {
-        
+
         const { cliente, vendedor } = req.body;
         const fecha = new Date()
         const month = `${fecha.getMonth() + 1}`
@@ -4287,6 +4288,7 @@ const ventasPendienteByItemController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en ventasPendienteByItemController ${error.message || 'No definido'}` });
     }
 }
+
 const reportePendienteByItemController = async (req, res) => {
     try {
         let fechaInicial = req.query.fechaInicial
@@ -4354,11 +4356,58 @@ const reportePendienteByItemController = async (req, res) => {
 
         const data = Object.values(grouped)
 
+        console.log({ headers, data })
+
         return res.json({ headers, data })
 
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en reportePendienteByItemController ${error.message || 'No definido'}` });
+    }
+}
+
+const reportePendienteUngroupByItemController = async (req, res) => {
+    try {
+        let fechaInicial = req.query.fechaInicial
+        let fechaFinal = req.query.fechaFinal
+        let tipo = req.query.tipo
+        let groupCode = req.query.groupCode
+        let cardCode = req.query.cardCode
+        let headerParent = req.query.headerParent
+        let itemCode = req.query.itemCode
+        console.warn({
+            fechaInicial,
+            fechaFinal,
+            tipo,
+            groupCode,
+            cardCode,
+        })
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!fechaInicial || fechaInicial == '') {
+            fechaInicial = null
+        }
+        if (!fechaFinal || fechaFinal == '') {
+            fechaFinal = null
+        }
+        if (!headerParent || headerParent == '') {
+            headerParent = null
+        }
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+        const response = await reportePendienteUngroupByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemCode)
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteUngroupByItemController ${error.message || 'No definido'}` });
     }
 }
 
@@ -4546,8 +4595,8 @@ const procesarReporteFinalV3 = (
 const ventasClientesPorSucursalController = async (req, res) => {
     try {
         // Asumiendo que estas funciones llaman a los procedimientos almacenados de HANA
-        const datosAcumulados = await consulta1(); 
-        const datosVentas = await consulta2(); 
+        const datosAcumulados = await consulta1();
+        const datosVentas = await consulta2();
 
         const vendedores = await getVendedores();
 
@@ -4558,25 +4607,25 @@ const ventasClientesPorSucursalController = async (req, res) => {
         const tiposClientes = await getTiposClientes();
 
 
-    
+
         if (datosAcumulados.length === 0 && datosVentas.length === 0 && datosAsignados.length === 0) {
             return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false });
         }
-    
-        const groupedData = procesarReporteFinalV3 (datosAcumulados, datosVentas, vendedores, zonas, sucursales, tiposClientes);
-        
+
+        const groupedData = procesarReporteFinalV3(datosAcumulados, datosVentas, vendedores, zonas, sucursales, tiposClientes);
+
         const transformedData = transformarDatosVentas(groupedData.data);
-        
+
         return res.json({
             data: transformedData
         });
-    
+
     } catch (error) {
         console.error({ error });
         return res.status(500).json({ mensaje: `Error en ventasClientesPorSucursalController: ${error.message || 'No definido'}` });
     }
 };
-    
+
 
 const transformarDatosVentas = (monthlyDataArray) => {
     // Usamos un Map para agrupar eficientemente los datos por Sucursal y Grupo.
@@ -4586,7 +4635,7 @@ const transformarDatosVentas = (monthlyDataArray) => {
     monthlyDataArray.forEach(data => {
         // Creamos una clave única para identificar la combinación de sucursal y grupo.
         const key = `${data.SucCode}-${data.GroupCode}`;
-        
+
         // Si la clave no existe en el mapa, inicializamos la estructura para ese grupo/sucursal.
         if (!groupedMap.has(key)) {
             groupedMap.set(key, {
@@ -4681,7 +4730,7 @@ const transformarDatosVentas = (monthlyDataArray) => {
                     { name: "Efectividad Ventas", value: zona.EfectividadVentas },
                     { name: "Clientes No Vendidos", value: zona.ClientesAsignados - zona.ClientesVendidos }
                 ];
-                
+
                 zoneMetrics.forEach(metric => {
                     let existingZoneMetric = existingZone.nested.find(m => m.nombre === metric.name);
                     if (!existingZoneMetric) {
@@ -4709,13 +4758,13 @@ const ventasEfectividadPorSucursalController = async (req, res) => {
         }
         const rawData = await ventasClientesPorSucursal();
 
-        
+
         const filtered = rawData.filter(row =>
             row.Year >= 2024 &&
             row.CLIENTESACUMULADOS !== null &&
             row.ClientesVendidosMes !== null &&
             row.CLIENTESACUMULADOS !== 0 &&
-            row.ClientesVendidosMes !== 0 
+            row.ClientesVendidosMes !== 0
         );
         if (sucursal !== "TODAS") {
             const sucursalData = filtered.filter(row => row.SucName === sucursal);
@@ -4765,7 +4814,7 @@ const ventasEfectividadPorSucursalController = async (req, res) => {
             const { total, vendidos, vendidosno } = agrupado[mes];
             const porcentaje = total > 0 ? parseFloat(((vendidos / total) * 100).toFixed(2)) : 0.00;
             series.push(porcentaje);
-            detalle.push({ total, vendidos, noVendidos: vendidosno }); 
+            detalle.push({ total, vendidos, noVendidos: vendidosno });
         }
         return res.json({ sucursal: 'TODAS', labels, series, detalle });
     } catch (error) {
@@ -4913,5 +4962,6 @@ module.exports = {
     selectionBatchByItemWhsCodeController,
     clientesCreadosPorSucursalController,
     ventasClientesPorSucursalController,
-    ventasEfectividadPorSucursalController
+    ventasEfectividadPorSucursalController,
+    reportePendienteUngroupByItemController
 };

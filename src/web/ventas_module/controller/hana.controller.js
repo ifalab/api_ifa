@@ -50,10 +50,10 @@ const ventaPorSucursal = async () => {
         }
 
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -61,7 +61,7 @@ const ventaPorSucursal = async () => {
         );
         
         `
-        
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventaPorSucursal:', error.message);
@@ -76,10 +76,10 @@ const ventasNormales = async () => {
         }
 
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -100,12 +100,12 @@ const ventasCadena = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -126,12 +126,12 @@ const ventasInstitucion = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -152,12 +152,12 @@ const ventasIfaVet = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -178,12 +178,12 @@ const ventasMasivo = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -221,12 +221,12 @@ const ventaPorSucursalMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -246,12 +246,12 @@ const ventasNormalesMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -272,12 +272,12 @@ const ventasCadenaMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -298,12 +298,12 @@ const ventasInstitucionMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -324,12 +324,12 @@ const ventasIfaVetMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -350,12 +350,12 @@ const ventasMasivoMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -1787,7 +1787,7 @@ const getVentasPrespuestosSubLinea = async () => {
 
         const now = new Date();
         const anho = now.getFullYear();
-        const mes = now.getMonth() + 1; 
+        const mes = now.getMonth() + 1;
 
         const query = `
             CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ALL_DIMENSIONS_BY_PERIOD(
@@ -1816,7 +1816,7 @@ const getVentasPrespuestosSubLineaAnterior = async () => {
 
         const now = new Date();
         const anho = now.getFullYear();
-        const mes = now.getMonth(); 
+        const mes = now.getMonth();
 
         const query = `
             CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ALL_DIMENSIONS_BY_PERIOD(
@@ -2432,7 +2432,7 @@ const clientesBloqueadoByGroup = async (groupCode) => {
     }
 };
 
-
+//sexo
 const ventasPendientesByItem = async (startDate, endDate, tipoPendiente, cardCode, itemCode, groupCode) => {
     try {
         if (!connection) {
@@ -2467,9 +2467,10 @@ const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode,
         const paramFechaInicial = formatParam(fechaInicial)
         const paramFechaFinal = formatParam(fechaFinal)
         const paramHeaderParent = formatParam(headerParent)
+        //sexo
         const paramitemCode = formatParam(itemCode)
-
-        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
+        // const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_AND_ITEM(
          i_date_from => ${paramFechaInicial},
          i_date_to => ${paramFechaFinal},
          i_document_type =>${paramTipo},
@@ -2490,6 +2491,40 @@ const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode,
     }
 }
 
+const reportePendienteUngroupByItem = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramTipo = formatParam(tipo)
+        const paramGroupCode = formatParam(groupCode)
+        const paramCardCode = formatParam(cardCode)
+        const paramFechaInicial = formatParam(fechaInicial)
+        const paramFechaFinal = formatParam(fechaFinal)
+        const paramHeaderParent = formatParam(headerParent)
+        const paramitemCode = formatParam(itemCode)
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_AND_ITEM(
+         i_date_from => ${paramFechaInicial},
+         i_date_to => ${paramFechaFinal},
+         i_document_type =>${paramTipo},
+        i_group_code => ${paramGroupCode},
+        i_card_code =>  ${paramCardCode},
+        i_parent_name =>${paramHeaderParent},
+        i_item_code =>  ${paramitemCode})`
+
+        console.log({ query })
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reportePendienteUngroupByItem: ${error.message || ''}`
+        }
+    }
+}
+
+
 const clientExpiryPolicy = async (cardCode) => {
     try {
         if (!connection) {
@@ -2507,7 +2542,7 @@ const clientExpiryPolicy = async (cardCode) => {
     }
 }
 
-const selectionBatchByItemWhsCode = async (itemCode,whsCode) => {
+const selectionBatchByItemWhsCode = async (itemCode, whsCode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2817,5 +2852,6 @@ module.exports = {
     getVendedores,
     getZonas,
     getSucursales,
-    getTiposClientes
+    getTiposClientes,
+    reportePendienteUngroupByItem
 }
