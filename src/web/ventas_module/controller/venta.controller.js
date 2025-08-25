@@ -3326,6 +3326,7 @@ const ventasLineaSupervisorController = async (req, res) => {
 const ventasLineaSucursalSupervisorController = async (req, res) => {
     try {
         const { sucursales, isMesAnterior } = req.body
+        console.log('Body', req.body);
         console.log({ sucursales, isMesAnterior })
         console.log('Ventas por lineas')
         const user = req.usuarioAutorizado

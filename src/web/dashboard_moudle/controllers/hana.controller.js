@@ -13,6 +13,35 @@ const getGeneralOverdueClients = async (req, res) => {
   }
 }
 
+const getEfectividadVentasNormales = async (req, res) => {
+  try {
+    console.log('getEfectividadVentasNormales EXECUTE');
+    const query = `call ${process.env.PRD}.IFASP_GET_EFECTVITY_NORMALES_BY_SUC();`;
+    console.log({ query });
+    return await executeQueryWithConnection(query);
+  } catch (error) {
+    throw {
+      message: `Error en getEfectividadVentasNormales: ${error.message || ''}`
+    }
+  }
+}
+
+const getEfectividadVentasNormalesMesAnterior = async (req, res) => {
+  try {
+    console.log('getEfectividadVentasNormales EXECUTE');
+    const query = `call ${process.env.PRD}.IFASP_GET_EFECTVITY_NORMALES_BY_SUC_PREV_MONTH();`;
+    console.log({ query });
+    return await executeQueryWithConnection(query);
+  } catch (error) {
+    throw {
+      message: `Error en getEfectividadVentasNormalesMesAnterior: ${error.message || ''}`
+    }
+  }
+}
+
+
 module.exports = {
   getGeneralOverdueClients,
+  getEfectividadVentasNormales,
+  getEfectividadVentasNormalesMesAnterior
 }

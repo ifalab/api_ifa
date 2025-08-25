@@ -59,7 +59,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     getValoradosPorIdSapController,
     getReturnValuesProcessController,
     processIncommingPaymentsController,
-    processReconciliationController
+    processReconciliationController,
+    getDetallesDocumentos
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -168,7 +169,7 @@ router.get('/get-batch-details', [validarToken, validarCampos], getBatchNumberDe
 router.post('/patch-batch-details', [validarToken, validarCampos], patchBatchNumberDetailsController)
 
 
-
+router.get('/get-documentos-detalles', [validarToken, validarCampos], getDetallesDocumentos)
 
 
 
