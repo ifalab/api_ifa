@@ -47,7 +47,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     habilitacionesPorIduser,
     getValoradosPorIdSap,
     getReturnValuesProcess,
-    getLotesExpDate
+    getLotesExpDate,
+    getDetailsDocuments
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -64,6 +65,7 @@ const { facturacionProsin } = require("../../facturacion_module/service/apiFactu
 const { getFacturasParaDevolucion, getDetalleFacturasParaDevolucion } = require("./sql_genesis.controller");
 const { postInventoryTransferRequests, patchInventoryTransferRequests, postStockTransfer } = require("../../service/sapService");
 const { postIncommingPayments } = require("../../cobranzas_module/controller/sld.controller");
+const { Result } = require("express-validator");
 
 const clientePorDimensionUnoController = async (req, res) => {
     try {
@@ -6395,6 +6397,36 @@ const getBatchNumberDetailsController = async (req, res) => {
     }
 };
 
+
+
+const getDetallesDocumentos = async (req, res) => {
+    try {
+        const {DocEntry, typeDocument} = req.query;
+        const result = await getDetailsDocuments(DocEntry, typeDocument);
+
+        if (result.error) {
+            console.error('Error en el controlador:', result.message);
+            return res.status(result.status || 500).json({ 
+                message: result.message || 'Error al obtener los detalles.'
+            });
+        }
+
+        console.log('Se obtuvieron los detalles con éxito.');
+        res.status(200).json({
+            result
+        });
+
+    } catch (error) {
+        // Manejo de errores a nivel de controlador
+        console.error('Error interno en getBatchNumberDetailsController:', error);
+        res.status(500).json({
+            message: 'Error interno del servidor al procesar la solicitud.',
+            error: error.message
+        });
+    }
+};
+
+
 const getReturnValuesProcessController = async (req, res) => {
     try {
         const user = req.usuarioAutorizado
@@ -6700,5 +6732,6 @@ module.exports = {
     getValoradosPorIdSapController,
     getReturnValuesProcessController,
     processIncommingPaymentsController,
-    processReconciliationController
+    processReconciliationController,
+    getDetallesDocumentos
 }

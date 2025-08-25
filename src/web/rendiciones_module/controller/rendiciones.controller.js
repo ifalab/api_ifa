@@ -620,44 +620,44 @@ const cambiarEstadoRendicionController = async (req, res) => {
 }
 
 const verRendicionesEnRevisionController = async (req, res) => {
-    try {
-        const parametro = req.query.parametro;
-        console.log('Estado', req.query.parametro);
+    try {
+        const parametro = req.query.parametro;
+        console.log('Estado', req.query.parametro);
 
-        // ✅ CAMBIO CLAVE: Declara la variable 'response' fuera del if/else.
-        let response;
+        // ✅ CAMBIO CLAVE: Declara la variable 'response' fuera del if/else.
+        let response;
 
-        if (parametro == 0) {
-            console.log('entrando a revision');
-            response = await verRendicionesEnRevision();
-        } else {
-            console.log('entrando a concluido');
-            response = await verRendicionesEnConcluido();
-        }
+        if (parametro == 0) {
+            console.log('entrando a revision');
+            response = await verRendicionesEnRevision();
+        } else {
+            console.log('entrando a concluido');
+            response = await verRendicionesEnConcluido();
+        }
 
-        const listaRendiciones = [];
+        const listaRendiciones = [];
 
-        await Promise.all(response.map(async (item) => {
-            const { CODEMP, ...rest } = item;
-            const Empleado = await employedByCardCode(CODEMP);
-            if (Empleado && Empleado[0]) {
-                listaRendiciones.push({
-                    ...rest,
-                    Empleado: Empleado[0]
-                });
-            } else {
-                listaRendiciones.push({
-                    ...rest,
-                    Empleado: null
-                });
-            }
-        }));
+        await Promise.all(response.map(async (item) => {
+            const { CODEMP, ...rest } = item;
+            const Empleado = await employedByCardCode(CODEMP);
+            if (Empleado && Empleado[0]) {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: Empleado[0]
+                });
+            } else {
+                listaRendiciones.push({
+                    ...rest,
+                    Empleado: null
+                });
+            }
+        }));
 
-        return res.json({ listaRendiciones });
-    } catch (error) {
-        console.error(error); // ✅ Agrega esto para depurar
-        return res.status(500).json({ mensaje: 'Error en el controlador' });
-    }
+        return res.json({ listaRendiciones });
+    } catch (error) {
+        console.error(error); // ✅ Agrega esto para depurar
+        return res.status(500).json({ mensaje: 'Error en el controlador' });
+    }
 };
 
 
@@ -1786,5 +1786,9 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
+<<<<<<< HEAD
+    updateSendToAccountingController
+=======
     
+>>>>>>> 826e882d157cf05e278ca36af14c15678285d7c9
 }

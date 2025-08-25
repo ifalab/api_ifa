@@ -21,7 +21,8 @@ const {
     getAnexoCabeceraImageController,
     updateAnexosImagesController,
     eliminarCabeceraYAnexosController,
-    compressMultipleAnexosController
+    compressMultipleAnexosController,
+    pdfEntregasDigitalizadasController
 } = require('../controllers/digitalizacion.controller');
 
 const router = Router();
@@ -84,6 +85,11 @@ router.get('/reporte/entregas-realizadas',
 router.post('/reporte/excel-entregas',
     [validarToken, validarCampos],
     excelEntregasDigitalizadasController
+);
+
+router.post('/reporte/pdf-entregas',
+    [validarToken, validarCampos],
+    pdfEntregasDigitalizadasController
 );
 
 // router.post('/create-user-visita',
