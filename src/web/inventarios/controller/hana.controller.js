@@ -1232,6 +1232,24 @@ const getReturnValuesProcess = async (idSap) => {
 }
 
 
+const getDetailsDocuments = async (DocEntry, DocType) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `CALL ${process.env.PRD}.IFASP_GET_DOCUMENT_DETAILS('${DocEntry}','${DocType}') `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDetailsDocuments:', error.message);
+        throw {
+            message: `Error al procesar getDetailsDocuments: ${error.message || ''}`
+        }
+    }
+}
+
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1295,4 +1313,5 @@ module.exports = {
     getValoradosPorIdSap,
     getReturnValuesProcess,
     getLotesExpDate,
+    getDetailsDocuments
 }

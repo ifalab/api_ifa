@@ -2950,7 +2950,7 @@ const cancelarParaRefacturarController = async (req, res) => {
             return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
         }
         // const groupCode1 = await obtenerGroupCode('C000023')
-        console.log({ groupCode1 })
+        // console.log({ groupCode1 })
         const estadoFacturaResponse = await spEstadoFactura(cuf)
         if (estadoFacturaResponse.message) {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)

@@ -1,4 +1,4 @@
-const { getGeneralOverdueClients } = require("./hana.controller");
+const { getGeneralOverdueClients, getEfectividadVentasNormales, getEfectividadVentasNormalesMesAnterior } = require("./hana.controller");
 
 const overdueClientsByBranch = async (req, res) => {
   try {
@@ -12,6 +12,32 @@ const overdueClientsByBranch = async (req, res) => {
   }
 }
 
+const efectividadVentasNormales = async (req, res) => {
+  try {
+    const data = await getEfectividadVentasNormales();
+    console.log(data);
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error({ error })
+    return res.status(500).json({ mensaje: `Error en efectividadVentasNormales ${error.message || 'No definido'}` });
+  }
+}
+
+const efectividadVentasNormalesMesAnterior = async (req, res) => {
+  try {
+    const data = await getEfectividadVentasNormalesMesAnterior();
+    console.log(data);
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error({ error })
+    return res.status(500).json({ mensaje: `Error en efectividadVentasNormalesMesAnterior ${error.message || 'No definido'}` });
+  }
+}
+
 module.exports = {
     overdueClientsByBranch,
+    efectividadVentasNormales,
+    efectividadVentasNormalesMesAnterior
 }
