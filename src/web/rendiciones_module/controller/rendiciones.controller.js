@@ -1786,9 +1786,5 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
-<<<<<<< HEAD
     updateSendToAccountingController
-=======
-    
->>>>>>> 826e882d157cf05e278ca36af14c15678285d7c9
 }

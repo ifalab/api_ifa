@@ -125,7 +125,8 @@ const {
     getZonas,
     getSucursales,
     getTiposClientes,
-    reportePendienteUngroupByItem
+    reportePendienteUngroupByItem,
+    getSalesOperationalEfficiencyDashboard
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -135,6 +136,7 @@ const { Console, group } = require("console");
 const { isatty } = require("tty");
 const { groupBySucursal } = require("../utils/formatBlockedClients");
 const { groupBySucursalYVendedor } = require("../utils/groupBySuc&Seller");
+const { kpiEstadosSpeacking } = require("./sql_genesis_speacking.controller");
 
 const ventasPorSucursalController = async (req, res) => {
     try {
@@ -4823,10 +4825,6 @@ const ventasEfectividadPorSucursalController = async (req, res) => {
     }
 };
 
-
-
-
-
 const selectionBatchByItemWhsCodeController = async (req, res) => {
     try {
         let itemCode = req.query.itemCode
@@ -4849,6 +4847,42 @@ const selectionBatchByItemWhsCodeController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
     }
 }
+
+const getSalesOperationalEfficiencyDashboardController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+
+        const response = await getSalesOperationalEfficiencyDashboard(cardCode, startDate, endDate)
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
+    }
+}
+
+const dataFromSpeackingController = async (req, res) => {
+    try {
+        const tipoCliente = req.query.tipoCliente
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+        let tipo = ''
+        if (tipoCliente !== undefined) {
+            tipo = `${tipoCliente}`
+        }
+        if (!startDate || !endDate) {
+            return res.status(400).json({ mensaje: 'la fecha inicial y final son obligatorias' })
+        }
+        console.log({ startDate, endDate, tipo })
+        const response = await kpiEstadosSpeacking(startDate, endDate, tipo)
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
+    }
+}
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -4963,5 +4997,7 @@ module.exports = {
     clientesCreadosPorSucursalController,
     ventasClientesPorSucursalController,
     ventasEfectividadPorSucursalController,
-    reportePendienteUngroupByItemController
+    reportePendienteUngroupByItemController,
+    getSalesOperationalEfficiencyDashboardController,
+    dataFromSpeackingController
 };

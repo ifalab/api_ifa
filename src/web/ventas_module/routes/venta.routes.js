@@ -119,7 +119,9 @@ const {
     clientesCreadosPorSucursalController,
     ventasClientesPorSucursalController,
     ventasEfectividadPorSucursalController,
-    reportePendienteUngroupByItemController
+    reportePendienteUngroupByItemController,
+    getSalesOperationalEfficiencyDashboardController,
+    dataFromSpeackingController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -274,7 +276,8 @@ router.get('/clients-by-branch', [validarToken, validarCampos], clientesCreadosP
 
 router.get('/sales-by-clients-by-branch', [validarToken, validarCampos], ventasClientesPorSucursalController)
 router.get('/sales-by-clients-by-branch-graphic', [validarToken, validarCampos], ventasEfectividadPorSucursalController)
-
+router.get('/get-sales-operational-efficiency-dashboard', [validarToken, validarCampos], getSalesOperationalEfficiencyDashboardController)
+router.get('/data-from-speacking', [validarToken, validarCampos], dataFromSpeackingController)
 
 
 module.exports = router
