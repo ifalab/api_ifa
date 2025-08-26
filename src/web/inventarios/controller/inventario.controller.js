@@ -4740,7 +4740,7 @@ const costoComercialItemcodeController = async (req, res) => {
         if (response.length == 0) {
             return res.status(400).json({ mensaje: `Error no se encontro el costo comercial del item  : ${itemCode}` })
         }
-        const costoComercial = Number(response[0].U_COSTO_COML)
+        const costoComercial = Number(response[0].ComlPriceAct)
         console.log({ costoComercial, itemCode })
         return res.json({ costoComercial })
     } catch (error) {

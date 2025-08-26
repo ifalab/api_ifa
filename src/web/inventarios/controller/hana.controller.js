@@ -667,7 +667,7 @@ const costoComercialByItemCode = async (itemCode) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select "U_COSTO_COML" from ${process.env.PRD}.oitm where "ItemCode" = '${itemCode}'`;
+        const query = `select "ComlPriceAct" from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" = '${itemCode}'`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
