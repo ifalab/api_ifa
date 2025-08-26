@@ -126,7 +126,8 @@ const {
     getSucursales,
     getTiposClientes,
     reportePendienteUngroupByItem,
-    getSalesOperationalEfficiencyDashboard
+    getSalesOperationalEfficiencyDashboard,
+    reportePendienteBySucursalesResume
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -4413,6 +4414,23 @@ const reportePendienteUngroupByItemController = async (req, res) => {
     }
 }
 
+const reportePendienteBySucursalResumeController = async (req, res) => {
+    try {
+        let tipo = req.query.tipo
+        console.warn({
+            tipo,
+        })
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        const response = await reportePendienteBySucursalesResume(tipo);
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteBySucursalResumeController ${error.message || 'No definido'}` });
+    }
+}
+
 // const searchBlockedClientsByGroup = async (groupCode, res) => {
 //     try {
 //         const data = await clientesBloqueadoByGroup(groupCode);
@@ -4999,5 +5017,6 @@ module.exports = {
     ventasEfectividadPorSucursalController,
     reportePendienteUngroupByItemController,
     getSalesOperationalEfficiencyDashboardController,
-    dataFromSpeackingController
+    dataFromSpeackingController,
+    reportePendienteBySucursalResumeController
 };
