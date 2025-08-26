@@ -2524,6 +2524,26 @@ const reportePendienteUngroupByItem = async (fechaInicial, fechaFinal, tipo, gro
     }
 }
 
+const reportePendienteBySucursalesResume = async (tipo) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramTipo = formatParam(tipo)
+        // const query = `call ${process.env.PRD}.IFA_SP_PENDING_DELIVERIES_GROUPED_RESUME()`
+        const query = `call ${process.env.PRD}.IFA_SP_SAL_PENDING_DELIVERIES_SUCURSAL_GROUPED_RESUME(
+         P_TIPODOCUMENTO=>${paramTipo}
+        )`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reportePendienteBySucursalesResume: ${error.message || ''}`
+        }
+    }
+}
+
 
 const clientExpiryPolicy = async (cardCode) => {
     try {
@@ -2853,5 +2873,6 @@ module.exports = {
     getZonas,
     getSucursales,
     getTiposClientes,
-    reportePendienteUngroupByItem
+    reportePendienteUngroupByItem,
+    reportePendienteBySucursalesResume
 }
