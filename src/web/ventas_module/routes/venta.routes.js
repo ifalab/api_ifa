@@ -120,6 +120,8 @@ const {
     ventasClientesPorSucursalController,
     ventasEfectividadPorSucursalController,
     reportePendienteUngroupByItemController,
+    getSalesOperationalEfficiencyDashboardController,
+    dataFromSpeackingController,
     reportePendienteBySucursalResumeController
 } = require('../controller/venta.controller')
 
@@ -275,7 +277,8 @@ router.get('/clients-by-branch', [validarToken, validarCampos], clientesCreadosP
 
 router.get('/sales-by-clients-by-branch', [validarToken, validarCampos], ventasClientesPorSucursalController)
 router.get('/sales-by-clients-by-branch-graphic', [validarToken, validarCampos], ventasEfectividadPorSucursalController)
-
+router.get('/get-sales-operational-efficiency-dashboard', [validarToken, validarCampos], getSalesOperationalEfficiencyDashboardController)
+router.get('/data-from-speacking', [validarToken, validarCampos], dataFromSpeackingController)
 
 
 module.exports = router

@@ -126,6 +126,7 @@ const {
     getSucursales,
     getTiposClientes,
     reportePendienteUngroupByItem,
+    getSalesOperationalEfficiencyDashboard,
     reportePendienteBySucursalesResume
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
@@ -136,6 +137,10 @@ const { Console, group } = require("console");
 const { isatty } = require("tty");
 const { groupBySucursal } = require("../utils/formatBlockedClients");
 const { groupBySucursalYVendedor } = require("../utils/groupBySuc&Seller");
+const { kpiEstadosSpeacking } = require("./sql_genesis_speacking.controller");
+const { agruparPorAgencia } = require("../helper/agruparPorAgencia.helper");
+const { agruparPorEstado } = require("../helper/agruparPorEstado.helper");
+const { agruparDetallePorAgencia } = require("../helper/agruparDetallePorAgencia.helper");
 
 const ventasPorSucursalController = async (req, res) => {
     try {
@@ -4016,7 +4021,13 @@ const searchBlockedClients = async (req, res) => {
         }
 
         const resultado = await findBlockedClients(tipoCliente);
-        const agrupado = groupBySucursal(resultado);
+        const filteredResult = resultado.filter(item => 
+            item.ZoneCode !== null && 
+            item.ZoneName !== null && 
+            item.SlpCode !== null && 
+            item.SlpName !== null
+        );
+        const agrupado = groupBySucursal(filteredResult);
 
         return res.json(agrupado);
     } catch (error) {
@@ -4878,10 +4889,6 @@ const ventasEfectividadPorSucursalController = async (req, res) => {
     }
 };
 
-
-
-
-
 const selectionBatchByItemWhsCodeController = async (req, res) => {
     try {
         let itemCode = req.query.itemCode
@@ -4899,6 +4906,56 @@ const selectionBatchByItemWhsCodeController = async (req, res) => {
 
         return res.json(response)
 
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
+    }
+}
+
+const getSalesOperationalEfficiencyDashboardController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+
+        const response = await getSalesOperationalEfficiencyDashboard(cardCode, startDate, endDate)
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
+    }
+}
+
+const dataFromSpeackingController = async (req, res) => {
+    try {
+        const tipoCliente = req.query.tipoCliente
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+        let tipo = ''
+        if (tipoCliente !== undefined) {
+            tipo = `${tipoCliente}`
+        }
+        if (!startDate || !endDate) {
+            return res.status(400).json({ mensaje: 'la fecha inicial y final son obligatorias' })
+        }
+        console.log({ startDate, endDate, tipo })
+        const response = await kpiEstadosSpeacking(startDate, endDate, tipo)
+        const data = agruparPorEstado(response)
+        const dataDetail = agruparDetallePorAgencia(data)
+        const sumatoriaTotales = dataDetail.reduce((acc, item) => {
+            return acc + item.Total
+        }, 0)
+
+        const finalDetails = dataDetail.map((item) => {
+            const { Total, ...rest } = item
+            item.cumplimiento = Total / sumatoriaTotales
+            return item
+        })
+
+        // const sumatoriaCumplimiento = dataDetail.reduce((acc, item) => {
+        //     return acc + item.cumplimiento
+        // }, 0)
+        return res.json(finalDetails)
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
@@ -5019,5 +5076,7 @@ module.exports = {
     ventasClientesPorSucursalController,
     ventasEfectividadPorSucursalController,
     reportePendienteUngroupByItemController,
+    getSalesOperationalEfficiencyDashboardController,
+    dataFromSpeackingController,
     reportePendienteBySucursalResumeController
 };

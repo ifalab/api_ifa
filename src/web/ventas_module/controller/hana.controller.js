@@ -2741,6 +2741,24 @@ const getVendedores = async () => {
     }
 }
 
+const getSalesOperationalEfficiencyDashboard = async (cardCode, startDate, endDate,) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const formattCardCode = formatParam(cardCode)
+        const formattStartDate = formatParam(startDate)
+        const formattEndDate = formatParam(endDate)
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_SALES_OPERATIONAL_EFFICIENCY_DASHBOARD(${formattCardCode},${formattStartDate},${formattEndDate})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getSalesOperationalEfficiencyDashboard: ${error.message || ''}`
+        }
+    }
+}
 
 
 
@@ -2874,5 +2892,6 @@ module.exports = {
     getSucursales,
     getTiposClientes,
     reportePendienteUngroupByItem,
+    getSalesOperationalEfficiencyDashboard,
     reportePendienteBySucursalesResume
 }
