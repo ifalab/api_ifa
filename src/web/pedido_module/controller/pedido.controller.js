@@ -353,6 +353,11 @@ const crearOrderController = async (req, res) => {
     try {
         const alprazolamCode = '102-004-028'
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+        const idSap = usuario.ID_SAP || 0
+        const idSapVendedor = usuario.ID_VENDEDOR_SAP || 0
+        if (idSap == 0 && idSapVendedor == 0) {
+            return res.status(400).json({ message: `El usuario no tiene Id Sap ` })
+        }
         const docLine = body.DocumentLines
         body.Series = process.env.SAP_SERIES_ORDER
         let alprazolamContains = false

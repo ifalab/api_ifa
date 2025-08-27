@@ -119,7 +119,10 @@ const {
     clientesCreadosPorSucursalController,
     ventasClientesPorSucursalController,
     ventasEfectividadPorSucursalController,
-    reportePendienteUngroupByItemController
+    reportePendienteUngroupByItemController,
+    getSalesOperationalEfficiencyDashboardController,
+    dataFromSpeackingController,
+    reportePendienteBySucursalResumeController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -256,9 +259,9 @@ router.get('/search-clientes-cadenas-parent', [validarToken, validarCampos], sea
 
 router.get('/reporte-pendiente-by-item', [validarToken, validarCampos], reportePendienteByItemController)
 router.get('/reporte-pendiente-cadenas-ungroup', [validarToken, validarCampos], reportePendienteUngroupByItemController)
-
-
+router.get('/reporte-pendiente-by-sucursal-resume', [validarToken, validarCampos], reportePendienteBySucursalResumeController)
 router.get('/detalle-reporte-pendiente', [validarToken, validarCampos], ventasPendienteController)
+
 router.get('/search-blocked-clients', [validarToken, validarCampos], searchBlockedClients)
 router.get('/search-blocked-clients/:suc/:zone/:group', [validarToken, validarCampos], searchBlockedClientsByZoneSucAndGroup)
 router.get('/clientes-vendedor-bloqueados/:slpCode/:groupCode', [validarToken, validarCampos], clientesVendedorBloqueadosController)
@@ -274,7 +277,8 @@ router.get('/clients-by-branch', [validarToken, validarCampos], clientesCreadosP
 
 router.get('/sales-by-clients-by-branch', [validarToken, validarCampos], ventasClientesPorSucursalController)
 router.get('/sales-by-clients-by-branch-graphic', [validarToken, validarCampos], ventasEfectividadPorSucursalController)
-
+router.get('/get-sales-operational-efficiency-dashboard', [validarToken, validarCampos], getSalesOperationalEfficiencyDashboardController)
+router.get('/data-from-speacking', [validarToken, validarCampos], dataFromSpeackingController)
 
 
 module.exports = router
