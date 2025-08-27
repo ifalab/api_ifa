@@ -138,6 +138,9 @@ const { isatty } = require("tty");
 const { groupBySucursal } = require("../utils/formatBlockedClients");
 const { groupBySucursalYVendedor } = require("../utils/groupBySuc&Seller");
 const { kpiEstadosSpeacking } = require("./sql_genesis_speacking.controller");
+const { agruparPorAgencia } = require("../helper/agruparPorAgencia.helper");
+const { agruparPorEstado } = require("../helper/agruparPorEstado.helper");
+const { agruparDetallePorAgencia } = require("../helper/agruparDetallePorAgencia.helper");
 
 const ventasPorSucursalController = async (req, res) => {
     try {
@@ -4894,13 +4897,27 @@ const dataFromSpeackingController = async (req, res) => {
         }
         console.log({ startDate, endDate, tipo })
         const response = await kpiEstadosSpeacking(startDate, endDate, tipo)
-        return res.json(response)
+        const data = agruparPorEstado(response)
+        const dataDetail = agruparDetallePorAgencia(data)
+        const sumatoriaTotales = dataDetail.reduce((acc, item) => {
+            return acc + item.Total
+        }, 0)
+
+        const finalDetails = dataDetail.map((item) => {
+            const { Total, ...rest } = item
+            item.cumplimiento = Total / sumatoriaTotales
+            return item
+        })
+
+        // const sumatoriaCumplimiento = dataDetail.reduce((acc, item) => {
+        //     return acc + item.cumplimiento
+        // }, 0)
+        return res.json(finalDetails)
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
     }
 }
-
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,

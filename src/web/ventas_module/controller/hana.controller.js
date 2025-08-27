@@ -2760,6 +2760,8 @@ const getSalesOperationalEfficiencyDashboard = async (cardCode, startDate, endDa
     }
 }
 
+
+
 module.exports = {
     ventaPorSucursal,
     ventasNormales,
@@ -2890,6 +2892,6 @@ module.exports = {
     getSucursales,
     getTiposClientes,
     reportePendienteUngroupByItem,
-    getSalesOperationalEfficiencyDashboard,,
+    getSalesOperationalEfficiencyDashboard,
     reportePendienteBySucursalesResume
 }
