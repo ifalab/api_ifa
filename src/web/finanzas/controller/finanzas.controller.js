@@ -1,6 +1,6 @@
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana, getGastosDB, getGastosHanna, getBalanceGeneral } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana, getGastosDB, getGastosHanna, getBalanceGeneral, getGastosCCHanna } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia, getAgencias } = require('./sql_finanza_controller')
 const ExcelJS = require('exceljs');
 
@@ -1493,111 +1493,159 @@ const calcularPorcentajes = (datosProcesados) => {
 };
 
 const gastosGestionAgenciaController = async (req, res) => {
-  try {
-    const gestion = req.query.gestion;
-    const codigo = req.query.codigo;
+    try {
+        const gestion = +req.query.gestion;
+        const codigo = +req.query.codigo;
 
-    const responseGenesis = await gastosGestionAgencia(+gestion, +codigo);
-    const responseHana = await getGastosAgenciaxGestionSAPHana(+gestion, +codigo);
-    
-    // 1. Agrupa y estandariza los datos de Genesis (base de datos local)
-    const agrupado = agruparPorMes(responseGenesis);
-    const gastosHanna = await getGastosHanna(+gestion);
-    const monthMap = {
-      1: 'JANUARY', 2: 'FEBRUARY', 3: 'MARCH', 4: 'APRIL', 5: 'MAY', 6: 'JUNE', 
-      7: 'JULY', 8: 'AUGUST', 9: 'SEPTEMBER', 10: 'OCTOBER', 11: 'NOVEMBER', 12: 'DECEMBER'
-    };
-    
-    const ordenPersonalizado = [
-      'VENTAS NETAS', 'COSTO COMERCIAL', 'UTILIDAD BRUTA', 'DEVOLUCIONES',
-      'GASTOS ADMINISTRATIVOS', 'GASTOS COMERCIALES', 'PARTIDAS QUE NO MUEVEN EFECTIVO',
-      'RECURSOS HUMANOS', 'TOTAL GASTOS'
-    ];
+        const responseGenesis = await gastosGestionAgencia(gestion, codigo);
+        const responseHana = await getGastosAgenciaxGestionSAPHana(gestion, codigo);
+        const gastosHanna = await getGastosCCHanna(gestion, codigo);
 
-    // 2. Recorre los datos de HANA y los fusiona con los de Genesis
-    responseHana.forEach((hanaItem) => {
-      const monthName = monthMap[+hanaItem.Mes];
-      let mesEncontrado = agrupado.find((g) => g.date === monthName);
+        const englishToNumberMonthMap = {
+            'JANUARY': 1, 'FEBRUARY': 2, 'MARCH': 3, 'APRIL': 4,
+            'MAY': 5, 'JUNE': 6, 'JULY': 7, 'AUGUST': 8,
+            'SEPTEMBER': 9, 'OCTOBER': 10, 'NOVEMBER': 11, 'DECEMBER': 12
+        };
+        
+        const datosGenesisFiltrados = responseGenesis.filter(item => {
+            if (gestion === 2025) {
+                const mesNombre = (item.mes || '').trim().toUpperCase();
+                const mesNumero = englishToNumberMonthMap[mesNombre];
+                return mesNumero && mesNumero < 4; // Solo Enero, Febrero y Marzo
+            }
+            return true; // Para otros años, procesa todos los meses de Genesis
+        });
 
-      if (!mesEncontrado) {
-        mesEncontrado = { date: monthName, detalle: [] };
-        agrupado.push(mesEncontrado);
-      }
+        console.log('Datos filtrados genesis', datosGenesisFiltrados);
 
-      const infoHanaDetalle = [
-        { desc_grupo: 'VENTAS NETAS', monto: parseFloat(hanaItem.TotalVentasNetas) },
-        { desc_grupo: 'COSTO COMERCIAL', monto: parseFloat(hanaItem.CostoComercialTotal) },
-        { desc_grupo: 'UTILIDAD BRUTA', monto: parseFloat(hanaItem.UtilidadBruta) },
-      ];
+        // Ahora, agrupa solo los datos filtrados
+        const agrupado = agruparPorMes(datosGenesisFiltrados);
+        
+        const monthMap = {
+            1: 'JANUARY', 2: 'FEBRUARY', 3: 'MARCH', 4: 'APRIL', 5: 'MAY', 6: 'JUNE',
+            7: 'JULY', 8: 'AUGUST', 9: 'SEPTEMBER', 10: 'OCTOBER', 11: 'NOVEMBER', 12: 'DECEMBER'
+        };
 
-      infoHanaDetalle.forEach(hanaDetalle => {
-        const detalleExistente = mesEncontrado.detalle.find(d => d.desc_grupo === hanaDetalle.desc_grupo);
-        if (detalleExistente) {
-          // Si el grupo ya existe (de Genesis), suma el valor de HANA
-          detalleExistente.monto += hanaDetalle.monto;
-        } else {
-          // Si no existe, lo agrega
-          mesEncontrado.detalle.push(hanaDetalle);
+        const ordenPersonalizado = [
+            'VENTAS NETAS', 'COSTO COMERCIAL', 'UTILIDAD BRUTA', 'DEVOLUCIONES',
+            'GASTOS ADMINISTRATIVOS', 'GASTOS COMERCIALES', 'PARTIDAS QUE NO MUEVEN EFECTIVO',
+            'RECURSOS HUMANOS', 'TOTAL GASTOS'
+        ];
+        
+        // 2. Recorre los datos de HANA (SAP) y los fusiona con los de Genesis
+        // Este bucle sigue igual, ya que combina los datos de ventas de HANA con los de Genesis
+        responseHana.forEach((hanaItem) => {
+            const monthName = monthMap[+hanaItem.Mes];
+            let mesEncontrado = agrupado.find((g) => g.date === monthName);
+            
+            if (!mesEncontrado) {
+                mesEncontrado = { date: monthName, detalle: [] };
+                agrupado.push(mesEncontrado);
+            }
+            
+            const infoHanaDetalle = [
+                { desc_grupo: 'VENTAS NETAS', monto: parseFloat(hanaItem.TotalVentasNetas) },
+                { desc_grupo: 'COSTO COMERCIAL', monto: parseFloat(hanaItem.CostoComercialTotal) },
+                { desc_grupo: 'UTILIDAD BRUTA', monto: parseFloat(hanaItem.UtilidadBruta) },
+            ];
+            
+            infoHanaDetalle.forEach(hanaDetalle => {
+                const detalleExistente = mesEncontrado.detalle.find(d => d.desc_grupo === hanaDetalle.desc_grupo);
+                if (detalleExistente) {
+                    detalleExistente.monto += hanaDetalle.monto;
+                } else {
+                    mesEncontrado.detalle.push(hanaDetalle);
+                }
+            });
+        });
+        
+        // 3. NUEVA LÓGICA: AGREGAR GASTOS DETALLADOS DE HANA PARA ABRIL 2025 EN ADELANTE
+        gastosHanna.forEach(hanaGastoItem => {
+            const mes = +hanaGastoItem.Mes;
+            const monthName = monthMap[mes];
+            let mesEncontrado = agrupado.find(g => g.date === monthName);
+
+            if (!mesEncontrado) {
+                mesEncontrado = { date: monthName, detalle: [] };
+                agrupado.push(mesEncontrado);
+            }
+            
+            const infoHanaDetalle = [
+                { desc_grupo: 'DEVOLUCIONES', monto: parseFloat(hanaGastoItem.Devoluciones) },
+                { desc_grupo: 'GASTOS ADMINISTRATIVOS', monto: parseFloat(hanaGastoItem.GastosAdministrativos) },
+                { desc_grupo: 'GASTOS COMERCIALES', monto: parseFloat(hanaGastoItem.GastosComerciales) },
+                { desc_grupo: 'PARTIDAS QUE NO MUEVEN EFECTIVO', monto: parseFloat(hanaGastoItem.PartidasNoMuevenEfectivo) },
+                { desc_grupo: 'RECURSOS HUMANOS', monto: parseFloat(hanaGastoItem.RecursosHumanos) },
+            ];
+            
+            infoHanaDetalle.forEach(hanaDetalle => {
+                const detalleExistente = mesEncontrado.detalle.find(d => d.desc_grupo === hanaDetalle.desc_grupo);
+                if (detalleExistente) {
+                    detalleExistente.monto += hanaDetalle.monto;
+                } else {
+                    mesEncontrado.detalle.push(hanaDetalle);
+                }
+            });
+        });
+
+        // 4. Itera sobre los meses agrupados para hacer los cálculos finales
+        // ... (el resto del código sigue igual, ya que opera sobre el arreglo 'agrupado' final)
+        
+        for (const mes of agrupado) {
+            // Rellena los campos faltantes con 0
+            const descsActuales = mes.detalle.map(d => d.desc_grupo);
+            ordenPersonalizado.forEach((desc) => {
+                if (!descsActuales.includes(desc)) {
+                    mes.detalle.push({ desc_grupo: desc, monto: 0 });
+                }
+            });
+
+            const ventasNetasItem = mes.detalle.find(d => d.desc_grupo === 'VENTAS NETAS');
+            const costoComercialItem = mes.detalle.find(d => d.desc_grupo === 'COSTO COMERCIAL');
+            const utilidadBrutaItem = mes.detalle.find(d => d.desc_grupo === 'UTILIDAD BRUTA');
+            
+            if ((utilidadBrutaItem && utilidadBrutaItem.monto === 0) || !utilidadBrutaItem) {
+                if (ventasNetasItem && costoComercialItem) {
+                    const utilidadBrutaCalculada = parseFloat(ventasNetasItem.monto) - parseFloat(costoComercialItem.monto);
+                    if (utilidadBrutaItem) {
+                        utilidadBrutaItem.monto = utilidadBrutaCalculada;
+                    } else {
+                        mes.detalle.push({ desc_grupo: 'UTILIDAD BRUTA', monto: utilidadBrutaCalculada });
+                    }
+                }
+            }
+            
+            mes.detalle = mes.detalle.filter(d => d.desc_grupo !== 'MARGEN %');
+            const totalGastos = mes.detalle
+                .filter(d =>
+                    !['VENTAS NETAS', 'COSTO COMERCIAL', 'UTILIDAD BRUTA', 'TOTAL GASTOS'].includes(d.desc_grupo)
+                )
+                .reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
+            
+            const idxTotal = mes.detalle.findIndex(d => d.desc_grupo === 'TOTAL GASTOS');
+            if (idxTotal >= 0) {
+                mes.detalle[idxTotal].monto = totalGastos;
+            } else {
+                mes.detalle.push({ desc_grupo: 'TOTAL GASTOS', monto: totalGastos });
+            }
+            
+            mes.detalle.sort((a, b) => {
+                const idxA = ordenPersonalizado.indexOf(a.desc_grupo);
+                const idxB = ordenPersonalizado.indexOf(b.desc_grupo);
+                return idxA - idxB;
+            });
         }
-      });
-    });
-
-    // 3. Itera sobre los meses agrupados para hacer los cálculos finales
-    for (const mes of agrupado) {
-      // Rellena los campos faltantes con 0
-      const descsActuales = mes.detalle.map(d => d.desc_grupo);
-      ordenPersonalizado.forEach((desc) => {
-        if (!descsActuales.includes(desc)) {
-          mes.detalle.push({ desc_grupo: desc, monto: 0 });
-        }
-      });
-      
-      // Si la utilidad bruta es 0 o no existe, la calcula (útil para meses solo con Genesis)
-      const ventasNetasItem = mes.detalle.find(d => d.desc_grupo === 'VENTAS NETAS');
-      const costoComercialItem = mes.detalle.find(d => d.desc_grupo === 'COSTO COMERCIAL');
-      const utilidadBrutaItem = mes.detalle.find(d => d.desc_grupo === 'UTILIDAD BRUTA');
-
-      if ((utilidadBrutaItem && utilidadBrutaItem.monto === 0) || !utilidadBrutaItem) {
-        if (ventasNetasItem && costoComercialItem) {
-          const utilidadBrutaCalculada = parseFloat(ventasNetasItem.monto) - parseFloat(costoComercialItem.monto);
-          if (utilidadBrutaItem) {
-            utilidadBrutaItem.monto = utilidadBrutaCalculada;
-          } else {
-            mes.detalle.push({ desc_grupo: 'UTILIDAD BRUTA', monto: utilidadBrutaCalculada });
-          }
-        }
-      }
-
-      // 4. Calcula TOTAL GASTOS
-      mes.detalle = mes.detalle.filter(d => d.desc_grupo !== 'MARGEN %');
-      const totalGastos = mes.detalle
-        .filter(d =>
-          !['VENTAS NETAS', 'COSTO COMERCIAL', 'UTILIDAD BRUTA', 'TOTAL GASTOS'].includes(d.desc_grupo)
-        )
-        .reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
-      
-      const idxTotal = mes.detalle.findIndex(d => d.desc_grupo === 'TOTAL GASTOS');
-      if (idxTotal >= 0) {
-        mes.detalle[idxTotal].monto = totalGastos;
-      } else {
-        mes.detalle.push({ desc_grupo: 'TOTAL GASTOS', monto: totalGastos });
-      }
-
-      // 5. Ordena el detalle según el orden personalizado
-      mes.detalle.sort((a, b) => {
-        const idxA = ordenPersonalizado.indexOf(a.desc_grupo);
-        const idxB = ordenPersonalizado.indexOf(b.desc_grupo);
-        return idxA - idxB;
-      });
+        
+        return res.json({ gestion, codigo, agrupado });
+        
+    } catch (error) {
+        console.log({ error });
+        return res.status(500).json({ mensaje: 'error en el controlador' });
     }
-
-    return res.json({ gestion, codigo, agrupado });
-
-  } catch (error) {
-    console.log({ error });
-    return res.status(500).json({ mensaje: 'error en el controlador' });
-  }
 };
+
+
+
 function agruparPorMes(data) {
   const spanishToEnglishMonthMap = {
     'ENERO': 'JANUARY', 'FEBRERO': 'FEBRUARY', 'MARZO': 'MARCH', 'ABRIL': 'APRIL', 

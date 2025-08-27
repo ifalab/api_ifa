@@ -4644,7 +4644,7 @@ const saveArticuloDiccionario = async (req, res) => {
 
 const solicitudTrasladoController = async (req, res) => {
     try {
-
+        
         const {
             Comments,
             JournalMemo,
@@ -4663,6 +4663,22 @@ const solicitudTrasladoController = async (req, res) => {
             U_B_destplace,
             StockTransferLines
         } = req.body
+        const U_UserSign = U_UserCode;
+        let U_ProcessName = '';
+        if(U_TIPO_TRASLADO === 'N'){
+            U_ProcessName = 'COMPRAS PLANTA NORMAL';
+        }
+        if(U_TIPO_TRASLADO === 'CNS' ){
+            U_ProcessName = 'COMPRAS PLANTA INSTITUCIONES';
+        }
+        if(U_TIPO_TRASLADO === 'MM' ){
+            U_ProcessName = 'COMPRAS PLANTA MUESTRAS MEDICAS';
+        }
+        if(U_TIPO_TRASLADO === 'E' ){
+            U_ProcessName = 'COMPRAS PLANTA INSTITUCIONES';
+        }
+        console.log(req.body);
+
         const user = req.usuarioAutorizado
         console.log(JSON.stringify({
             Comments,
@@ -4679,7 +4695,9 @@ const solicitudTrasladoController = async (req, res) => {
             U_FECHA_FACT,
             U_Autorizacion,
             U_B_destplace,
-            StockTransferLines
+            StockTransferLines,
+            U_ProcessName,
+            U_UserSign
         }, null, 2))
         const sapResponse = await postInventoryTransferRequests({
             Comments,
@@ -4696,7 +4714,9 @@ const solicitudTrasladoController = async (req, res) => {
             U_FECHA_FACT,
             U_Autorizacion,
             U_B_destplace,
-            StockTransferLines
+            StockTransferLines,
+            U_ProcessName,
+            U_UserSign
         })
 
 

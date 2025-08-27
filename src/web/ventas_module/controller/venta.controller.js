@@ -4021,7 +4021,13 @@ const searchBlockedClients = async (req, res) => {
         }
 
         const resultado = await findBlockedClients(tipoCliente);
-        const agrupado = groupBySucursal(resultado);
+        const filteredResult = resultado.filter(item => 
+            item.ZoneCode !== null && 
+            item.ZoneName !== null && 
+            item.SlpCode !== null && 
+            item.SlpName !== null
+        );
+        const agrupado = groupBySucursal(filteredResult);
 
         return res.json(agrupado);
     } catch (error) {
@@ -4340,13 +4346,17 @@ const reportePendienteByItemController = async (req, res) => {
 
         const grouped = {};
         for (const item of response) {
-            const key = item.CardCode;
+            // const key = item.CardCode;
+            const key = `${item.CardCode}__${item.SucName}__${item.ItemCode}`;
             const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
 
             if (!grouped[key]) {
                 grouped[key] = {
                     CardCode: item.CardCode,
                     CardName: item.CardName,
+                    SucName: item.SucName,
+                    ItemCode: item.ItemCode,
+                    ItemName: item.ItemName,
                 };
 
                 headers.forEach(header => {
@@ -4411,6 +4421,39 @@ const reportePendienteUngroupByItemController = async (req, res) => {
         }
         const response = await reportePendienteUngroupByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemCode)
         return res.json(response)
+
+        // const headers = [...new Set(response.map(item => {
+        //     return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+        // }))].sort();
+
+        // const grouped = {};
+        // for (const item of response) {
+        //     const key = item.CardCode;
+        //     const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+
+        //     if (!grouped[key]) {
+        //         grouped[key] = {
+        //             CardCode: item.CardCode,
+        //             CardName: item.CardName,
+        //         };
+
+        //         headers.forEach(header => {
+        //             grouped[key][header] = { Quantity: null, Total: null };
+        //         });
+        //     }
+
+        //     grouped[key][monthKey] = {
+        //         Quantity: parseFloat(item.PendingQuantity),
+        //         Total: parseFloat(item.PendingAmount)
+        //     };
+        // }
+
+        // const data = Object.values(grouped)
+
+        // console.log({ headers, data })
+
+        // return res.json({ headers, data })
+
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en reportePendienteUngroupByItemController ${error.message || 'No definido'}` });
