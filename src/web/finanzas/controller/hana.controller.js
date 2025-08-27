@@ -528,6 +528,55 @@ const getGastosAgenciaxGestionSAPHana = async (gestion, codigoDimensionA = 0) =>
     }
 };
 
+const getGastosCCHanna = async (anio, sucCode) => {
+    try {
+        sucCode = Number(sucCode); 
+        let query = '';
+        let params = [];
+
+        if (sucCode === 0) {
+            // 👉 Caso: todas las sucursales (suma total)
+            query = `
+                SELECT 
+                    "Anio",
+                    "Mes",
+                    SUM("Devoluciones") AS "Devoluciones",
+                    SUM("GastosAdministrativos") AS "GastosAdministrativos",
+                    SUM("GastosComerciales") AS "GastosComerciales",
+                    SUM("GastosExportacion") AS "GastosExportacion",
+                    SUM("PartidasNoMuevenEfectivo") AS "PartidasNoMuevenEfectivo",
+                    SUM("RecursosHumanos") AS "RecursosHumanos"
+                FROM LAB_IFA_PRD.IFA_CC_GASTOS
+                WHERE "Anio" = ?
+                GROUP BY "Anio", "Mes"
+                ORDER BY "Mes"
+            `;
+            params = [anio];
+        } else {
+            // 👉 Caso: una sucursal específica
+            query = `
+                SELECT *
+                FROM LAB_IFA_PRD.IFA_CC_GASTOS
+                WHERE "SucCode" = ?
+                  AND "Anio" = ?
+                ORDER BY "Mes"
+            `;
+            params = [sucCode, anio];
+        }
+
+        console.log(query, params);
+        const result = await executeQueryParamsWithConnection(query, params);
+        return result;
+
+    } catch (error) {
+        console.error('Error in getGastosCCHanna:', error);
+        throw new Error(`Error in getGastosCCHanna: ${error.message}`);
+    }
+};
+
+
+
+
 module.exports = {
     parteDiario,
     abastecimiento,
@@ -551,5 +600,6 @@ module.exports = {
     getGastosAgenciaxGestionSAPHana,
     getGastosDB,
     getGastosHanna,
-    getBalanceGeneral
+    getBalanceGeneral,
+    getGastosCCHanna
 }

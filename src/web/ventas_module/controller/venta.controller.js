@@ -4015,7 +4015,13 @@ const searchBlockedClients = async (req, res) => {
         }
 
         const resultado = await findBlockedClients(tipoCliente);
-        const agrupado = groupBySucursal(resultado);
+        const filteredResult = resultado.filter(item => 
+            item.ZoneCode !== null && 
+            item.ZoneName !== null && 
+            item.SlpCode !== null && 
+            item.SlpName !== null
+        );
+        const agrupado = groupBySucursal(filteredResult);
 
         return res.json(agrupado);
     } catch (error) {
