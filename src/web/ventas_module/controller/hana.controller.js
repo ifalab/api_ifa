@@ -2469,15 +2469,15 @@ const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode,
         const paramHeaderParent = formatParam(headerParent)
         //sexo
         const paramitemCode = formatParam(itemCode)
-        // const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
+        // const query = `call ${ process.env.PRD }.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
         const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_AND_ITEM(
-         i_date_from => ${paramFechaInicial},
-         i_date_to => ${paramFechaFinal},
-         i_document_type =>${paramTipo},
+            i_date_from => ${paramFechaInicial},
+        i_date_to => ${paramFechaFinal},
+        i_document_type => ${paramTipo},
         i_group_code => ${paramGroupCode},
-        i_card_code =>  ${paramCardCode},
-        i_parent_name =>${paramHeaderParent},
-        i_item_code =>  ${paramitemCode})`
+        i_card_code => ${paramCardCode},
+        i_parent_name => ${paramHeaderParent},
+        i_item_code => ${paramitemCode})`
 
         console.log({ query })
 
@@ -2486,7 +2486,7 @@ const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode,
         return result
     } catch (error) {
         throw {
-            message: `Error en reportePendienteByItem: ${error.message || ''}`
+            message: `Error en reportePendienteByItem: ${error.message || ''} `
         }
     }
 }
@@ -2504,13 +2504,13 @@ const reportePendienteUngroupByItem = async (fechaInicial, fechaFinal, tipo, gro
         const paramHeaderParent = formatParam(headerParent)
         const paramitemCode = formatParam(itemCode)
         const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_AND_ITEM(
-         i_date_from => ${paramFechaInicial},
-         i_date_to => ${paramFechaFinal},
-         i_document_type =>${paramTipo},
-        i_group_code => ${paramGroupCode},
-        i_card_code =>  ${paramCardCode},
-        i_parent_name =>${paramHeaderParent},
-        i_item_code =>  ${paramitemCode})`
+            i_date_from => ${paramFechaInicial},
+            i_date_to => ${paramFechaFinal},
+            i_document_type => ${paramTipo},
+            i_group_code => ${paramGroupCode},
+            i_card_code => ${paramCardCode},
+            i_parent_name => ${paramHeaderParent},
+            i_item_code => ${paramitemCode})`
 
         console.log({ query })
 
@@ -2519,7 +2519,7 @@ const reportePendienteUngroupByItem = async (fechaInicial, fechaFinal, tipo, gro
         return result
     } catch (error) {
         throw {
-            message: `Error en reportePendienteUngroupByItem: ${error.message || ''}`
+            message: `Error en reportePendienteUngroupByItem: ${error.message || ''} `
         }
     }
 }
@@ -2530,16 +2530,16 @@ const reportePendienteBySucursalesResume = async (tipo) => {
             await connectHANA()
         }
         const paramTipo = formatParam(tipo)
-        // const query = `call ${process.env.PRD}.IFA_SP_PENDING_DELIVERIES_GROUPED_RESUME()`
+        // const query = `call ${ process.env.PRD }.IFA_SP_PENDING_DELIVERIES_GROUPED_RESUME()`
         const query = `call ${process.env.PRD}.IFA_SP_SAL_PENDING_DELIVERIES_SUCURSAL_GROUPED_RESUME(
-         P_TIPODOCUMENTO=>${paramTipo}
-        )`
+                P_TIPODOCUMENTO => ${paramTipo}
+            )`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         throw {
-            message: `Error en reportePendienteBySucursalesResume: ${error.message || ''}`
+            message: `Error en reportePendienteBySucursalesResume: ${error.message || ''} `
         }
     }
 }
@@ -2557,7 +2557,7 @@ const clientExpiryPolicy = async (cardCode) => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2569,13 +2569,13 @@ const selectionBatchByItemWhsCode = async (itemCode, whsCode) => {
         }
         const paramItemCode = formatParam(itemCode)
         const paramWhsCode = formatParam(whsCode)
-        const query = `call ${process.env.PRD}.IFASP_INV_SELECTION_BATCH_BY_ITEM_AND_WAREHOUSE(${paramItemCode},${paramWhsCode})`
+        const query = `call ${process.env.PRD}.IFASP_INV_SELECTION_BATCH_BY_ITEM_AND_WAREHOUSE(${paramItemCode}, ${paramWhsCode})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         throw {
-            message: `Error en selectionBatchByItemWhsCode: ${error.message || ''}`
+            message: `Error en selectionBatchByItemWhsCode: ${error.message || ''} `
         }
     }
 }
@@ -2591,7 +2591,7 @@ const clientesCreadosPorSucursal = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2607,7 +2607,7 @@ const ventasClientesPorSucursal = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2623,7 +2623,7 @@ const clientesAcumuladosPorSucursalGrupo = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2639,7 +2639,7 @@ const consulta1 = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2655,7 +2655,7 @@ const consulta2 = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2671,7 +2671,7 @@ const consulta3 = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2688,7 +2688,7 @@ const getSucursales = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en getSucursales: ${error.message || ''}`
+            message: `Error en getSucursales: ${error.message || ''} `
         }
     }
 }
@@ -2704,7 +2704,7 @@ const getTiposClientes = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en getTiposClientes: ${error.message || ''}`
+            message: `Error en getTiposClientes: ${error.message || ''} `
         }
     }
 }
@@ -2720,7 +2720,7 @@ const getZonas = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en getZonas: ${error.message || ''}`
+            message: `Error en getZonas: ${error.message || ''} `
         }
     }
 }
@@ -2736,7 +2736,7 @@ const getVendedores = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en getVendedores: ${error.message || ''}`
+            message: `Error en getVendedores: ${error.message || ''} `
         }
     }
 }
