@@ -21,6 +21,8 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     allGastosRange,
     importeByRend,
     updateSendToAccounting,
+    verRendicionesEnConcluido,
+    getRendTransID
 } = require("./hana.controller")
 
 
@@ -1750,6 +1752,25 @@ const updateSendToAccountingController = async (req, res) => {
     }
 }
 
+const cancelRevisionCajaController = async (req, res) => {
+    try {
+        let id = req.query.id
+        let idRend = await getRendTransID(id);
+        idRend = idRend[0].RendicionTransId;
+         
+        const response = await cancelJournalEntry(idRend);
+        let response2;
+        if (response ){
+            response2 = await actualizarEstadoRendicion(id, 2);
+        }
+        return res.json(response2);
+        
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 module.exports = {
     findAllAperturaController,
     findAllCajasEmpleadoController,
@@ -1786,5 +1807,6 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
-    updateSendToAccountingController
+    updateSendToAccountingController,
+    cancelRevisionCajaController
 }

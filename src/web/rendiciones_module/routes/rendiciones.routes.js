@@ -64,7 +64,7 @@ router.get('/update-send-to-accounting', [validarToken, validarCampos], updateSe
 // router.get('/petty-cash-by-employee', [validarToken, validarCampos], getPettyCashByEmployeeController)
 // router.post('/journal-entry-valorado', [validarToken, validarCampos], journalEntryValoradoController)
 
-// router.get('/cancel-revision-caja', [validarToken, validarCampos], cancelRevisionCajaController)
+ router.get('/cancel-revision-caja', [validarToken, validarCampos], cancelRevisionCajaController)
 
 
 
