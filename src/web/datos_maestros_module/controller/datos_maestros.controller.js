@@ -34,7 +34,8 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getDiscountByLine,
     getListaPreciosCostoComercialByIdCadenas,
     setPrecioCostoComercial,
-    deletePrecioCostoComercial
+    deletePrecioCostoComercial,
+    almacenesBySucCode
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners, patchItems } = require("./sld.controller");
@@ -1232,7 +1233,11 @@ const getItemsByLineController = async (req, res) => {
     try {
         const line = req.query.line
         console.log({ line })
-        const response = await getItemsByLine(line)
+        let lineCode = null
+        if(line){
+            lineCode = line
+        }
+        const response = await getItemsByLine(lineCode)
         return res.json(response)
     } catch (error) {
         console.log({ error })
@@ -1345,6 +1350,24 @@ const getDiscountController = async (req, res) => {
     }
 }
 
+const almacenesBySucCodeController = async (req, res) => {
+    try {
+        const sucCode = req.query.sucCode
+        if (!sucCode || sucCode == 0) {
+            return res.status(400).json({ mensaje: `El codigo de linea es obligatorio` })
+        }
+        const response = await almacenesBySucCode(sucCode)
+        // if (response.length == 0) {
+        //     return res.status(400).json({ mensaje: `No se encontro la linea` })
+        // }
+        // const linea = response[0]
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador lineasByLineCodeController: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -1399,5 +1422,6 @@ module.exports = {
     getDiscountController,
     getListaPreciosCostoComercialCadenasController,
     setPrecioCostoComercialController,
-    cargarPreciosCostoComercialExcelController
+    cargarPreciosCostoComercialExcelController,
+    almacenesBySucCodeController
 }

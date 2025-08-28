@@ -1455,6 +1455,25 @@ const getDiscountByLine = async () => {
     }
 }
 
+const almacenesBySucCode = async (sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `CALL ${process.env.PRD}.IFASP_INV_GET_WAREHOUSES_BY_SUCCODE(${sucCode})`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en almacenesBySucCode:', error);
+        throw {
+            status: 400,
+            message: `Error en almacenesBySucCode: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -1521,5 +1540,6 @@ module.exports = {
     setPrecioCostoComercial,
     getNewSucursales,
     deletePrecioCostoComercial,
-    getAllSublinesCode
+    getAllSublinesCode,
+    almacenesBySucCode,
 }

@@ -32,7 +32,8 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getDiscountController,
     getListaPreciosCostoComercialCadenasController,
     setPrecioCostoComercialController,
-    cargarPreciosCostoComercialExcelController
+    cargarPreciosCostoComercialExcelController,
+    almacenesBySucCodeController
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
@@ -40,6 +41,7 @@ const router = Router()
 
 router.get('/clientes', [validarToken, validarCampos], dmClientesController)
 router.get('/search-cliente', [validarToken, validarCampos], dmSearchClientesController)
+
 router.get('/clientes-cardcode', [validarToken, validarCampos], dmClientesPorCardCodeController)
 router.patch('/update-cliente', [validarToken, validarCampos], dmUpdateClienteController)
 router.get('/tipo-documentos', [validarToken, validarCampos], dmTipoDocumentosController)
@@ -107,6 +109,7 @@ router.post('/set-precio-item-costo-comercial', [validarToken, validarCampos], s
 
 router.post('/cargar-xsl-precios-cc', [validarToken, validarCampos, upload.any(), validarArchivoExcel,], cargarPreciosCostoComercialExcelController)
 
+router.get('/almacenes-by-succode', [validarToken, validarCampos], almacenesBySucCodeController)
 
 
 module.exports = router

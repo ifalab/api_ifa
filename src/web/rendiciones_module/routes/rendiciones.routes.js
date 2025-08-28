@@ -18,7 +18,7 @@ const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDeta
     allGastosRangeController,
     getPettyCashByEmployeeController,
     updateSendToAccountingController,
-    cancelRevisionCajaController,
+    // cancelRevisionCajaController,
     journalEntryValoradoController
 } = require('../controller/rendiciones.controller')
 const router = Router()
@@ -62,7 +62,7 @@ router.get('/lista-rendiciones-by-codemp', [validarToken, validarCampos], listaR
 router.get('/all-gastos-range', [validarToken, validarCampos], allGastosRangeController)
 router.get('/update-send-to-accounting', [validarToken, validarCampos], updateSendToAccountingController)
 router.get('/petty-cash-by-employee', [validarToken, validarCampos], getPettyCashByEmployeeController)
-// router.post('/journal-entry-valorado', [validarToken, validarCampos], journalEntryValoradoController)
+router.post('/journal-entry-valorado', [validarToken, validarCampos], journalEntryValoradoController)
 
 // router.get('/cancel-revision-caja', [validarToken, validarCampos], cancelRevisionCajaController)
 
