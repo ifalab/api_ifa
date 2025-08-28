@@ -22,7 +22,8 @@ const { findAllAperturaCaja, findCajasEmpleado, rendicionDetallada, rendicionByT
     importeByRend,
     updateSendToAccounting,
     verRendicionesEnConcluido,
-    getRendTransID
+    getRendTransID,
+    getPettyCashByEmployee
 } = require("./hana.controller")
 
 
@@ -1741,6 +1742,27 @@ const allGastosRangeController = async (req, res) => {
     }
 }
 
+const getPettyCashByEmployeeController = async (req, res) => {
+    try {
+        const codEmp = req.query.codEmp
+        if (!codEmp || codEmp == '') {
+            return res.status(400).json({ mensaje: 'El codigo de empleado (codEmp) es obligatorio' })
+        }
+        const response = await getPettyCashByEmployee(codEmp)
+        const data = response.map((item) => {
+            const { FondoFijo, ...restItem } = item
+            return {
+                ...restItem,
+                FondoFijo: +FondoFijo
+            }
+        })
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
 const updateSendToAccountingController = async (req, res) => {
     try {
         const idRend = req.query.idRend
@@ -1807,6 +1829,7 @@ module.exports = {
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
+    getPettyCashByEmployeeController,
     updateSendToAccountingController,
     cancelRevisionCajaController
 }
