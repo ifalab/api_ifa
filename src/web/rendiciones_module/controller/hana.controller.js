@@ -301,7 +301,7 @@ const getRendTransID = async (ID) => {
             await connectHANA();
         }
         console.log('getRendTransID EXECUTE')
-        const query = `call LAB_IFA_DEV.IFASP_RW_GET_REND_TRANSID_BY_ID(${ID})`
+        const query = `call LAB_IFA_DEV1.IFASP_RW_GET_REND_TRANSID_BY_ID(${ID})`
         console.log({ query })
         const result = await executeQuery(query)
         return result

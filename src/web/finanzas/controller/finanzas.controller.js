@@ -1576,6 +1576,7 @@ const gastosGestionAgenciaController = async (req, res) => {
                 { desc_grupo: 'GASTOS COMERCIALES', monto: parseFloat(hanaGastoItem.GastosComerciales) },
                 { desc_grupo: 'PARTIDAS QUE NO MUEVEN EFECTIVO', monto: parseFloat(hanaGastoItem.PartidasNoMuevenEfectivo) },
                 { desc_grupo: 'RECURSOS HUMANOS', monto: parseFloat(hanaGastoItem.RecursosHumanos) },
+                { desc_grupo: 'GASTOS EXPORTACION', monto: parseFloat(hanaGastoItem.GastosExportacion) },
             ];
             
             infoHanaDetalle.forEach(hanaDetalle => {
