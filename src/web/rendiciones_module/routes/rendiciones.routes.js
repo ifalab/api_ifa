@@ -18,7 +18,7 @@ const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDeta
     allGastosRangeController,
     getPettyCashByEmployeeController,
     updateSendToAccountingController,
-    // cancelRevisionCajaController,
+    cancelRevisionCajaController,
     journalEntryValoradoController
 } = require('../controller/rendiciones.controller')
 const router = Router()
