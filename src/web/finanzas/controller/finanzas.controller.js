@@ -1,6 +1,8 @@
+const { formatValuedInventory } = require("../utils/formatValuedInventoryBySuc");
+const { formatValuedInventoryDetails } = require("../utils/formatValuedInventoryDetails");
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
 const { groupMarginByMonth } = require("../utils/groupMarginByMonth");
-const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana, getGastosDB, getGastosHanna, getBalanceGeneral } = require("./hana.controller")
+const { parteDiario, abastecimiento, abastecimientoMesActual, abastecimientoMesAnterior, findAllRegions, findAllLines, findAllSubLines, findAllGroupAlmacenes, abastecimientoPorFecha, abastecimientoPorFechaAnual, abastecimientoPorFecha_24_meses, reporteArticuloPendientes, reporteMargenComercial, CommercialMarginByProducts, getMonthlyCommercialMargin, getReportBankMajor, getCommercialBankAccounts, abastecimientoPorMes, getGastosSAPHana, getGastosAgenciaxGestionSAPHana, getGastosDB, getGastosHanna, getBalanceGeneral, getHanaValuedInventory, getHanaValuedInventoryBySuc, getHanaValuedInventoryDetails } = require("./hana.controller")
 const { todosGastos, gastosXAgencia, gastosGestionAgencia, getAgencias } = require('./sql_finanza_controller')
 const ExcelJS = require('exceljs');
 
@@ -2046,7 +2048,7 @@ const getAgenciasGenesis = async(req, res) => {
 const obtenerBalanceGeneral = async(req, res) => {
     try {
 
-          const fechaInicio = req.query.fechaInicio;
+        const fechaInicio = req.query.fechaInicio;
           const fechaFin = req.query.fechaFin;
         console.log(fechaInicio, fechaFin);
 
@@ -2121,6 +2123,60 @@ const estructurarBalanceParaTree = (dataPlano) => {
   return Array.from(mapNivel1.values());
 };
 
+const getValuedInventoryBySuc = async (req, res) => {
+  try {
+    const data = await getHanaValuedInventoryBySuc();
+
+    const groupedData = formatValuedInventory(data);
+    return res.status(200).json(groupedData);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+        status: false,
+        mensaje: `[getValuedInventoryBySuc] Error al obtener el inventario valorado por sucursal: ${error.message}`,
+        data: []
+    });
+  }
+}
+
+const getValuedInventoryDetails = async (req, res) => {
+  try {
+    const {
+      sucCode,
+      lineItemCode,
+      subLineItemCode,
+      whsCode,
+      itemCode
+    } = req.query;
+    console.log(req.query);
+    
+    const data = await getHanaValuedInventoryDetails({
+      sucCode: sucCode ?? null,
+      lineItemCode: lineItemCode ?? null,
+      subLineItemCode: subLineItemCode ?? null,
+      whsCode: whsCode ?? null,
+      itemCode: itemCode ?? null
+    });
+
+    let groupedData;
+
+    if(!whsCode){
+      groupedData = formatValuedInventoryDetails(data);
+
+    }else{
+      groupedData = formatValuedInventoryDetails(data, whsCode);;
+    }
+
+    return res.status(200).json(groupedData);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+        status: false,
+        mensaje: `[getValuedInventoryBySuc] Error al obtener el inventario valorado por sucursal: ${error.message}`,
+        data: []
+    });
+  }
+}
 
 module.exports = {
   parteDiaroController,
@@ -2147,5 +2203,7 @@ module.exports = {
   getCommercialBankAccountsController,
   excelBankMajorController,
   getAgenciasGenesis,
-  obtenerBalanceGeneral
+  obtenerBalanceGeneral,
+  getValuedInventoryBySuc,
+  getValuedInventoryDetails
 }

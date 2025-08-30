@@ -32,7 +32,9 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     getDiscountController,
     getListaPreciosCostoComercialCadenasController,
     setPrecioCostoComercialController,
-    cargarPreciosCostoComercialExcelController
+    cargarPreciosCostoComercialExcelController,
+    getCurrentRate,
+    getWarehouseBySuc
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
@@ -106,7 +108,7 @@ router.get('/precios-costo-comercial-cadena', [validarToken, validarCampos], get
 router.post('/set-precio-item-costo-comercial', [validarToken, validarCampos], setPrecioCostoComercialController)
 
 router.post('/cargar-xsl-precios-cc', [validarToken, validarCampos, upload.any(), validarArchivoExcel,], cargarPreciosCostoComercialExcelController)
-
-
+router.get('/get-rate', getCurrentRate)
+router.get('/warehouse-by-suc', getWarehouseBySuc)
 
 module.exports = router
