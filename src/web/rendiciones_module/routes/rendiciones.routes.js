@@ -16,7 +16,10 @@ const { findAllAperturaController, findAllCajasEmpleadoController, rendicionDeta
     empleadoConCajaChicasController,
     listaRendicionesByCodEmpController,
     allGastosRangeController,
-    updateSenToAccountingController
+    getPettyCashByEmployeeController,
+    updateSendToAccountingController,
+    cancelRevisionCajaController,
+    journalEntryValoradoController
 } = require('../controller/rendiciones.controller')
 const router = Router()
 
@@ -57,6 +60,12 @@ router.get('/find-all-rendiciones', [validarToken, validarCampos], findAllRendic
 router.get('/empleados-con-cajas-chicas', [validarToken, validarCampos], empleadoConCajaChicasController)
 router.get('/lista-rendiciones-by-codemp', [validarToken, validarCampos], listaRendicionesByCodEmpController)
 router.get('/all-gastos-range', [validarToken, validarCampos], allGastosRangeController)
-router.get('/update-send-to-accounting', [validarToken, validarCampos], updateSenToAccountingController)
+router.get('/update-send-to-accounting', [validarToken, validarCampos], updateSendToAccountingController)
+router.get('/petty-cash-by-employee', [validarToken, validarCampos], getPettyCashByEmployeeController)
+router.post('/journal-entry-valorado', [validarToken, validarCampos], journalEntryValoradoController)
+
+ router.get('/cancel-revision-caja', [validarToken, validarCampos], cancelRevisionCajaController)
+
+
 
 module.exports = router

@@ -50,10 +50,10 @@ const ventaPorSucursal = async () => {
         }
 
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -61,7 +61,7 @@ const ventaPorSucursal = async () => {
         );
         
         `
-        
+
         return await executeQuery(query)
     } catch (error) {
         console.error('Error en ventaPorSucursal:', error.message);
@@ -76,10 +76,10 @@ const ventasNormales = async () => {
         }
 
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -100,12 +100,12 @@ const ventasCadena = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -126,12 +126,12 @@ const ventasInstitucion = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -152,12 +152,12 @@ const ventasIfaVet = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -178,12 +178,12 @@ const ventasMasivo = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth() + 1;
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -221,12 +221,12 @@ const ventaPorSucursalMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -246,12 +246,12 @@ const ventasNormalesMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -272,12 +272,12 @@ const ventasCadenaMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -298,12 +298,12 @@ const ventasInstitucionMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -324,12 +324,12 @@ const ventasIfaVetMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -350,12 +350,12 @@ const ventasMasivoMesAnterior = async () => {
         if (!connection) {
             await connectHANA();
         }
-        
+
         const now = new Date();
-        const anho = now.getFullYear(); 
+        const anho = now.getFullYear();
         const mes = now.getMonth();
-        
-        
+
+
         const query = `
         CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_DIM_A_BY_PERIOD_AND_DIMB(
             i_year  => ${anho},
@@ -1787,7 +1787,7 @@ const getVentasPrespuestosSubLinea = async () => {
 
         const now = new Date();
         const anho = now.getFullYear();
-        const mes = now.getMonth() + 1; 
+        const mes = now.getMonth() + 1;
 
         const query = `
             CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ALL_DIMENSIONS_BY_PERIOD(
@@ -1816,7 +1816,7 @@ const getVentasPrespuestosSubLineaAnterior = async () => {
 
         const now = new Date();
         const anho = now.getFullYear();
-        const mes = now.getMonth(); 
+        const mes = now.getMonth();
 
         const query = `
             CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ALL_DIMENSIONS_BY_PERIOD(
@@ -2432,7 +2432,7 @@ const clientesBloqueadoByGroup = async (groupCode) => {
     }
 };
 
-
+//sexo
 const ventasPendientesByItem = async (startDate, endDate, tipoPendiente, cardCode, itemCode, groupCode) => {
     try {
         if (!connection) {
@@ -2467,16 +2467,17 @@ const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode,
         const paramFechaInicial = formatParam(fechaInicial)
         const paramFechaFinal = formatParam(fechaFinal)
         const paramHeaderParent = formatParam(headerParent)
+        //sexo
         const paramitemCode = formatParam(itemCode)
-
-        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
-         i_date_from => ${paramFechaInicial},
-         i_date_to => ${paramFechaFinal},
-         i_document_type =>${paramTipo},
+        // const query = `call ${ process.env.PRD }.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_AND_ITEM(
+            i_date_from => ${paramFechaInicial},
+        i_date_to => ${paramFechaFinal},
+        i_document_type => ${paramTipo},
         i_group_code => ${paramGroupCode},
-        i_card_code =>  ${paramCardCode},
-        i_parent_name =>${paramHeaderParent},
-        i_item_code =>  ${paramitemCode})`
+        i_card_code => ${paramCardCode},
+        i_parent_name => ${paramHeaderParent},
+        i_item_code => ${paramitemCode})`
 
         console.log({ query })
 
@@ -2485,10 +2486,64 @@ const reportePendienteByItem = async (fechaInicial, fechaFinal, tipo, groupCode,
         return result
     } catch (error) {
         throw {
-            message: `Error en reportePendienteByItem: ${error.message || ''}`
+            message: `Error en reportePendienteByItem: ${error.message || ''} `
         }
     }
 }
+
+const reportePendienteUngroupByItem = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemCode) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramTipo = formatParam(tipo)
+        const paramGroupCode = formatParam(groupCode)
+        const paramCardCode = formatParam(cardCode)
+        const paramFechaInicial = formatParam(fechaInicial)
+        const paramFechaFinal = formatParam(fechaFinal)
+        const paramHeaderParent = formatParam(headerParent)
+        const paramitemCode = formatParam(itemCode)
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_AND_ITEM(
+            i_date_from => ${paramFechaInicial},
+            i_date_to => ${paramFechaFinal},
+            i_document_type => ${paramTipo},
+            i_group_code => ${paramGroupCode},
+            i_card_code => ${paramCardCode},
+            i_parent_name => ${paramHeaderParent},
+            i_item_code => ${paramitemCode})`
+
+        console.log({ query })
+
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reportePendienteUngroupByItem: ${error.message || ''} `
+        }
+    }
+}
+
+const reportePendienteBySucursalesResume = async (tipo) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const paramTipo = formatParam(tipo)
+        // const query = `call ${ process.env.PRD }.IFA_SP_PENDING_DELIVERIES_GROUPED_RESUME()`
+        const query = `call ${process.env.PRD}.IFA_SP_SAL_PENDING_DELIVERIES_SUCURSAL_GROUPED_RESUME(
+                P_TIPODOCUMENTO => ${paramTipo}
+            )`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reportePendienteBySucursalesResume: ${error.message || ''} `
+        }
+    }
+}
+
 
 const clientExpiryPolicy = async (cardCode) => {
     try {
@@ -2502,25 +2557,25 @@ const clientExpiryPolicy = async (cardCode) => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
 
-const selectionBatchByItemWhsCode = async (itemCode,whsCode) => {
+const selectionBatchByItemWhsCode = async (itemCode, whsCode) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         const paramItemCode = formatParam(itemCode)
         const paramWhsCode = formatParam(whsCode)
-        const query = `call ${process.env.PRD}.IFASP_INV_SELECTION_BATCH_BY_ITEM_AND_WAREHOUSE(${paramItemCode},${paramWhsCode})`
+        const query = `call ${process.env.PRD}.IFASP_INV_SELECTION_BATCH_BY_ITEM_AND_WAREHOUSE(${paramItemCode}, ${paramWhsCode})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
     } catch (error) {
         throw {
-            message: `Error en selectionBatchByItemWhsCode: ${error.message || ''}`
+            message: `Error en selectionBatchByItemWhsCode: ${error.message || ''} `
         }
     }
 }
@@ -2536,7 +2591,7 @@ const clientesCreadosPorSucursal = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2552,7 +2607,7 @@ const ventasClientesPorSucursal = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2568,7 +2623,7 @@ const clientesAcumuladosPorSucursalGrupo = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2584,7 +2639,7 @@ const consulta1 = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2600,7 +2655,7 @@ const consulta2 = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2616,7 +2671,7 @@ const consulta3 = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en clientExpiryPolicy: ${error.message || ''}`
+            message: `Error en clientExpiryPolicy: ${error.message || ''} `
         }
     }
 }
@@ -2633,7 +2688,7 @@ const getSucursales = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en getSucursales: ${error.message || ''}`
+            message: `Error en getSucursales: ${error.message || ''} `
         }
     }
 }
@@ -2649,7 +2704,7 @@ const getTiposClientes = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en getTiposClientes: ${error.message || ''}`
+            message: `Error en getTiposClientes: ${error.message || ''} `
         }
     }
 }
@@ -2665,7 +2720,7 @@ const getZonas = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en getZonas: ${error.message || ''}`
+            message: `Error en getZonas: ${error.message || ''} `
         }
     }
 }
@@ -2681,11 +2736,29 @@ const getVendedores = async () => {
         return result
     } catch (error) {
         throw {
-            message: `Error en getVendedores: ${error.message || ''}`
+            message: `Error en getVendedores: ${error.message || ''} `
         }
     }
 }
 
+const getSalesOperationalEfficiencyDashboard = async (cardCode, startDate, endDate,) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        const formattCardCode = formatParam(cardCode)
+        const formattStartDate = formatParam(startDate)
+        const formattEndDate = formatParam(endDate)
+        const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_SALES_OPERATIONAL_EFFICIENCY_DASHBOARD(${formattCardCode},${formattStartDate},${formattEndDate})`
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en getSalesOperationalEfficiencyDashboard: ${error.message || ''}`
+        }
+    }
+}
 
 
 
@@ -2817,5 +2890,8 @@ module.exports = {
     getVendedores,
     getZonas,
     getSucursales,
-    getTiposClientes
+    getTiposClientes,
+    reportePendienteUngroupByItem,
+    getSalesOperationalEfficiencyDashboard,
+    reportePendienteBySucursalesResume
 }

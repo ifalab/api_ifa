@@ -124,7 +124,10 @@ const {
     getVendedores,
     getZonas,
     getSucursales,
-    getTiposClientes
+    getTiposClientes,
+    reportePendienteUngroupByItem,
+    getSalesOperationalEfficiencyDashboard,
+    reportePendienteBySucursalesResume
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -134,6 +137,10 @@ const { Console, group } = require("console");
 const { isatty } = require("tty");
 const { groupBySucursal } = require("../utils/formatBlockedClients");
 const { groupBySucursalYVendedor } = require("../utils/groupBySuc&Seller");
+const { kpiEstadosSpeacking } = require("./sql_genesis_speacking.controller");
+const { agruparPorAgencia } = require("../helper/agruparPorAgencia.helper");
+const { agruparPorEstado } = require("../helper/agruparPorEstado.helper");
+const { agruparDetallePorAgencia } = require("../helper/agruparDetallePorAgencia.helper");
 
 const ventasPorSucursalController = async (req, res) => {
     try {
@@ -2826,7 +2833,7 @@ const ventasPresupuestoSubLineaAnterior = async (req, res) => {
                 grupoA.data.push(grupoB);
             }
 
-             let grupoC = grupoB.data.find(c => c.DimensionCCode === DimensionCCode);
+            let grupoC = grupoB.data.find(c => c.DimensionCCode === DimensionCCode);
             if (!grupoC) {
                 grupoC = {
                     DimensionC,
@@ -2897,7 +2904,7 @@ const getVendedorByCodeController = async (req, res) => {
 
 const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
     try {
-        
+
         const { cliente, vendedor } = req.body;
         const fecha = new Date()
         const month = `${fecha.getMonth() + 1}`
@@ -3326,6 +3333,7 @@ const ventasLineaSupervisorController = async (req, res) => {
 const ventasLineaSucursalSupervisorController = async (req, res) => {
     try {
         const { sucursales, isMesAnterior } = req.body
+        console.log('Body', req.body);
         console.log({ sucursales, isMesAnterior })
         console.log('Ventas por lineas')
         const user = req.usuarioAutorizado
@@ -4013,7 +4021,13 @@ const searchBlockedClients = async (req, res) => {
         }
 
         const resultado = await findBlockedClients(tipoCliente);
-        const agrupado = groupBySucursal(resultado);
+        const filteredResult = resultado.filter(item => 
+            item.ZoneCode !== null && 
+            item.ZoneName !== null && 
+            item.SlpCode !== null && 
+            item.SlpName !== null
+        );
+        const agrupado = groupBySucursal(filteredResult);
 
         return res.json(agrupado);
     } catch (error) {
@@ -4286,6 +4300,7 @@ const ventasPendienteByItemController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en ventasPendienteByItemController ${error.message || 'No definido'}` });
     }
 }
+
 const reportePendienteByItemController = async (req, res) => {
     try {
         let fechaInicial = req.query.fechaInicial
@@ -4331,13 +4346,17 @@ const reportePendienteByItemController = async (req, res) => {
 
         const grouped = {};
         for (const item of response) {
-            const key = item.CardCode;
+            // const key = item.CardCode;
+            const key = `${item.CardCode}__${item.SucName}__${item.ItemCode}`;
             const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
 
             if (!grouped[key]) {
                 grouped[key] = {
                     CardCode: item.CardCode,
                     CardName: item.CardName,
+                    SucName: item.SucName,
+                    ItemCode: item.ItemCode,
+                    ItemName: item.ItemName,
                 };
 
                 headers.forEach(header => {
@@ -4353,11 +4372,108 @@ const reportePendienteByItemController = async (req, res) => {
 
         const data = Object.values(grouped)
 
+        console.log({ headers, data })
+
         return res.json({ headers, data })
 
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en reportePendienteByItemController ${error.message || 'No definido'}` });
+    }
+}
+
+const reportePendienteUngroupByItemController = async (req, res) => {
+    try {
+        let fechaInicial = req.query.fechaInicial
+        let fechaFinal = req.query.fechaFinal
+        let tipo = req.query.tipo
+        let groupCode = req.query.groupCode
+        let cardCode = req.query.cardCode
+        let headerParent = req.query.headerParent
+        let itemCode = req.query.itemCode
+        console.warn({
+            fechaInicial,
+            fechaFinal,
+            tipo,
+            groupCode,
+            cardCode,
+        })
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        if (!groupCode || groupCode == '') {
+            groupCode = null
+        }
+        if (!cardCode || cardCode == '') {
+            cardCode = null
+        }
+        if (!fechaInicial || fechaInicial == '') {
+            fechaInicial = null
+        }
+        if (!fechaFinal || fechaFinal == '') {
+            fechaFinal = null
+        }
+        if (!headerParent || headerParent == '') {
+            headerParent = null
+        }
+        if (!itemCode || itemCode == '') {
+            itemCode = null
+        }
+        const response = await reportePendienteUngroupByItem(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemCode)
+        return res.json(response)
+
+        // const headers = [...new Set(response.map(item => {
+        //     return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+        // }))].sort();
+
+        // const grouped = {};
+        // for (const item of response) {
+        //     const key = item.CardCode;
+        //     const monthKey = `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
+
+        //     if (!grouped[key]) {
+        //         grouped[key] = {
+        //             CardCode: item.CardCode,
+        //             CardName: item.CardName,
+        //         };
+
+        //         headers.forEach(header => {
+        //             grouped[key][header] = { Quantity: null, Total: null };
+        //         });
+        //     }
+
+        //     grouped[key][monthKey] = {
+        //         Quantity: parseFloat(item.PendingQuantity),
+        //         Total: parseFloat(item.PendingAmount)
+        //     };
+        // }
+
+        // const data = Object.values(grouped)
+
+        // console.log({ headers, data })
+
+        // return res.json({ headers, data })
+
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteUngroupByItemController ${error.message || 'No definido'}` });
+    }
+}
+
+const reportePendienteBySucursalResumeController = async (req, res) => {
+    try {
+        let tipo = req.query.tipo
+        console.warn({
+            tipo,
+        })
+        if (!tipo || tipo == '') {
+            tipo = null
+        }
+        const response = await reportePendienteBySucursalesResume(tipo);
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteBySucursalResumeController ${error.message || 'No definido'}` });
     }
 }
 
@@ -4545,8 +4661,8 @@ const procesarReporteFinalV3 = (
 const ventasClientesPorSucursalController = async (req, res) => {
     try {
         // Asumiendo que estas funciones llaman a los procedimientos almacenados de HANA
-        const datosAcumulados = await consulta1(); 
-        const datosVentas = await consulta2(); 
+        const datosAcumulados = await consulta1();
+        const datosVentas = await consulta2();
 
         const vendedores = await getVendedores();
 
@@ -4557,23 +4673,146 @@ const ventasClientesPorSucursalController = async (req, res) => {
         const tiposClientes = await getTiposClientes();
 
 
-    
+
         if (datosAcumulados.length === 0 && datosVentas.length === 0 && datosAsignados.length === 0) {
             return res.status(404).json({ mensaje: 'No se encontraron datos', goToExpiry: false });
         }
-    
-        const groupedData = procesarReporteFinalV3 (datosAcumulados, datosVentas, vendedores, zonas, sucursales, tiposClientes);
-    
+
+        const groupedData = procesarReporteFinalV3(datosAcumulados, datosVentas, vendedores, zonas, sucursales, tiposClientes);
+
+        const transformedData = transformarDatosVentas(groupedData.data);
+
         return res.json({
-            data: groupedData
+            data: transformedData
         });
-    
+
     } catch (error) {
         console.error({ error });
         return res.status(500).json({ mensaje: `Error en ventasClientesPorSucursalController: ${error.message || 'No definido'}` });
     }
 };
-    
+
+
+const transformarDatosVentas = (monthlyDataArray) => {
+    // Usamos un Map para agrupar eficientemente los datos por Sucursal y Grupo.
+    const groupedMap = new Map();
+
+    // Iteramos sobre cada objeto de datos en el array de entrada (cada uno representa un mes).
+    monthlyDataArray.forEach(data => {
+        // Creamos una clave única para identificar la combinación de sucursal y grupo.
+        const key = `${data.SucCode}-${data.GroupCode}`;
+
+        // Si la clave no existe en el mapa, inicializamos la estructura para ese grupo/sucursal.
+        if (!groupedMap.has(key)) {
+            groupedMap.set(key, {
+                Grupo: data.GroupName,
+                Sucursal: data.SucName,
+                isExpanded: false,
+                monthlyData: {},
+                nestedMetrics: []
+            });
+        }
+
+        const groupEntry = groupedMap.get(key);
+        const monthKey = `${data.Year}-${String(data.Month).padStart(2, '0')}`;
+
+        // Llenamos el objeto monthlyData para la métrica principal (Efectividad Total).
+        groupEntry.monthlyData[monthKey] = data.EfectividadTotal;
+
+        // Definimos las métricas que se mostrarán en el primer nivel (bajo Sucursal/Grupo).
+        const mainMetrics = [
+            { name: "Clientes Acumulados", value: data.ClientesAcumulados },
+            { name: "Clientes Vendidos", value: data.ClientesVendidos },
+            { name: "Efectividad Total", value: data.EfectividadTotal },
+            { name: "Clientes No Vendidos", value: data.ClientesAcumulados - data.ClientesVendidos }
+        ];
+
+        // Recorremos las métricas principales para agregarlas a la estructura de salida.
+        mainMetrics.forEach(metric => {
+            let existingMetric = groupEntry.nestedMetrics.find(m => m.nombre === metric.name);
+            if (!existingMetric) {
+                existingMetric = { nombre: metric.name, monthlyData: {}, nested: [] };
+                groupEntry.nestedMetrics.push(existingMetric);
+            }
+            existingMetric.monthlyData[monthKey] = metric.value;
+        });
+
+        // Ahora, recorremos el array de vendedores para agregar sus datos.
+        data.Vendedores.forEach(vendedor => {
+            // Buscamos si el vendedor ya existe en el array nestedMetrics.
+            let existingSeller = groupEntry.nestedMetrics.find(m => m.nombre === vendedor.SlpName);
+            if (!existingSeller) {
+                // Si no existe, creamos una nueva entrada para el vendedor.
+                existingSeller = {
+                    nombre: vendedor.SlpName,
+                    monthlyData: {},
+                    nested: []
+                };
+                groupEntry.nestedMetrics.push(existingSeller);
+            }
+            // Agregamos la efectividad de ventas del vendedor para el mes actual.
+            existingSeller.monthlyData[monthKey] = vendedor.EfectividadVentas;
+
+            // Definimos las métricas que se mostrarán bajo el vendedor.
+            const sellerMetrics = [
+                { name: "Clientes Vendidos", value: vendedor.ClientesVendidos },
+                { name: "Clientes Asignados", value: vendedor.ClientesAsignados },
+                { name: "Efectividad Ventas", value: vendedor.EfectividadVentas },
+                { name: "Clientes No Vendidos", value: vendedor.ClientesAsignados - vendedor.ClientesVendidos }
+            ];
+
+            // Recorremos las métricas del vendedor para agregarlas.
+            sellerMetrics.forEach(metric => {
+                let existingSellerMetric = existingSeller.nested.find(m => m.nombre === metric.name);
+                if (!existingSellerMetric) {
+                    existingSellerMetric = { nombre: metric.name, monthlyData: {}, nested: [] };
+                    existingSeller.nested.push(existingSellerMetric);
+                }
+                existingSellerMetric.monthlyData[monthKey] = metric.value;
+            });
+
+
+            // Recorremos el array de zonas dentro del vendedor.
+            vendedor.Zonas.forEach(zona => {
+                // Buscamos si la zona ya existe en el array nested del vendedor.
+                let existingZone = existingSeller.nested.find(m => m.nombre === zona.ZoneName);
+                if (!existingZone) {
+                    // Si no existe, creamos una nueva entrada para la zona.
+                    existingZone = {
+                        nombre: zona.ZoneName,
+                        monthlyData: {},
+                        // Nuevo array nested para las métricas de la zona
+                        nested: []
+                    };
+                    existingSeller.nested.push(existingZone);
+                }
+                // Agregamos la efectividad de ventas de la zona para el mes actual.
+                existingZone.monthlyData[monthKey] = zona.EfectividadVentas;
+
+                // AHORA se agregan las métricas anidadas a la zona
+                const zoneMetrics = [
+                    { name: "Clientes Vendidos", value: zona.ClientesVendidos },
+                    { name: "Clientes Asignados", value: zona.ClientesAsignados },
+                    { name: "Efectividad Ventas", value: zona.EfectividadVentas },
+                    { name: "Clientes No Vendidos", value: zona.ClientesAsignados - zona.ClientesVendidos }
+                ];
+
+                zoneMetrics.forEach(metric => {
+                    let existingZoneMetric = existingZone.nested.find(m => m.nombre === metric.name);
+                    if (!existingZoneMetric) {
+                        existingZoneMetric = { nombre: metric.name, monthlyData: {}, nested: [] };
+                        existingZone.nested.push(existingZoneMetric);
+                    }
+                    existingZoneMetric.monthlyData[monthKey] = metric.value;
+                });
+            });
+        });
+    });
+
+    // Convertimos el Map en un array para el resultado final.
+    return Array.from(groupedMap.values());
+};
+
 
 
 const ventasEfectividadPorSucursalController = async (req, res) => {
@@ -4585,13 +4824,13 @@ const ventasEfectividadPorSucursalController = async (req, res) => {
         }
         const rawData = await ventasClientesPorSucursal();
 
-        
+
         const filtered = rawData.filter(row =>
             row.Year >= 2024 &&
             row.CLIENTESACUMULADOS !== null &&
             row.ClientesVendidosMes !== null &&
             row.CLIENTESACUMULADOS !== 0 &&
-            row.ClientesVendidosMes !== 0 
+            row.ClientesVendidosMes !== 0
         );
         if (sucursal !== "TODAS") {
             const sucursalData = filtered.filter(row => row.SucName === sucursal);
@@ -4641,7 +4880,7 @@ const ventasEfectividadPorSucursalController = async (req, res) => {
             const { total, vendidos, vendidosno } = agrupado[mes];
             const porcentaje = total > 0 ? parseFloat(((vendidos / total) * 100).toFixed(2)) : 0.00;
             series.push(porcentaje);
-            detalle.push({ total, vendidos, noVendidos: vendidosno }); 
+            detalle.push({ total, vendidos, noVendidos: vendidosno });
         }
         return res.json({ sucursal: 'TODAS', labels, series, detalle });
     } catch (error) {
@@ -4649,10 +4888,6 @@ const ventasEfectividadPorSucursalController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en ventasEfectividadPorSucursalController: ${error.message || 'No definido'}` });
     }
 };
-
-
-
-
 
 const selectionBatchByItemWhsCodeController = async (req, res) => {
     try {
@@ -4671,6 +4906,56 @@ const selectionBatchByItemWhsCodeController = async (req, res) => {
 
         return res.json(response)
 
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
+    }
+}
+
+const getSalesOperationalEfficiencyDashboardController = async (req, res) => {
+    try {
+        const cardCode = req.query.cardCode
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+
+        const response = await getSalesOperationalEfficiencyDashboard(cardCode, startDate, endDate)
+        return res.json(response)
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
+    }
+}
+
+const dataFromSpeackingController = async (req, res) => {
+    try {
+        const tipoCliente = req.query.tipoCliente
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+        let tipo = ''
+        if (tipoCliente !== undefined) {
+            tipo = `${tipoCliente}`
+        }
+        if (!startDate || !endDate) {
+            return res.status(400).json({ mensaje: 'la fecha inicial y final son obligatorias' })
+        }
+        console.log({ startDate, endDate, tipo })
+        const response = await kpiEstadosSpeacking(startDate, endDate, tipo)
+        const data = agruparPorEstado(response)
+        const dataDetail = agruparDetallePorAgencia(data)
+        const sumatoriaTotales = dataDetail.reduce((acc, item) => {
+            return acc + item.Total
+        }, 0)
+
+        const finalDetails = dataDetail.map((item) => {
+            const { Total, ...rest } = item
+            item.cumplimiento = Total / sumatoriaTotales
+            return item
+        })
+
+        // const sumatoriaCumplimiento = dataDetail.reduce((acc, item) => {
+        //     return acc + item.cumplimiento
+        // }, 0)
+        return res.json(finalDetails)
     } catch (error) {
         console.error({ error })
         return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
@@ -4789,5 +5074,9 @@ module.exports = {
     selectionBatchByItemWhsCodeController,
     clientesCreadosPorSucursalController,
     ventasClientesPorSucursalController,
-    ventasEfectividadPorSucursalController
+    ventasEfectividadPorSucursalController,
+    reportePendienteUngroupByItemController,
+    getSalesOperationalEfficiencyDashboardController,
+    dataFromSpeackingController,
+    reportePendienteBySucursalResumeController
 };

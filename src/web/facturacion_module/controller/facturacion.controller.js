@@ -7,7 +7,7 @@ const pdfFonts = require('pdfmake/build/vfs_fonts');
 const puppeteer = require('puppeteer');
 const PdfPrinter = require('pdfmake');
 const fs = require('fs');
-const { entregaDetallerFactura, pedidoDetallerFactura, clientesPorDimensionUno } = require("../../inventarios/controller/hana.controller")
+const { entregaDetallerFactura, pedidoDetallerFactura, clientesPorDimensionUno, obtenerDevolucionDetalle } = require("../../inventarios/controller/hana.controller")
 const { facturacionById, facturacionPedido } = require("../service/apiFacturacion")
 const { facturacionProsin, anulacionFacturacion, facturacionExportacionProsin } = require("../service/apiFacturacionProsin")
 const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEntrega, obtenerEntregasPorFactura, facturasParaAnular, facturaInfo, facturaPedidoDB, pedidosFacturados, obtenerEntregas, facturasPedidoCadenas,
@@ -36,7 +36,11 @@ const { lotesArticuloAlmacenCantidad, solicitarId, obtenerEntregaDetalle, notaEn
     stockByItemCodeBatchNumWhsCode,
     getBatchDetailByOrderNum,
     fefoMinExpiry,
-    baseEntryByDetailsNDC } = require("./hana.controller")
+    baseEntryByDetailsNDC,
+    getUnpaidFromPreviousMonths,
+    getPaidDeliveryDetails,
+    setSyncSalesReturnProcess,
+    getPaidEntryDetails, } = require("./hana.controller")
 const { postEntrega, postInvoice, facturacionByIdSld, cancelInvoice, cancelDeliveryNotes, patchEntrega,
     cancelOrder, closeQuotations,
     cancelCreditNotes,
@@ -52,6 +56,10 @@ const { getDocDueDate } = require('../../../controllers/hanaController');
 const { postOrden } = require('../../../movil/ventas_module/controller/sld.controller');
 const { tipoDeCambioByFecha, tipoDeCambio } = require('../../contabilidad_module/controllers/hana.controller');
 const { clientExpiryPolicy } = require('../../ventas_module/controller/hana.controller');
+const { groupBatchesByLineNum } = require('../helpers/groupBatchesByLineNum');
+const { buildBodyReturn } = require('../helpers/buildBodyReturn');
+const { postCreditNotes } = require('../../service/sapService');
+const { buildBodyCreditNotes } = require('../helpers/buildBodyCreditNote');
 
 const facturacionController = async (req, res) => {
     let body = {}
@@ -298,7 +306,8 @@ const facturacionController = async (req, res) => {
                             ...data,
                             ItemCode,
                             WarehouseCode,
-                            Quantity: new_quantity / UnitsOfMeasurment,
+                            // Quantity: new_quantity / UnitsOfMeasurment,
+                            Quantity: new_quantity,
                             LineNum,
                             ...restLine,
                             BatchNumbers: batchNumbers
@@ -1586,7 +1595,7 @@ const cancelToProsinNDCController = async (req, res) => {
         ///? return 
         let responseProsin = {}
         let endTime = Date.now();
-        
+
         console.log({ user })
         if (!cuf || cuf == '') {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
@@ -2940,6 +2949,8 @@ const cancelarParaRefacturarController = async (req, res) => {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error el cuf no esta bien definido. ${cuf || ''}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
             return res.status(400).json({ mensaje: `Error el cuf no esta bien definido. ${cuf || ''}` })
         }
+        // const groupCode1 = await obtenerGroupCode('C000023')
+        // console.log({ groupCode1 })
         const estadoFacturaResponse = await spEstadoFactura(cuf)
         if (estadoFacturaResponse.message) {
             grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `${estadoFacturaResponse.message || 'Error en spEstadoFactura'}`, '', "facturacion/cancel-to-prosin", process.env.PRD)
@@ -2974,18 +2985,18 @@ const cancelarParaRefacturarController = async (req, res) => {
         }
         const reponseInvoice = await cancelInvoice(docEntry)
         if (reponseInvoice.value && !reponseInvoice.value.includes('Document is already closed')) {
-            const outputDir = path.join(__dirname, 'outputsAnulacion');
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir);
-            }
-            const now = new Date();
-            const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
-            const fileNameJson = path.join(outputDir, `reponseInvoiceAnulacion_${timestamp}.json`);
-            fs.writeFileSync(fileNameJson, JSON.stringify(docEntry, null, 2), 'utf8');
-            console.log(`Objeto reponseInvoice guardado en ${fileNameJson}`);
+            // const outputDir = path.join(__dirname, 'outputsAnulacion');
+            // if (!fs.existsSync(outputDir)) {
+            //     fs.mkdirSync(outputDir);
+            // }
+            // const now = new Date();
+            // const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+            // const fileNameJson = path.join(outputDir, `reponseInvoiceAnulacion_${timestamp}.json`);
+            // fs.writeFileSync(fileNameJson, JSON.stringify(docEntry, null, 2), 'utf8');
+            // console.log(`Objeto reponseInvoice guardado en ${fileNameJson}`);
 
             endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, `https://srvhana:50000/b1s/v1/Invoices(id)/Cancel, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en cancel invoice: ${reponseInvoice.value || ''}, CUF(${cuf})`, `https://srvhana:50000/b1s/v1/Invoices(id)/Cancel, [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-refacturar", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en cancel invoice: ${reponseInvoice.value || ''}` })
         }
 
@@ -3002,7 +3013,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         }
         if (responseEntregas.message) {
             endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id) [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-to-prosin", process.env.PRD)
+            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Anular factura", `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}, CUF(${cuf})`, `CALL ifa_lapp_ven_obtener_entregas_por_factura(id) [${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/cancel-refacturar", process.env.PRD)
             return res.status(400).json({ mensaje: `Error en obtenerEntregasPorFactura: ${responseEntregas.message || ''}` })
         }
         // return res.json({responseEntregas})
@@ -3119,6 +3130,7 @@ const cancelarParaRefacturarController = async (req, res) => {
 
         let orderNumber = responsePedido[0].BaseEntry
         console.log({ orderNumberDespues: orderNumber })
+        const groupCode = await obtenerGroupCode(CardCode)
 
         const responseOferta = await ofertaDelPedido(orderNumber)
 
@@ -3131,7 +3143,7 @@ const cancelarParaRefacturarController = async (req, res) => {
         //------------------------------------------------CLOSE OFERTA
 
         let resCancelOferta
-        const groupCode = await obtenerGroupCode(CardCode)
+
         if (groupCode.GroupCode == 100) {
             if (responseOferta.length > 0) {
                 const idOferta = responseOferta[0].BaseEntry
@@ -4538,6 +4550,91 @@ const getClienteByCardCodeController = async (req, res) => {
     }
 }
 
+const getUnpaidFromPreviousMonthsController = async (req, res) => {
+    try {
+        const data = await getUnpaidFromPreviousMonths()
+        return res.json(data)
+    } catch (error) {
+        console.log('error en getUnpaidFromPreviousMonthsController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+const processUnpaidController = async (req, res) => {
+    try {
+        const { DocEntry, Cuf, CardCode, LicTradNum, CardFName, } = req.body
+        let { SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, ReconciliationID } = req.body
+        let responseReturn = {}
+        let responseCreditNotes = {}
+        const user = req.usuarioAutorizado
+        const idSap = user.ID_SAP || 0
+
+        if (!DocEntry) {
+            return res.status(404).json({ mensaje: 'no existe el Doc Entry en la peticion' })
+        }
+
+        if (idSap == 0) {
+            return res.status(401).json({ mensaje: 'El usuario no esta autorizado a realizar esta operacion ya que no tiene ID SAP' })
+        }
+
+        if (!ReturnDocEntry) {
+            const details = await getPaidDeliveryDetails(DocEntry);
+            if (details.length == 0) {
+                return res.status(404).json({ mensaje: 'no se encontraron detalles de la entrega' })
+            }
+            const newDetails = groupBatchesByLineNum(details)
+            const bodyReturns = buildBodyReturn(CardCode, LicTradNum, CardFName, Cuf, newDetails)
+            
+            responseReturn = await postReturn(bodyReturns)
+
+            if (responseReturn.status > 300) {
+                console.log({ errorMessage: responseReturn.errorMessage })
+                let mensaje = responseReturn.errorMessage || 'Mensaje no definido'
+                if (mensaje.value)
+                    mensaje = mensaje.value
+                return res.status(400).json({
+                    mensaje: `Error en postReturn: ${mensaje}`, bodyReturns
+                })
+            }
+            ReturnDocEntry = responseReturn.orderNumber
+            await setSyncSalesReturnProcess(DocEntry, ReturnDocEntry, null, null)
+            return res.json({responseReturn,bodyReturns})
+        }
+
+        if (!CreditNoteDocEntry) {
+            const devolucionDetalle = await obtenerDevolucionDetalle(ReturnDocEntry)
+            const bodyCreditNotes = buildBodyCreditNotes(ReturnDocEntry, DocEntry, devolucionDetalle)
+            console.log(JSON.stringify({ bodyCreditNotes }, null, 2))
+            responseCreditNotes = await postCreditNotes(bodyCreditNotes)
+            if (responseCreditNotes.status > 299) {
+                let mensaje = responseCreditNotes.errorMessage
+                if (typeof mensaje != 'string' && mensaje.lang) {
+                    mensaje = mensaje.value
+                }
+                mensaje = `Error en creditNote: ${mensaje}. Factura Nro: ${ReturnDocEntry}`
+                grabarLog(user.USERCODE, user.USERNAME, `Inventario DEvolucion Valorado`, mensaje, 'postCreditNotes', `inventario/dev-valorado-dif-art`, process.env.PRD)
+                return res.status(400).json({
+                    mensaje,
+                    bodyCreditNotes,
+                    ReturnDocEntry,
+                })
+            }
+            const { orderNumber: CreditNoteDocEntry, TransNum } = responseCreditNotes
+            await setSyncSalesReturnProcess(DocEntry, ReturnDocEntry, CreditNoteDocEntry, null)
+        }
+
+
+        return res.json({ mensaje: 'Proceso concluido con exito', SalesDocEntry, ReturnDocEntry, CreditNoteDocEntry, responseReturn,responseCreditNotes})
+
+    } catch (error) {
+        console.log('error en processUnpaidController')
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el controlador' })
+    }
+}
+
+
 module.exports = {
     facturacionController,
     facturacionStatusController,
@@ -4578,4 +4675,6 @@ module.exports = {
     facturacionAllStatusListController,
     actualizarEstadoPedidoController,
     cancelToProsinNDCController,
+    getUnpaidFromPreviousMonthsController,
+    processUnpaidController,
 }
