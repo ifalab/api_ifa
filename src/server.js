@@ -44,6 +44,7 @@ app.use('/v1/web/datos-maestros', require('./web/datos_maestros_module/routers/d
 app.use('/v1/web/excel', require('./web/excel_reader/routes/excel.routes'));
 app.use('/v1/web/planificacion', require('./web/planificacion_module/routes/planificacion.routes'));
 app.use('/v1/web/produccion', require('./web/produccion_module/routes/produccion.routes'));
+app.use('/v1/web/personas', require('./web/personas_module/routes/personas.route'));
 
 //TODO DIGILITZACION --------------------------------------------------------------------------------------
 app.use('/v1/web/contabilidad/digitalizacion', require('./web/digitalizacion_module/routes/digitalizacion.routes'));

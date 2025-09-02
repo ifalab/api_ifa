@@ -1138,7 +1138,7 @@ const kardexPlant = async (start, end, whsCode, itemCode) => {
     }
 }
 
-const kardexCommercial = async (start, end, whsCode, itemCode) => {
+const kardexCommercial = async (start, end, whsCode, itemCode, sucCode) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -1150,7 +1150,8 @@ const kardexCommercial = async (start, end, whsCode, itemCode) => {
         i_dateini => '${start}',
 	    i_datefin => '${end}',
 	    i_whscode => ${whsCodeParams},
-	    i_itemcode =>${itemCodeParams})`;
+	    i_itemcode =>${itemCodeParams},
+        i_succode =>${sucCode})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
