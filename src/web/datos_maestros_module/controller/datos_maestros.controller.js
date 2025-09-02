@@ -35,7 +35,9 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     getListaPreciosCostoComercialByIdCadenas,
     setPrecioCostoComercial,
     deletePrecioCostoComercial,
-    almacenesBySucCode
+    almacenesBySucCode,
+    getCurrentRateHana,
+    getWarehouseBySucHana
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners, patchItems } = require("./sld.controller");
@@ -1368,6 +1370,28 @@ const almacenesBySucCodeController = async (req, res) => {
     }
 }
 
+const getCurrentRate = async (req, res) => {
+    try {
+       const data = await getCurrentRateHana();
+       return res.status(200).json(data);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getCurrentRate: ${error.message || ''}` })
+    }
+}
+
+const getWarehouseBySuc = async(req, res) => {
+    try {
+        const {sucCode} = req.query;
+
+        const data = await getWarehouseBySucHana(sucCode);
+        return res.status(200).json(data);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador getWarehouseBySuc: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -1423,5 +1447,7 @@ module.exports = {
     getListaPreciosCostoComercialCadenasController,
     setPrecioCostoComercialController,
     cargarPreciosCostoComercialExcelController,
-    almacenesBySucCodeController
+    almacenesBySucCodeController,
+    getCurrentRate,
+    getWarehouseBySuc
 }

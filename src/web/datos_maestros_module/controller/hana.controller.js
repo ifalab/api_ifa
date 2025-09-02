@@ -1474,6 +1474,52 @@ const almacenesBySucCode = async (sucCode) => {
     }
 }
 
+const getCurrentRateHana = async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `
+            SELECT "Currency", "Rate" 
+            FROM LAB_IFA_PRD.ORTT
+            WHERE "RateDate" = CURRENT_DATE`;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getCurrentRateHana:', error);
+        throw {
+            status: 400,
+            message: `Error en getCurrentRateHana: ${error.message || ''}`
+        }
+    }
+}
+
+const getWarehouseBySucHana = async(sucCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `
+            SELECT "WhsCode", "WhsName" 
+            FROM ${process.env.PRD}.IFA_DM_ALMACENES
+            WHERE "SucCode" = ${sucCode}
+            ORDER BY "WhsCode"
+        `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getWarehouseBySucHana:', error);
+        throw {
+            status: 400,
+            message: `Error en getWarehouseBySucHana: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -1542,4 +1588,6 @@ module.exports = {
     deletePrecioCostoComercial,
     getAllSublinesCode,
     almacenesBySucCode,
+    getCurrentRateHana,
+    getWarehouseBySucHana
 }

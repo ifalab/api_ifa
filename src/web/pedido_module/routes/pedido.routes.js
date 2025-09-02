@@ -26,7 +26,9 @@ const router = Router()
 
 router.post('/cliente-vendedor', [validarToken, validarCampos], clientesVendedorController)
 router.get('/cliente-mora', [validarToken, validarCampos], clientesMoraController)
+// TODO DEVOLUCION MAL ESTADO,......:
 router.get('/mora', [validarToken, validarCampos], moraController)
+// TODO ------------------------------
 router.get('/catalogo', [validarToken, validarCampos], catalogoController)
 router.get('/regla-articulo', [validarToken, validarCampos], descuentoArticuloController)
 router.get('/regla-condicion', [validarToken, validarCampos], descuentoCondicionController)

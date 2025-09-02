@@ -263,12 +263,12 @@ const reporteArticuloPendientes = async (startDate, endDate) => {
 const reporteMargenComercial = async (startDate, endDate) => {
     try {
         const query = `
-      CALL "LAB_IFA_DATA"."IFASP_SAL_CALCULATE_COMERCIAL_SALES_MARGINS"(
-        i_ini_date => ?, 
-        i_fin_date => ?, 
-        o_result => ?
-      );
-    `;
+            CALL "LAB_IFA_DATA"."IFASP_SAL_CALCULATE_COMERCIAL_SALES_MARGINS"(
+                i_ini_date => ?, 
+                i_fin_date => ?, 
+                o_result => ?
+            );
+        `;
 
         // Asegúrate de pasar las fechas en formato 'yyyyMMdd'
         const start = formatDate(startDate); // Ej: '20250101'
@@ -577,6 +577,58 @@ const getGastosCCHanna = async (anio, sucCode) => {
 
 
 
+const getHanaValuedInventoryBySuc = async () => {
+  try {
+    let query = `
+      SELECT * FROM LAB_IFA_PRD.IFA_INV_VALUED_STOCK_BY_SUC
+    `;
+
+    // Orden de parámetros según el procedimiento
+    const params = [];
+
+    console.log("Executing query:", query, "with params:", params);
+
+    const result = await executeQueryParamsWithConnection(query, params);
+
+    return result;
+  } catch (error) {
+    console.error("Error in getHanaValuedInventory:", error);
+    throw new Error(`Error in getHanaValuedInventory: ${error.message}`);
+  }
+};
+
+const getHanaValuedInventoryDetails = async ({
+  sucCode,
+  lineItemCode,
+  subLineItemCode,
+  whsCode,
+  itemCode
+}) => {
+  try {
+    const query = `
+      CALL LAB_IFA_PRD.IFASP_INV_CALCULATE_STOCK_COMMERCIAL_VALUE(?, ?, ?, ?, ?)
+    `;
+
+    // Los parámetros se pasan en orden según la definición del procedimiento
+    const params = [
+      sucCode,
+      lineItemCode,
+      subLineItemCode,
+      whsCode,
+      itemCode
+    ];
+
+    console.log("Executing query:", query, "with params:", params);
+
+    const result = await executeQueryParamsWithConnection(query, params);
+    return result;
+
+  } catch (error) {
+    console.error("Error in getHanaValuedInventoryDetails:", error);
+    throw new Error(`Error in getHanaValuedInventoryDetails: ${error.message}`);
+  }
+};
+
 module.exports = {
     parteDiario,
     abastecimiento,
@@ -601,5 +653,7 @@ module.exports = {
     getGastosDB,
     getGastosHanna,
     getBalanceGeneral,
-    getGastosCCHanna
+    getGastosCCHanna,
+    getHanaValuedInventoryBySuc,
+    getHanaValuedInventoryDetails
 }

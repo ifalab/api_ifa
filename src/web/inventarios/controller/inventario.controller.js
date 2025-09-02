@@ -70,13 +70,7 @@ const { Result } = require("express-validator");
 const clientePorDimensionUnoController = async (req, res) => {
     try {
 
-        // const list = []
-        // for (const iterator of dimension) {
-        //     const result = await clientesPorDimensionUno()
-        //     result.map((itemResult) => {
-        //         list.push(itemResult)
-        //     })
-        // }
+       
         const list = await clientesPorDimensionUno()
         return res.status(200).json({ list })
     } catch (error) {
