@@ -111,7 +111,8 @@ router.post('/set-precio-item-costo-comercial', [validarToken, validarCampos], s
 
 router.post('/cargar-xsl-precios-cc', [validarToken, validarCampos, upload.any(), validarArchivoExcel,], cargarPreciosCostoComercialExcelController)
 router.get('/get-rate', getCurrentRate)
-router.get('/warehouse-by-suc', getWarehouseBySuc)router.get('/almacenes-by-succode', [validarToken, validarCampos], almacenesBySucCodeController)
+router.get('/warehouse-by-suc', getWarehouseBySuc)
+router.get('/almacenes-by-succode', [validarToken, validarCampos], almacenesBySucCodeController)
 
 
 module.exports = router

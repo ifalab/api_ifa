@@ -304,6 +304,12 @@ const getBankingByDate = async (fechaInicio, fechaFin) => {
   }
 };
 
+const getBeneficiarios = async () => {
+  console.log('getBeneficiarios EXECUTE');
+  const query = `SELECT * FROM LAB_IFA_PRD.IFA_DM_PROVEEDORES`;
+  return await executeQueryWithConnection(query);
+};
+
 
 
 
@@ -329,5 +335,6 @@ module.exports = {
     cuentasPorCodigoNombre,
     getAccountLedgerData,
     getAccountLedgerBalancePrev,
-    getBankingByDate
+    getBankingByDate,
+    getBeneficiarios
 }

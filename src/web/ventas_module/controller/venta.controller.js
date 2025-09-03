@@ -2910,8 +2910,9 @@ const getDescuentosDelVendedorParaPedidoController = async (req, res) => {
         const month = `${fecha.getMonth() + 1}`
         const day = `${fecha.getDate()}`
         const data = `${fecha.getFullYear()}${month.padStart(2, '0')}${day.padStart(2, '0')}`
+        console.log('cliente, vendedor, data', cliente, vendedor, data);
         const response = await getDescuentosDeVendedoresParaPedido(cliente, vendedor, data)
-        console.log(response)
+        console.log('respuestaaa',response)
         return res.json(response);
     } catch (error) {
         console.error({ error })
