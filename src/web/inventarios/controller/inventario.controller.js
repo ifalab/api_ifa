@@ -6198,7 +6198,8 @@ const kardexCommercialController = async (req, res) => {
             start,
             end,
             whsCode,
-            itemCode, } = req.body
+            itemCode,
+            sucCode } = req.body
 
         if (!start || start == undefined || start == '') {
             return res.status(400).json({ mensaje: `Se requiere una fecha de inicio (start)` });
@@ -6208,7 +6209,7 @@ const kardexCommercialController = async (req, res) => {
             return res.status(400).json({ mensaje: `Se requiere una fecha de final (end)` });
         }
 
-        const response = await kardexCommercial(start, end, whsCode, itemCode)
+        const response = await kardexCommercial(start, end, whsCode, itemCode, sucCode)
         const dataFilter = response.map((item) => {
             const { InQty, OutQty, StockPrice, ...rest } = item
             return {
