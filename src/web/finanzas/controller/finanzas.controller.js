@@ -2227,6 +2227,146 @@ const getValuedInventoryDetails = async (req, res) => {
   }
 }
 
+const getInventoryExcel = async (req, res) => {
+  try {
+    const { sucCode, lineItemCode, subLineItemCode, whsCode, itemCode } = req.query;
+
+    if (!sucCode) {
+      return res.status(400).json({
+        status: false,
+        mensaje: "Debe proporcionar el código de sucursal",
+        data: null,
+      });
+    }
+
+    const data = await getHanaValuedInventoryDetails({
+      sucCode: sucCode ?? null,
+      lineItemCode: lineItemCode ?? null,
+      subLineItemCode: subLineItemCode ?? null,
+      whsCode: whsCode ?? null,
+      itemCode: itemCode ?? null,
+    });
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        status: false,
+        mensaje: "No se encontraron datos para esta sucursal",
+        data: null,
+      });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Inventario Valorado");
+
+    // 📌 Estilos básicos
+    const titleStyle = { bold: true, size: 16 };
+    const subtitleStyle = { bold: true, size: 12 };
+
+    // 🔹 Título principal
+    worksheet.mergeCells("A1:L1");
+    const titleCell = worksheet.getCell("A1");
+    titleCell.value = "📊 Excel Inventario Valorado";
+    titleCell.font = titleStyle;
+    titleCell.alignment = { vertical: "middle", horizontal: "center" };
+
+    // 🔹 Fecha y hora
+    const now = new Date();
+    worksheet.mergeCells("A2:L2");
+    const dateCell = worksheet.getCell("A2");
+    dateCell.value = `Fecha: ${now.toLocaleDateString("es-BO")} Hora: ${now.toLocaleTimeString("es-BO")}`;
+    dateCell.font = subtitleStyle;
+    dateCell.alignment = { vertical: "middle", horizontal: "center" };
+
+    // 🔹 Sucursal info
+    worksheet.mergeCells("A3:L3");
+    const sucCell = worksheet.getCell("A3");
+    sucCell.value = `Sucursal: ${data[0].SucName}   Código: ${data[0].SucCode}`;
+    sucCell.font = subtitleStyle;
+    sucCell.alignment = { vertical: "middle", horizontal: "center" };
+
+    // 🔹 Fila vacía
+    worksheet.addRow([]);
+
+    // 🔹 Encabezados de tabla
+    const headers = [
+      "Linea",
+      "SubLinea",
+      "Almacen",
+      "AlmacenCodigo",
+      "Articulo",
+      "ArticuloCodigo",
+      "Total Entrada Cantidad",
+      "Total Salida Cantidad",
+      "Saldo Cantidad",
+      "Total Entrada Bs",
+      "Total Salida Bs",
+      "Saldo Bs",
+    ];
+    const headerRow = worksheet.addRow(headers);
+
+    // Estilo de encabezados
+    headerRow.eachCell(cell => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "4472C4" }, // Azul bonito
+      };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    // 🔹 Agregar filas con datos
+    data.forEach(item => {
+      worksheet.addRow([
+        item.LineItemName,
+        item.SubLineItemName,
+        item.WhsName,
+        item.WhsCode,
+        item.ItemName,
+        item.ItemCode,
+        Number(item.TotalInQty),
+        Number(item.TotalOutQty),
+        Number(item.Quantity),
+        Number(parseFloat(item.TotalInValue).toFixed(2)),
+        Number(parseFloat(item.TotalOutValue).toFixed(2)),
+        Number(parseFloat(item.TotalComlPrice).toFixed(2)),
+      ]);
+    });
+
+    // Ajustar ancho columnas
+    worksheet.columns.forEach(col => {
+      col.width = 22;
+    });
+
+    // 📤 Enviar archivo
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=InventarioSucursal_${sucCode}.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      status: false,
+      mensaje: `[getInventoryExcel] Error al obtener el excel: ${error.message}`,
+      data: null,
+    });
+  }
+};
+
+
 module.exports = {
   parteDiaroController,
   abastecimientoController,
@@ -2254,5 +2394,6 @@ module.exports = {
   getAgenciasGenesis,
   obtenerBalanceGeneral,
   getValuedInventoryBySuc,
-  getValuedInventoryDetails
+  getValuedInventoryDetails,
+  getInventoryExcel
 }
