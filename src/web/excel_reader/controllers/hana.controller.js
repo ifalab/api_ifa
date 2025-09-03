@@ -49,7 +49,7 @@ const insertDataLabVenCuotasDetalle = async (data) => {
             await connectHANA();
         }
         console.log(data);
-        const docDate = '2025-10-01'; 
+        const docDate = '2025-11-01'; 
         const codCliente = data.Cod_cliente;
         const tipoCliente = data.Tipo_Cliente || '';
         const linea = data.Linea.trim() || '';

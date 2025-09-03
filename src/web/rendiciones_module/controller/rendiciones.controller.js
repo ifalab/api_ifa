@@ -774,6 +774,9 @@ const sendToSapController = async (req, res) => {
         // listFacturas,
         // listRecibos,
         // listFacturasND
+
+        // `${item.TIPO} - ${item.NROFACTURARECIBO} ${item.GLOSA || ''}`
+
         listFacturas.map((factura) => {
             const totalDolar = (factura.new_importeTotal / usd).toFixed(2)
             const listData = [
@@ -797,7 +800,7 @@ const sendToSapController = async (req, res) => {
                     CostingCode4: null,
                     CostingCode5: null,
                     LineMemo: factura.new_glosa_prod,
-                    U_ComercialComments: factura.new_glosa,
+                    U_ComercialComments: `${factura.new_tipo} - ${factura.new_nroFactura} ${factura.new_glosa}`,
                     U_TIPODOC: '10',
                     U_NIT: null,
                     U_RSocial: null,
@@ -840,7 +843,7 @@ const sendToSapController = async (req, res) => {
                     CostingCode4: null,
                     CostingCode5: null,
                     LineMemo: factura.new_glosa_prod,
-                    U_ComercialComments: factura.new_glosa,
+                    U_ComercialComments: `${factura.new_tipo} - ${factura.new_nroFactura} ${factura.new_glosa}`,
                     U_TIPODOC: factura.new_tipo === 'F' ? '1' : '10',
                     U_NIT: factura.new_nit,
                     U_RSocial: factura.new_nombreRazon,
@@ -891,7 +894,7 @@ const sendToSapController = async (req, res) => {
                     CostingCode4: null,
                     CostingCode5: null,
                     LineMemo: recibos.new_glosa_prod,
-                    U_ComercialComments: recibos.new_glosa,
+                    U_ComercialComments: `${recibos.new_tipo} - ${recibos.new_nroFactura} ${recibos.new_glosa}`,
                     U_TIPODOC: '10',
                     U_NIT: null,
                     U_RSocial: null,
@@ -934,7 +937,7 @@ const sendToSapController = async (req, res) => {
                     CostingCode4: null,
                     CostingCode5: null,
                     LineMemo: recibos.new_glosa_prod,
-                    U_ComercialComments: recibos.new_glosa,
+                    U_ComercialComments: `${recibos.new_tipo} - ${recibos.new_nroFactura} ${recibos.new_glosa}`,
                     U_TIPODOC: recibos.new_tipo === 'F' ? '1' : '10',
                     U_NIT: recibos.new_nit,
                     U_RSocial: recibos.new_nombreRazon,
@@ -986,7 +989,7 @@ const sendToSapController = async (req, res) => {
                     CostingCode4: null,
                     CostingCode5: null,
                     LineMemo: fnd.new_glosa_prod,
-                    U_ComercialComments: fnd.new_glosa,
+                    U_ComercialComments: `${fnd.new_tipo} - ${fnd.new_nroFactura} ${fnd.new_glosa}`,
                     U_TIPODOC: '10',
                     U_NIT: null,
                     U_RSocial: null,
@@ -1029,7 +1032,7 @@ const sendToSapController = async (req, res) => {
                     CostingCode4: null,
                     CostingCode5: null,
                     LineMemo: fnd.new_glosa_prod,
-                    U_ComercialComments: fnd.new_glosa,
+                    U_ComercialComments: `${fnd.new_tipo} - ${fnd.new_nroFactura} ${fnd.new_glosa}`,
                     U_TIPODOC: fnd.new_tipo === 'F' ? '1' : '10',
                     U_NIT: fnd.new_nit,
                     U_RSocial: fnd.new_nombreRazon,
