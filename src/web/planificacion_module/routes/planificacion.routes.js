@@ -9,7 +9,8 @@ const {
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController, 
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController,
-    getClienteByCodeController, actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController
+    getClienteByCodeController, actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController,
+    getClientesBySup
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -42,6 +43,8 @@ router.post('/aniadir-detalle-visita', [validarToken, validarCampos], aniadirDet
 router.get('/detalle-visitas-creadas', [validarToken, validarCampos], getDetalleVisitasCreadasController)
 router.post('/actualizar-visita-creada', [validarToken, validarCampos], actualizarVisitaController)
 router.get('/ultima-visita', [validarToken, validarCampos], getUltimaVisitaController)
+
+router.get('/clientes/by/sup', [validarCampos, validarToken], getClientesBySup)
 
 //Reportes
 

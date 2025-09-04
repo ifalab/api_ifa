@@ -555,11 +555,26 @@ const parapruebas = async (id) => {
     }
 }
 
+
+const findClientesBySupervisor = async(id_suc)=>{
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call LAB_IFA_PRD.IFA_LAPP_CLIENTES_POR_SURCURSAL(${id_suc})`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: clientes by vendedor');
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita,
     getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode, actualizarVisita,
-    getUltimaVisita, parapruebas, getPlanVendedor
+    getUltimaVisita, parapruebas, getPlanVendedor, findClientesBySupervisor
 }

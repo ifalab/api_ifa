@@ -3,7 +3,8 @@ const {
     getCicloVendedor, getDetalleCicloVendedor, insertarDetalleVisita, insertarCabeceraVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita, getDetalleVisitasCreadas,
-    getCabeceraVisitaCreada, getClienteByCode, actualizarVisita, getUltimaVisita, parapruebas, getPlanVendedor
+    getCabeceraVisitaCreada, getClienteByCode, actualizarVisita, getUltimaVisita, parapruebas, getPlanVendedor,
+    findClientesBySupervisor
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 
@@ -440,6 +441,48 @@ const getUltimaVisitaController = async (req, res) => {
     }
 }
 
+const getClientesBySup = async (req, res) => {
+  try {
+    let { id_suc } = req.query;
+    console.log(id_suc);
+
+    if (!id_suc) {
+      return res.status(400).json({
+        status: false,
+        mensaje: "Debe proporcionar al menos un código de sucursal",
+        data: null,
+      });
+    }
+
+    // Aceptamos tanto "100,200,300" como ["100","200","300"]
+    if (typeof id_suc === "string") {
+      id_suc = id_suc.split(",").map((code) => code.trim());
+    }
+    let mergedResults = [];
+
+    // 🔹 Ejecutamos secuencialmente
+     for (const code of id_suc) {
+      try {
+        const result = await findClientesBySupervisor(code);
+        if (result && result.length > 0) {
+          mergedResults = mergedResults.concat(result);
+        }
+      } catch (err) {
+        console.error(`Error en sucursal ${code}:`, err.message);
+        // opcional: podrías decidir si haces `throw` aquí o solo lo logueas y sigues con las demás
+      }
+    }
+
+    return res.json({ clientes: mergedResults });
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      status: false,
+      mensaje: `Error en getClientesBySup: ${error.message}`,
+    });
+  }
+};
+
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
@@ -448,5 +491,5 @@ module.exports = {
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController, getClienteByCodeController,
-    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController
+    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController, getClientesBySup
 }
