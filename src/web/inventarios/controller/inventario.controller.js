@@ -53,7 +53,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice,
-    patchBatchNumberDetails, getBatchNumberDetails } = require("./sld.controller")
+    patchBatchNumberDetails, getBatchNumberDetails, getIDEntityLote } = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega, createReferenceCreditNotesAndDelivery } = require("../../facturacion_module/controller/hana.controller")
@@ -6335,47 +6335,47 @@ const habilitacionesPorIduserController = async (req, res) => {
 
 const patchBatchNumberDetailsController = async (req, res) => {
     try {
-        // 1. Extraer datos del cuerpo de la petición del frontend
-        // El frontend envía: { batchNumberId, ExpirationDate }
         const { batchNumberId, ExpirationDate } = req.body;
 
-        // 2. Validar que los datos requeridos existan
         if (!batchNumberId || !ExpirationDate) {
             const errorMessage = 'Datos incompletos para la actualización del lote. Se requiere el ID del lote y la fecha de expiración.';
-            console.error(errorMessage, req.body);
             return res.status(400).json({ message: errorMessage });
         }
 
-        // 3. Preparar el payload que espera la función para SAP B1
+        const entitys = await getIDEntityLote(batchNumberId);
+
         const payloadForSAP = {
-            // El nombre de la propiedad debe coincidir con el campo de SAP
             "ExpirationDate": ExpirationDate
         };
 
-        // 4. Llamar a la función patchBatchNumberDetails para interactuar con SAP B1
-        const result = await patchBatchNumberDetails(batchNumberId, payloadForSAP);
+        // 1. Mapea cada 'item' a una promesa de patch
+        const patchPromises = entitys.map(item =>
+            // Esta línea crea una promesa para cada llamada patch
+            patchBatchNumberDetails(item.DocEntry, payloadForSAP)
+        );
 
-        // 5. Enviar la respuesta al frontend
-        if (result.status >= 200 && result.status < 300) {
-            res.status(200).json({
-                message: result.message || 'Lote actualizado con éxito.',
-                status: result.status
-            });
-        } else {
-            res.status(result.status || 500).json({
-                message: result.message || 'Error al actualizar el lote en SAP Business One.'
-            });
-        }
+        // 2. Espera a que todas las promesas se resuelvan
+        // Si una sola promesa falla, el 'try...catch' la capturará
+        const results = await Promise.all(patchPromises);
+
+        // 3. Si Promise.all se completa, significa que todas las operaciones fueron exitosas.
+        res.status(200).json({
+            message: 'Todos los lotes fueron actualizados con éxito.',
+            details: results
+        });
 
     } catch (error) {
-        // Manejo de errores a nivel del controlador
+        // 4. Si una o más operaciones fallan, Promise.all se rechaza y el control
+        // pasa a este bloque 'catch'
         console.error('Error en patchBatchNumberDetailsController:', error);
+
         res.status(500).json({
-            message: 'Error interno del servidor al procesar la actualización del lote.',
-            error: error.message
+            message: 'Error al actualizar uno o más lotes.',
+            error: error.message || 'Error desconocido'
         });
     }
 };
+
 
 
 const getBatchNumberDetailsController = async (req, res) => {
