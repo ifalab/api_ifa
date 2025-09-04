@@ -3160,6 +3160,25 @@ const saldoDeudorGeneralExcel = async (req = request, res = response) => {
     }
 }
 
+
+const getQRBuenos = async (req , res ) => {
+    try {
+        
+
+        req.query.idVendedor;
+
+        const responseautenticar = await autenticarController();
+
+        res.json(responseautenticar);
+
+
+    } catch (err) {
+        console.log('error en cobranzaDocNumPorDocEntryController')
+        console.log({ err })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en cobranzaDocNumPorDocEntryController'}` })
+    }
+}
+
 module.exports = {
     cobranzaGeneralController,
     cobranzaPorSucursalController,
@@ -3224,5 +3243,6 @@ module.exports = {
     cobranzaDocNumPorDocEntryController,
     realizarCobroMultiController,
     saldoDeudorGeneralExcel,
-    getSaldoDeudorClientePDF
+    getSaldoDeudorClientePDF,
+    getQRBuenos
 }

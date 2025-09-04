@@ -127,7 +127,8 @@ const {
     getTiposClientes,
     reportePendienteUngroupByItem,
     getSalesOperationalEfficiencyDashboard,
-    reportePendienteBySucursalesResume
+    reportePendienteBySucursalesResume,
+    marcarAsistenciaFueraDeRuta
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
@@ -979,6 +980,34 @@ const marcarAsistenciaController = async (req, res) => {
         return res.status(500).json({ mensaje })
     }
 }
+
+const marcarAsistenciaFueraDeRutaController = async (req, res) => {
+    try {
+        console.log(req.body)
+        const { ID_VENDEDOR_SAP,NOMBRE_VENDEDOR, FECHA, HORA, MENSAJE, LATITUD, LONGITUD } = req.body
+        if (LATITUD == '' || LONGITUD == '') {
+            return res.status(400).json({ mensaje: 'No hay latitud/longitud, active la ubicacion GPS de su dispositivo o intente nuevamente' })
+        }
+        const usuario = req.usuarioAutorizado
+        const asistencia = await marcarAsistenciaFueraDeRuta(ID_VENDEDOR_SAP, NOMBRE_VENDEDOR, FECHA, HORA, MENSAJE, LATITUD, LONGITUD)
+        console.log(asistencia.response)
+
+        if(asistencia.response){
+            return res.json(true);
+        }
+
+        return res.json(false);
+
+        
+    } catch (error) {
+        console.log({ error })
+        const usuario = req.usuarioAutorizado
+        let mensaje = error.message || 'error en el controlador:marcarAsistenciaController'
+        const query = error.query || "No disponible"
+        return res.status(500).json({ mensaje })
+    }
+}
+
 
 const getAsistenciasVendedorController = async (req, res) => {
     try {
@@ -5079,5 +5108,6 @@ module.exports = {
     reportePendienteUngroupByItemController,
     getSalesOperationalEfficiencyDashboardController,
     dataFromSpeackingController,
-    reportePendienteBySucursalResumeController
+    reportePendienteBySucursalResumeController,
+    marcarAsistenciaFueraDeRutaController
 };

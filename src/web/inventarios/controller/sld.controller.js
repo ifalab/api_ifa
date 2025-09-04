@@ -199,6 +199,50 @@ const patchBatchNumberDetails = async (batchNumberId, payload) => {
 };
 
 
+const getIDEntityLote = async (batchNumberId) => {
+    try {
+        // 1. Obtiene la sesión actual
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        // 2. Define los encabezados
+        const headers = {
+            'Content-Type': 'application/json',
+            'Cookie': `B1SESSION=${sessionSldId}`,
+            'Prefer': 'return-no-content'
+        };
+        
+        // 3. Define la URL para el PATCH
+        // La URL debe apuntar a la entidad BatchNumberDetails usando el ID del lote
+        const url = `https://srvhana:50000/b1s/v1/BatchNumberDetails?$filter=Batch eq '${batchNumberId}'# and ManufacturingDate eq null)`;
+        console.log('url', url);
+        console.log(`Intentando GET al lote con ID: ${batchNumberId}`);
+
+        // 4. Realiza la petición PATCH con axios
+        const sapResponse = await axios.get(url, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT // Asegúrate de que esta constante esté definida
+        });
+
+        console.log('Respuesta de SAP B1 Service Layer (GET):', sapResponse.status);
+
+        // 5. Retorna la respuesta
+        return sapResponse.data.value;
+
+
+    } catch (error) {
+        // 6. Manejo de errores
+        const errorMessage = error.response?.data?.error?.message?.value || error.message || 'Error desconocido al obtener el lote.';
+        console.error('Error en la solicitud Get para el lote:', error.response?.data || error.message);
+        return {
+            status: error.response?.status || 500,
+            message: errorMessage
+        };
+    }
+};
+
+
 const getBatchNumberDetails = async () => {
     try {
         // 1. Verifica o genera una sesión de SAP
@@ -686,5 +730,6 @@ module.exports = {
   cancelReturn, cancelEntrega, cancelCreditNotes,
   getReturns,
   cancelReconciliacion, cancelInvoice,
-  patchBatchNumberDetails,getBatchNumberDetails
+  patchBatchNumberDetails,getBatchNumberDetails,
+  getIDEntityLote
 };

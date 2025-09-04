@@ -508,6 +508,22 @@ const marcarAsistencia = async (id_vendedor_sap, fecha, hora, mensaje, lat, lon)
     }
 }
 
+const marcarAsistenciaFueraDeRuta = async (id_vendedor_sap, nombre_vendedor,  fecha, hora, mensaje, lat, lon) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFA_CRM_AGREGAR_VISIT_HEADER(${id_vendedor_sap},'${nombre_vendedor}', '' , '' , 0, 0,'${fecha}','${hora}', 1,'${mensaje}','${lon}' ,'${lat}', '',  0)`;
+        console.log({ query })
+        const response = await executeQuery(query);
+
+        return { response, query }
+    } catch (err) {
+        console.log({ err })
+        throw new Error(`Error en marcar asistencia: ${err.message}`);
+    }
+}
+
 const getAsistenciasVendedor = async (id_vendedor_sap) => {
     try {
         if (!connection) {
@@ -2893,5 +2909,6 @@ module.exports = {
     getTiposClientes,
     reportePendienteUngroupByItem,
     getSalesOperationalEfficiencyDashboard,
-    reportePendienteBySucursalesResume
+    reportePendienteBySucursalesResume,
+    marcarAsistenciaFueraDeRuta
 }
