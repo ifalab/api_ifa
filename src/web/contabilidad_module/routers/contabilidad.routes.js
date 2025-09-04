@@ -31,7 +31,10 @@ const { asientoContableController,
     getMaestrosMayoresController,
     getBalanceAccountPrevController,
     getBankingByDateController,
-    createAsientoContableInventarioController
+    createAsientoContableInventarioController,
+    getBeneficiarioController,
+    patchNoBeneficiarioController,
+    patchYesBeneficiarioController
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -64,5 +67,12 @@ router.post('/get-maestros-mayores-data', [validarToken, validarCampos], getMaes
 router.post('/get-cuenta-saldo-prev', [validarToken, validarCampos], getBalanceAccountPrevController);
 router.post('/get-bancarizacion', [validarToken, validarCampos], getBankingByDateController);
 router.patch('/update-estado/cc/:id', actualizarEstadoCCController);
+router.get('/beneficiarios', [validarToken, validarCampos], getBeneficiarioController);
+
+router.get('/patch-no-beneficiario', [validarToken, validarCampos], patchNoBeneficiarioController);
+router.get('/patch-yes-beneficiario', [validarToken, validarCampos], patchYesBeneficiarioController);
+
+
+
 
 module.exports = router

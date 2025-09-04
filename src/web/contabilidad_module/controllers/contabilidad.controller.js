@@ -1,6 +1,6 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev, getBankingByDate } = require("./hana.controller")
-const { asientoContable, findOneAsientoContable, asientoContableCentroCosto } = require("./sld.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev, getBankingByDate, getBeneficiarios } = require("./hana.controller")
+const { asientoContable, findOneAsientoContable, asientoContableCentroCosto, patchBeneficiario } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
     try {
@@ -1234,6 +1234,67 @@ const createAsientoContableInventarioController = async (req, res) => {
     }
 }
 
+
+
+const getBeneficiarioController = async (req, res) => {
+    try {
+        const data = await getBeneficiarios();
+        return res.json(data)
+    } catch (error) {
+        console.log({ error })
+        let mensaje = ''
+        if (error.statusCode >= 400) {
+            mensaje += error.message.message || 'No definido'
+        }
+        return res.status(500).json({ mensaje: `error en el controlador [getSociosNegocio], ${error}` })
+    }
+}
+
+
+const patchYesBeneficiarioController = async (req, res) => {
+  try {
+
+    // return res.json(req.body);
+    console.log(req.query);
+    const beneficiarioId = req.query.beneficiarioId;
+
+    const responseJson = {
+      Properties64: "tYES"
+    };
+
+    const data = await patchBeneficiario(beneficiarioId, responseJson);
+    
+    console.log(data);
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error({ error })
+    return res.status(500).json({ mensaje: `Error en patchPersonController ${error.message || 'No definido'}` });
+  }
+}
+
+const patchNoBeneficiarioController = async (req, res) => {
+  try {
+
+    // return res.json(req.body);
+    console.log('beneficiario', req.query.beneficiarioId);
+    const beneficiarioId = req.query.beneficiarioId;
+
+    const responseJson = {
+      Properties64: "tNO"
+    };
+    const data = await patchBeneficiario(beneficiarioId, responseJson)
+    console.log(data);
+
+    return res.status(200).json(data);
+
+  } catch (error) {
+    console.error({ error })
+    return res.status(500).json({ mensaje: `Error en patchPersonController ${error.message || 'No definido'}` });
+  }
+}
+
+
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -1262,4 +1323,7 @@ module.exports = {
     getBalanceAccountPrevController,
     getBankingByDateController,
     createAsientoContableInventarioController,
+    getBeneficiarioController,
+    patchNoBeneficiarioController,
+    patchYesBeneficiarioController
 }

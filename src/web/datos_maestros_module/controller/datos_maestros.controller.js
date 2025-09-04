@@ -1261,10 +1261,10 @@ const patchItemsController = async (req, res) => {
     try {
         // 1. Extraer datos del cuerpo de la petición del frontend
         // El frontend envía: { ItemCode, NewLineItemCode, NewSubLineItemCode }
-        const { ItemCode, NewLineItemCode, NewSubLineItemCode } = req.body;
+        const { ItemCode, NewLineItemCode, NewSubLineItemCode, NewSWW } = req.body;
 
         // 2. Validar que los datos requeridos existan
-        if (!ItemCode || NewLineItemCode === undefined || NewSubLineItemCode === undefined) {
+        if (!ItemCode || NewLineItemCode === undefined || NewSubLineItemCode === undefined || NewSWW === undefined) {
             console.error('Datos incompletos para la actualización del artículo:', req.body);
 
         }
@@ -1274,7 +1274,8 @@ const patchItemsController = async (req, res) => {
         // Recuerda que SAP espera LineItemCode y SubLineItemCode directamente
         const payloadForSAP = {
             U_LINEA: `${NewLineItemCode}`,       // <--- ¡Convertido a string! "9"
-            U_SUBLINEA: `${NewSubLineItemCode}`  // <--- ¡Convertido a string! "18"
+            U_SUBLINEA: `${NewSubLineItemCode}`,  // <--- ¡Convertido a string! "18"
+            SWW: `${NewSWW}`
             // Aquí puedes añadir otros campos estándar o de usuario
         };
 

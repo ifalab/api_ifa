@@ -4,7 +4,7 @@ const agent = new https.Agent({ rejectUnauthorized: false })
 
 let session = null
 
-const REQUEST_TIMEOUT = 10000;
+const REQUEST_TIMEOUT = 65000;
 
 const connectSLD = async () => {
     try {

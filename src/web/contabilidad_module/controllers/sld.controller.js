@@ -8,6 +8,8 @@ const agent = new https.Agent({ rejectUnauthorized: false });
 // Variable para almacenar el estado de la sesión
 let session = null;
 
+REQUEST_TIMEOUT = 65000;
+
 // Función para conectar y obtener la sesión
 const connectSLD = async () => {
     try {
@@ -192,8 +194,46 @@ const asientoContableCentroCosto = async (JournalVoucher) => {
         return errorMessage
     }
 }
+
+
+const patchBeneficiario = async (id,responseJson) => {
+    try {
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const url = `https://srvhana:50000/b1s/v1/BusinessPartners('${id}')`;
+        console.log('url',url);
+        console.log('response',responseJson);
+        const sapResponse = await axios.patch(url, responseJson, {
+            httpsAgent: agent,
+            headers: headers,
+            timeout: REQUEST_TIMEOUT
+        });
+        
+        return {
+            status: sapResponse.status,
+            data: sapResponse.data,
+            message: sapResponse.message || ''
+        }
+
+    } catch (error) {
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud patch';
+        console.error('Error en la solicitud patch para patchBeneficiario:', error.response?.data || error.message);
+        return {
+            status: error.status || 400,
+            message: errorMessage}
+    }
+};
+
+
+
 module.exports = {
     asientoContable,
     findOneAsientoContable,
     asientoContableCentroCosto,
+    patchBeneficiario
 }
