@@ -10,7 +10,11 @@ const {
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController, 
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController,
     getClienteByCodeController, actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController,
-    getClientesBySup
+    getClientesBySup,
+    visitHistoryController,
+    visitHistoryBySlpCodeController,
+    pendingVisitsController,
+    getVisitsExcelController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -47,5 +51,11 @@ router.get('/ultima-visita', [validarToken, validarCampos], getUltimaVisitaContr
 router.get('/clientes/by/sup', [validarCampos, validarToken], getClientesBySup)
 
 //Reportes
+router.get('/visits-historyc-by-month', [validarToken, validarCampos], visitHistoryController);
+router.get('/visits-historyc-by-slpcode', [validarToken, validarCampos], visitHistoryBySlpCodeController);
+router.get('/pending-visits-by-slpcode', [validarToken, validarCampos], pendingVisitsController);
+
+router.get('/visits-excel', [validarCampos, validarToken], getVisitsExcelController);
+
 
 module.exports = router

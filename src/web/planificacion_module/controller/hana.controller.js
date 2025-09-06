@@ -570,11 +570,76 @@ const findClientesBySupervisor = async(id_suc)=>{
     }
 }
 
+const visitHistoryHana = async(id_suc) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `SELECT * FROM ${process.env.PRD}.IFA_PLA_VISITS_BY_SELLER WHERE "SucCode" = ${id_suc}`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: clientes by vendedor');
+    }
+}
+
+const visitBySlpcodeHana = async(splcode, status) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = ` SELECT 
+                VH.*,
+                CASE 
+                    WHEN VH."PLANDETAILID" IS NOT NULL AND VH."PLANDETAILID" <> 0 
+                        THEN 'PLANIFICADO' 
+                    ELSE 'NO PLANIFICADO' 
+                END AS "PlanificadoStatus"
+            FROM ${process.env.PRD}.IFA_CRM_VISIT_HEADER VH
+            WHERE VH.SlpCode = ${splcode} 
+            AND VH."VISITSTATUS" = ${status};
+        `
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: visitas por vendedor');
+    }
+}
+
+const pendingVisitsHana = async(splcode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `
+            SELECT pd.*
+            FROM ${process.env.PRD}.IFA_CRM_VISIT_PLAN_DETAIL pd
+                LEFT JOIN ${process.env.PRD}.IFA_CRM_VISIT_HEADER vh
+                ON pd."PlanDetailID" = vh.PlanDetailId
+                AND vh.SlpCode = 14
+                AND vh.PlanDetailID <> 0
+            WHERE pd."SlpCode" = ${splcode}
+                AND MONTH(pd."PlanVisitDate") = MONTH(CURRENT_DATE)
+                AND vh.PlanDetailId IS NULL
+            ORDER BY pd."PlanVisitDate";
+        `
+
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al obtener las visitas pendientes por vendedor.');
+    }
+}
+
 module.exports = {
     vendedoresPorSucCode, getVendedor, getClientesDelVendedor,
     getCicloVendedor, getDetalleCicloVendedor, insertarCabeceraVisita, insertarDetalleVisita,
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita,
     getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode, actualizarVisita,
-    getUltimaVisita, parapruebas, getPlanVendedor, findClientesBySupervisor
+    getUltimaVisita, parapruebas, getPlanVendedor, findClientesBySupervisor, visitHistoryHana, visitBySlpcodeHana, pendingVisitsHana
 }

@@ -4,9 +4,13 @@ const {
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita, getDetalleVisitasCreadas,
     getCabeceraVisitaCreada, getClienteByCode, actualizarVisita, getUltimaVisita, parapruebas, getPlanVendedor,
-    findClientesBySupervisor
+    findClientesBySupervisor,
+    visitHistoryHana,
+    visitBySlpcodeHana,
+    pendingVisitsHana
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
+const { generateVisitsExcel } = require('../utils/generateVisitsExcel');
 
 const vendedoresPorSucCodeController = async (req, res) => {
     try {
@@ -483,6 +487,133 @@ const getClientesBySup = async (req, res) => {
   }
 };
 
+const visitHistoryController = async (req, res) => {
+  try {
+    let { id_suc } = req.query;
+
+    if (!id_suc) {
+      return res.status(400).json({
+        status: false,
+        mensaje: "Debe proporcionar al menos un código de sucursal",
+        data: null,
+      });
+    }
+
+    // Aceptamos tanto "100,200,300" como ["100","200","300"]
+    if (typeof id_suc === "string") {
+      id_suc = id_suc.split(",").map((code) => code.trim());
+    }
+
+    let mergedResults = [];
+
+    // 🔹 Ejecutamos secuencialmente cada s ucursal
+    for (const code of id_suc) {
+      try {
+        const result = await visitHistoryHana(code);
+        if (result && result.length > 0) {
+          mergedResults = mergedResults.concat(result);
+        }
+      } catch (err) {
+        console.error(`Error en sucursal ${code}:`, err.message);
+        // opcional: seguir con las demás sucursales
+      }
+    }
+
+    const grouped = Object.values(
+        mergedResults.reduce((acc, curr) => {
+            const key = curr.SucCode;
+            if (!acc[key]) {
+            acc[key] = {
+                sucCode: curr.SucCode,
+                sucName: curr.SucName,
+                detalle: []
+            };
+            }
+            acc[key].detalle.push(curr);
+            return acc;
+        }, {})
+        );
+
+    return res.json(grouped);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      status: false,
+      mensaje: `Error en visitHistoryController: ${error.message}`,
+    });
+  }
+};
+
+const visitHistoryBySlpCodeController = async(req, res) => {
+    try {
+        const {slpcode, status} = req.query;
+
+        if(!slpcode) return res.status(500).json({status: false,
+            mensaje: `Error en visitHistoryBySlpCodeController: Se debe propocionar un codigo de vendedor.`,})
+
+        const data = await visitBySlpcodeHana(slpcode, status);
+
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `Error en visitHistoryBySlpCodeController: ${error.message}`,
+        });
+    }
+}
+
+const pendingVisitsController = async(req, res) => {
+    try {
+        const {slpcode} = req.query;
+
+        if(!slpcode) return res.status(500).json({status: false,
+            mensaje: `Error en pendingVisitsController: Se debe propocionar un codigo de vendedor.`,})
+
+        const data = await pendingVisitsHana(slpcode);
+
+        return res.status(200).json(data);
+    } catch (error) {
+        console.error({ error });
+        return res.status(500).json({
+            status: false,
+            mensaje: `Error en pendingVisitsController: ${error.message}`,
+        });
+    }
+}
+
+const getVisitsExcelController = async (req, res) => {
+  try {
+    const { slpcode } = req.query;
+
+    if (!slpcode)
+      return res.status(400).json({ status: false, mensaje: 'Debe proporcionar un código de vendedor' });
+
+    const dataVisit = await visitBySlpcodeHana(slpcode, 1);
+    const dataNoVisit = await visitBySlpcodeHana(slpcode, 2);
+
+    const dataPending = await pendingVisitsHana(slpcode);
+
+    const slpName = dataVisit[0]?.SLPNAME || dataNoVisit[0]?.SLPNAME || 'Vendedor';
+
+    const workbook = await generateVisitsExcel(dataVisit, dataNoVisit, dataPending, slpName);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Visitas_${slpName}.xlsx`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+    // return res.json(dataPending);
+
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      status: false,
+      mensaje: `Error en getVisitsExcelController: ${error.message}`,
+    });
+  }
+};
+
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
@@ -491,5 +622,5 @@ module.exports = {
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController, getClienteByCodeController,
-    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController, getClientesBySup
+    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController, getClientesBySup, visitHistoryController, visitHistoryBySlpCodeController, pendingVisitsController, getVisitsExcelController
 }
