@@ -4,7 +4,6 @@ const { patchPersons } = require("./sld.controller");
 const getPersonasController = async (req, res) => {
   try {
     const data = await getPersonas();
-    console.log(data);
 
     return res.status(200).json(data);
   } catch (error) {

@@ -20,7 +20,8 @@ const { cobranzaGeneral, cobranzaPorSucursal, cobranzaNormales, cobranzaCadenas,
     getEstadoCuentaCliente,
     auditoriaSaldoDeudor, obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor,
     cobranzaPorZonaNoUser,
-    getCobranzaDocNumPorDocEntry
+    getCobranzaDocNumPorDocEntry,
+    getQrPorVendedor
 } = require("./hana.controller")
 const { postIncommingPayments, cancelIncommingPayments } = require("./sld.controller");
 const { syncBuiltinESMExports } = require('module');
@@ -29,6 +30,14 @@ const { aniadirDetalleVisita } = require('../../planificacion_module/controller/
 const formatData = require('../utils/formatEstadoCuenta');
 const { getSucursales } = require('../../datos_maestros_module/controller/hana.controller');
 
+
+const bancoQrClient = require('../../pagos_qr_bg_module/services/banco-qr-client-prod');
+
+
+const {
+    autenticarController,
+    listarOrdenesController,
+} = require('../../pagos_qr_bg_module/controller/banco-qr-prod.controller');
 
 const cobranzaGeneralController = async (req, res) => {
     try {
@@ -3163,19 +3172,117 @@ const saldoDeudorGeneralExcel = async (req = request, res = response) => {
 
 const getQRBuenos = async (req , res ) => {
     try {
+
+        const user = req.usuarioAutorizado;
+
         
+        let { fechaInicio, fechaFin } = req.query;
 
-        req.query.idVendedor;
+        let fechahanna = '';
+        const resultado = await bancoQrClient.autenticarConBanco();
+        const token = resultado.token;
 
-        const responseautenticar = await autenticarController();
 
-        res.json(responseautenticar);
+        if (!fechaInicio || !fechaFin) {
+            const hoy = new Date();
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const anio = hoy.getFullYear();
 
+            fechaInicio = fechaFin = `${dia}${mes}${anio}`;
+            fechahanna = `${anio}${mes}${dia}`;
+        } else{
+            let dia = fechaInicio.slice(0, 2);   // '15'
+            let mes = fechaInicio.slice(2, 4);   // '05'
+            let anio = fechaInicio.slice(4, 8);
+            fechahanna = anio + mes + dia;
+        }
+
+
+
+        const resultadoQRs = await bancoQrClient.listarOrdenesQR(fechaInicio, fechaFin, token);
+        console.log(resultado.token);
+        const ordenes = resultadoQRs.orders;
+        console.log(fechaInicio);
+        const ordenesFiltradas = ordenes.filter(orden => orden.type === "2");
+        const respuestahanna = await getQrPorVendedor(fechahanna, user.ID_VENDEDOR_SAP );
+
+        
+        // 1. Crear un mapa para acceso rápido (qrid)
+        const mapaOrdenes = new Map();
+        ordenesFiltradas.forEach(orden => {
+            mapaOrdenes.set(orden.qrid, orden);
+        });
+
+        // 2. Crear un mapa alternativo para búsqueda por monto y cliente
+        const mapaAlternativo = new Map();
+        ordenesFiltradas.forEach(orden => {
+            // Extraer el nombre del cliente de la referencia
+            const nombreClienteEnQR = orden.reference.split('Cliente ')[1];
+            
+            // Si el nombre existe, lo guardamos en el mapa alternativo
+            if (nombreClienteEnQR) {
+                // La clave es una combinación de monto y nombre del cliente
+                const claveAlternativa = `${parseFloat(orden.amount).toFixed(2)}|${nombreClienteEnQR}`;
+                if (!mapaAlternativo.has(claveAlternativa)) {
+                    mapaAlternativo.set(claveAlternativa, []);
+                }
+                mapaAlternativo.get(claveAlternativa).push(orden);
+            }
+        });
+        let metodoUnion = null;
+        // 3. Unir las respuestas de Hanna con las órdenes usando ambos criterios
+        const resultadosUnidos = respuestahanna.map(respuesta => {
+            let ordenEncontrada = null;
+            metodoUnion = null;
+
+            // Primer intento: buscar por QR ID
+            if (respuesta.TrsfrRef) {
+                ordenEncontrada = mapaOrdenes.get(respuesta.TrsfrRef);
+                if (ordenEncontrada) {
+                    metodoUnion = 'QR';
+                }
+            }
+
+            // Segundo intento: si no se encontró, buscar por monto y cliente
+            if (!ordenEncontrada) {
+                const esTransferencia = respuesta.JrnlMemo && respuesta.JrnlMemo.endsWith("TRANSFERENCIA");
+                const montoHanna = parseFloat(respuesta.TrsfrSum).toFixed(2);
+                
+                if (esTransferencia && montoHanna) {
+                    const claveAlternativa = `${montoHanna}|${respuesta.CardName}`;
+                    const posiblesOrdenes = mapaAlternativo.get(claveAlternativa);
+
+                    if (posiblesOrdenes && posiblesOrdenes.length > 0) {
+                        ordenEncontrada = posiblesOrdenes.shift();
+                        metodoUnion = 'Transferencia';
+                    }
+                }
+            }
+
+            // Construir el objeto si se encontró una coincidencia
+            if (ordenEncontrada) {
+                return {
+                    DocNum: respuesta.DocNum,
+                    CardCode: respuesta.CardCode,
+                    CardName: respuesta.CardName,
+                    amount: ordenEncontrada.amount,
+                    orderdate: ordenEncontrada.orderdate,
+                    metodoUnion: metodoUnion // Nuevo campo
+                };
+            }
+
+            return null;
+        }).filter(Boolean);
+
+        // 'resultadosUnidos' ahora tiene el array final
+        console.log(resultadosUnidos);
+        return res.json(resultadosUnidos);
 
     } catch (err) {
-        console.log('error en cobranzaDocNumPorDocEntryController')
+        console.log('error en getQRBuenos')
         console.log({ err })
-        return res.status(500).json({ mensaje: `${err.message || 'Error en cobranzaDocNumPorDocEntryController'}` })
+        return res.status(500).json({ mensaje: `${err.message || 'Error en getQRBuenos'}` })
     }
 }
 

@@ -1131,6 +1131,24 @@ const getCobranzaDocNumPorDocEntry = async (docEntry) => {
     }
 }
 
+
+
+const getQrPorVendedor = async (fecha, id_vendedor) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `call ${process.env.PRD}.IFASP_GET_QR_POR_VENDEDOR('${fecha}', '${id_vendedor}')`
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.log({ error })
+        throw new Error(`Error en getQrPorVendedor: ${error.message || ''}`)
+    }
+}
+
+
+
 module.exports = {
     cobranzaGeneral,
     cobranzaPorSucursal,
@@ -1190,5 +1208,6 @@ module.exports = {
     auditoriaSaldoDeudor,
     obtenerBajasFacturas, findCliente, cobranzaPorZonaSupervisor,
     cobranzaPorZonaNoUser,
-    getCobranzaDocNumPorDocEntry
+    getCobranzaDocNumPorDocEntry,
+    getQrPorVendedor
 }

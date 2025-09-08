@@ -112,7 +112,7 @@ router.get('/cliente/saldo-deudor/pdf', [validarToken, validarCampos], getSaldoD
 
 router.get('/cliente/saldo-deudor/pdf', [validarToken, validarCampos], getSaldoDeudorClientePDF);
 
-// router.get('/get-qr-buenos', [validarToken, validarCampos], getQRBuenos);
+router.get('/get-qr-buenos', [validarToken, validarCampos], getQRBuenos);
 
 
 module.exports = router
