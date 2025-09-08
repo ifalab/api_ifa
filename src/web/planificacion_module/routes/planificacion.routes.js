@@ -9,7 +9,12 @@ const {
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController, 
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController,
-    getClienteByCodeController, actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController
+    getClienteByCodeController, actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController,
+    getClientesBySup,
+    visitHistoryController,
+    visitHistoryBySlpCodeController,
+    pendingVisitsController,
+    getVisitsExcelController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -43,6 +48,14 @@ router.get('/detalle-visitas-creadas', [validarToken, validarCampos], getDetalle
 router.post('/actualizar-visita-creada', [validarToken, validarCampos], actualizarVisitaController)
 router.get('/ultima-visita', [validarToken, validarCampos], getUltimaVisitaController)
 
+router.get('/clientes/by/sup', [validarCampos, validarToken], getClientesBySup)
+
 //Reportes
+router.get('/visits-historyc-by-month', [validarToken, validarCampos], visitHistoryController);
+router.get('/visits-historyc-by-slpcode', [validarToken, validarCampos], visitHistoryBySlpCodeController);
+router.get('/pending-visits-by-slpcode', [validarToken, validarCampos], pendingVisitsController);
+
+router.get('/visits-excel', [validarCampos, validarToken], getVisitsExcelController);
+
 
 module.exports = router
