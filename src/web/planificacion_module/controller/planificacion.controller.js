@@ -11,6 +11,7 @@ const {
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { generateVisitsExcel } = require('../utils/generateVisitsExcel');
+const ExcelJS = require('exceljs');
 
 const vendedoresPorSucCodeController = async (req, res) => {
     try {
@@ -614,6 +615,180 @@ const getVisitsExcelController = async (req, res) => {
   }
 };
 
+const getAllVisitsExcelController = async (req, res) => {
+  try {
+    const body = req.body; // [{ sucCode, sucName, detalle: [...] }]
+
+    const workbook = new ExcelJS.Workbook();
+
+    for (const suc of body) {
+      // Cada sucursal = una hoja
+      const sheet = workbook.addWorksheet(`${suc.sucName}`);
+
+      // Título de la hoja
+      sheet.mergeCells("A1:E1");
+      sheet.getCell("A1").value = `Resumen de visitas - ${suc.sucName}`;
+      sheet.getCell("A1").alignment = { horizontal: "center" };
+      sheet.getCell("A1").font = { bold: true, size: 14 };
+
+      // Encabezados de la tabla resumen
+      const headerRow = sheet.addRow([
+        "Codigo Vendedor",
+        "Vendedor",
+        "Visitados",
+        "No Visitados",
+        "Pendientes",
+      ]);
+
+      headerRow.font = { bold: true };
+      headerRow.alignment = { horizontal: "center" };
+  
+      // Aplica borde a cada celda del header
+      headerRow.eachCell((cell) => {
+        cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+        };
+        cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFDCE6F1" }, // un azul clarito
+        };
+      });
+
+      // Filas con los datos de cada vendedor (resumen)
+      suc.detalle.forEach((v) => {
+        const row = sheet.addRow([
+            v.SlpCode,
+            v.SlpName,
+            v.Visitados,
+            v.No_Visitados,
+            v.Pendientes,
+        ]);
+
+        // Bordes para cada fila de datos
+        row.eachCell((cell) => {
+            cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+            };
+        });
+      });
+
+      // ... código resumen como ya tienes
+      for (const v of suc.detalle) {
+        // Espacio entre bloques
+        sheet.addRow([]);
+
+        // --- Título del bloque ---
+        const titleRow = sheet.addRow([`Detalle de visitas - ${v.SlpName}`]);
+        sheet.mergeCells(`A${titleRow.number}:H${titleRow.number}`); // de A a H
+        titleRow.font = { bold: true };
+        titleRow.alignment = { horizontal: "center" };
+
+        // --- Encabezado de la tabla detalle ---
+        const detailHeader = sheet.addRow([
+            "SlpName",
+            "Cliente",
+            "Fecha",
+            "Hora",
+            "Comentarios",
+            "Razón No Visita",
+            "Planificado",
+            "Ubicación",
+        ]);
+
+        detailHeader.font = { bold: true };
+        detailHeader.alignment = { horizontal: "center" };
+
+        detailHeader.eachCell((cell) => {
+            cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+            };
+            cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFF2F2F2" }, // gris claro
+            };
+        });
+
+        // --- Consultamos visitas / no visitas ---
+        const dataVisit = await visitBySlpcodeHana(v.SlpCode, 1);
+        const dataNoVisit = await visitBySlpcodeHana(v.SlpCode, 2);
+        const allData = [...dataVisit, ...dataNoVisit];
+
+        if (allData.length === 0) {
+            // No hay registros
+            const emptyRow = sheet.addRow(["No hay visitas registradas"]);
+            sheet.mergeCells(`A${emptyRow.number}:H${emptyRow.number}`);
+            emptyRow.alignment = { horizontal: "center" };
+            emptyRow.font = { italic: true, color: { argb: "FF888888" } };
+        } else {
+            // --- Agregamos filas de detalle ---
+            allData.forEach((item) => {
+            const mapsUrl =
+                item.LATITUDE && item.LONGITUDE
+                ? `https://www.google.com/maps?q=${item.LATITUDE},${item.LONGITUDE}`
+                : "";
+
+            const row = sheet.addRow([
+                item.SLPNAME,
+                item.CLIENTNAME,
+                item.VISITDATE,
+                item.CREATETIME,
+                item.COMMENTS,
+                item.REASONNOTVISIT,
+                item.PlanificadoStatus,
+                mapsUrl,
+            ]);
+
+            row.eachCell((cell) => {
+                cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                bottom: { style: "thin" },
+                right: { style: "thin" },
+                };
+            });
+            });
+        }
+      }
+
+
+      // Ajustar ancho de columnas
+      sheet.columns.forEach((col) => {
+        col.width = 20;
+      });
+    }
+
+    // Enviar Excel al cliente
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=visitas.xlsx"
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      status: false,
+      mensaje: `Error en getAllVisitsExcelController: ${error.message}`,
+    });
+  }
+}
+
 module.exports = {
     vendedoresPorSucCodeController, getVendedorController, getClientesDelVendedorController,
     getCicloVendedorController, getDetalleCicloVendedorController,
@@ -622,5 +797,5 @@ module.exports = {
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController, getClienteByCodeController,
-    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController, getClientesBySup, visitHistoryController, visitHistoryBySlpCodeController, pendingVisitsController, getVisitsExcelController
+    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController, getClientesBySup, visitHistoryController, visitHistoryBySlpCodeController, pendingVisitsController, getVisitsExcelController, getAllVisitsExcelController
 }
