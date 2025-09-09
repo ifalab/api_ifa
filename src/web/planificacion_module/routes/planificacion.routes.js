@@ -14,7 +14,8 @@ const {
     visitHistoryController,
     visitHistoryBySlpCodeController,
     pendingVisitsController,
-    getVisitsExcelController
+    getVisitsExcelController,
+    getAllVisitsExcelController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -56,6 +57,6 @@ router.get('/visits-historyc-by-slpcode', [validarToken, validarCampos], visitHi
 router.get('/pending-visits-by-slpcode', [validarToken, validarCampos], pendingVisitsController);
 
 router.get('/visits-excel', [validarCampos, validarToken], getVisitsExcelController);
-
+router.post('/all-visits-excel', [validarCampos, validarToken], getAllVisitsExcelController);
 
 module.exports = router
