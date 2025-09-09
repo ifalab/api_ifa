@@ -123,7 +123,8 @@ const {
     getSalesOperationalEfficiencyDashboardController,
     dataFromSpeackingController,
     reportePendienteBySucursalResumeController,
-    marcarAsistenciaFueraDeRutaController
+    marcarAsistenciaFueraDeRutaController,
+    reportePendienteDetalleExtendidoController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -283,6 +284,8 @@ router.get('/data-from-speacking', [validarToken, validarCampos], dataFromSpeack
 
 router.post('/marcar-asistencia-fuera-de-ruta', [validarToken, validarCampos], marcarAsistenciaFueraDeRutaController)
 
+router.get('/get-pendiente-cadena-detalle-extendido', [validarToken, validarCampos], reportePendienteDetalleExtendidoController)
 
+    
 
 module.exports = router

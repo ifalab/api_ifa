@@ -2559,6 +2559,24 @@ const reportePendienteBySucursalesResume = async (fechainicio, fechafin) => {
 }
 
 
+const reportePendienteByDetalleExtendido = async (fechainicio, fechafin, tipo) => {
+    try {
+        if (!connection) {
+            await connectHANA()
+        }
+        // const query = `call ${ process.env.PRD }.IFA_SP_PENDING_DELIVERIES_GROUPED_RESUME()`
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_AND_ITEM_WITH_STOCK('${fechainicio}','${fechafin}','${tipo}','104')`
+        
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        throw {
+            message: `Error en reportePendienteByDetalleExtendido: ${error.message || ''} `
+        }
+    }
+}
+
 const clientExpiryPolicy = async (cardCode) => {
     try {
         if (!connection) {
@@ -2908,5 +2926,6 @@ module.exports = {
     reportePendienteUngroupByItem,
     getSalesOperationalEfficiencyDashboard,
     reportePendienteBySucursalesResume,
-    marcarAsistenciaFueraDeRuta
+    marcarAsistenciaFueraDeRuta,
+    reportePendienteByDetalleExtendido
 }
