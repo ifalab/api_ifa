@@ -40,8 +40,22 @@ const getEfectividadVentasNormalesMesAnterior = async (req, res) => {
 }
 
 
+const obtenerVisitasFueraDeRuta = async (id_vendedor) => {
+  try {
+    console.log('obtenerVisitasFueraDeRuta EXECUTE');
+    const query = `call ${process.env.PRD}.IFASP_VERIFICAR_MOTIVO_NO_VISITA('${id_vendedor}');`;
+    console.log({ query });
+    return await executeQueryWithConnection(query);
+  } catch (error) {
+    throw {
+      message: `Error en obtenerVisitasFueraDeRuta: ${error.message || ''}`
+    }
+  }
+}
+
 module.exports = {
   getGeneralOverdueClients,
   getEfectividadVentasNormales,
-  getEfectividadVentasNormalesMesAnterior
+  getEfectividadVentasNormalesMesAnterior,
+  obtenerVisitasFueraDeRuta
 }
