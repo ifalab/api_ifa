@@ -180,14 +180,16 @@ const updateUser = async (
     new_codemp,
     new_superuser,
     new_isactive,
-    new_etiqueta
+    new_etiqueta,
+    id_vendedor,
+    id_sap
 ) => {
     try {
         if (!connection) {
             await connectHANA();
         }
         console.log('update User execute')
-        const query = `call ${process.env.LAPP}.LAPP_ACTUALIZAR_USUARIO(${id_user},'${new_usercode}','${new_username}','${new_codemp}',${new_superuser},${new_isactive},'${new_etiqueta}')`
+        const query = `call ${process.env.LAPP}.LAPP_ACTUALIZAR_USUARIO(${id_user},'${new_usercode}','${new_username}','${new_codemp}',${new_superuser},${new_isactive},'${new_etiqueta}',${id_vendedor},${id_sap})`
         const result = await executeQuery(query)
         console.log({query})
         // console.log({result})

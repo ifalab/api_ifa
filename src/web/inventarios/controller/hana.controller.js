@@ -1251,6 +1251,24 @@ const getDetailsDocuments = async (DocEntry, DocType) => {
 }
 
 
+const getInvoiceByDocNum = async (DocNum) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `SELECT * FROM ${process.env.PRD}.OINV WHERE "DocNum" = ${DocNum} `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en getDetailsDocuments:', error.message);
+        throw {
+            message: `Error al procesar getDetailsDocuments: ${error.message || ''}`
+        }
+    }
+}
+
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1314,5 +1332,6 @@ module.exports = {
     getValoradosPorIdSap,
     getReturnValuesProcess,
     getLotesExpDate,
-    getDetailsDocuments
+    getDetailsDocuments,
+    getInvoiceByDocNum
 }

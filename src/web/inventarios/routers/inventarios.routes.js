@@ -60,13 +60,15 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     getReturnValuesProcessController,
     processIncommingPaymentsController,
     processReconciliationController,
-    getDetallesDocumentos
+    getDetallesDocumentos,
+    getInvoiceByDocNumController
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const { grabarLog } = require('../../shared/controller/hana.controller');
 const checkToken = require('../../../middleware/authMiddleware');
 const checkBearerToken = require('../../../middleware/authMiddleware');
+const { getInvoiceByDocNum } = require('../controller/hana.controller');
 const router = Router()
 
 router.get('/cliente-dimension', [validarToken, validarCampos], clientePorDimensionUnoController)
@@ -193,6 +195,7 @@ router.post('/patch-batch-details', [validarToken, validarCampos], patchBatchNum
 
 router.get('/get-documentos-detalles', [validarToken, validarCampos], getDetallesDocumentos)
 
+router.get('/get-invoice-by-docnum', [validarToken, validarCampos], getInvoiceByDocNumController)
 
 
 module.exports = router

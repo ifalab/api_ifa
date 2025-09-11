@@ -48,7 +48,8 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getValoradosPorIdSap,
     getReturnValuesProcess,
     getLotesExpDate,
-    getDetailsDocuments
+    getDetailsDocuments,
+    getInvoiceByDocNum
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -6663,6 +6664,16 @@ const getValoradosPorIdSapController = async (req, res) => {
     }
 }
 
+const getInvoiceByDocNumController = async (req, res) => {
+    try {
+        const DocNum = req.query.docnum;
+        const response = await getInvoiceByDocNum(DocNum)
+        return res.json(response)
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en getInvoiceByDocNumController  : ${error.message || 'No definido'}` })
+    }
+}
 
 
 module.exports = {
@@ -6748,5 +6759,6 @@ module.exports = {
     getReturnValuesProcessController,
     processIncommingPaymentsController,
     processReconciliationController,
-    getDetallesDocumentos
+    getDetallesDocumentos,
+    getInvoiceByDocNumController
 }

@@ -344,7 +344,9 @@ const updateUserController = async (req, res) => {
             dimensionDos,
             dimensionTres,
             dimensionSublinea,
-            roles
+            roles,
+            id_vendedor,
+            id_sap
         } = req.body
 
 
@@ -355,7 +357,10 @@ const updateUserController = async (req, res) => {
             new_codemp,
             new_superuser,
             new_isactive,
-            new_etiqueta)
+            new_etiqueta,
+            id_vendedor,
+            id_sap
+        )
         console.log('controller .............................')
         console.log({ response })
         const value = response[0]
