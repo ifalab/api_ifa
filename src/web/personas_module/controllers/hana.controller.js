@@ -18,7 +18,7 @@ const getPersonas = async (req, res) => {
 const getAsistenciaVisitadores = async (start,end,shift,sucname) => {
   try {
     console.log('getAsistenciaVisitadores EXECUTE');
-    const query = `call ${process.env.PRD}.VIS_OBTENER_ASISTENCIAS_FILTRADAS_FOR_RRHH('${start}','${end}','${shift}','${sucname}');`;
+    const query = `call ${process.env.PRD}.VIS_OBTENER_ASISTENCIAS_FILTRADAS_FOR_RRHH('${start}','${end}',${shift},${sucname});`;
     console.log({ query });
     return await executeQueryWithConnection(query);
   } catch (error) {
@@ -31,7 +31,7 @@ const getAsistenciaVisitadores = async (start,end,shift,sucname) => {
 const getAsistenciaVendedores = async (start,end,shift,sucname) => {
   try {
     console.log('getAsistenciaVendedores EXECUTE');
-    const query = `call ${process.env.PRD}.VIS_OBTENER_ASISTENCIAS_VENDEDORES_FILTRADAS('${start}','${end}','${shift}','${sucname}');`;
+    const query = `call ${process.env.PRD}.VIS_OBTENER_ASISTENCIAS_VENDEDORES_FILTRADAS('${start}','${end}',${shift},${sucname});`;
     console.log({ query });
     return await executeQueryWithConnection(query);
   } catch (error) {

@@ -15,7 +15,16 @@ const getPersonasController = async (req, res) => {
 const getAsistenciaVisitadoresController = async (req, res) => {
   try {
     const {start,end,shift,sucname} = req.query;
-    const data = await getAsistenciaVisitadores(start,end,shift,sucname);
+    let turno = null;
+    let sucursal = null;
+    if (shift != ''){
+      turno = `'${shift}'`;
+    }
+    if (sucname != ''){
+      sucursal = `'${sucname}'`;
+    }
+    console.log('turnosucursal',turno,sucursal)
+    const data = await getAsistenciaVisitadores(start,end,turno,sucursal);
 
     return res.status(200).json(data);
   } catch (error) {
@@ -27,7 +36,19 @@ const getAsistenciaVisitadoresController = async (req, res) => {
 const getAsistenciaVendedoresController = async (req, res) => {
   try {
     const {start,end,shift,sucname} = req.query;
-    const data = await getAsistenciaVendedores(start,end,shift,sucname);
+
+
+    let turno = null;
+    let sucursal = null;
+    if (shift != ''){
+      turno = `'${shift}'`;
+    }
+    if (sucname != ''){
+      sucursal = `'${sucname}'`;
+    }
+    console.log('turnosucursal',turno,sucursal)
+
+    const data = await getAsistenciaVendedores(start,end,turno,sucursal);
 
     return res.status(200).json(data);
   } catch (error) {
@@ -53,6 +74,7 @@ const patchPersonController = async (req, res) => {
       Gender: genderSapFormat,
     };
     const code = personData.EmpCode;
+    console.log('code',code)
     const data = await patchPersons(code, responseJson);
     console.log(data);
 
