@@ -4496,7 +4496,19 @@ const reportePendienteBySucursalResumeController = async (req, res) => {
         const fechainicio = req.query.fechainicio;
         const fechafin = req.query.fechafin;
         const tipo = req.query.tipo;
-        let response = await reportePendienteBySucursalesResume(fechainicio,fechafin);
+        let cliente = req.query.cliente;
+        if(cliente === ''){
+            cliente = null;
+        }else{
+            cliente = `'${cliente}'`
+        }
+        let articulo = req.query.articulo;
+        if(articulo === ''){
+            articulo = null;
+        }else{
+            articulo = `'${articulo}'`
+        }
+        let response = await reportePendienteBySucursalesResume(fechainicio,fechafin, cliente, articulo);
         const filteredData = response.filter(item => item.DocumentType === tipo);
         return res.json(filteredData);
     } catch (error) {

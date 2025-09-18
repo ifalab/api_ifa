@@ -2540,13 +2540,13 @@ const reportePendienteUngroupByItem = async (fechaInicial, fechaFinal, tipo, gro
     }
 }
 
-const reportePendienteBySucursalesResume = async (fechainicio, fechafin) => {
+const reportePendienteBySucursalesResume = async (fechainicio, fechafin, cliente, articulo) => {
     try {
         if (!connection) {
             await connectHANA()
         }
         // const query = `call ${ process.env.PRD }.IFA_SP_PENDING_DELIVERIES_GROUPED_RESUME()`
-        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_MONTH('${fechainicio}','${fechafin}')`
+        const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_MONTH('${fechainicio}','${fechafin}',${cliente},${articulo})`
         
         console.log({ query })
         const result = await executeQuery(query)

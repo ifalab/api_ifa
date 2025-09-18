@@ -1736,6 +1736,7 @@ const obtenerEntregasController = async (req, res) => {
 const facturacionEntregaController = async (req, res) => {
     let body = {}
     try {
+        console.log(req.body)
         const { id } = req.body
 
         const responseGenesis = await spObtenerCUF(id)
@@ -1893,6 +1894,7 @@ const facturacionEntregaController = async (req, res) => {
                 grabarLog(user.USERCODE, user.USERNAME, "Facturacion Facturar", `error no hay datos en CORREO codigo_cliente: ${bodyFinalFactura.codigo_cliente_externo || ''}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
                 return res.status(400).json({ mensaje: `No hay datos en CORREO del cliente`, bodyFinalFactura })
             }
+            const user = req.usuarioAutorizado
             body.usuario = user.USERNAME || 'No definido'
             const responseProsin = await facturacionProsin(body, user)
             //return res.json({ bodyFinalFactura, responseProsin, deliveryData })
