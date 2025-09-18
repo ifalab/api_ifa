@@ -748,7 +748,9 @@ const getCuentasCC = async (req, res) => {
 
 const getAsientosContablesCC = async (req, res) => {
     try {
-        const data = await asientosContablesCC();
+        const {tipo} = req.query;
+        console.log(tipo);
+        const data = await asientosContablesCC(+tipo);
 
         const groupedData = data.reduce((acc, current) => {
             const lineData = {
