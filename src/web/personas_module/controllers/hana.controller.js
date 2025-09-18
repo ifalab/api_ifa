@@ -9,12 +9,41 @@ const getPersonas = async (req, res) => {
     return await executeQueryWithConnection(query);
   } catch (error) {
     throw {
-      message: `Error en getEfectividadVentasNormalesMesAnterior: ${error.message || ''}`
+      message: `Error en getPersonas: ${error.message || ''}`
+    }
+  }
+}
+
+
+const getAsistenciaVisitadores = async (start,end,shift,sucname) => {
+  try {
+    console.log('getAsistenciaVisitadores EXECUTE');
+    const query = `call ${process.env.PRD}.VIS_OBTENER_ASISTENCIAS_FILTRADAS_FOR_RRHH('${start}','${end}',${shift},${sucname});`;
+    console.log({ query });
+    return await executeQueryWithConnection(query);
+  } catch (error) {
+    throw {
+      message: `Error en getAsistenciaVisitadores: ${error.message || ''}`
+    }
+  }
+}
+
+const getAsistenciaVendedores = async (start,end,shift,sucname) => {
+  try {
+    console.log('getAsistenciaVendedores EXECUTE');
+    const query = `call ${process.env.PRD}.VIS_OBTENER_ASISTENCIAS_VENDEDORES_FILTRADAS('${start}','${end}',${shift},${sucname});`;
+    console.log({ query });
+    return await executeQueryWithConnection(query);
+  } catch (error) {
+    throw {
+      message: `Error en getAsistenciaVendedores: ${error.message || ''}`
     }
   }
 }
 
 
 module.exports = {
-  getPersonas
+  getPersonas,
+  getAsistenciaVisitadores,
+  getAsistenciaVendedores
 }

@@ -1156,6 +1156,7 @@ const createAsientoContableInventarioController = async (req, res) => {
             cardCode
         } = req.body
 
+        console.log(req.body)
         const user = req.usuarioAutorizado
         const idSap = user.ID_SAP || 0
         const tipoCambio = await tipoDeCambio()

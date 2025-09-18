@@ -128,11 +128,12 @@ const {
     reportePendienteUngroupByItem,
     getSalesOperationalEfficiencyDashboard,
     reportePendienteBySucursalesResume,
-    marcarAsistenciaFueraDeRuta
+    marcarAsistenciaFueraDeRuta,
+    reportePendienteByDetalleExtendido
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
-const { postInventoryTransferRequests } = require("./sld.controller");
+const { postInventoryTransferRequests, cancelOfertaVenta } = require("./sld.controller");
 const { validarExcel } = require("../../../helpers/validacionesExcel");
 const { Console, group } = require("console");
 const { isatty } = require("tty");
@@ -4504,6 +4505,19 @@ const reportePendienteBySucursalResumeController = async (req, res) => {
     }
 }
 
+const reportePendienteDetalleExtendidoController = async (req, res) => {
+    try {
+        const fechainicio = req.query.fechainicio;
+        const fechafin = req.query.fechafin;
+        const tipo = req.query.tipo;
+        let response = await reportePendienteByDetalleExtendido(fechainicio,fechafin, tipo);
+        return res.json(response);
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en reportePendienteBySucursalResumeController ${error.message || 'No definido'}` });
+    }
+}
+
 // const searchBlockedClientsByGroup = async (groupCode, res) => {
 //     try {
 //         const data = await clientesBloqueadoByGroup(groupCode);
@@ -4988,6 +5002,62 @@ const dataFromSpeackingController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
     }
 }
+
+const cancelIncomingPaymentController = async (req, res) => {
+    try {
+        const id = req.params.id
+        const sapResponse = await cancelIncomingPayment(id)
+        console.log({ sapResponse })
+
+        if (sapResponse.value) {
+            const value = sapResponse.value
+            if (value.includes('No matching records found')) {
+                return res.status(404).json({ messageSap: `${value}` })
+            }
+            return res.status(400).json({ messageSap: `${value}` })
+        }
+
+        const response = {
+            data: sapResponse.data || {},
+            status: 200,
+            statusText: sapResponse.statusText || 'Success',
+        }
+        return res.json({ ...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el cancel incoming payment controller' })
+    }
+}
+
+const cancelOfertaVentaController = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log(id)
+        
+        const sapResponse = await cancelOfertaVenta(id)
+        console.log({ sapResponse })
+
+        if (sapResponse.value) {
+            const value = sapResponse.value
+            if (value.includes('No matching records found')) {
+                return res.status(404).json({ messageSap: `${value}` })
+            }
+            return res.status(400).json({ messageSap: `${value}` })
+        }
+
+        const response = {
+            data: sapResponse.data || {},
+            status: 200,
+            statusText: sapResponse.statusText || 'Success',
+        }
+        return res.json({ ...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el cancel incoming payment controller' })
+    }
+}
+
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -5106,5 +5176,8 @@ module.exports = {
     getSalesOperationalEfficiencyDashboardController,
     dataFromSpeackingController,
     reportePendienteBySucursalResumeController,
-    marcarAsistenciaFueraDeRutaController
+    marcarAsistenciaFueraDeRutaController,
+    reportePendienteDetalleExtendidoController,
+    cancelIncomingPaymentController,
+    cancelOfertaVentaController
 };
