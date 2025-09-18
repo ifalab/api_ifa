@@ -225,7 +225,7 @@ const insertarCabeceraVisita = async (descripcion, cod_vendedor, nom_vendedor, u
             await connectHANA()
         }
         const query = `
-        CALL  LAB_IFA_PRD."IFA_CRM_AGREGAR_VISIT_PLAN_HEADER"(
+        CALL  ${process.env.PRD}."IFA_CRM_AGREGAR_VISIT_PLAN_HEADER"(
             '${descripcion}', ${cod_vendedor}, '${nom_vendedor}', ${usuario}, '${fechaIni}', '${fechaFin}'
         );
         `
@@ -245,7 +245,7 @@ const insertarDetalleVisita = async (cabecera_id, cod_cliente, nom_cliente, fech
             await connectHANA()
         }
         const query = `
-        CALL  LAB_IFA_PRD."IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL"(
+        CALL  ${process.env.PRD}."IFA_CRM_AGREGAR_VISIT_PLAN_DETAIL"(
             ${cabecera_id}, '${cod_cliente}', '${nom_cliente}', '${fecha}', ${hora_ini}, ${hora_fin}, 
             ${cod_vendedor}, '${nom_vendedor}', '${comentario}', ${usuario}
         );

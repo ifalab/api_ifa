@@ -159,9 +159,13 @@ const subLineaCC = async () => {
   return await executeQueryWithConnection(query);
 };
 
-const asientosContablesCC = async () => {
+const asientosContablesCC = async (tipo) => {
   console.log('asientosContablesCC EXECUTE');
-  const query = `SELECT * FROM LAB_IFA_COM.IFA_CC_JOURNAL`;
+  const query = `
+    SELECT * 
+    FROM LAB_IFA_COM.IFA_CC_JOURNAL 
+    WHERE "TransType" = ${tipo}
+  `;
   return await executeQueryWithConnection(query);
 };
 
