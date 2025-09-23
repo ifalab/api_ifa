@@ -1440,7 +1440,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
                 descripcion: item.ItemName,
                 cantidad: +item.Quantity,
                 precioUnitario: +item.GrossPrice,
-                montoDescuento: +item.U_DESCLINEA, //not sure total - item.GrossTotal
+                montoDescuento: item.U_DESCLINEA < 0.01 ? 0 : item.U_DESCLINEA,//not sure total - item.GrossTotal
                 subTotal: +item.GrossTotal, //total.toFixed(2)
                 codigoDetalleTransaccion: 1
             })
