@@ -3902,6 +3902,7 @@ const reportePendienteCadenasController = async (req, res) => {
         let groupCode = req.query.groupCode
         let cardCode = req.query.cardCode
         let headerParent = req.query.headerParent
+        let itemcode = req.query.itemcode
         console.warn({
             fechaInicial,
             fechaFinal,
@@ -3909,6 +3910,7 @@ const reportePendienteCadenasController = async (req, res) => {
             groupCode,
             cardCode,
             headerParent,
+            itemcode
         })
         if (!tipo || tipo == '') {
             tipo = null
@@ -3928,7 +3930,11 @@ const reportePendienteCadenasController = async (req, res) => {
         if (!headerParent || headerParent == '') {
             headerParent = null
         }
-        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
+        if (!itemcode || itemcode == '') {
+            itemcode = null
+        }
+
+        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemcode)
         // return res.json({ response })
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;

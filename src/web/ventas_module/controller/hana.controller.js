@@ -2282,7 +2282,7 @@ const searchClientesCadenasParent = async (parametro) => {
 }
 
 
-const reportePendienteCadenas = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent) => {
+const reportePendienteCadenas = async (fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemcode) => {
     try {
         if (!connection) {
             await connectHANA()
@@ -2293,14 +2293,16 @@ const reportePendienteCadenas = async (fechaInicial, fechaFinal, tipo, groupCode
         const paramFechaInicial = formatParam(fechaInicial)
         const paramFechaFinal = formatParam(fechaFinal)
         const paramHeaderParent = formatParam(headerParent)
-
+        const paramItemCode = formatParam(itemcode)
         const query = `call ${process.env.PRD}.IFASP_SAL_CALCULATE_PENDING_DELIVERIES_BY_CUSTOMER_OR_ITEM(
         i_date_from => ${paramFechaInicial},
         i_date_to => ${paramFechaFinal},
         i_document_type =>${paramTipo},
         i_group_code => ${paramGroupCode},
         i_card_code =>  ${paramCardCode},
-        i_parent_name =>${paramHeaderParent})`
+        i_parent_name =>${paramHeaderParent},
+        i_item_code =>${paramItemCode}
+        )`
 
         console.log({ query })
 
