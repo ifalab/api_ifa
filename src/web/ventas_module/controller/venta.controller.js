@@ -133,7 +133,7 @@ const {
 } = require("./hana.controller")
 const { facturacionPedido } = require("../service/api_nest.service")
 const { grabarLog } = require("../../shared/controller/hana.controller");
-const { postInventoryTransferRequests } = require("./sld.controller");
+const { postInventoryTransferRequests, cancelOfertaVenta } = require("./sld.controller");
 const { validarExcel } = require("../../../helpers/validacionesExcel");
 const { Console, group } = require("console");
 const { isatty } = require("tty");
@@ -3902,6 +3902,7 @@ const reportePendienteCadenasController = async (req, res) => {
         let groupCode = req.query.groupCode
         let cardCode = req.query.cardCode
         let headerParent = req.query.headerParent
+        let itemcode = req.query.itemcode
         console.warn({
             fechaInicial,
             fechaFinal,
@@ -3909,6 +3910,7 @@ const reportePendienteCadenasController = async (req, res) => {
             groupCode,
             cardCode,
             headerParent,
+            itemcode
         })
         if (!tipo || tipo == '') {
             tipo = null
@@ -3928,7 +3930,11 @@ const reportePendienteCadenasController = async (req, res) => {
         if (!headerParent || headerParent == '') {
             headerParent = null
         }
-        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
+        if (!itemcode || itemcode == '') {
+            itemcode = null
+        }
+
+        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemcode)
         // return res.json({ response })
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
@@ -4496,7 +4502,19 @@ const reportePendienteBySucursalResumeController = async (req, res) => {
         const fechainicio = req.query.fechainicio;
         const fechafin = req.query.fechafin;
         const tipo = req.query.tipo;
-        let response = await reportePendienteBySucursalesResume(fechainicio,fechafin);
+        let cliente = req.query.cliente;
+        if(cliente === ''){
+            cliente = null;
+        }else{
+            cliente = `'${cliente}'`
+        }
+        let articulo = req.query.articulo;
+        if(articulo === ''){
+            articulo = null;
+        }else{
+            articulo = `'${articulo}'`
+        }
+        let response = await reportePendienteBySucursalesResume(fechainicio,fechafin, cliente, articulo);
         const filteredData = response.filter(item => item.DocumentType === tipo);
         return res.json(filteredData);
     } catch (error) {
@@ -5002,6 +5020,62 @@ const dataFromSpeackingController = async (req, res) => {
         return res.status(500).json({ mensaje: `Error en selectionBatchByItemWhsCodeController ${error.message || 'No definido'}` });
     }
 }
+
+const cancelIncomingPaymentController = async (req, res) => {
+    try {
+        const id = req.params.id
+        const sapResponse = await cancelIncomingPayment(id)
+        console.log({ sapResponse })
+
+        if (sapResponse.value) {
+            const value = sapResponse.value
+            if (value.includes('No matching records found')) {
+                return res.status(404).json({ messageSap: `${value}` })
+            }
+            return res.status(400).json({ messageSap: `${value}` })
+        }
+
+        const response = {
+            data: sapResponse.data || {},
+            status: 200,
+            statusText: sapResponse.statusText || 'Success',
+        }
+        return res.json({ ...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el cancel incoming payment controller' })
+    }
+}
+
+const cancelOfertaVentaController = async (req, res) => {
+    try {
+        const id = req.query.id
+        console.log(id)
+        
+        const sapResponse = await cancelOfertaVenta(id)
+        console.log({ sapResponse })
+
+        if (sapResponse.value) {
+            const value = sapResponse.value
+            if (value.includes('No matching records found')) {
+                return res.status(404).json({ messageSap: `${value}` })
+            }
+            return res.status(400).json({ messageSap: `${value}` })
+        }
+
+        const response = {
+            data: sapResponse.data || {},
+            status: 200,
+            statusText: sapResponse.statusText || 'Success',
+        }
+        return res.json({ ...response })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: 'Error en el cancel incoming payment controller' })
+    }
+}
+
+
 module.exports = {
     ventasPorSucursalController,
     ventasNormalesController,
@@ -5121,5 +5195,7 @@ module.exports = {
     dataFromSpeackingController,
     reportePendienteBySucursalResumeController,
     marcarAsistenciaFueraDeRutaController,
-    reportePendienteDetalleExtendidoController
+    reportePendienteDetalleExtendidoController,
+    cancelIncomingPaymentController,
+    cancelOfertaVentaController
 };

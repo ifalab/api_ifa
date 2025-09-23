@@ -124,7 +124,8 @@ const {
     dataFromSpeackingController,
     reportePendienteBySucursalResumeController,
     marcarAsistenciaFueraDeRutaController,
-    reportePendienteDetalleExtendidoController
+    reportePendienteDetalleExtendidoController,
+    cancelOfertaVentaController
 } = require('../controller/venta.controller')
 
 const { validarToken } = require('../../../middleware/validar_token.middleware')
@@ -286,6 +287,7 @@ router.post('/marcar-asistencia-fuera-de-ruta', [validarToken, validarCampos], m
 
 router.get('/get-pendiente-cadena-detalle-extendido', [validarToken, validarCampos], reportePendienteDetalleExtendidoController)
 
-    
+router.post('/cancelar-oferta-venta', [validarToken, validarCampos], cancelOfertaVentaController)
+
 
 module.exports = router
