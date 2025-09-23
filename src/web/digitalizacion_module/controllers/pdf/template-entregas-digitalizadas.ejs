@@ -86,7 +86,7 @@
                         <th>Nombre Cliente</th>
                         <th>Metodo de Pago</th>
                         <th>Total</th>
-                        <th>UserCode</th>
+                        <th>Facturador</th>
                         <th>Despachador</th>
                         <th>Fecha Digitalización</th>
                     </tr>
@@ -107,7 +107,7 @@
                         <td><%= item.PymntGroup || '' %></td>
                         <td class="align-right">Bs <%= parseFloat(item.DocTotal
                             || 0).toFixed(2) %></td>
-                        <td><%= item.UserCode || '' %></td>
+                        <td><%= item.FlpName || '' %></td>
                         <td><%= item.DeliveryName || '' %></td>
                         <td><%= item.CreateDate ? new
                             Date(item.CreateDate).toLocaleDateString('es-ES') :

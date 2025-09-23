@@ -711,7 +711,7 @@ const excelEntregasDigitalizadasController = async (req, res) => {
             { header: 'Nombre Cliente', key: 'CardName', width: 30 },
             { header: 'Metodo de Pago', key: 'PymntGroup', width: 30 },
             { header: 'Total', key: 'DocTotal', width: 15 },
-            { header: 'UserCode', key: 'UserCode', width: 15 },
+            { header: 'Facturador', key: 'FlpName', width: 15 },
             { header: 'Despachador', key: 'DeliveryName', width: 25 },
             { header: 'Fecha Digitalización', key: 'CreateDate', width: 20 }
         ];
