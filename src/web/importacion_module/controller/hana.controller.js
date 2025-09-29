@@ -28,7 +28,7 @@ const connectHANA = () => {
     });
 };
 
-
+//
 const executeQuery = async (query) => {
     return new Promise((resolve, reject) => {
         connection.exec(query, (err, result) => {
