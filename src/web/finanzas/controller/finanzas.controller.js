@@ -1,3 +1,4 @@
+const { getSucursales } = require("../../datos_maestros_module/controller/hana.controller");
 const { formatValuedInventory } = require("../utils/formatValuedInventoryBySuc");
 const { formatValuedInventoryDetails } = require("../utils/formatValuedInventoryDetails");
 const { agruparPorDivisionYSucursal } = require("../utils/groupByDivisionSucursal");
@@ -2330,14 +2331,15 @@ const getInventoryExcel = async (req, res) => {
         item.WhsCode,
         item.ItemName,
         item.ItemCode,
-        Number(item.TotalInQty),
-        Number(item.TotalOutQty),
-        Number(item.Quantity),
-        Number(parseFloat(item.TotalInValue).toFixed(2)),
-        Number(parseFloat(item.TotalOutValue).toFixed(2)),
-        Number(parseFloat(item.TotalComlPrice).toFixed(2)),
+        !isNaN(Number(item.TotalInQty)) ? Number(item.TotalInQty) : 0,
+        !isNaN(Number(item.TotalOutQty)) ? Number(item.TotalOutQty) : 0,
+        !isNaN(Number(item.Quantity)) ? Number(item.Quantity) : 0,
+        !isNaN(parseFloat(item.TotalInValue)) ? Number(parseFloat(item.TotalInValue).toFixed(2)) : 0,
+        !isNaN(parseFloat(item.TotalOutValue)) ? Number(parseFloat(item.TotalOutValue).toFixed(2)) : 0,
+        !isNaN(parseFloat(item.TotalComlPrice)) ? Number(parseFloat(item.TotalComlPrice).toFixed(2)) : 0,
       ]);
     });
+
 
     // Ajustar ancho columnas
     worksheet.columns.forEach(col => {
@@ -2366,6 +2368,147 @@ const getInventoryExcel = async (req, res) => {
   }
 };
 
+const getInventoryGeneralExcel = async(req, res)  => {
+  try {
+    const {isGerenciaReport} = req.query;
+    const isGerencia = isGerenciaReport === 'true'; 
+
+    console.log(isGerenciaReport);
+    const data = await getSucursales();
+    const sucs = data.data
+    const workbook = new ExcelJS.Workbook();
+
+    for (const suc of sucs) {
+      const sucCode = suc.SucCode;
+
+      const data = await getHanaValuedInventoryDetails({
+        sucCode: sucCode ?? null,
+        lineItemCode: null,
+        subLineItemCode: null,
+        whsCode: null,
+        itemCode: null,
+        isGerenciaReport: isGerencia ? 'Y' : 'N'
+      });
+
+      if (!data || data.length === 0) {
+        // si no hay datos para esta sucursal, saltamos
+        continue;
+      }
+
+      const worksheet = workbook.addWorksheet(suc.SucName);
+
+      // 📌 Estilos
+      const titleStyle = { bold: true, size: 16 };
+      const subtitleStyle = { bold: true, size: 12 };
+
+      // 🔹 Título principal
+      worksheet.mergeCells("A1:L1");
+      const titleCell = worksheet.getCell("A1");
+      titleCell.value = "📊 Excel Inventario Valorado";
+      titleCell.font = titleStyle;
+      titleCell.alignment = { vertical: "middle", horizontal: "center" };
+
+      // 🔹 Fecha y hora
+      const now = new Date();
+      worksheet.mergeCells("A2:L2");
+      const dateCell = worksheet.getCell("A2");
+      dateCell.value = `Fecha: ${now.toLocaleDateString("es-BO")} Hora: ${now.toLocaleTimeString("es-BO")}`;
+      dateCell.font = subtitleStyle;
+      dateCell.alignment = { vertical: "middle", horizontal: "center" };
+
+      // 🔹 Sucursal info
+      worksheet.mergeCells("A3:L3");
+      const sucCell = worksheet.getCell("A3");
+      sucCell.value = `Sucursal: ${data[0].SucName}   Código: ${data[0].SucCode}`;
+      sucCell.font = subtitleStyle;
+      sucCell.alignment = { vertical: "middle", horizontal: "center" };
+
+      // 🔹 Fila vacía
+      worksheet.addRow([]);
+
+      // 🔹 Encabezados
+      const headers = [
+        "Linea",
+        "SubLinea",
+        "Almacen",
+        "AlmacenCodigo",
+        "Articulo",
+        "ArticuloCodigo",
+        "Total Entrada Cantidad",
+        "Total Salida Cantidad",
+        "Saldo Cantidad",
+        "Total Entrada Bs",
+        "Total Salida Bs",
+        "Saldo Bs",
+      ];
+      const headerRow = worksheet.addRow(headers);
+
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "4472C4" },
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+
+      // 🔹 Datos
+      data.forEach((item) => {
+        worksheet.addRow([
+          item.LineItemName,
+          item.SubLineItemName,
+          item.WhsName,
+          item.WhsCode,
+          item.ItemName,
+          item.ItemCode,
+          !isNaN(Number(item.TotalInQty)) ? Number(item.TotalInQty) : 0,
+          !isNaN(Number(item.TotalOutQty)) ? Number(item.TotalOutQty) : 0,
+          !isNaN(Number(item.Quantity)) ? Number(item.Quantity) : 0,
+          !isNaN(parseFloat(item.TotalInValue)) ? Number(parseFloat(item.TotalInValue).toFixed(2)) : 0,
+          !isNaN(parseFloat(item.TotalOutValue)) ? Number(parseFloat(item.TotalOutValue).toFixed(2)) : 0,
+          !isNaN(parseFloat(item.TotalComlPrice)) ? Number(parseFloat(item.TotalComlPrice).toFixed(2)) : 0,
+        ]);
+      });
+
+      // Ajustar ancho de columnas automáticamente
+      worksheet.columns.forEach((column) => {
+        let maxLength = 0;
+        column.eachCell({ includeEmpty: true }, (cell) => {
+          const cellValue = cell.value ? cell.value.toString() : "";
+          maxLength = Math.max(maxLength, cellValue.length);
+        });
+        column.width = maxLength < 15 ? 15 : maxLength;
+      });
+    }
+
+    // 📤 Enviar archivo
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=InventarioGeneral.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      status: false,
+      mensaje: `[getInventoryGeneralExcel] Error al obtener el excel general: ${error.message}`,
+      data: null,
+    });
+  }
+}
 
 module.exports = {
   parteDiaroController,
@@ -2395,5 +2538,6 @@ module.exports = {
   obtenerBalanceGeneral,
   getValuedInventoryBySuc,
   getValuedInventoryDetails,
-  getInventoryExcel
+  getInventoryExcel,
+  getInventoryGeneralExcel
 }
