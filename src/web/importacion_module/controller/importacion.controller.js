@@ -4,7 +4,8 @@ const { obtenerimportacionStatus } = require("./hana.controller");
 const importacionStatusController = async (req, res) => {
     try {
         const data = await obtenerimportacionStatus()
-        return res.json({ data })
+        return res.json(data)
+        
 
     } catch (error) {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }

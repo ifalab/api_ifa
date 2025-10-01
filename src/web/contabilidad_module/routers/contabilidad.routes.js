@@ -34,7 +34,9 @@ const { asientoContableController,
     createAsientoContableInventarioController,
     getBeneficiarioController,
     patchNoBeneficiarioController,
-    patchYesBeneficiarioController
+    patchYesBeneficiarioController,
+    getCustomerDebtorController,
+    realizarPagosProveedoresController
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
