@@ -3902,6 +3902,7 @@ const reportePendienteCadenasController = async (req, res) => {
         let groupCode = req.query.groupCode
         let cardCode = req.query.cardCode
         let headerParent = req.query.headerParent
+        let itemcode = req.query.itemcode
         console.warn({
             fechaInicial,
             fechaFinal,
@@ -3909,6 +3910,7 @@ const reportePendienteCadenasController = async (req, res) => {
             groupCode,
             cardCode,
             headerParent,
+            itemcode
         })
         if (!tipo || tipo == '') {
             tipo = null
@@ -3928,7 +3930,11 @@ const reportePendienteCadenasController = async (req, res) => {
         if (!headerParent || headerParent == '') {
             headerParent = null
         }
-        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent)
+        if (!itemcode || itemcode == '') {
+            itemcode = null
+        }
+
+        const response = await reportePendienteCadenas(fechaInicial, fechaFinal, tipo, groupCode, cardCode, headerParent, itemcode)
         // return res.json({ response })
         const headers = [...new Set(response.map(item => {
             return `${item.Year}-${item.Month.toString().padStart(2, '0')}`;
@@ -4496,7 +4502,19 @@ const reportePendienteBySucursalResumeController = async (req, res) => {
         const fechainicio = req.query.fechainicio;
         const fechafin = req.query.fechafin;
         const tipo = req.query.tipo;
-        let response = await reportePendienteBySucursalesResume(fechainicio,fechafin);
+        let cliente = req.query.cliente;
+        if(cliente === ''){
+            cliente = null;
+        }else{
+            cliente = `'${cliente}'`
+        }
+        let articulo = req.query.articulo;
+        if(articulo === ''){
+            articulo = null;
+        }else{
+            articulo = `'${articulo}'`
+        }
+        let response = await reportePendienteBySucursalesResume(fechainicio,fechafin, cliente, articulo);
         const filteredData = response.filter(item => item.DocumentType === tipo);
         return res.json(filteredData);
     } catch (error) {
