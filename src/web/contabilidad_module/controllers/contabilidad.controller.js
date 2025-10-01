@@ -2,6 +2,7 @@ const { grabarLog } = require("../../shared/controller/hana.controller")
 const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev, getBankingByDate, getBeneficiarios } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto, patchBeneficiario, pagoProveedores } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
+const { groupByCustomer } = require("../utils/groupCustomerBebtor")
 const asientoContableController = async (req, res) => {
     try {
         const {

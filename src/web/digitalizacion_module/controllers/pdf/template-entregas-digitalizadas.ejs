@@ -7,7 +7,7 @@
         body { font-family: 'Arial', sans-serif; margin: 0; }
         .container { width: 98%; margin: 0 auto; }
         .main-title {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: bold;
             color: #004D76;
             text-align: center;
@@ -28,7 +28,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 10px;
         }
         th {
             background: #BA005C;
@@ -42,6 +42,7 @@
             border: 1.5px solid #000;
             padding: 5px 2px;
             text-align: center;
+            font-size: 8px;
         }
         .total-row td {
             font-weight: bold;
@@ -58,7 +59,13 @@
             font-size: 15px;
         }
         td.align-left { text-align: left; }
-        td.align-right { text-align: right; }
+        td.align-right { 
+          text-align: right; 
+           
+        }
+        th:nth-child(8), td:nth-child(8) {
+            width: 70px; /* O el ancho que prefieras */
+        }
     </style>
     </head>
     <body>
@@ -72,11 +79,14 @@
                     <tr>
                         <th>Nro.</th>
                         <th>Sucursal</th>
+                        <th>Zona</th>
                         <th>Fecha Documento</th>
                         <th>Número Doc.</th>
                         <th>Código Cliente</th>
                         <th>Nombre Cliente</th>
+                        <th>Metodo de Pago</th>
                         <th>Total</th>
+                        <th>Facturador</th>
                         <th>Despachador</th>
                         <th>Fecha Digitalización</th>
                     </tr>
@@ -87,14 +97,17 @@
                     <tr>
                         <td><%= idx + 1 %></td>
                         <td><%= item.SucName || '' %></td>
+                        <td><%= item.ZoneName || '' %></td>
                         <td><%= item.DocDate ? new
                             Date(item.DocDate).toLocaleDateString('es-ES') : ''
                             %></td>
                         <td><%= item.DocNum || '' %></td>
                         <td><%= item.CardCode || '' %></td>
                         <td class="align-left"><%= item.CardName || '' %></td>
+                        <td><%= item.PymntGroup || '' %></td>
                         <td class="align-right">Bs <%= parseFloat(item.DocTotal
                             || 0).toFixed(2) %></td>
+                        <td><%= item.FlpName || '' %></td>
                         <td><%= item.DeliveryName || '' %></td>
                         <td><%= item.CreateDate ? new
                             Date(item.CreateDate).toLocaleDateString('es-ES') :

@@ -704,11 +704,14 @@ const excelEntregasDigitalizadasController = async (req, res) => {
         worksheet.columns = [
             { header: 'Nro.', key: 'RowNumber', width: 5 },
             { header: 'Sucursal', key: 'SucName', width: 20 },
+            { header: 'Zona', key: 'ZoneName', width: 20 },
             { header: 'Fecha Documento', key: 'DocDate', width: 18 },
             { header: 'Número Doc.', key: 'DocNum', width: 15 },
             { header: 'Código Cliente', key: 'CardCode', width: 15 },
             { header: 'Nombre Cliente', key: 'CardName', width: 30 },
+            { header: 'Metodo de Pago', key: 'PymntGroup', width: 30 },
             { header: 'Total', key: 'DocTotal', width: 15 },
+            { header: 'Facturador', key: 'FlpName', width: 15 },
             { header: 'Despachador', key: 'DeliveryName', width: 25 },
             { header: 'Fecha Digitalización', key: 'CreateDate', width: 20 }
         ];
@@ -724,15 +727,16 @@ const excelEntregasDigitalizadasController = async (req, res) => {
         worksheet.getCell('A3').value = `Fecha de impresión: ${date}`;
 
         // Fusionar celdas para cabecera
-        worksheet.mergeCells('A1:I1');
-        worksheet.mergeCells('A2:I2');
-        worksheet.mergeCells('A3:I3');
+        worksheet.mergeCells('A1:L1');
+        worksheet.mergeCells('A2:L2');
+        worksheet.mergeCells('A3:L3');
 
         // Estilizar cabecera
         const headerRow = worksheet.getRow(1);
         headerRow.height = 30;
         headerRow.getCell(1).font = { bold: true, size: 16, color: { argb: '004D76' } };
         headerRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
 
         worksheet.getRow(2).getCell(1).font = { bold: true, size: 12 };
         worksheet.getRow(2).getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
@@ -777,7 +781,9 @@ const excelEntregasDigitalizadasController = async (req, res) => {
                 const row = worksheet.addRow(rowData);
                 row.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
 
-                // Aplicar bordes y formatos
+                row.getCell('CardName').alignment = { horizontal: 'left', vertical: 'middle' };
+                row.getCell('PymntGroup').alignment = { horizontal: 'center', vertical: 'middle' };
+
                 applyFormatToRow(row);
             });
         } else {
@@ -786,16 +792,23 @@ const excelEntregasDigitalizadasController = async (req, res) => {
                 const row = worksheet.addRow({
                     RowNumber: i + 1,
                     SucName: '',
+                    ZoneName: '',
                     DocDate: '',
                     DocNum: '',
                     CardCode: '',
                     CardName: '',
+                    PymntGroup: '',
+                    UserCode: '',
                     DeliveryName: '',
                     CreateDate: '',
                     DocTotal: 0,
                 });
 
                 row.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
+
+
+                row.getCell('CardName').alignment = { horizontal: 'left', vertical: 'middle' };
+                row.getCell('PymntGroup').alignment = { horizontal: 'center', vertical: 'middle' };
 
                 // Aplicar bordes y formatos
                 applyFormatToRow(row);
@@ -815,8 +828,6 @@ const excelEntregasDigitalizadasController = async (req, res) => {
         applyFormatToRow(totalRow, true);
 
         // Formato específico para el total
-        totalRow.getCell('CardName').font = { bold: true };
-        totalRow.getCell('CardName').alignment = { horizontal: 'right' };
         totalRow.getCell('DocTotal').font = { bold: true };
         totalRow.getCell('DocTotal').numFmt = '"Bs" #,##0.00';
         totalRow.getCell('DocTotal').alignment = { horizontal: 'right' };
@@ -866,6 +877,8 @@ const pdfEntregasDigitalizadasController = async (req, res) => {
         const totalGeneral = data && data.length > 0
             ? data.reduce((acc, item) => acc + (parseFloat(item.DocTotal) || 0), 0)
             : 0;
+
+        console.log({ data })
 
         // Renderizar el HTML con EJS
         const filePath = path.join(__dirname, './pdf/template-entregas-digitalizadas.ejs');
@@ -923,7 +936,7 @@ function applyFormatToRow(row, isTotal = false) {
     const borderStyle = isTotal ? 'double' : 'thin';
 
     // Aplicar bordes a TODAS las celdas de la fila
-    for (let i = 1; i <= 9; i++) { // 9 columnas en total
+    for (let i = 1; i <= 12; i++) { // 9 columnas en total
         const cell = row.getCell(i);
 
         // Asegurarnos de que la celda tenga un valor (aunque sea vacío)
@@ -940,9 +953,9 @@ function applyFormatToRow(row, isTotal = false) {
         };
 
         // Aplicar alineación específica por tipo de columna
-        if (i === 7) { // DocTotal
+        if (i === 9) { // DocTotal
             cell.alignment = { horizontal: 'right' };
-        } else if (i === 3 || i === 9) { // Fechas
+        } else if (i === 4 || i === 12) { // Fechas
             cell.alignment = { horizontal: 'center' };
         }
     }

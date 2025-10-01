@@ -1583,7 +1583,7 @@ const devolucionNotaDebitoCreditoController = async (req, res) => {
             }
             if (DocumentAdditionalExpenses.length == 0) {
                 DocumentAdditionalExpenses = [
-                    { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_NC' },
+                    { ExpenseCode: ExpenseCode1, LineTotal: Math.max(0, +LineTotal1), TaxCode: 'IVA_NC' },
                     { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_NC' },
                 ]
             }
@@ -3605,9 +3605,9 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         const deudaCliente = await getDeudaDelCliente(CardCode)
         console.log({ deudaCliente })
         let ControlAccount = '2110401'
-        if (deudaCliente.length > 0 && (deudaCliente[0].Balance > 0)) {
-            ControlAccount = '1120101'
-        }
+        // if (deudaCliente.length > 0 && (deudaCliente[0].Balance > 0)) {
+        //     ControlAccount = '1120101'
+        // }
 
         for (const factura of facturas) {
             const {
