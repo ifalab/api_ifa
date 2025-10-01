@@ -1,6 +1,6 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev, getBankingByDate, getBeneficiarios } = require("./hana.controller")
-const { asientoContable, findOneAsientoContable, asientoContableCentroCosto, patchBeneficiario } = require("./sld.controller")
+const { asientoContable, findOneAsientoContable, asientoContableCentroCosto, patchBeneficiario, pagoProveedores } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const asientoContableController = async (req, res) => {
     try {
@@ -1297,6 +1297,27 @@ const patchNoBeneficiarioController = async (req, res) => {
   }
 }
 
+const realizarPagosProveedoresController = async (req, res) => {
+  try {
+    const lineapago = req.body;
+    console.log('lineapago', lineapago);
+
+    // const response = await pagoProveedores(lineapago)
+    // if (lineapago.TransferSum == 300) {
+    //   // Usamos 'throw new Error' para generar una excepción
+    //   throw new Error("¡Error forzado! El monto no puede ser 300."); 
+    // }
+
+     setTimeout(() => {
+      return res.status(200).json(lineapago);
+    }, 5000);
+
+  } catch (error) {
+    console.error({ error })
+    return res.status(500).json({ mensaje: `Error en realizarPagosProveedoresController ${error.message || 'No definido'}` });
+  }
+}
+
 
 module.exports = {
     asientoContableController,
@@ -1328,5 +1349,6 @@ module.exports = {
     createAsientoContableInventarioController,
     getBeneficiarioController,
     patchNoBeneficiarioController,
-    patchYesBeneficiarioController
+    patchYesBeneficiarioController,
+    realizarPagosProveedoresController
 }
