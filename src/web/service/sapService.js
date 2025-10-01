@@ -479,6 +479,37 @@ const postStockTransfer = async (data) => {
     }
 };
 
+const postPurchaseInvoices = async (data) => {
+    try {
+        const currentSession = await connectSLD();
+        const sessionSldId = currentSession.SessionId;
+        const url = `https://srvhana:50000/b1s/v1/PurchaseInvoices`;
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const response = await axios.post(url, { ...data }, {
+            httpsAgent: agent,
+            headers: headers
+        })
+        const status = response.status
+        const locationHeader = response.headers.location;
+        const orderNumberMatch = locationHeader.match(/\((\d+)\)$/);
+        const idReserveInvoice = orderNumberMatch ? orderNumberMatch[1] : 'Desconocido';
+        const statusText = response.statusText
+        const dataResponse = response.data
+        return { status, statusText, dataResponse, idReserveInvoice };
+    } catch (error) {
+        console.log({ postReserveInvoice: error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido';
+        console.error('Error en la solicitud postReserveInvoice:', errorMessage);
+        return {
+            status: 400,
+            errorMessage
+        }
+    }
+};
+
 module.exports = {
     postSalidaHabilitacion,
     postEntradaHabilitacion,
@@ -491,4 +522,5 @@ module.exports = {
     postInventoryTransferRequests,
     patchInventoryTransferRequests,
     postStockTransfer,
+    postPurchaseInvoices,
 };

@@ -61,8 +61,25 @@ const obtenerimportacionStatus = async () => {
     }
 }
 
+const obtenerDetalleParaResInvoice = async (docentry) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.ifasp_imp_get_purchase_detail_to_billing(${docentry})`;
+        const result = await executeQuery(query)
+        console.log({ query })
+        return result
+
+    } catch (error) {
+        console.error('Error en impotationStatus:', error.message || '');
+        throw new Error(`Error en impotationStatus: ${error.message}`)
+    }
+}
+
 
 
 module.exports = {
-    obtenerimportacionStatus
+    obtenerimportacionStatus,
+    obtenerDetalleParaResInvoice
 }
