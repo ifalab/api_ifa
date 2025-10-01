@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController, reporteMargenComercialController, getCommercialMarginByProducts, getMonthlyCommercialMarginController, getReportBankMajorController, getCommercialBankAccountsController, excelBankMajorController, getAgenciasGenesis, obtenerBalanceGeneral, getValuedInventoryBySuc, getValuedInventoryDetails, getInventoryExcel } = require('../controller/finanzas.controller')
+const { parteDiaroController, abastecimientoController, abastecimientoMesActualController, parteDiaroMesActualController, abastecimientoMesAnteriorController, findAllRegionsController, findAllLineController, findAllSublineController, findAllGroupAlmacenController, abastecimientoPorFechaController, abastecimientoFechaAnualController, abastecimientoFecha24MesesController, findAllGastosController, findAllSimpleGastosController, findXAgenciaSimpleGastosController, gastosGestionAgenciaController, reporteArticulosPendientesController, reporteMargenComercialController, getCommercialMarginByProducts, getMonthlyCommercialMarginController, getReportBankMajorController, getCommercialBankAccountsController, excelBankMajorController, getAgenciasGenesis, obtenerBalanceGeneral, getValuedInventoryBySuc, getValuedInventoryDetails, getInventoryExcel, getInventoryGeneralExcel } = require('../controller/finanzas.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
 const router = Router()
@@ -37,6 +37,6 @@ router.get('/valued-inventory', [validarToken, validarCampos], getValuedInventor
 router.get('/valued-inventory/details', [validarToken, validarCampos], getValuedInventoryDetails);
 
 router.get('/valued-inventory-excel', [validarCampos, validarToken], getInventoryExcel)
-
+router.get('/valued-inventory-excel-general', [validarCampos, validarToken], getInventoryGeneralExcel)
 
 module.exports = router

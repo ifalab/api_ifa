@@ -1,7 +1,8 @@
 const { grabarLog } = require("../../shared/controller/hana.controller")
-const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev, getBankingByDate, getBeneficiarios } = require("./hana.controller")
+const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCierreCaja, tipoDeCambio, cuentasCC, asientosContablesCC, subLineaCC, lineaCC, tipoClienteCC, sucursalesCC, rendicionesPorCaja, asientosPreliminaresCC, asientosPreliminaresCCIds, sociosNegocio, cuentasPorCodigoNombre, getAccountLedgerData, getAccountLedgerBalancePrev, getBankingByDate, getBeneficiarios, getCustomerDebtorService } = require("./hana.controller")
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto, patchBeneficiario } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
+const { groupByCustomer } = require("../utils/groupCustomerBebtor")
 const asientoContableController = async (req, res) => {
     try {
         const {
@@ -1297,6 +1298,17 @@ const patchNoBeneficiarioController = async (req, res) => {
   }
 }
 
+const getCustomerDebtorController = async(req, res) => {
+    try {
+        const data = await getCustomerDebtorService();
+        const groupedData = groupByCustomer(data);
+
+        return res.status(200).json(groupedData);
+    } catch (error) {0
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en getCustomerDebtorController ${error.message || 'No definido'}` });
+    }
+}
 
 module.exports = {
     asientoContableController,
@@ -1328,5 +1340,6 @@ module.exports = {
     createAsientoContableInventarioController,
     getBeneficiarioController,
     patchNoBeneficiarioController,
-    patchYesBeneficiarioController
+    patchYesBeneficiarioController,
+    getCustomerDebtorController
 }

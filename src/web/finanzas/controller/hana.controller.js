@@ -602,11 +602,12 @@ const getHanaValuedInventoryDetails = async ({
   lineItemCode,
   subLineItemCode,
   whsCode,
-  itemCode
+  itemCode,
+  isGerenciaReport = 'N', // por defecto 'N'
 }) => {
   try {
     const query = `
-      CALL LAB_IFA_PRD.IFASP_INV_CALCULATE_STOCK_COMMERCIAL_VALUE(?, ?, ?, ?, ?)
+      CALL LAB_IFA_PRD.IFASP_INV_CALCULATE_STOCK_COMMERCIAL_VALUE(?, ?, ?, ?, ?, ?)
     `;
 
     // Los parámetros se pasan en orden según la definición del procedimiento
@@ -615,7 +616,8 @@ const getHanaValuedInventoryDetails = async ({
       lineItemCode,
       subLineItemCode,
       whsCode,
-      itemCode
+      itemCode,
+      isGerenciaReport
     ];
 
     console.log("Executing query:", query, "with params:", params);

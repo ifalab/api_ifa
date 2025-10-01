@@ -314,9 +314,11 @@ const getBeneficiarios = async () => {
   return await executeQueryWithConnection(query);
 };
 
-
-
-
+const getCustomerDebtorService = async() => {
+  console.log('getCustomerDebtorService EXECUTE');
+  const query = `SELECT * FROM ${process.env.PRD}.IFA_PAG_SALDO_DEUDOR`;
+  return await executeQueryWithConnection(query);
+}
 
 module.exports = {
     tipoDeCambio,
@@ -340,5 +342,6 @@ module.exports = {
     getAccountLedgerData,
     getAccountLedgerBalancePrev,
     getBankingByDate,
-    getBeneficiarios
+    getBeneficiarios,
+    getCustomerDebtorService
 }
