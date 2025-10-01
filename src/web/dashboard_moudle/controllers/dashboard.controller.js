@@ -52,7 +52,7 @@ const obtenerVisitasFueraDeRutaController = async (req, res) => {
 
   } catch (error) {
     console.error({ error })
-    return res.status(500).json({ mensaje: `Error en efectividadVentasNormalesMesAnterior ${error.message || 'No definido'}` });
+    return res.status(500).json({ mensaje: `Error en obtenerVisitasFueraDeRutaController ${error.message || 'No definido'}` });
   }
 }
 
