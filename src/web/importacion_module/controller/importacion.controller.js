@@ -1,35 +1,11 @@
 const { grabarLog } = require("../../shared/controller/hana.controller");
-const { obtenerimportacionStatus } = require("./hana.controller");
+const { obtenerimportacionStatus, obtenerDetalleParaResInvoice } = require("./hana.controller");
+const { postPurchaseInvoices } = require("../../service/sapService");
 
 const importacionStatusController = async (req, res) => {
     try {
         const data = await obtenerimportacionStatus()
         return res.json(data)
-
-    } catch (error) {
-        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
-        grabarLog(usuario.USERCODE, usuario.USERNAME, "Importaciones Status", `${error.message || 'Error al obtener impotationStatus'}`, `importacion status controller`, "importacion-status", process.env.PRD)
-        console.log('error en importacionStatusController')
-        console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
-    }
-}
-
-
-
-const createReserveInvoiceControllerok = async (req, res) => {
-    try {
-        return res.status(500).json({ mensaje: 'Error en el proceso en el controlador' })
-        return res.json({
-            message: 'Se proceso correctamente'
-        })
-
-
-
-        const data = await obtenerimportacionStatus()
-        return res.json({ data })
-
-
 
     } catch (error) {
         const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
@@ -67,7 +43,7 @@ const createReserveInvoiceController = async (req, res) => {
             DocCurrency: firstItem.DocCurrency,
             DocTotalFc: parseFloat(firstItem.DocTotalFC),
             ReserveInvoice: firstItem.ReserveInvoice,
-            PriceMode: firstItem.PriceMode,
+            // PriceMode: firstItem.PriceMode,
             DocumentLines: data.map(item => ({
                 LineNum: item.LineNum,
                 ItemCode: item.ItemCode,
@@ -80,18 +56,18 @@ const createReserveInvoiceController = async (req, res) => {
         };
 
         // 4. datos formateados  mandar al service layer
-        // postReserveInvoice
-        // const serviceResponse = await postReserveInvoice(formattedData);
+        const serviceResponse = await postPurchaseInvoices(formattedData);
 
-        // 6. Manejar la respuesta del service layer (in this case, the data from obtenerimportacionStatus)
-        // if (!serviceResponse) {
-        //     return res.status(500).json({ mensaje: 'Error en el service layer' });
-        // }
+        // 5. Manejar la respuesta del service layer
+        if (serviceResponse.status > 299) {
+            return res.status(500).json({ code: serviceResponse.status , ms: 'Error en el service layer', mensaje: serviceResponse.errorMessage.value || 'Error al crear factura de reserva en SAP' });
+        }
 
-        // 8. Responder al cliente con el resultado
+        // 6. Responder al cliente con el resultado
         return res.json({
             message: 'Factura de reserva creada exitosamente',
-            data: formattedData
+            data: formattedData,
+            reserveInvoiceId: serviceResponse.idReserveInvoice
         });
 
     } catch (error) {
@@ -108,5 +84,4 @@ const createReserveInvoiceController = async (req, res) => {
 module.exports = {
    importacionStatusController,
    createReserveInvoiceController,
-   createReserveInvoiceControllerok
 }
