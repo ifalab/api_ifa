@@ -42,13 +42,10 @@ const obtenerVisitasFueraDeRutaController = async (req, res) => {
     const user = req.usuarioAutorizado;
 
     const data = await obtenerVisitasFueraDeRuta(user.ID_VENDEDOR_SAP);
+
     
-    const numerito = data[0].VISITAS;
     
-    if(numerito > 0){
-      return res.status(200).json(true);
-    }
-    return res.status(200).json(false);
+    return res.status(200).json(data);
 
   } catch (error) {
     console.error({ error })

@@ -272,14 +272,14 @@
             <% }) %>
         </tbody>        
         <tfoot>
-            <tr style="border-top: 2px solid #000; background-color: rgb(207, 14, 14); color: white;">
-                <td colspan="5"></td>
-                <td style="font-weight: bold;">Saldo pendiente</td>
-                <td></td>
-                <td style="font-weight: bold;">Bs</td>
-                <td style="font-weight: bold;"><%= data.TotalSaldo %></td>
-            </tr>
-        </tfoot>
+            <tr style="border-top: 2px solid #000; background-color: rgb(207, 14, 14); color: white;">
+                <td colspan="5" style="text-align: right; font-weight: bold;">Totales:</td>
+                <td></td>
+                <td style="font-weight: bold; text-align: right;"><%= data.TotalCargo %></td>
+                <td style="font-weight: bold; text-align: right;"><%= data.TotalAbono %></td>
+                <td style="font-weight: bold; text-align: right;"><%= data.TotalSaldo %></td>
+            </tr>
+        </tfoot>
     </table>
 </body>
 </html>

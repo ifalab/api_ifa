@@ -2480,19 +2480,30 @@ const getEstadoCuentaClientePDFController = async (req, res) => {
 
         const { CardCode, CardName, CardFName, Descr, LicTradNum, Phone1, Cellular, E_Mail, PymntGroup, Balance } = response[0];
 
+        let totalCargo = 0;
+        let totalAbono = 0;
         const detalles = response.map(item => {
             const {
                 CardCode, CardName, CardFName, Descr, LicTradNum, Phone1, Cellular, E_Mail, PymntGroup, Balance,
                 ...resto
             } = item;
+
+            totalCargo += parseFloat(resto.Cargo || 0);
+            totalAbono += parseFloat(resto.Abono || 0);
+            
             return resto;
         });
         console.log(detalles);
+
+        const TotalCargo = totalCargo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const TotalAbono = totalAbono.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         // respuesta final como un objeto
         console.log(Balance);
         const resultadoFinal = {
             TotalSaldo: parseFloat(Balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            TotalCargo, 
+            TotalAbono,
             CardCode,
             CardName,
             CardFName,
