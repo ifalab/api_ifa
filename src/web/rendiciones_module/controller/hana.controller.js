@@ -301,7 +301,7 @@ const getRendTransID = async (ID) => {
             await connectHANA();
         }
         console.log('getRendTransID EXECUTE')
-        const query = `call LAB_IFA_DEV1.IFASP_RW_GET_REND_TRANSID_BY_ID(${ID})`
+        const query = `call ${process.env.PRD}.IFASP_RW_GET_REND_TRANSID_BY_ID(${ID})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -977,12 +977,12 @@ const listaRendicionesByCODEMP = async (codEmp) => {
     }
 }
 
-const allGastosRange = async (starDate, endDate) => {
+const allGastosRange = async (starDate, endDate, revision) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.LAPP}.LAPP_TODOS_GASTO_FECHA('${starDate}','${endDate}')`
+        const query = `call ${process.env.LAPP}.LAPP_TODOS_GASTO_FECHA('${starDate}','${endDate}', ${revision})`
         console.log({ query })
         const result = await executeQuery(query)
         return result
