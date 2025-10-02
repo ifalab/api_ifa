@@ -2,12 +2,14 @@ const groupByCustomer = (data) => {
   const grouped = {};
 
   for (const item of data) {
-    const { CardCode, CardName } = item;
+    const { CardCode, CardName, GroupCode, GroupName } = item;
 
     if (!grouped[CardCode]) {
       grouped[CardCode] = {
         CardCode,
         CardName,
+        GroupCode,
+        GroupName,
         details: []
       };
     }
