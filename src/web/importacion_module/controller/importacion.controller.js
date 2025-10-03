@@ -37,7 +37,9 @@ const createReserveInvoiceController = async (req, res) => {
         // 3. Procesar la informacion para mandar al service layer
         // transformar o formatear al body que resuve el service la
         const firstItem = data[0];
-
+        const userSap = req.usuarioAutorizado.ID_SAP || '387'; // Valor por defecto si no existe
+        
+        
         const formattedData = {
             DocDate: new Date(firstItem.DocDate).toISOString().split('T')[0],
             CardCode: firstItem.CardCode,
@@ -47,8 +49,8 @@ const createReserveInvoiceController = async (req, res) => {
 
             //cambiar si o si cuando se pueda al ID SAP del usuario
             
-            U_UserCode: firstItem.UserSign,
-            U_UserSign: firstItem.UserSign,
+            U_UserCode: userSap,
+            U_UserSign: userSap,
             // PriceMode: firstItem.PriceMode,
             DocumentLines: data.map(item => ({
                 LineNum: item.LineNum,
