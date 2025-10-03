@@ -44,6 +44,11 @@ const createReserveInvoiceController = async (req, res) => {
             DocCurrency: firstItem.DocCurrency,
             DocTotalFc: parseFloat(firstItem.DocTotalFC),
             ReserveInvoice: firstItem.ReserveInvoice,
+
+            //cambiar si o si cuando se pueda al ID SAP del usuario
+            
+            U_UserCode: firstItem.UserSign,
+            U_UserSign: firstItem.UserSign,
             // PriceMode: firstItem.PriceMode,
             DocumentLines: data.map(item => ({
                 LineNum: item.LineNum,
