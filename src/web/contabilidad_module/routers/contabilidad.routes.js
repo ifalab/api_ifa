@@ -77,6 +77,6 @@ router.get('/patch-yes-beneficiario', [validarToken, validarCampos], patchYesBen
 
 router.get('/cutomer-debtor', [validarCampos, validarToken], getCustomerDebtorController);
 router.post('/realizar-pagos-proveedores', [validarToken, validarCampos], realizarPagosProveedoresController)
-router.post('/customter-debtor/pdf', [validarCampos, validarToken], getCustomerDebtorPDF);
+router.post('/customer-debtor/pdf', [validarCampos, validarToken], getCustomerDebtorPDF);
 
 module.exports = router

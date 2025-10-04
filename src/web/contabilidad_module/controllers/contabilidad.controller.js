@@ -1336,6 +1336,13 @@ const getCustomerDebtorController = async(req, res) => {
 const getCustomerDebtorPDF = async(req, res) => {
     try {
         const {cuentas, totalGlobal, totalNacional, totalServicios, totalExtranjero} = req.body;
+        console.log({
+            cuentas,
+            totalExtranjero,
+            totalNacional,
+            totalServicios,
+            totalGlobal
+        })
 
         const grupos = {
             101: "Servicios",
