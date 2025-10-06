@@ -97,11 +97,11 @@ const facturacionController = async (req, res) => {
                 return res.status(400).json({ mensaje: 'No se pudo cambiar el estado de la orden ', setOrderResponse })
             }
         }
-        if (U_B_State == 'P') {
-            endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado Pendiente , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
-            return res.status(400).status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado P - Pendiente', })
-        }
+        // if (U_B_State == 'P') {
+        //     endTime = Date.now();
+        //     grabarLog(user.USERCODE, user.USERNAME, "Facturacion", `error: No se puede Facturar una Orden con Estado Pendiente , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar", process.env.PRD)
+        //     return res.status(400).status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado P - Pendiente', })
+        // }
 
         if (U_B_State == 'R') {
             endTime = Date.now();
@@ -3622,11 +3622,11 @@ const facturarExportacionController = async (req, res) => {
         }
         // const responseDeliveryByID2 = await getOrdersById(id)
         // return res.json({ mensaje: 'estado cambiado ',responseDeliveryByID2  })
-        if (U_B_State == 'P') {
-            endTime = Date.now();
-            grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se puede Facturar una Orden con Estado Pendiente , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
-            return res.status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado P - Pendiente', })
-        }
+        // if (U_B_State == 'P') {
+        //     endTime = Date.now();
+        //     grabarLog(user.USERCODE, user.USERNAME, "Facturacion Exportacion", `error: No se puede Facturar una Orden con Estado Pendiente , ID : ${id || 0}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "facturacion/facturar-exportacion", process.env.PRD)
+        //     return res.status(400).json({ mensaje: 'No se puede Facturar una Orden con Estado P - Pendiente', })
+        // }
 
         if (U_B_State == 'R') {
             endTime = Date.now();

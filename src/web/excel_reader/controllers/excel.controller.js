@@ -284,7 +284,7 @@ const processExcelPlanificacion = async (req, res) => {
 
     const workbook = XLSX.readFile(req.file.path);
 
-    const fechaBase = new Date(2025, 8, 1);
+    const fechaBase = new Date(2025, 9, 6);
     const columnasFechas = [];
     let fechaTemp = new Date(fechaBase);
 
@@ -363,8 +363,8 @@ const processExcelPlanificacion = async (req, res) => {
             vendedorData.slpCode, // otros parámetros que tengas
             nombreVendedor,
             538, // o 0 si no aplica
-            '20250901', // inicio
-            '20250930'  // fin
+            '20251001', // inicio
+            '20251030'  // fin
         );
 
         const cabecera_id = responseCabecera[0].PlanId;

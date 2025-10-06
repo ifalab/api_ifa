@@ -3605,9 +3605,9 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         const deudaCliente = await getDeudaDelCliente(CardCode)
         console.log({ deudaCliente })
         let ControlAccount = '2110401'
-        // if (deudaCliente.length > 0 && (deudaCliente[0].Balance > 0)) {
-        //     ControlAccount = '1120101'
-        // }
+        if (deudaCliente.length > 0 && (deudaCliente[0].Balance > 0)) {
+            ControlAccount = '1120101'
+        }
 
         for (const factura of facturas) {
             const {

@@ -663,9 +663,6 @@ const verRendicionesEnRevisionController = async (req, res) => {
     }
 };
 
-
-
-
 const sendToSapController = async (req, res) => {
     const {
         codEmp,
@@ -1148,7 +1145,7 @@ const sendToSapController = async (req, res) => {
         //     totalJournalLines: journalLines.length,
         //     idJournalCom
         // })
-        //! FIN enviar centro de costo:
+        // //! FIN enviar centro de costo:
 
         await Promise.all(listFacturas.map(async (item) => {
             const {
@@ -1729,7 +1726,10 @@ const allGastosRangeController = async (req, res) => {
     try {
         const starDate = req.query.starDate
         const endDate = req.query.endDate
-        const response = await allGastosRange(starDate, endDate)
+        const revision = req.query.revision
+        const revisionBool = revision === "true";
+        
+        const response = await allGastosRange(starDate, endDate, revisionBool)
         let result = []
         for (let element of response) {
             const { ID_RENDICION_GASTOS } = element
@@ -1798,7 +1798,7 @@ const cancelRevisionCajaController = async (req, res) => {
         
     } catch (error) {
         console.log({ error })
-        return res.status(500).json({ mensaje: 'Error en el controlador' })
+        return res.status(500).json({ mensaje: `Error en el controlador: ${error.error}` })
     }
 }
 

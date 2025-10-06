@@ -3,6 +3,8 @@ const { empleadosHana, findEmpleadoByCode, findAllBancos, findAllAccount, dataCi
 const { asientoContable, findOneAsientoContable, asientoContableCentroCosto, patchBeneficiario, pagoProveedores } = require("./sld.controller")
 const sapService = require("../services/contabilidad.service")
 const { groupByCustomer } = require("../utils/groupCustomerBebtor")
+const ExcelJS = require('exceljs');
+
 const asientoContableController = async (req, res) => {
     try {
         const {
@@ -1331,7 +1333,107 @@ const getCustomerDebtorController = async(req, res) => {
     }
 }
 
+const getCustomerDebtorPDF = async(req, res) => {
+    try {
+        const {cuentas, totalGlobal, totalNacional, totalServicios, totalExtranjero} = req.body;
+        console.log({
+            cuentas,
+            totalExtranjero,
+            totalNacional,
+            totalServicios,
+            totalGlobal
+        })
 
+        const grupos = {
+            101: "Servicios",
+            102: "Nacional",
+            103: "Extranjero",
+        };
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet("Resumen Totales");
+
+        // Encabezado
+        sheet.columns = [
+        { header: "Descripción", key: "desc", width: 30 },
+        { header: "Monto (Bs.)", key: "monto", width: 20 },
+        ];
+
+        // Filas de totales
+        sheet.addRow({ desc: "Total Nacional", monto: totalNacional });
+        sheet.addRow({ desc: "Total Extranjero", monto: totalExtranjero });
+        sheet.addRow({ desc: "Total Servicios", monto: totalServicios });
+
+        sheet.addRow({});
+        sheet.addRow({ desc: "TOTAL GLOBAL", monto: totalGlobal });
+
+        // Estilo al TOTAL GLOBAL
+        const lastRow = sheet.lastRow;
+        lastRow.font = { bold: true };
+        lastRow.eachCell((cell) => {
+        cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFD9EDF7" },
+        };
+        cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+        };
+        });
+
+        Object.entries(grupos).forEach(([code, nombre]) => {
+            const sheet = workbook.addWorksheet(nombre);
+
+            // Encabezado general
+            sheet.addRow([`Reporte de ${nombre}`]);
+            sheet.addRow([]);
+
+            // Filtrar cuentas de este grupo
+            const cuentasFiltradas = cuentas.filter(c => c.GroupCode == code);
+
+            cuentasFiltradas.forEach(cuenta => {
+                // Título del cliente
+                sheet.addRow([`Cliente: ${cuenta.CardName} (${cuenta.CardCode})`]).font = { bold: true };
+                
+                // Encabezados de columnas
+                sheet.addRow([
+                "Fecha Vencimiento",
+                "Factura (NumAtCard)",
+                "DocNum",
+                "Fecha Creación",
+                "Monto (TotalDue)",
+                "Comentario"
+                ]);
+
+                cuenta.details.forEach(d => {
+                sheet.addRow([
+                    d.DocDueDate,
+                    d.NumAtCard || "",
+                    d.DocNum,
+                    d.DocDate,
+                    parseFloat(d.TotalDue).toFixed(2),
+                    d.Comments || ""
+                ]);
+                });
+
+                sheet.addRow([]); // salto entre clientes
+            });
+        });
+
+        // Generar buffer y enviar al cliente
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", "attachment; filename=ResumenTotales.xlsx");
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error({ error })
+        return res.status(500).json({ mensaje: `Error en getCustomerDebtorPDF ${error.message || 'No definido'}` });
+    }
+}
 module.exports = {
     asientoContableController,
     findByIdAsientoController,
@@ -1364,5 +1466,6 @@ module.exports = {
     patchNoBeneficiarioController,
     patchYesBeneficiarioController,
     realizarPagosProveedoresController,
-    getCustomerDebtorController
+    getCustomerDebtorController,
+    getCustomerDebtorPDF
 }

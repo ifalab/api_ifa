@@ -36,7 +36,8 @@ const { asientoContableController,
     patchNoBeneficiarioController,
     patchYesBeneficiarioController,
     getCustomerDebtorController,
-    realizarPagosProveedoresController
+    realizarPagosProveedoresController,
+    getCustomerDebtorPDF
 } = require('../controllers/contabilidad.controller')
 
 const router = Router()
@@ -76,5 +77,6 @@ router.get('/patch-yes-beneficiario', [validarToken, validarCampos], patchYesBen
 
 router.get('/cutomer-debtor', [validarCampos, validarToken], getCustomerDebtorController);
 router.post('/realizar-pagos-proveedores', [validarToken, validarCampos], realizarPagosProveedoresController)
+router.post('/customer-debtor/pdf', [validarCampos, validarToken], getCustomerDebtorPDF);
 
 module.exports = router
