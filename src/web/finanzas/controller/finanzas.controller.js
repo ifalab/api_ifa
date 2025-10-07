@@ -2175,7 +2175,11 @@ const estructurarBalanceParaTree = (dataPlano) => {
 
 const getValuedInventoryBySuc = async (req, res) => {
   try {
-    const data = await getHanaValuedInventoryBySuc();
+    const { isGerenciaReport } = req.query;
+
+    const isGerencia = isGerenciaReport === 'true';
+
+    const data = await getHanaValuedInventoryBySuc(isGerencia);
 
     const groupedData = formatValuedInventory(data);
     return res.status(200).json(groupedData);
@@ -2196,7 +2200,8 @@ const getValuedInventoryDetails = async (req, res) => {
       lineItemCode,
       subLineItemCode,
       whsCode,
-      itemCode
+      itemCode,
+      isGerenciaReport
     } = req.query;
     console.log(req.query);
     
@@ -2205,7 +2210,8 @@ const getValuedInventoryDetails = async (req, res) => {
       lineItemCode: lineItemCode ?? null,
       subLineItemCode: subLineItemCode ?? null,
       whsCode: whsCode ?? null,
-      itemCode: itemCode ?? null
+      itemCode: itemCode ?? null,
+      isGerenciaReport: isGerenciaReport ?? 'N'
     });
 
     let groupedData;

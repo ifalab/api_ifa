@@ -574,16 +574,16 @@ const getGastosCCHanna = async (anio, sucCode) => {
     }
 };
 
-
-
-
-const getHanaValuedInventoryBySuc = async () => {
+const getHanaValuedInventoryBySuc = async (isGerencia = false) => {
   try {
-    let query = `
-      SELECT * FROM LAB_IFA_PRD.IFA_INV_VALUED_STOCK_BY_SUC
-    `;
+    // ✅ Escogemos la vista según el tipo de reporte
+    const viewName = isGerencia
+      ? 'LAB_IFA_PRD.IFA_INV_VALUED_STOCK_BY_SUC_GERENCIA'
+      : 'LAB_IFA_PRD.IFA_INV_VALUED_STOCK_BY_SUC';
 
-    // Orden de parámetros según el procedimiento
+    const query = `SELECT * FROM ${viewName}`;
+
+    // Si en el futuro necesitas parámetros, puedes agregarlos aquí
     const params = [];
 
     console.log("Executing query:", query, "with params:", params);
@@ -592,8 +592,8 @@ const getHanaValuedInventoryBySuc = async () => {
 
     return result;
   } catch (error) {
-    console.error("Error in getHanaValuedInventory:", error);
-    throw new Error(`Error in getHanaValuedInventory: ${error.message}`);
+    console.error("Error in getHanaValuedInventoryBySuc:", error);
+    throw new Error(`Error in getHanaValuedInventoryBySuc: ${error.message}`);
   }
 };
 
