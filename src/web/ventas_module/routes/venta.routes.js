@@ -262,7 +262,7 @@ router.get('/search-clientes-cadenas-parent', [validarToken, validarCampos], sea
 
 router.get('/reporte-pendiente-by-item', [validarToken, validarCampos], reportePendienteByItemController)
 router.get('/reporte-pendiente-cadenas-ungroup', [validarToken, validarCampos], reportePendienteUngroupByItemController)
-router.get('/reporte-pendiente-by-sucursal-resume', [validarToken, validarCampos], reportePendienteBySucursalResumeController)
+router.post('/reporte-pendiente-by-sucursal-resume', [validarToken, validarCampos], reportePendienteBySucursalResumeController)
 router.get('/detalle-reporte-pendiente', [validarToken, validarCampos], ventasPendienteController)
 
 router.get('/search-blocked-clients', [validarToken, validarCampos], searchBlockedClients)

@@ -4503,6 +4503,8 @@ const reportePendienteBySucursalResumeController = async (req, res) => {
         const fechafin = req.query.fechafin;
         const tipo = req.query.tipo;
         let cliente = req.query.cliente;
+        let sucCodes = req.body;
+        console.log('succodditos',sucCodes);
         if(cliente === ''){
             cliente = null;
         }else{
@@ -4514,7 +4516,13 @@ const reportePendienteBySucursalResumeController = async (req, res) => {
         }else{
             articulo = `'${articulo}'`
         }
-        let response = await reportePendienteBySucursalesResume(fechainicio,fechafin, cliente, articulo);
+        if(sucCodes.length === 0){
+            sucCodes = null
+        }else{
+            const codes = sucCodes.join(',');
+            sucCodes = `'${codes}'`;
+        }
+        let response = await reportePendienteBySucursalesResume(fechainicio,fechafin, cliente, articulo, sucCodes);
         const filteredData = response.filter(item => item.DocumentType === tipo);
         return res.json(filteredData);
     } catch (error) {
