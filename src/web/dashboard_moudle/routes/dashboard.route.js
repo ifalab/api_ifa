@@ -6,7 +6,9 @@ const { validarCampos } = require('../../../middleware/validar_campos.middleware
 const { overdueClientsByBranch,
     efectividadVentasNormales,
     efectividadVentasNormalesMesAnterior,
-    obtenerVisitasFueraDeRutaController
+    obtenerVisitasFueraDeRutaController,
+    getVendedoresSucController,
+    getClientesPorVendedor
 } = require('../controllers/dashboard.controller')
 
 const router = Router()
@@ -17,5 +19,10 @@ router.get('/efectividad-ventas-normales', [validarToken, validarCampos], efecti
 router.get('/efectividad-ventas-normales-mes-anterior', [validarToken, validarCampos], efectividadVentasNormalesMesAnterior)
 
 router.get('/obtener-visitas-fuera-ruta', [validarToken, validarCampos], obtenerVisitasFueraDeRutaController)
+
+router.get('/get-vendedores', [validarToken, validarCampos], getVendedoresSucController)
+router.get('/clientes-by-vendedor', [validarToken, validarCampos], getClientesPorVendedor)
+
+
 
 module.exports = router
