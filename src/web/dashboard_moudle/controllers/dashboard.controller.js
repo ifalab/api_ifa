@@ -1,4 +1,4 @@
-const { getGeneralOverdueClients,getVendedoresSuc, getClientesVendidos, getEfectividadVentasNormales, getEfectividadVentasNormalesMesAnterior, obtenerVisitasFueraDeRuta } = require("./hana.controller");
+const { getGeneralOverdueClients,getVendedoresSuc,insertMetricLaap, getClientesVendidos, getEfectividadVentasNormales, getEfectividadVentasNormalesMesAnterior, obtenerVisitasFueraDeRuta } = require("./hana.controller");
 
 const overdueClientsByBranch = async (req, res) => {
   try {
@@ -83,6 +83,25 @@ const obtenerVisitasFueraDeRutaController = async (req, res) => {
   }
 }
 
+const insertMetricLaapController = async (req, res) => {
+  try {
+
+    const user = req.usuarioAutorizado;
+    const idUser = user.ID;
+    console.log('bodicito',req.body)
+    const {modulo, vista} = req.body;
+    console.log('usuariiito',user)
+    const resultado = await insertMetricLaap(modulo, vista, idUser);
+
+    
+    
+    return res.json('se inserto correctamente');
+
+  } catch (error) {
+    console.error({ error })
+    return res.status(500).json({ mensaje: `Error en insertMetricLaapController ${error.message || 'No definido'}` });
+  }
+}
 
 
 module.exports = {
@@ -91,5 +110,6 @@ module.exports = {
     efectividadVentasNormalesMesAnterior,
     obtenerVisitasFueraDeRutaController,
     getVendedoresSucController,
-    getClientesPorVendedor
+    getClientesPorVendedor,
+    insertMetricLaapController
 }

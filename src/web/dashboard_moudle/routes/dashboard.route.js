@@ -8,7 +8,8 @@ const { overdueClientsByBranch,
     efectividadVentasNormalesMesAnterior,
     obtenerVisitasFueraDeRutaController,
     getVendedoresSucController,
-    getClientesPorVendedor
+    getClientesPorVendedor,
+    insertMetricLaapController
 } = require('../controllers/dashboard.controller')
 
 const router = Router()
@@ -23,6 +24,7 @@ router.get('/obtener-visitas-fuera-ruta', [validarToken, validarCampos], obtener
 router.get('/get-vendedores', [validarToken, validarCampos], getVendedoresSucController)
 router.get('/clientes-by-vendedor', [validarToken, validarCampos], getClientesPorVendedor)
 
+router.post('/metricas', [validarToken, validarCampos], insertMetricLaapController)
 
 
 module.exports = router
