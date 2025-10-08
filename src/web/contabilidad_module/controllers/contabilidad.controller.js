@@ -1359,13 +1359,15 @@ const getCustomerDebtorPDF = async(req, res) => {
         { header: "Monto (Bs.)", key: "monto", width: 20 },
         ];
 
+        const num = (val) => Number(val) || 0;
+
         // Filas de totales
-        sheet.addRow({ desc: "Total Nacional", monto: totalNacional });
-        sheet.addRow({ desc: "Total Extranjero", monto: totalExtranjero });
-        sheet.addRow({ desc: "Total Servicios", monto: totalServicios });
+        sheet.addRow({ desc: "Total Nacional", monto: num(totalNacional) });
+        sheet.addRow({ desc: "Total Extranjero", monto: num(totalExtranjero) });
+        sheet.addRow({ desc: "Total Servicios", monto: num(totalServicios) });
 
         sheet.addRow({});
-        sheet.addRow({ desc: "TOTAL GLOBAL", monto: totalGlobal });
+        sheet.addRow({ desc: "TOTAL GLOBAL", monto: num(totalGlobal) });
 
         // Estilo al TOTAL GLOBAL
         const lastRow = sheet.lastRow;
@@ -1384,6 +1386,8 @@ const getCustomerDebtorPDF = async(req, res) => {
         };
         });
 
+        // 🔹 Aplicar formato numérico con separador de miles
+        sheet.getColumn("monto").numFmt = "#,##0.00";
         Object.entries(grupos).forEach(([code, nombre]) => {
             const sheet = workbook.addWorksheet(nombre);
 
@@ -1409,17 +1413,34 @@ const getCustomerDebtorPDF = async(req, res) => {
                 ]);
 
                 cuenta.details.forEach(d => {
-                sheet.addRow([
-                    d.DocDueDate,
+
+                    const fechaVenc = d.DocDueDate ? new Date(d.DocDueDate) : null;
+                    const fechaCreac = d.DocDate ? new Date(d.DocDate) : null;
+
+                    const row = sheet.addRow([
+                    fechaVenc || "",
                     d.NumAtCard || "",
-                    d.DocNum,
-                    d.DocDate,
-                    parseFloat(d.TotalDue).toFixed(2),
+                    num(d.DocNum),
+                    fechaCreac || "",
+                    num(d.TotalDue),   // ✅ numérico, no string
                     d.Comments || ""
-                ]);
+                    ]);
+
+                    row.getCell(1).numFmt = "dd/mm/yyyy";
+                    row.getCell(4).numFmt = "dd/mm/yyyy";
+                    row.getCell(5).numFmt = "#,##0.00";
                 });
 
                 sheet.addRow([]); // salto entre clientes
+
+                sheet.columns.forEach((col) => {
+                    let maxLength = 10;
+                    col.eachCell({ includeEmpty: true }, (cell) => {
+                    const val = cell.value ? cell.value.toString() : "";
+                    if (val.length > maxLength) maxLength = val.length;
+                    });
+                    col.width = maxLength + 2;
+                });
             });
         });
 
