@@ -1305,14 +1305,11 @@ const realizarPagosProveedoresController = async (req, res) => {
     const lineapago = req.body;
     console.log('lineapago', lineapago);
 
-    // const response = await pagoProveedores(lineapago)
-    // if (lineapago.TransferSum == 300) {
-    //   // Usamos 'throw new Error' para generar una excepción
-    //   throw new Error("¡Error forzado! El monto no puede ser 300."); 
-    // }
+    const response = await pagoProveedores(lineapago)
+
 
      setTimeout(() => {
-      return res.status(200).json(lineapago);
+      return res.status(200).json(response);
     }, 5000);
 
   } catch (error) {

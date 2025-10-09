@@ -1,6 +1,6 @@
 const { grabarLog } = require("../../shared/controller/hana.controller");
-const { obtenerimportacionStatus, obtenerDetalleParaResInvoice } = require("./hana.controller");
-const { postPurchaseInvoices } = require("../../service/sapService");
+const { obtenerimportacionStatus, obtenerDetalleParaResInvoice,  } = require("./hana.controller");
+const { postPurchaseInvoices, postCrearPedido } = require("../../service/sapService");
 
 const importacionStatusController = async (req, res) => {
     try {
@@ -87,9 +87,37 @@ const createReserveInvoiceController = async (req, res) => {
     }
 }
 
+const createPedidoController = async (req, res) => {
+    try {
+
+        const body = req.body;
+
+        // 4. datos formateados  mandar al service layer
+        const serviceResponse = await postCrearPedido(body);
+
+        // 5. Manejar la respuesta del service layer
+        if (serviceResponse.status > 299) {
+            return res.status(500).json({ code: serviceResponse.status , ms: 'Error en el service layer', mensaje: serviceResponse.errorMessage.value || 'Error al crear pedido en SAP' });
+        }
+
+        // 6. Responder al cliente con el resultado
+        return res.json({
+            message: 'Pedido creado exitosamente',
+            data: serviceResponse.dataResponse,
+        });
+
+    } catch (error) {
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Import Crear Factura de reserva", `${error.message || 'Error al crear factura de reserva de importaciones'}`, `createReserveInvoiceController`, "create-reserve-invoice", process.env.PRD);
+        console.log('error en createReserveInvoiceController');
+        console.log({ error });
+        return res.status(500).json({ mensaje: 'Error en el controlador' });
+    }
+}
 
 
 module.exports = {
    importacionStatusController,
    createReserveInvoiceController,
+   createPedidoController
 }

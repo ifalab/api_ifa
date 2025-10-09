@@ -82,11 +82,28 @@ const obtenerVisitasFueraDeRuta = async (id_vendedor) => {
   }
 }
 
+const insertMetricLaap = async (modulo, vista, usuario) => {
+  try {
+    console.log('obtenerVisitasFueraDeRuta EXECUTE');
+    const query = `call LAB_IFA_LAPP.IFASP_INSERT_METRIC_LAPP('${modulo}','${vista}','${usuario}');`;
+    console.log({ query });
+    return await executeQueryWithConnection(query);
+  } catch (error) {
+    throw {
+      message: `Error en insert_metric_laap: ${error.message || ''}`
+    }
+  }
+}
+
+
+
+
 module.exports = {
   getGeneralOverdueClients,
   getEfectividadVentasNormales,
   getEfectividadVentasNormalesMesAnterior,
   obtenerVisitasFueraDeRuta,
   getVendedoresSuc,
-  getClientesVendidos
+  getClientesVendidos,
+  insertMetricLaap
 }
