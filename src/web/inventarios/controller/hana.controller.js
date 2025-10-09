@@ -1268,7 +1268,6 @@ const getInvoiceByDocNum = async (DocNum) => {
     }
 }
 
-
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1333,5 +1332,5 @@ module.exports = {
     getReturnValuesProcess,
     getLotesExpDate,
     getDetailsDocuments,
-    getInvoiceByDocNum
+    getInvoiceByDocNum,
 }

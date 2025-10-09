@@ -49,12 +49,13 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getReturnValuesProcess,
     getLotesExpDate,
     getDetailsDocuments,
-    getInvoiceByDocNum
+    getInvoiceByDocNum,
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
     cancelReconciliacion, cancelInvoice,
-    patchBatchNumberDetails, getBatchNumberDetails, getIDEntityLote } = require("./sld.controller")
+    patchBatchNumberDetails, getBatchNumberDetails, getIDEntityLote, 
+    pagoProveedores} = require("./sld.controller")
 const { postInvoice, facturacionByIdSld, postEntrega, getEntrega, patchEntrega, } = require("../../facturacion_module/controller/sld.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller")
 const { obtenerEntregaDetalle, lotesArticuloAlmacenCantidad, notaEntrega, createReferenceCreditNotesAndDelivery } = require("../../facturacion_module/controller/hana.controller")
@@ -6675,6 +6676,32 @@ const getInvoiceByDocNumController = async (req, res) => {
     }
 }
 
+const postCajaChicaPayment = async (req, res) => {
+  try {
+    const body = req.body;
+    
+    body.Series = Number(process.env.SAP_SERIES_VENDOR_PAYMENT);
+    body.DocType = 'rCustomer';
+    console.log('💡 Body recibido:', body);
+
+    // const result = await pagoProveedores(body);
+
+    // if (!result.ok) {
+    //   // Hubo error
+    //   return res.status(400).json({ mensaje: result.errorMessage.value });
+    // }
+
+    // Si todo va bien
+    return res.status(200).json(body);
+
+  } catch (error) {
+    console.error('❌ Error en postCajaChicaPayment:', error);
+    return res.status(500).json({
+      mensaje: `Error en postCajaChicaPayment: ${error.message || 'No definido'}`
+    });
+  }
+};
+
 
 module.exports = {
     clientePorDimensionUnoController,
@@ -6760,5 +6787,6 @@ module.exports = {
     processIncommingPaymentsController,
     processReconciliationController,
     getDetallesDocumentos,
-    getInvoiceByDocNumController
+    getInvoiceByDocNumController,
+    postCajaChicaPayment
 }

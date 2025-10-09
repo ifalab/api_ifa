@@ -35,7 +35,8 @@ const { dmClientesController, dmClientesPorCardCodeController, dmUpdateClienteCo
     cargarPreciosCostoComercialExcelController,
     almacenesBySucCodeController,
     getCurrentRate,
-    getWarehouseBySuc
+    getWarehouseBySuc,
+    bankAccounts
 } = require('../controller/datos_maestros.controller')
 const { getSucursales } = require('../controller/hana.controller');
 const { validarArchivoExcel } = require('../../../middleware/validarExcel.middleware');
@@ -113,6 +114,7 @@ router.post('/cargar-xsl-precios-cc', [validarToken, validarCampos, upload.any()
 router.get('/get-rate', getCurrentRate)
 router.get('/warehouse-by-suc', getWarehouseBySuc)
 router.get('/almacenes-by-succode', [validarToken, validarCampos], almacenesBySucCodeController)
+router.get('/cuentas-banco-cheque', [validarCampos, validarToken], bankAccounts)
 
 
 module.exports = router
