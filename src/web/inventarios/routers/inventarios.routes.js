@@ -61,7 +61,8 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     processIncommingPaymentsController,
     processReconciliationController,
     getDetallesDocumentos,
-    getInvoiceByDocNumController
+    getInvoiceByDocNumController,
+    postCajaChicaPayment
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -196,6 +197,6 @@ router.post('/patch-batch-details', [validarToken, validarCampos], patchBatchNum
 router.get('/get-documentos-detalles', [validarToken, validarCampos], getDetallesDocumentos)
 
 router.get('/get-invoice-by-docnum', [validarToken, validarCampos], getInvoiceByDocNumController)
-
+router.post('/caja-chica-payment' , [validarCampos, validarToken], postCajaChicaPayment);
 
 module.exports = router

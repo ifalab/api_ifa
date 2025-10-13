@@ -1518,6 +1518,27 @@ const getWarehouseBySucHana = async(sucCode) => {
     }
 }
 
+const getBankAccounts = async() => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+
+        const query = `
+            SELECT * 
+            FROM ${process.env.PRD}.IFA_VIEW_BANK_ACCOUNTS
+        `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+         console.error('Error en getBankAccounts:', error);
+        throw {
+            status: 400,
+            message: `Error en getBankAccounts: ${error.message || ''}`
+        }
+    }
+}
 module.exports = {
     dmClientes,
     dmClientesPorCardCode,
@@ -1587,5 +1608,6 @@ module.exports = {
     getAllSublinesCode,
     almacenesBySucCode,
     getCurrentRateHana,
-    getWarehouseBySucHana
+    getWarehouseBySucHana,
+    getBankAccounts
 }

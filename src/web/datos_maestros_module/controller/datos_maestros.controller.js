@@ -37,7 +37,8 @@ const { dmClientes, dmClientesPorCardCode, dmTiposDocumentos,
     deletePrecioCostoComercial,
     almacenesBySucCode,
     getCurrentRateHana,
-    getWarehouseBySucHana
+    getWarehouseBySucHana,
+    getBankAccounts
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { patchBusinessPartners, getBusinessPartners, patchItems } = require("./sld.controller");
@@ -1396,6 +1397,16 @@ const getWarehouseBySuc = async(req, res) => {
     }
 }
 
+const bankAccounts = async(req, res) => {
+    try {
+        const data = await getBankAccounts();
+        return res.status(200).json(data);
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en el controlador bankAccounts: ${error.message || ''}` })
+    }
+}
+
 module.exports = {
     dmClientesController,
     dmClientesPorCardCodeController,
@@ -1453,5 +1464,6 @@ module.exports = {
     cargarPreciosCostoComercialExcelController,
     almacenesBySucCodeController,
     getCurrentRate,
-    getWarehouseBySuc
+    getWarehouseBySuc,
+    bankAccounts
 }

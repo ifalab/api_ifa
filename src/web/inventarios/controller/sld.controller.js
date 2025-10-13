@@ -718,6 +718,36 @@ const cancelInvoice = async (id) => {
   }
 };
 
+
+const pagoProveedores = async (bodyPagoProveedores) => {
+    try {
+       
+        // console.log({JournalVoucher})
+        const currentSession = await validateSession();
+        const sessionSldId = currentSession.SessionId;
+
+        const url = `https://srvhana:50000/b1s/v1/VendorPayments`;
+
+        // Configura los encabezados para la solicitud
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content' // Si deseas que la respuesta no incluya contenido
+        };
+
+        // Realiza la solicitud POST
+        const response = await axios.post(url, bodyPagoProveedores, {
+            httpsAgent: agent,
+            headers: headers
+        });
+        return { ok: true, data: response.data };
+    } catch (error) {
+        console.error(error);
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido en la solicitud asientoContableCentroCosto';
+        console.error('Error en la solicitud post para  pagoProveedores:', errorMessage);
+        return { ok: false, errorMessage };
+    }
+}
+
 module.exports = {
   postSalidaHabilitacion,
   postEntradaHabilitacion,
@@ -731,5 +761,6 @@ module.exports = {
   getReturns,
   cancelReconciliacion, cancelInvoice,
   patchBatchNumberDetails,getBatchNumberDetails,
-  getIDEntityLote
+  getIDEntityLote,
+  pagoProveedores
 };
