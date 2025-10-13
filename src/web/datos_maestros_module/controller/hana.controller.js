@@ -678,7 +678,7 @@ const searchArticulos = async (search) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" LIKE '%${search}%' OR "ItemName" LIKE '%${search}%' LIMIT 50`;
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" LIKE '%${search}%' OR "ItemName" LIKE '%${search}%' AND "ItmsGrpCod" = 105 LIMIT 50`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
