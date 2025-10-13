@@ -871,9 +871,10 @@ const getZonasTiposPorVendedorController = async (req, res) => {
 
 const asignarZonasYTiposAVendedoresController = async (req, res) => {
     try {
-        const { id_vendedor, zona, tipo } = req.body
+        const { id_vendedor, tipoAsignacion, idAsignacion } = req.body
+        const user = req.usuarioAutorizado
         console.log({ body: req.body })
-        const respond = await asignarZonasYTiposAVendedores(id_vendedor, zona, tipo)
+        const respond = await asignarZonasYTiposAVendedores(id_vendedor, tipoAsignacion, idAsignacion,user.ID )
         if (respond.status != 200) {
             return res.status(400).json({ mensaje: `${respond.message || ''}` })
         }
@@ -886,9 +887,11 @@ const asignarZonasYTiposAVendedoresController = async (req, res) => {
 
 const deleteZonasYTiposAVendedoresController = async (req, res) => {
     try {
-        const { id_vendedor, zona, tipo } = req.body
+        const { UUID } = req.body
         console.log({ body: req.body })
-        const respond = await deleteZonasYTiposAVendedores(id_vendedor, zona, tipo)
+        const user_id = req.usuarioAutorizado.ID;
+        console.log(user_id)
+        const respond = await deleteZonasYTiposAVendedores(UUID, user_id)
         if (respond.status != 200) {
             return res.status(400).json({ mensaje: `${respond.message || ''}` })
         }

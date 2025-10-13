@@ -2747,7 +2747,8 @@ const deleteSolicitudDescuentoController = async (req, res) => {
 
 const ventasPresupuestoSubLinea = async (req, res) => {
     try {
-        let response = await getVentasPrespuestosSubLinea();
+        const {lista} = req.query;
+        let response = await getVentasPrespuestosSubLinea(lista);
         const resultado = [];
         // console.log(response);
         // return res.status(200).json(response);
