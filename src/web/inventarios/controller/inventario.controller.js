@@ -50,6 +50,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getLotesExpDate,
     getDetailsDocuments,
     getInvoiceByDocNum,
+    actualizarPrecioProducto
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -5183,6 +5184,26 @@ const getEntregasParaCancelarController = async (req, res) => {
     }
 }
 
+
+
+const actualizarPrecioProductoController = async (req, res) => {
+    try {
+        const articulos = req.body
+        console.log(articulos)
+        for (articulo of articulos){
+            console.log(articulo)
+            resultado = await actualizarPrecioProducto(articulo)
+        }
+        return res.json({
+            mensaje: 'Actualizado con Exito'
+        })
+    } catch (error) {
+        console.log({ error })
+        return res.status(500).json({ mensaje: `Error en actualizarPrecioProductoController  : ${error.message || 'No definido'}` })
+    }
+}
+
+
 const cancelarDevolucionController = async (req, res) => {
     const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
     try {
@@ -6788,5 +6809,6 @@ module.exports = {
     processReconciliationController,
     getDetallesDocumentos,
     getInvoiceByDocNumController,
-    postCajaChicaPayment
+    postCajaChicaPayment,
+    actualizarPrecioProductoController
 }

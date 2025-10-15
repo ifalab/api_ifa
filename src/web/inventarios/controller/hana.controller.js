@@ -1268,6 +1268,23 @@ const getInvoiceByDocNum = async (DocNum) => {
     }
 }
 
+const actualizarPrecioProducto = async (CardCode) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        query = `CALL  ${process.env.PRD}.IFASP_SIS_UPDATE_STOCK_PRICE_AVG('${CardCode}') `;
+        console.log({ query })
+        const result = await executeQuery(query)
+        return result
+    } catch (error) {
+        console.error('Error en actualizarPrecioProducto:', error.message);
+        throw {
+            message: `Error al procesar actualizarPrecioProducto: ${error.message || ''}`
+        }
+    }
+}
+
 module.exports = {
     clientesPorDimensionUno,
     almacenesPorDimensionUno,
@@ -1333,4 +1350,5 @@ module.exports = {
     getLotesExpDate,
     getDetailsDocuments,
     getInvoiceByDocNum,
+    actualizarPrecioProducto
 }

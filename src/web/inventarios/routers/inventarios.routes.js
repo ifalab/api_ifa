@@ -62,7 +62,9 @@ const { clientePorDimensionUnoController, almacenesPorDimensionUnoController, po
     processReconciliationController,
     getDetallesDocumentos,
     getInvoiceByDocNumController,
-    postCajaChicaPayment
+    postCajaChicaPayment,
+    actualizarPrecioProducto,
+    actualizarPrecioProductoController
 } = require('../controller/inventario.controller')
 const { validarToken } = require('../../../middleware/validar_token.middleware')
 const { validarCampos } = require('../../../middleware/validar_campos.middleware')
@@ -198,5 +200,9 @@ router.get('/get-documentos-detalles', [validarToken, validarCampos], getDetalle
 
 router.get('/get-invoice-by-docnum', [validarToken, validarCampos], getInvoiceByDocNumController)
 router.post('/caja-chica-payment' , [validarCampos, validarToken], postCajaChicaPayment);
+router.post('/actualizar-precios-productos' , [validarCampos, validarToken], actualizarPrecioProductoController);
+
+
+
 
 module.exports = router
