@@ -570,12 +570,12 @@ const findClientesBySupervisor = async(id_suc)=>{
     }
 }
 
-const visitHistoryHana = async(id_suc) => {
+const visitHistoryHana = async(id_suc, startDate, endDate) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `SELECT * FROM ${process.env.PRD}.IFA_PLA_VISITS_BY_SELLER WHERE "SucCode" = ${id_suc}`
+        const query = `CALL ${process.env.PRD}.IFASP_GET_PLA_VISITS_BY_SELLER('${startDate}','${endDate}', ${id_suc}) `
         console.log({ query })
         return await executeQuery(query)
     } catch (error) {
@@ -584,7 +584,21 @@ const visitHistoryHana = async(id_suc) => {
     }
 }
 
-const visitBySlpcodeHana = async(splcode, status) => {
+const visitHistoryHana2 = async(id_suc, startDate, endDate) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = `CALL ${process.env.PRD}.IFASP_GET_PLA_VISITS_BY_SELLER_FOR_EXCEL('${startDate}','${endDate}', ${id_suc})`
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: clientes by vendedor');
+    }
+}
+
+const visitBySlpcodeHana = async(splcode, status, start, end) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -598,7 +612,11 @@ const visitBySlpcodeHana = async(splcode, status) => {
                 END AS "PlanificadoStatus"
             FROM ${process.env.PRD}.IFA_CRM_VISIT_HEADER VH
             WHERE VH.SlpCode = ${splcode} 
-            AND VH."VISITSTATUS" = ${status};
+            AND VH."VISITSTATUS" = ${status}
+            AND "CLIENTCODE" <> ''
+            AND VH."VISITDATE" >= '${start}'
+            AND VH."VISITDATE" <= '${end}'
+            ORDER BY "VISITDATE" ASC;
         `
         console.log({ query })
         return await executeQuery(query)
@@ -608,7 +626,34 @@ const visitBySlpcodeHana = async(splcode, status) => {
     }
 }
 
-const pendingVisitsHana = async(splcode) => {
+const visitBySlpcodeHanaForExcel = async(splcode, status, start, end) => {
+    try {
+        if (!connection) {
+            await connectHANA();
+        }
+        const query = ` SELECT 
+                VH.*,
+                CASE 
+                    WHEN VH."PLANDETAILID" IS NOT NULL AND VH."PLANDETAILID" <> 0 
+                        THEN 'PLANIFICADO' 
+                    ELSE 'NO PLANIFICADO' 
+                END AS "PlanificadoStatus"
+            FROM ${process.env.PRD}.IFA_CRM_VISIT_HEADER VH
+            WHERE VH.SlpCode = ${splcode} 
+            AND VH."VISITSTATUS" = ${status}
+            AND VH."VISITDATE" >= '${start}'
+            AND VH."VISITDATE" <= '${end}'
+            ORDER BY "VISITDATE" ASC;
+        `
+        console.log({ query })
+        return await executeQuery(query)
+    } catch (error) {
+        console.log({ error })
+        throw new Error('Error al procesar la solicitud: visitas por vendedor');
+    }
+}
+
+const pendingVisitsHana = async(splcode, start, end) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -622,7 +667,8 @@ const pendingVisitsHana = async(splcode) => {
                 AND vh.SlpCode = 14
                 AND vh.PlanDetailID <> 0
             WHERE pd."SlpCode" = ${splcode}
-                AND MONTH(pd."PlanVisitDate") = MONTH(CURRENT_DATE)
+                AND pd."PlanVisitDate" >= '${start}'
+                AND pd."PlanVisitDate" <= '${end}'
                 AND vh.PlanDetailId IS NULL
             ORDER BY pd."PlanVisitDate";
         `
@@ -641,5 +687,5 @@ module.exports = {
     actualizarDetalleVisita, cambiarEstadoCiclo, cambiarEstadoVisitas, eliminarDetalleVisita,
     getVisitasParaHoy, marcarVisita, getCabeceraVisitasCreadas, aniadirDetalleVisita,
     getDetalleVisitasCreadas, getCabeceraVisitaCreada, getClienteByCode, actualizarVisita,
-    getUltimaVisita, parapruebas, getPlanVendedor, findClientesBySupervisor, visitHistoryHana, visitBySlpcodeHana, pendingVisitsHana
+    getUltimaVisita, parapruebas, visitHistoryHana2, visitBySlpcodeHanaForExcel, getPlanVendedor, findClientesBySupervisor, visitHistoryHana, visitBySlpcodeHana, pendingVisitsHana
 }
