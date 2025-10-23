@@ -678,7 +678,7 @@ const searchArticulos = async (search) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" LIKE '%${search}%' OR "ItemName" LIKE '%${search}%' LIMIT 50`;
+        const query = `select * from ${process.env.PRD}.ifa_dm_articulos where "ItemCode" LIKE '%${search}%' OR "ItemName" LIKE '%${search}%' AND "ItmsGrpCod" = 105 LIMIT 50`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -1110,9 +1110,7 @@ const getZonasTiposPorVendedor = async (id_vendedor) => {
         if (!connection) {
             await connectHANA();
         }
-        const query = `select "SlpCodeCli", "SlpNameCli", "ZoneCode", "ZoneName", "GroupCode", "GroupName" 
-from ${process.env.PRD}.ifa_dm_vendedores_zonasytipos
-where "SlpCodeCli" = ${id_vendedor}`;
+        const query = `call ${process.env.PRD}.IFASP_MD_GET_SELLER_DIMENSION_ASSIGNMENT(${id_vendedor})`;
         console.log({ query })
         const result = await executeQuery(query)
         return result
@@ -1124,12 +1122,12 @@ where "SlpCodeCli" = ${id_vendedor}`;
         }
     }
 }
-const asignarZonasYTiposAVendedores = async (id_vendedor, zona, tipo) => {
+const asignarZonasYTiposAVendedores = async (id_vendedor, tipo, id, id_creador) => {
     try {
         if (!connection) {
             await connectHANA();
         }
-        const query = `call ${process.env.PRD}.ifa_dm_agregar_zonasytipos_a_vendedores(${tipo}, ${zona}, ${id_vendedor})`;
+        const query = `call ${process.env.PRD}.IFASP_MD_CREATE_SELLER_DIMENSION_ASSIGNMENT(${id_vendedor}, '${tipo}', ${id}, ${id_creador})`;
         console.log({ query })
         const result = await executeQuery(query)
         return {
@@ -1145,13 +1143,13 @@ const asignarZonasYTiposAVendedores = async (id_vendedor, zona, tipo) => {
     }
 }
 
-const deleteZonasYTiposAVendedores = async (id_vendedor, zona, tipo) => {
+const deleteZonasYTiposAVendedores = async (UUID, USER_ID) => {
     try {
         if (!connection) {
             await connectHANA();
         }
 
-        const query = `delete from ${process.env.PRD}."@IFA_VEND_ZONAS" where "U_CodZona"=${zona} and "U_TipoCliente"=${tipo} and "U_CodVendedor"=${id_vendedor}`;
+        const query = `CALL ${process.env.PRD}.IFASP_MD_DELETE_SELLER_DIMENSION_ASSIGNMENT('${UUID}', ${USER_ID})`;
         console.log({ query })
         const result = await executeQuery(query)
         return {

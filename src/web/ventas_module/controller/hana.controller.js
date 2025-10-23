@@ -1795,7 +1795,7 @@ const deleteSolicitudDescuento = async (id) => {
 }
 
 
-const getVentasPrespuestosSubLinea = async () => {
+const getVentasPrespuestosSubLinea = async (lista) => {
     try {
         if (!connection) {
             await connectHANA();
@@ -1808,7 +1808,8 @@ const getVentasPrespuestosSubLinea = async () => {
         const query = `
             CALL LAB_IFA_DATA.IFASP_SAL_CALCULATE_ALL_DIMENSIONS_BY_PERIOD(
                 i_year  => ${anho},
-                i_month => ${mes}
+                i_month => ${mes},
+                P_SUC_CODES_STRING => '${lista}'
             );
         `;
 

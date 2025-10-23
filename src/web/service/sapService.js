@@ -540,6 +540,34 @@ const postCrearPedido = async (data) => {
 };
 
 
+const patchLiberarInvoice = async (idInvoice, body) => {
+    try {
+        const currentSession = await connectSLD();
+        const sessionSldId = currentSession.SessionId;
+        const url = `https://srvhana:50000/b1s/v1/PurchaseInvoices(${idInvoice})`;
+        const headers = {
+            Cookie: `B1SESSION=${sessionSldId}`,
+            Prefer: 'return-no-content'
+        };
+        const response = await axios.patch(url, body, {
+            httpsAgent: agent,
+            headers: headers
+        })
+        const status = response.status
+
+        const dataResponse = response.data
+        return { status, dataResponse };
+    } catch (error) {
+        console.log({ postReserveInvoice: error })
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido';
+        console.error('Error en la solicitud patchLiberarInvoice:', errorMessage);
+        return {
+            status: 400,
+            errorMessage
+        }
+    }
+};
+
 
 
 module.exports = {
@@ -555,5 +583,6 @@ module.exports = {
     patchInventoryTransferRequests,
     postStockTransfer,
     postPurchaseInvoices,
-    postCrearPedido
+    postCrearPedido,
+    patchLiberarInvoice
 };

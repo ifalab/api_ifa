@@ -1,6 +1,6 @@
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { obtenerimportacionStatus, obtenerDetalleParaResInvoice,  } = require("./hana.controller");
-const { postPurchaseInvoices, postCrearPedido } = require("../../service/sapService");
+const { postPurchaseInvoices, postCrearPedido, patchLiberarInvoice } = require("../../service/sapService");
 
 const importacionStatusController = async (req, res) => {
     try {
@@ -115,9 +115,41 @@ const createPedidoController = async (req, res) => {
     }
 }
 
+const patchLiberarInvoiceController = async (req, res) => {
+    try {
+
+        const {idInvoice} = req.body;
+
+        const body = {
+            U_SO1_01RETAILONE: 'Y'
+        }
+
+        // 4. datos formateados  mandar al service layer
+        const serviceResponse = await patchLiberarInvoice(idInvoice, body);
+
+        // 5. Manejar la respuesta del service layer
+        if (serviceResponse.status > 299) {
+            return res.status(500).json({ code: serviceResponse.status , ms: 'Error en el service layer', mensaje: serviceResponse.errorMessage.value || 'Error al crear pedido en SAP' });
+        }
+
+        // 6. Responder al cliente con el resultado
+        return res.json({
+            message: 'Liberado exitosamente',
+            data: serviceResponse.dataResponse,
+        });
+
+    } catch (error) {
+        const usuario = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' };
+        grabarLog(usuario.USERCODE, usuario.USERNAME, "Error al Liberar", `${error.message || 'Error al liberar las importaciones'}`, `patchLiberarInvoiceController`, "patch-liberar-invoice", process.env.PRD);
+        console.log('error en patchLiberarInvoiceController');
+        console.log({ error });
+        return res.status(500).json({ mensaje: 'Error en el controlador' });
+    }
+}
 
 module.exports = {
    importacionStatusController,
    createReserveInvoiceController,
-   createPedidoController
+   createPedidoController,
+   patchLiberarInvoiceController
 }

@@ -15,7 +15,8 @@ const {
     visitHistoryBySlpCodeController,
     pendingVisitsController,
     getVisitsExcelController,
-    getAllVisitsExcelController
+    getAllVisitsExcelController,
+    visitHistoryForExcelController
 } = require('../controller/planificacion.controller')
 const router = Router()
 
@@ -52,7 +53,8 @@ router.get('/ultima-visita', [validarToken, validarCampos], getUltimaVisitaContr
 router.get('/clientes/by/sup', [validarCampos, validarToken], getClientesBySup)
 
 //Reportes
-router.get('/visits-historyc-by-month', [validarToken, validarCampos], visitHistoryController);
+router.post('/visits-historyc-by-month', [validarToken, validarCampos], visitHistoryController);
+router.post('/visits-historyc-by-month-for-excel', [validarToken, validarCampos], visitHistoryForExcelController);
 router.get('/visits-historyc-by-slpcode', [validarToken, validarCampos], visitHistoryBySlpCodeController);
 router.get('/pending-visits-by-slpcode', [validarToken, validarCampos], pendingVisitsController);
 

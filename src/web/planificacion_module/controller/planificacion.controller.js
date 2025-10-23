@@ -7,7 +7,9 @@ const {
     findClientesBySupervisor,
     visitHistoryHana,
     visitBySlpcodeHana,
-    pendingVisitsHana
+    pendingVisitsHana,
+    visitHistoryHana2,
+    visitBySlpcodeHanaForExcel
 } = require("./hana.controller")
 const { grabarLog } = require("../../shared/controller/hana.controller");
 const { generateVisitsExcel } = require('../utils/generateVisitsExcel');
@@ -487,10 +489,10 @@ const getClientesBySup = async (req, res) => {
     });
   }
 };
-
-const visitHistoryController = async (req, res) => {
+const visitHistoryForExcelController = async (req, res) => {
   try {
     let { id_suc } = req.query;
+    let {start, end} = req.body;
 
     if (!id_suc) {
       return res.status(400).json({
@@ -510,7 +512,64 @@ const visitHistoryController = async (req, res) => {
     // 🔹 Ejecutamos secuencialmente cada s ucursal
     for (const code of id_suc) {
       try {
-        const result = await visitHistoryHana(code);
+        const result = await visitHistoryHana2(code, start, end);
+        if (result && result.length > 0) {
+          mergedResults = mergedResults.concat(result);
+        }
+      } catch (err) {
+        console.error(`Error en sucursal ${code}:`, err.message);
+        // opcional: seguir con las demás sucursales
+      }
+    }
+
+    const grouped = Object.values(
+        mergedResults.reduce((acc, curr) => {
+            const key = curr.SucCode;
+            if (!acc[key]) {
+            acc[key] = {
+                sucCode: curr.SucCode,
+                sucName: curr.SucName,
+                detalle: []
+            };
+            }
+            acc[key].detalle.push(curr);
+            return acc;
+        }, {})
+        );
+
+    return res.json(grouped);
+  } catch (error) {
+    console.error({ error });
+    return res.status(500).json({
+      status: false,
+      mensaje: `Error en visitHistoryController: ${error.message}`,
+    });
+  }
+};
+const visitHistoryController = async (req, res) => {
+  try {
+    
+    let { id_suc } = req.query;
+    let {start, end} = req.body;
+    if (!id_suc) {
+      return res.status(400).json({
+        status: false,
+        mensaje: "Debe proporcionar al menos un código de sucursal",
+        data: null,
+      });
+    }
+
+    // Aceptamos tanto "100,200,300" como ["100","200","300"]
+    if (typeof id_suc === "string") {
+      id_suc = id_suc.split(",").map((code) => code.trim());
+    }
+
+    let mergedResults = [];
+
+    // 🔹 Ejecutamos secuencialmente cada s ucursal
+    for (const code of id_suc) {
+      try {
+        const result = await visitHistoryHana(code,start,end);
         if (result && result.length > 0) {
           mergedResults = mergedResults.concat(result);
         }
@@ -547,12 +606,12 @@ const visitHistoryController = async (req, res) => {
 
 const visitHistoryBySlpCodeController = async(req, res) => {
     try {
-        const {slpcode, status} = req.query;
+        const {slpcode, status, start, end} = req.query;
 
         if(!slpcode) return res.status(500).json({status: false,
             mensaje: `Error en visitHistoryBySlpCodeController: Se debe propocionar un codigo de vendedor.`,})
 
-        const data = await visitBySlpcodeHana(slpcode, status);
+        const data = await visitBySlpcodeHana(slpcode, status, start, end);
 
         return res.status(200).json(data);
     } catch (error) {
@@ -566,12 +625,12 @@ const visitHistoryBySlpCodeController = async(req, res) => {
 
 const pendingVisitsController = async(req, res) => {
     try {
-        const {slpcode} = req.query;
+        const {slpcode, start, end} = req.query;
 
         if(!slpcode) return res.status(500).json({status: false,
             mensaje: `Error en pendingVisitsController: Se debe propocionar un codigo de vendedor.`,})
 
-        const data = await pendingVisitsHana(slpcode);
+        const data = await pendingVisitsHana(slpcode, start, end);
 
         return res.status(200).json(data);
     } catch (error) {
@@ -585,15 +644,14 @@ const pendingVisitsController = async(req, res) => {
 
 const getVisitsExcelController = async (req, res) => {
   try {
-    const { slpcode } = req.query;
+    const { slpcode, start, end } = req.query;
 
     if (!slpcode)
       return res.status(400).json({ status: false, mensaje: 'Debe proporcionar un código de vendedor' });
 
-    const dataVisit = await visitBySlpcodeHana(slpcode, 1);
-    const dataNoVisit = await visitBySlpcodeHana(slpcode, 2);
-
-    const dataPending = await pendingVisitsHana(slpcode);
+    const dataVisit = await visitBySlpcodeHana(slpcode, 1, start, end);
+    const dataNoVisit = await visitBySlpcodeHana(slpcode, 2, start, end);
+    const dataPending = await pendingVisitsHana(slpcode, start, end);
 
     const slpName = dataVisit[0]?.SLPNAME || dataNoVisit[0]?.SLPNAME || 'Vendedor';
 
@@ -618,7 +676,7 @@ const getVisitsExcelController = async (req, res) => {
 const getAllVisitsExcelController = async (req, res) => {
   try {
     const body = req.body; // [{ sucCode, sucName, detalle: [...] }]
-
+    const {start, end} = req.query;
     const workbook = new ExcelJS.Workbook();
 
     for (const suc of body) {
@@ -720,8 +778,8 @@ const getAllVisitsExcelController = async (req, res) => {
         });
 
         // --- Consultamos visitas / no visitas ---
-        const dataVisit = await visitBySlpcodeHana(v.SlpCode, 1);
-        const dataNoVisit = await visitBySlpcodeHana(v.SlpCode, 2);
+        const dataVisit = await visitBySlpcodeHanaForExcel(v.SlpCode, 1, start, end);
+        const dataNoVisit = await visitBySlpcodeHanaForExcel(v.SlpCode, 2, start, end);
         const allData = [...dataVisit, ...dataNoVisit];
 
         if (allData.length === 0) {
@@ -797,5 +855,5 @@ module.exports = {
     eliminarDetalleVisitaController, getVisitasParaHoyController, getCabeceraVisitasCreadasController,
     marcarVisitaController, aniadirDetalleVisitaController, getDetalleVisitasCreadasController,
     getCabeceraVisitaCreadaController, insertarDetallesFechasVisitaController, getClienteByCodeController,
-    actualizarVisitaController, getUltimaVisitaController, getPlanVendedorController, getClientesBySup, visitHistoryController, visitHistoryBySlpCodeController, pendingVisitsController, getVisitsExcelController, getAllVisitsExcelController
+    actualizarVisitaController,visitHistoryForExcelController,  getUltimaVisitaController, getPlanVendedorController, getClientesBySup, visitHistoryController, visitHistoryBySlpCodeController, pendingVisitsController, getVisitsExcelController, getAllVisitsExcelController
 }
