@@ -1,5 +1,6 @@
 const hana = require('@sap/hana-client');
 const { formattParam } = require('../../../helpers/formattParams.helpers');
+const { executeQueryParamsWithConnection } = require('../../utils/hana-util-connection');
 
 // Configura la conexión a la base de datos HANA
 const connOptions = {
@@ -455,6 +456,26 @@ const getDeudaDelCliente = async (cardCode) => {
         throw { message: `Error en getDeudaDelCliente: ${error.message}`, error }
     }
 }
+
+const getDeudaDelClienteFactura = async (cardCode, docNum, docDate) => {
+  try {
+    // Definimos la query con placeholders "?"
+    const query = `CALL ${process.env.PRD}.IFASP_SAL_GET_BALANCE_FROM_INVOICE(?, ?, ?)`;
+
+    // Pasamos los valores que recibimos como parámetros
+    const params = [cardCode, docNum, docDate];
+
+    console.log({ query, params });
+
+    const result = await executeQueryParamsWithConnection(query, params);
+    return result;
+
+  } catch (error) {
+    console.error('Error en getDeudaDelClienteFactura:', error.message);
+    throw { message: `Error en getDeudaDelClienteFactura: ${error.message}`, error };
+  }
+};
+
 
 const findCliente = async (buscar) => {
     try {
@@ -1333,4 +1354,5 @@ module.exports = {
     getLotesExpDate,
     getDetailsDocuments,
     getInvoiceByDocNum,
+    getDeudaDelClienteFactura,
 }

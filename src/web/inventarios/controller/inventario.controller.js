@@ -50,6 +50,7 @@ const { almacenesPorDimensionUno, clientesPorDimensionUno, inventarioHabilitacio
     getLotesExpDate,
     getDetailsDocuments,
     getInvoiceByDocNum,
+    getDeudaDelClienteFactura,
 } = require("./hana.controller")
 const { postSalidaHabilitacion, postEntradaHabilitacion, postReturn, postCreditNotes, patchReturn,
     getCreditNote, getCreditNotes, postReconciliacion, cancelReturn, cancelEntrega, cancelCreditNotes,
@@ -3574,6 +3575,8 @@ const imprimibleSalidaController = async (req, res) => {
 }
 
 const devolucionPorValoradoDifArticulosController = async (req, res) => {
+    console.log(req.body);
+    // return res.status(200).json('Exit');
     let allResponseReturn = []
     let allResponseCreditNote = []
     let facturasCompletadas = []
@@ -3584,7 +3587,7 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
     let entregaFinished = false
     let allBodies = {}
     try {
-        let { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
+        let { facturas, id_sap, CardCode, AlmacenIngreso, Comentario, DocNum, DocDate,
             // AlmacenSalida, nuevosArticulos 
         } = req.body
         console.log(JSON.stringify({
@@ -3603,11 +3606,15 @@ const devolucionPorValoradoDifArticulosController = async (req, res) => {
         let totalFacturas = 0
         let totalesFactura = []
 
-        const deudaCliente = await getDeudaDelCliente(CardCode)
+        const deudaCliente = await getDeudaDelClienteFactura(CardCode, DocNum, DocDate)
         console.log({ deudaCliente })
+        // return res.status(200).json('Exit');
         let ControlAccount = '2110401'
-        if (deudaCliente.length > 0 && (deudaCliente[0].Balance > 0)) {
-            ControlAccount = '1120101'
+        if (
+            deudaCliente.length > 0 &&
+            parseFloat(deudaCliente[0].Balance || '0') > 0
+        ) {
+            ControlAccount = '1120101';
         }
 
         for (const factura of facturas) {
@@ -6684,12 +6691,12 @@ const postCajaChicaPayment = async (req, res) => {
     body.DocType = 'rCustomer';
     console.log('💡 Body recibido:', body);
 
-    // const result = await pagoProveedores(body);
+    const result = await pagoProveedores(body);
 
-    // if (!result.ok) {
-    //   // Hubo error
-    //   return res.status(400).json({ mensaje: result.errorMessage.value });
-    // }
+    if (!result.ok) {
+      // Hubo error
+      return res.status(400).json({ mensaje: result.errorMessage.value });
+    }
 
     // Si todo va bien
     return res.status(200).json(body);
@@ -6702,6 +6709,334 @@ const postCajaChicaPayment = async (req, res) => {
   }
 };
 
+// const devolucionPorValoradoDifArticulosController = async (req, res) => {
+//     let allResponseReturn = []
+//     let allResponseCreditNote = []
+//     let facturasCompletadas = []
+//     let responseEntrega
+//     let responseInvoice
+//     let responseReconciliacion
+//     let devolucionFinished = false
+//     let entregaFinished = false
+//     let allBodies = {}
+//     try {
+//         let { facturas, id_sap, CardCode, AlmacenIngreso, Comentario
+//             // AlmacenSalida, nuevosArticulos 
+//         } = req.body
+//         console.log(JSON.stringify({
+//             facturas, id_sap, CardCode, AlmacenIngreso, Comentario
+//             // , AlmacenSalida, nuevosArticulos 
+//         }, null, 2))
+//         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+//         const idSap = user.ID_SAP || 0
+//         id_sap = idSap
+//         if (id_sap == 0 || !id_sap) {
+//             return res.status(400).json({ mensaje: 'Usted no tiene ID SAP' })
+//         }
+//         // return res.json({ facturas, id_sap, AlmacenIngreso, CardCode })
+//         // return 
+
+//         let totalFacturas = 0
+//         let totalesFactura = []
+
+//         const deudaCliente = await getDeudaDelCliente(CardCode)
+//         console.log({ deudaCliente })
+//         let ControlAccount = '2110401'
+//         if (deudaCliente.length > 0 && (deudaCliente[0].Balance > 0)) {
+//             ControlAccount = '1120101'
+//         }
+
+//         for (const factura of facturas) {
+//             const {
+//                 Cuf,
+//                 DocEntry,
+//                 DocEntrySap,
+//                 detalle,
+//             } = factura
+
+//             console.log(`----------FACTURA ${DocEntry}----------`)
+//             let totalFactura = 0
+
+//             let numRet = 0
+//             let newDocumentLinesReturn = []
+//             for (const devolucion of detalle) {
+//                 const {
+//                     ItemCode,
+//                     Cantidad,
+//                     UnitPrice,
+//                     Total,
+//                     U_DESCLINEA,
+//                     Lote,
+//                     NumPerMsr
+//                 } = devolucion
+
+//                 totalFactura += +Total
+
+//                 let batchNumbers = []
+//                 // const batchData = await lotesArticuloAlmacenCantidad(ItemCode, AlmacenIngreso, Cantidad);
+//                 // console.log({ batch: batchData })
+//                 // if (batchData.message) {
+//                 //     endTime = Date.now();
+//                 //     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)
+//                 //     return res.status(400).json({
+//                 //         mensaje: `${batchData.message || 'Error en lotesArticuloAlmacenCantidad'}`,
+//                 //         allResponseReturn, allResponseCreditNote,
+//                 //         facturasCompletadas,
+//                 //         devolucionFinished, 
+//                 //         // entregaFinished
+//                 //     })
+//                 // }
+//                 // if (batchData.length > 0) {
+//                 //     let new_quantity = 0
+//                 //     batchData.map((item) => {
+//                 //         new_quantity += Number(item.Quantity).toFixed(6)
+//                 //     })
+
+//                 //     batchNumbers = batchData.map(batch => ({
+//                 //         BaseLineNumber: numRet,
+//                 //         BatchNumber: batch.BatchNum,
+//                 //         Quantity: Number(batch.Quantity).toFixed(6),
+//                 //         ItemCode: batch.ItemCode
+//                 //     }))
+//                 // }else{
+//                 //     endTime = Date.now();
+//                 //     const mensaje = `No hay lotes para item: ${ItemCode}, almacen: ${AlmacenIngreso}, cantidad: ${Cantidad}. Factura: ${DocEntry}`
+//                 //     // grabarLog(user.USERCODE, user.USERNAME, "Devolucion Valorado", mensaje, `[${new Date().toISOString()}] Respuesta recibida. Tiempo transcurrido: ${endTime - startTime} ms`, "inventario/dev-valorado", process.env.PRD)                    
+
+//                 //     return res.status(400).json({
+//                 //         mensaje,
+//                 //         allResponseReturn, 
+//                 //         allResponseCreditNote,
+//                 //         facturasCompletadas,
+//                 //         devolucionFinished, 
+//                 //         // entregaFinished
+//                 //     })
+//                 // }
+
+//                 batchNumbers.push({
+//                     BaseLineNumber: numRet,
+//                     BatchNumber: Lote,
+//                     Quantity: Cantidad * NumPerMsr,
+//                     ItemCode: ItemCode
+//                 })
+//                 const newLine = {
+//                     ItemCode,
+//                     WarehouseCode: AlmacenIngreso,
+//                     Quantity: Cantidad,
+//                     LineNum: numRet,
+//                     TaxCode: "IVA_GND",
+//                     AccountCode: "6210103",
+//                     GrossTotal: Total,
+//                     GrossPrice: UnitPrice,
+//                     U_DESCLINEA,
+//                     BatchNumbers: batchNumbers
+//                 };
+//                 console.log('------newLine-----')
+//                 console.log({ newLine })
+
+//                 newDocumentLinesReturn.push(newLine)
+
+//                 numRet += 1
+//             }
+
+//             const bodyReturn = {
+//                 Series: 352,
+//                 CardCode: CardCode,
+//                 U_UserCode: id_sap,
+//                 U_B_cufd: Cuf,
+//                 JournalMemo: `CAMBIO X VALORADO. ${Comentario ? Comentario.toUpperCase() : ''}`,
+//                 Comments: `CAMBIO X VALORADO. ${Comentario ? Comentario.toUpperCase() : ''}`,
+//                 DocumentLines: newDocumentLinesReturn,
+//             }
+
+
+//             //? ---------------------------------------------------------------- return.
+//             console.log('body return -----------------------------------------------')
+//             bodyReturn.Series = 352
+//             console.log(JSON.stringify({ bodyReturn }, null, 2))
+//             allBodies[DocEntry] = { bodyReturn }
+//             //! 1ERO RETURN 
+//             const responceReturn = await postReturn(bodyReturn)
+//             console.log({ responceReturn })
+
+//             allResponseReturn.push(responceReturn)
+//             if (responceReturn.status > 300) {
+//                 console.log({ errorMessage: responceReturn.errorMessage })
+
+//                 const outputDir = path.join(__dirname, 'outputs');
+//                 if (!fs.existsSync(outputDir)) {
+//                     fs.mkdirSync(outputDir);
+//                 }
+//                 const now = new Date();
+//                 const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+//                 // Generar el nombre del archivo con el timestamp
+//                 const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
+//                 fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
+//                 console.log(`Objeto allBodies guardado en ${fileNameJson}`);
+
+//                 let mensaje = responceReturn.errorMessage || 'Mensaje no definido'
+//                 if (mensaje.value)
+//                     mensaje = mensaje.value
+//                 grabarLog(user.USERCODE, user.USERNAME, "Inventario Cambio Valorado", `Error en postReturn: ${mensaje}. Nro Factura ${DocEntry}`, `postReturn()`, "inventario/dev-valorado-dif-art", process.env.PRD)
+//                 return res.status(400).json({
+//                     mensaje: `Error en postReturn: ${mensaje}. Nro Factura: ${DocEntry}`,
+//                     bodyReturn,
+//                     allResponseReturn,
+//                     allResponseCreditNote,
+//                     facturasCompletadas,
+//                     devolucionFinished,
+//                     // entregaFinished
+//                 })
+//             }
+//             const docEntryDev = responceReturn.orderNumber
+//             //---------------Credit notes
+//             //! 2ERO DETALLE DE LA DEVOLUCION
+//             const devolucionDetalle = await obtenerDevolucionDetalle(docEntryDev)
+
+//             const cabeceraCN = []
+//             const DocumentLinesCN = []
+//             let DocumentAdditionalExpenses = []
+//             let numDev = 0
+//             for (const lineDevolucion of devolucionDetalle) {
+//                 const { DocDate: DocDateDev, DocDueDate: DocDueDateDev, NumAtCard, DocTotal: DocTotalDev,
+//                     CardCode: CardCodeDev, DocCurrency: DocCurrencyDev, Comments: CommentsDev, JournalMemo: JournalMemoDev,
+//                     PaymentGroupCode, SalesPersonCode, Series, U_UserCode, LineNum: LineNumDev, BaseLine: notusexd, BaseType: notUsex2,
+//                     ExpenseCode1, LineTotal1, ExpenseCode2, LineTotal2, ExpenseCode3, LineTotal3, ExpenseCode4, LineTotal4,
+//                     ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev, AccountCode: AccountCodeDev,
+//                     GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev, TaxCode: TaxCodeDev,
+//                     ...restDev
+//                 } = lineDevolucion
+//                 if (cabeceraCN.length == 0) {
+
+//                     cabeceraCN.push({
+//                         DocDate: DocDateDev,
+//                         DocDueDate: DocDueDateDev,
+//                         CardCode: CardCodeDev,
+//                         NumAtCard,
+//                         DocTotal: DocTotalDev,
+//                         DocCurrency: DocCurrencyDev,
+//                         Reference1: docEntryDev,// DocEntry de la devolucion
+//                         Reference2: DocEntrySap ?? '',// DocEntry de la factura
+//                         Comments: CommentsDev,
+//                         JournalMemo: JournalMemoDev,
+//                         PaymentGroupCode,
+//                         SalesPersonCode,
+//                         Series: 361,
+//                         U_UserCode,
+//                         ControlAccount
+//                     })
+//                 }
+//                 if (DocumentAdditionalExpenses.length == 0) {
+//                     DocumentAdditionalExpenses = [
+//                         { ExpenseCode: ExpenseCode1, LineTotal: +LineTotal1, TaxCode: 'IVA_GND' },
+//                         { ExpenseCode: ExpenseCode2, LineTotal: +LineTotal2, TaxCode: 'IVA_GND' },
+//                     ]
+//                 }
+
+//                 const newLineDev = {
+//                     LineNum: numDev,
+//                     BaseLine: LineNumDev,
+//                     BaseType: 16,
+//                     BaseEntry: docEntryDev,
+//                     ItemCode: ItemCodeDev, Quantity: QuantityDev, WarehouseCode: WarehouseCodeDev,
+//                     AccountCode: '6210103',
+//                     // AccountCode: AccountCodeDev,
+//                     GrossTotal: GrossTotalDev, GrossPrice: GrossPriceDev, MeasureUnit: MeasureUnitDev, UnitsOfMeasurment: UnitsOfMeasurmentDev,
+//                     TaxCode: 'IVA_GND'
+//                 }
+
+//                 DocumentLinesCN.push(newLineDev)
+
+//                 numDev += 1
+//             }
+
+//             const bodyCreditNotes = {
+//                 ...cabeceraCN[0],
+//                 DocumentLines: DocumentLinesCN,
+//                 DocumentAdditionalExpenses
+//             }
+//             allBodies[DocEntry] = { bodyReturn, bodyCreditNotes }
+//             //! 3ERO CREDIT NOTES
+//             const responseCreditNote = await postCreditNotes(bodyCreditNotes)
+//             allResponseCreditNote.push(responseCreditNote)
+//             if (responseCreditNote.status > 299) {
+
+//                 const outputDir = path.join(__dirname, 'outputs');
+//                 if (!fs.existsSync(outputDir)) {
+//                     fs.mkdirSync(outputDir);
+//                 }
+//                 const now = new Date();
+//                 const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+//                 // Generar el nombre del archivo con el timestamp
+//                 const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
+//                 fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
+//                 console.log(`Objeto allBodies guardado en ${fileNameJson}`);
+
+//                 let mensaje = responseCreditNote.errorMessage
+//                 if (typeof mensaje != 'string' && mensaje.lang) {
+//                     mensaje = mensaje.value
+//                 }
+
+//                 mensaje = `Error en creditNote: ${mensaje}. Factura Nro: ${DocEntry}`
+//                 grabarLog(user.USERCODE, user.USERNAME, `Inventario DEvolucion Valorado`, mensaje, 'postCreditNotes', `inventario/dev-valorado-dif-art`, process.env.PRD)
+//                 return res.status(400).json({
+//                     mensaje,
+//                     bodyCreditNotes,
+//                     devolucionDetalle,
+//                     idReturn: docEntryDev,
+//                     bodyReturn,
+//                     allResponseCreditNote,
+//                     allResponseReturn,
+//                     facturasCompletadas,
+//                     devolucionFinished,
+//                     // entregaFinished
+//                 })
+//             }
+//             totalFacturas += +totalFactura
+//             totalesFactura.push(totalFactura)
+//             facturasCompletadas.push(DocEntry)
+//         }
+//         devolucionFinished = true
+
+//         grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Exito en el return y credit note. Facturas realizadas: ${facturasCompletadas}`, ``, "inventario/dev-valorado-dif-art", process.env.PRD)
+//         return res.json({
+//             allResponseReturn,
+//             allResponseCreditNote,
+//             facturasCompletadas,
+//             devolucionFinished,
+//         })
+//     } catch (error) {
+//         const user = req.usuarioAutorizado || { USERCODE: 'Desconocido', USERNAME: 'Desconocido' }
+//         console.log({ error })
+
+//         const outputDir = path.join(__dirname, 'outputs');
+//         if (!fs.existsSync(outputDir)) {
+//             fs.mkdirSync(outputDir);
+//         }
+//         const now = new Date();
+//         const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}`;
+
+//         // Generar el nombre del archivo con el timestamp
+//         const fileNameJson = path.join(outputDir, `bodies_${timestamp}.json`);
+//         fs.writeFileSync(fileNameJson, JSON.stringify(allBodies, null, 2), 'utf8');
+//         console.log(`Objeto allBodies guardado en ${fileNameJson}`);
+
+//         grabarLog(user.USERCODE, user.USERNAME, "Inventario Devolucion Valorado", `Error en el devolucionPorValoradoController: ${error.message || ''}`, `catch del controller devolucionMalEstadoController`, "inventario/dev-valorado-dif-art", process.env.PRD)
+//         return res.status(500).json({
+//             mensaje: `Error en en controlador devolucionPorValoradoController: ${error.message}`,
+//             allResponseReturn,
+//             allResponseCreditNote,
+//             // responseEntrega,
+//             // responseInvoice,
+//             // responseReconciliacion,
+//             facturasCompletadas,
+//             // entregaFinished,
+//             devolucionFinished
+//         })
+//     }
+// }
 
 module.exports = {
     clientePorDimensionUnoController,
